@@ -1,0 +1,369 @@
+{
+  "name": "Indian Listed Stock News Impact Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "7f55a4dc-a0a8-41f5-93e8-9c935a73f1f6",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1020,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.moneycontrol.com/rss/marketreports.xml",
+        "options": {}
+      },
+      "id": "99ff8e0d-7893-44d3-a929-2c74fd1a4225",
+      "name": "Moneycontrol Market RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        -780,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+        "options": {}
+      },
+      "id": "82df1041-a7f6-4f4a-a658-12f91c4bda0e",
+      "name": "Economic Times Markets RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        -780,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.livemint.com/rss/markets",
+        "options": {}
+      },
+      "id": "7d4fbc4c-6a36-4ce2-a018-837d62a37b575",
+      "name": "Mint Markets RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        -780,
+        320
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "c0987f58-bf8d-4abe-92d4-883fa57f2c71",
+      "name": "Merge RSS Feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -540,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const seen = new Set();\nconst now = Date.now();\nconst NEWS_MAX_AGE_HOURS = 24;\nconst NEWS_MAX_ARTICLES = 30;\nconst maxAgeMs = NEWS_MAX_AGE_HOURS * 60 * 60 * 1000;\nreturn items\n  .map((item) => {\n    const publishedRaw = item.json.isoDate || item.json.pubDate || item.json.published || item.json.date || '';\n    const publishedAt = publishedRaw ? new Date(publishedRaw) : new Date();\n    const title = String(item.json.title || '').trim();\n    const link = String(item.json.link || item.json.guid || '').trim();\n    const summary = String(item.json.contentSnippet || item.json.content || item.json.description || '').replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n    return { json: { title, link, summary, publishedAt: publishedAt.toISOString(), source: item.json.creator || item.json['dc:creator'] || new URL(link || 'https://unknown.local').hostname } };\n  })\n  .filter((item) => item.json.title && item.json.link)\n  .filter((item) => {\n    const key = item.json.link.toLowerCase();\n    if (seen.has(key)) return false;\n    seen.add(key);\n    return true;\n  })\n  .filter((item) => now - new Date(item.json.publishedAt).getTime() <= maxAgeMs)\n  .slice(0, NEWS_MAX_ARTICLES);"
+      },
+      "id": "a3ca8c87-0ffd-42d0-a855-e81721daeb08",
+      "name": "Normalize and Dedupe News",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://archives.nseindia.com/content/equities/EQUITY_L.csv",
+        "responseFormat": "string",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "6dab24c8-bcfa-469e-bde3-973509faad03",
+      "name": "Download NSE Listed Companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -300,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "cf5d292e-85f0-48cd-9ccb-c10b71b4a469",
+      "name": "Attach NSE Master",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -40,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const parseCsv = (csv) => {\n  const [headerLine, ...lines] = String(csv || '').split(/\\r?\\n/).filter(Boolean);\n  const headers = headerLine.split(',').map((h) => h.trim().replace(/^\\\"|\\\"$/g, ''));\n  return lines.map((line) => {\n    const cols = line.match(/(\\\"[^\\\"]*\\\"|[^,]+)/g) || [];\n    const row = {};\n    headers.forEach((h, i) => row[h] = String(cols[i] || '').replace(/^\\\"|\\\"$/g, '').trim());\n    return row;\n  });\n};\n\nconst nseCsv = items.find((item) => typeof item.json.data === 'string')?.json.data || items.find((item) => typeof item.json === 'string')?.json || '';\nconst companies = parseCsv(nseCsv).map((row) => ({\n  symbol: row.SYMBOL,\n  name: row.NAME_OF_COMPANY,\n  series: row.SERIES\n})).filter((row) => row.symbol && row.name && row.series === 'EQ');\n\nconst companyTerms = companies.flatMap((company) => {\n  const cleanName = company.name.replace(/\\b(LIMITED|LTD|PRIVATE|PVT|INDIA|THE)\\b/gi, '').replace(/[^A-Z0-9 ]/gi, ' ').replace(/\\s+/g, ' ').trim();\n  return [company.symbol, cleanName].filter((term) => term && term.length >= 3).map((term) => ({ term: term.toUpperCase(), company }));\n});\n\nreturn items\n  .filter((item) => item.json.title && item.json.link)\n  .map((item) => {\n    const haystack = `${item.json.title} ${item.json.summary}`.toUpperCase();\n    const matches = [];\n    for (const { term, company } of companyTerms) {\n      const escaped = term.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n      if (new RegExp(`(^|[^A-Z0-9])${escaped}([^A-Z0-9]|$)`).test(haystack)) {\n        if (!matches.some((m) => m.symbol === company.symbol)) matches.push(company);\n      }\n      if (matches.length >= 5) break;\n    }\n    return { json: { ...item.json, nseMatches: matches } };\n  })\n  .filter((item) => item.json.nseMatches.length > 0);"
+      },
+      "id": "b058b446-8a8d-474c-9125-b956541ca1db",
+      "name": "Keep Only NSE Listed Stock News",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an Indian equity-news analyst. Return only valid JSON. Do not recommend buying or selling. Classify expected short-term stock impact as Positive, Negative, Neutral, or Mixed. Consider only companies supplied in nseMatches."
+            },
+            {
+              "content": "Analyze this Indian market news item for NSE-listed companies.\nTitle: {{$json.title}}\nSummary: {{$json.summary}}\nPublished: {{$json.publishedAt}}\nLink: {{$json.link}}\nNSE matches: {{JSON.stringify($json.nseMatches)}}\n\nReturn JSON with this shape: {\"items\":[{\"companyName\":\"...\",\"nseSymbol\":\"...\",\"newsDescription\":\"one sentence under 35 words\",\"impact\":\"Positive|Negative|Neutral|Mixed\",\"impactReason\":\"one sentence under 35 words\",\"confidence\":\"High|Medium|Low\",\"sourceUrl\":\"...\"}]}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "7f29297b-0312-488d-a0c6-ed19c4ba5d14",
+      "name": "Analyze Stock Impact",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        480,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = [];\nfor (const item of items) {\n  const payload = item.json.message?.content || item.json.text || item.json;\n  const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;\n  for (const row of parsed.items || []) rows.push(row);\n}\nconst unique = Array.from(new Map(rows.map((row) => [`${row.nseSymbol}-${row.sourceUrl}`, row])).values());\nif (!unique.length) return [];\nconst today = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });\nconst icon = { Positive: '\ud83d\udfe2', Negative: '\ud83d\udd34', Neutral: '\u26aa', Mixed: '\ud83d\udfe1' };\nconst message = [\n  `\ud83c\uddee\ud83c\uddf3 *Indian NSE Stock News Impact Digest*`,\n  `_Generated: ${today} IST_`,\n  '',\n  ...unique.map((row, index) => [\n    `*${index + 1}. ${row.companyName} (${row.nseSymbol})*`,\n    `\ud83d\udcf0 ${row.newsDescription}`,\n    `${icon[row.impact] || '\u26aa'} *Impact:* ${row.impact} \u2014 ${row.impactReason}`,\n    `\ud83c\udfaf Confidence: ${row.confidence}`,\n    `\ud83d\udd17 ${row.sourceUrl}`\n  ].join('\\n'))\n].join('\\n\\n');\nreturn [{ json: { message, count: unique.length, items: unique } }];"
+      },
+      "id": "281c707e-b2c4-4739-a945-79b01fb2a395",
+      "name": "Build Formatted Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "REPLACE_WITH_TELEGRAM_CHAT_ID",
+        "text": "={{$json.message}}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "6193a223-c5cb-4cad-b427-34857d0a2abf",
+      "name": "Send Telegram Digest",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1020,
+        220
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Moneycontrol Market RSS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Economic Times Markets RSS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mint Markets RSS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download NSE Listed Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Moneycontrol Market RSS": {
+      "main": [
+        [
+          {
+            "node": "Merge RSS Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Economic Times Markets RSS": {
+      "main": [
+        [
+          {
+            "node": "Merge RSS Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Mint Markets RSS": {
+      "main": [
+        [
+          {
+            "node": "Merge RSS Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge RSS Feeds": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Dedupe News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Dedupe News": {
+      "main": [
+        [
+          {
+            "node": "Attach NSE Master",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download NSE Listed Companies": {
+      "main": [
+        [
+          {
+            "node": "Attach NSE Master",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Attach NSE Master": {
+      "main": [
+        [
+          {
+            "node": "Keep Only NSE Listed Stock News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Only NSE Listed Stock News": {
+      "main": [
+        [
+          {
+            "node": "Analyze Stock Impact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Stock Impact": {
+      "main": [
+        [
+          {
+            "node": "Build Formatted Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Formatted Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7a357d5d-8f4a-4a18-a51b-0a83e47d47a8",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "india"
+    },
+    {
+      "name": "stocks"
+    },
+    {
+      "name": "news-impact"
+    }
+  ]
+}
