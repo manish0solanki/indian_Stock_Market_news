@@ -308,7 +308,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG: Update this URL to your current Cloudflare tunnel
 // ═══════════════════════════════════════════════════════════════
-const API_BASE = https://adams-exchanges-pole-vocal.trycloudflare.com/webhook";
+const API_BASE = "https://adams-exchanges-pole-vocal.trycloudflare.com/webhook";
 
 const NEWS_URL     = API_BASE + "/news-feed";
 const PRICES_URL   = API_BASE + "/price-feed";
@@ -503,25 +503,14 @@ async function loadNews() {
 /* ─── Price Ticker ─── */
 function renderPrices(items) {
   if (!items || items.length === 0) {
-    priceTicker.innerHTML = '<span class="ticker-loading">No live prices for current session.</span>';
+    priceTicker.innerHTML = '<span class="ticker-loading">No live prices available.</span>';
     return;
   }
-  // Build price lookup
+  // Build price lookup map for news cards
   priceMap = {};
   items.forEach(p => { priceMap[p.symbol] = p; });
-  // Filter to news symbols
-  const visibleSymbols = new Set(allNewsItems
-    .filter(it => isWithinTradingWindow(it.created_at))
-    .map(it => it.symbol)
-    .filter(Boolean));
-  if (visibleSymbols.size > 0) {
-    items = items.filter(p => visibleSymbols.has(p.symbol));
-  }
+  // Ticker shows ALL prices sorted A-Z (not filtered by news)
   items.sort((a, b) => a.symbol.localeCompare(b.symbol));
-  if (items.length === 0) {
-    priceTicker.innerHTML = '<span class="ticker-loading">No live prices for current session.</span>';
-    return;
-  }
   const itemsHtml = items.map(p => {
     const up = Number(p.change_percent) >= 0;
     return `
