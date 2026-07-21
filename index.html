@@ -100,6 +100,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stat-card.negative { border-top: 3px solid var(--negative); }
 .stat-card.neutral { border-top: 3px solid var(--neutral); }
 .stat-card.total { border-top: 3px solid var(--indigo); }
+.stat-card { cursor: pointer; position: relative; }
+.stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  transition: border-color var(--transition);
+  pointer-events: none;
+}
+.stat-card.active::after { border-color: var(--indigo); }
+.stat-card.positive.active::after { border-color: var(--positive); }
+.stat-card.negative.active::after { border-color: var(--negative); }
+.stat-card.neutral.active::after { border-color: var(--neutral); }
+.stat-card.total.active::after { border-color: var(--indigo); }
+.stat-card:active { transform: translateY(0); }
 .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
 .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 .stat-card.positive .stat-value { color: var(--positive); }
@@ -136,6 +152,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .news-company-wrap { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .news-company { font-weight: 700; font-size: 15px; line-height: 1.3; }
 .news-symbol { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); background: var(--bg); padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+.news-price { font-family: var(--font-mono); font-size: 11px; color: var(--text); background: var(--positive-bg); padding: 2px 7px; border-radius: 4px; font-weight: 600; margin-left: 4px; }
+.news-card.positive .news-price { background: var(--positive-bg); color: var(--positive); }
+.news-card.negative .news-price { background: var(--negative-bg); color: var(--negative); }
+.news-card.neutral .news-price { background: var(--neutral-bg); color: var(--neutral); }
 .news-time { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); white-space: nowrap; margin-top: 2px; }
 .news-summary { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 12px; }
 .news-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -276,17 +296,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
       <span id="sessionLabel">Showing news since last market close (3:30 PM IST)</span>
     </div>
 
-    <!-- Search & Filters -->
+    <!-- Search -->
     <div class="controls-bar">
       <div class="search-wrap">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
         <input type="text" id="searchInput" class="search-input" placeholder="Search company, symbol, or keyword…" autocomplete="off">
-      </div>
-      <div class="filter-chips" id="filterChips">
-        <button class="chip active" data-filter="all">All</button>
-        <button class="chip" data-filter="positive">Positive</button>
-        <button class="chip" data-filter="negative">Negative</button>
-        <button class="chip" data-filter="neutral">Neutral</button>
       </div>
     </div>
 
@@ -320,7 +334,7 @@ const NEWS_URL = API_BASE + "/news-feed";
 const PRICES_URL = API_BASE + "/price-feed";
 const INDICES_URL = API_BASE + "/index-feed";
 const CONTACT_URL = API_BASE + "/contact-message";
-const REFRESH_MS = 30000;
+const REFRESH_MS = 60000;
 
 // ─── Rate Limiting & Request Coalescing ───
 const RATE_LIMIT = {
@@ -427,7 +441,7 @@ function setCached(url, data) {
 
 // ─── Leader Election (one tab does the polling) ───
 const LEADER_KEY = 'marketpulse_leader';
-const LEADER_HEARTBEAT = 1000; // 5 seconds
+const LEADER_HEARTBEAT = 5000; // 5 seconds
 
 function amILeader() {
   const now = Date.now();
@@ -483,6 +497,7 @@ let allNewsItems = [];
 let currentFilter = 'all';
 let currentSearch = '';
 let lastUpdateTime = Date.now();
+let priceMap = {}; // symbol -> price
 
 /* ─── Utilities ─── */
 function fmtTime(iso) {
@@ -565,7 +580,7 @@ const liveTimerEl = document.getElementById('liveTimer');
 setInterval(() => {
   const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
   if (liveTimerEl) liveTimerEl.textContent = `Updated ${secs} sec ago`;
-}, 5000);
+}, 1000);
 
 /* ─── Statistics ─── */
 function updateStats(items) {
@@ -652,6 +667,7 @@ function renderNews() {
           <div class="news-company-wrap">
             <span class="news-company">${item.company_name || 'Unknown'}</span>
             ${item.symbol ? `<span class="news-symbol">${item.symbol}</span>` : ''}
+            ${item.symbol && priceMap[item.symbol] ? `<span class="news-price">₹${Number(priceMap[item.symbol].price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>` : ''}
           </div>
           <span class="news-time">${fmtTime(item.created_at)}</span>
         </div>
@@ -754,6 +770,9 @@ function renderPrices(items) {
     priceTicker.innerHTML = '<span class="ticker-loading">No live prices for current session.</span>';
     return;
   }
+  // Build price lookup map for news cards
+  priceMap = {};
+  items.forEach(p => { priceMap[p.symbol] = p; });
   // Only show prices for stocks that have news in the current trading window
   const visibleSymbols = new Set(allNewsItems
     .filter(it => isWithinTradingWindow(it.created_at))
@@ -788,13 +807,23 @@ searchInput.addEventListener('input', (e) => {
   renderNews();
 });
 
-document.getElementById('filterChips').addEventListener('click', (e) => {
-  const chip = e.target.closest('.chip');
-  if (!chip) return;
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  chip.classList.add('active');
-  currentFilter = chip.dataset.filter;
+// Stat cards act as filter buttons
+document.getElementById('statsGrid').addEventListener('click', (e) => {
+  const card = e.target.closest('.stat-card');
+  if (!card) return;
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  currentFilter = card.dataset.filter;
   renderNews();
+});
+
+// Keyboard support for stat cards
+document.getElementById('statsGrid').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('.stat-card');
+  if (!card) return;
+  e.preventDefault();
+  card.click();
 });
 
 /* ─── Contact Form ─── */
@@ -832,6 +861,8 @@ form.addEventListener('submit', async (e) => {
 });
 
 /* ─── Init ─── */
+// Set Total card as active by default
+document.querySelector('.stat-card[data-filter="all"]').classList.add('active');
 loadNews();
 loadPrices();
 loadIndices();
