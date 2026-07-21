@@ -94,28 +94,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
 /* ─── Stats Cards ─── */
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); transition: transform var(--transition), box-shadow var(--transition); }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); transition: transform var(--transition), box-shadow var(--transition); cursor: pointer; position: relative; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .stat-card.positive { border-top: 3px solid var(--positive); }
 .stat-card.negative { border-top: 3px solid var(--negative); }
 .stat-card.neutral { border-top: 3px solid var(--neutral); }
 .stat-card.total { border-top: 3px solid var(--indigo); }
-.stat-card { cursor: pointer; position: relative; }
-.stat-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-md);
-  border: 2px solid transparent;
-  transition: border-color var(--transition);
-  pointer-events: none;
-}
+.stat-card::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius-md); border: 2px solid transparent; transition: border-color var(--transition); pointer-events: none; }
 .stat-card.active::after { border-color: var(--indigo); }
 .stat-card.positive.active::after { border-color: var(--positive); }
 .stat-card.negative.active::after { border-color: var(--negative); }
 .stat-card.neutral.active::after { border-color: var(--neutral); }
 .stat-card.total.active::after { border-color: var(--indigo); }
-.stat-card:active { transform: translateY(0); }
 .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
 .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 .stat-card.positive .stat-value { color: var(--positive); }
@@ -131,11 +121,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .search-input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px 10px 38px; font-size: 14px; color: var(--text); font-family: var(--font-body); transition: border-color var(--transition), box-shadow var(--transition); }
 .search-input:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
 .search-input::placeholder { color: var(--text-muted); }
-.filter-chips { display: flex; gap: 8px; flex-wrap: wrap; }
-.chip { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: all var(--transition); user-select: none; }
-.chip:hover { border-color: var(--indigo-light); color: var(--indigo); }
-.chip.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
-.chip.active:hover { background: var(--indigo-dark); }
 
 /* ─── Date Heading ─── */
 .date-heading { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
@@ -227,9 +212,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   </div>
 
   <!-- Stock Ticker -->
-  <div style="background: var(--indigo-dark); padding: 6px 24px 0; text-align: center;">
-    <span style="font-size: 10px; color: rgba(255,255,255,0.5); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em;">Session Prices (A–Z)</span>
-  </div>
   <div class="ticker-wrap" id="tickerWrap">
     <div class="ticker-track" id="tickerTrack"><span class="ticker-loading">Loading market data…</span></div>
   </div>
@@ -266,34 +248,28 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
       <!-- Right: Statistics Cards -->
       <div class="snapshot-right">
         <div class="stats-grid" id="statsGrid">
-          <div class="stat-card positive">
+          <div class="stat-card positive" data-filter="positive" role="button" tabindex="0">
             <div class="stat-label">Positive</div>
             <div class="stat-value" id="statPositive">0</div>
             <div class="stat-sub">bullish signals</div>
           </div>
-          <div class="stat-card negative">
+          <div class="stat-card negative" data-filter="negative" role="button" tabindex="0">
             <div class="stat-label">Negative</div>
             <div class="stat-value" id="statNegative">0</div>
             <div class="stat-sub">bearish signals</div>
           </div>
-          <div class="stat-card neutral">
+          <div class="stat-card neutral" data-filter="neutral" role="button" tabindex="0">
             <div class="stat-label">Neutral</div>
             <div class="stat-value" id="statNeutral">0</div>
             <div class="stat-sub">mixed signals</div>
           </div>
-          <div class="stat-card total">
+          <div class="stat-card total" data-filter="all" role="button" tabindex="0">
             <div class="stat-label">Total</div>
             <div class="stat-value" id="statTotal">0</div>
             <div class="stat-sub">news items</div>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Trading Session Info -->
-    <div style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-      <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); display: inline-block;"></span>
-      <span id="sessionLabel">Showing news since last market close (3:30 PM IST)</span>
     </div>
 
     <!-- Search -->
@@ -329,175 +305,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   <footer class="site-footer"><span>MarketPulse — automated news, human judgment still required.</span></footer>
 
 <script>
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG: Update this URL to your current Cloudflare tunnel
+// ═══════════════════════════════════════════════════════════════
 const API_BASE = "https://cannon-outcomes-asylum-facility.trycloudflare.com/webhook";
-const NEWS_URL = API_BASE + "/news-feed";
-const PRICES_URL = API_BASE + "/price-feed";
-const INDICES_URL = API_BASE + "/index-feed";
-const CONTACT_URL = API_BASE + "/contact-message";
-const REFRESH_MS = 60000;
 
-// ─── Rate Limiting & Request Coalescing ───
-const RATE_LIMIT = {
-  maxRequests: 10,        // Max requests per window
-  windowMs: 60000,        // 1 minute window
-  backoffMs: 2000,        // Initial backoff on 429
-  maxBackoffMs: 30000,    // Max backoff
-};
-
-let requestLog = [];       // Timestamp log for rate limiting
-let pendingRequests = {};  // Request coalescing: url -> promise
-let backoffDelay = 0;      // Current backoff delay
-let isPaused = false;      // Global pause flag
-
-function canMakeRequest() {
-  const now = Date.now();
-  // Remove timestamps older than the window
-  requestLog = requestLog.filter(t => now - t < RATE_LIMIT.windowMs);
-  return requestLog.length < RATE_LIMIT.maxRequests;
-}
-
-function recordRequest() {
-  requestLog.push(Date.now());
-}
-
-function scheduleNextRequest() {
-  const now = Date.now();
-  const oldestInWindow = requestLog[0] || now;
-  const waitTime = RATE_LIMIT.windowMs - (now - oldestInWindow) + 100;
-  return Math.max(waitTime, 0);
-}
-
-async function throttledFetch(url, options = {}) {
-  // Coalesce: if same URL is already in-flight, reuse that promise
-  const key = url + JSON.stringify(options);
-  if (pendingRequests[key]) {
-    return pendingRequests[key];
-  }
-
-  // Wait if we're rate limited
-  if (!canMakeRequest()) {
-    const wait = scheduleNextRequest();
-    console.log(`[RateLimit] Waiting ${Math.round(wait)}ms before ${url}`);
-    await new Promise(r => setTimeout(r, wait));
-  }
-
-  // Wait for any active backoff
-  if (backoffDelay > 0) {
-    console.log(`[Backoff] Waiting ${backoffDelay}ms due to previous 429`);
-    await new Promise(r => setTimeout(r, backoffDelay));
-  }
-
-  const promise = (async () => {
-    try {
-      recordRequest();
-      const res = await fetch(url, options);
-
-      if (res.status === 429) {
-        // Exponential backoff on 429
-        backoffDelay = Math.min((backoffDelay || RATE_LIMIT.backoffMs) * 2, RATE_LIMIT.maxBackoffMs);
-        console.log(`[429] Backoff increased to ${backoffDelay}ms`);
-        throw new Error('Rate limited (429)');
-      }
-
-      // Success: gradually reduce backoff
-      backoffDelay = Math.max(0, backoffDelay - RATE_LIMIT.backoffMs);
-      return res;
-    } finally {
-      delete pendingRequests[key];
-    }
-  })();
-
-  pendingRequests[key] = promise;
-  return promise;
-}
-
-// ─── Local Cache (shared across tabs via localStorage) ───
-const CACHE_KEY = 'marketpulse_cache';
-const CACHE_TTL = 30000; // 30 seconds
-
-function getCached(url) {
-  try {
-    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-    const entry = cache[url];
-    if (entry && Date.now() - entry.time < CACHE_TTL) {
-      return entry.data;
-    }
-  } catch (e) {}
-  return null;
-}
-
-function setCached(url, data) {
-  try {
-    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-    cache[url] = { time: Date.now(), data };
-    // Keep only recent entries
-    const cutoff = Date.now() - CACHE_TTL * 2;
-    for (const k in cache) {
-      if (cache[k].time < cutoff) delete cache[k];
-    }
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch (e) {}
-}
-
-// ─── Leader Election (one tab does the polling) ───
-const LEADER_KEY = 'marketpulse_leader';
-const LEADER_HEARTBEAT = 5000; // 5 seconds
-
-function amILeader() {
-  const now = Date.now();
-  const leader = JSON.parse(localStorage.getItem(LEADER_KEY) || '{"id":"","time":0}');
-  // If leader is stale (>10s), claim leadership
-  if (now - leader.time > 10000) {
-    claimLeadership();
-    return true;
-  }
-  return leader.id === myTabId;
-}
-
-function claimLeadership() {
-  localStorage.setItem(LEADER_KEY, JSON.stringify({ id: myTabId, time: Date.now() }));
-}
-
-const myTabId = 'tab_' + Math.random().toString(36).slice(2, 10);
-
-// Heartbeat
-setInterval(() => {
-  if (amILeader()) {
-    claimLeadership();
-  }
-}, LEADER_HEARTBEAT);
-
-// Claim on start
-claimLeadership();
-
-// ─── Broadcast Channel for cross-tab sync ───
-let broadcastChannel = null;
-try {
-  broadcastChannel = new BroadcastChannel('marketpulse_sync');
-  broadcastChannel.onmessage = (e) => {
-    if (e.data.type === 'data_update') {
-      allNewsItems = e.data.news || [];
-      updateStats(allNewsItems);
-      renderNews();
-      lastUpdateTime = Date.now();
-      lastUpdatedEl.textContent = 'updated ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    }
-  };
-} catch (e) {
-  console.log('BroadcastChannel not supported, falling back to polling');
-}
-
-function broadcastUpdate(news) {
-  if (broadcastChannel) {
-    broadcastChannel.postMessage({ type: 'data_update', news });
-  }
-}
+const NEWS_URL     = API_BASE + "/news-feed";
+const PRICES_URL   = API_BASE + "/price-feed";
+const INDICES_URL  = API_BASE + "/index-feed";
+const CONTACT_URL  = API_BASE + "/contact-message";
+const REFRESH_MS   = 60000;
 
 let allNewsItems = [];
 let currentFilter = 'all';
 let currentSearch = '';
 let lastUpdateTime = Date.now();
-let priceMap = {}; // symbol -> price
+let priceMap = {};
 
 /* ─── Utilities ─── */
 function fmtTime(iso) {
@@ -530,8 +353,21 @@ function animateValue(el, start, end, duration) {
   requestAnimationFrame(step);
 }
 
+/* ─── Trading Window Filter ─── */
+function isWithinTradingWindow(isoDate) {
+  const itemDate = new Date(isoDate);
+  const now = new Date();
+  const marketCloseToday = new Date(now);
+  marketCloseToday.setHours(15, 30, 0, 0);
+  const cutoff = now < marketCloseToday 
+    ? new Date(marketCloseToday.getTime() - 24 * 60 * 60 * 1000)
+    : marketCloseToday;
+  return itemDate >= cutoff;
+}
+
 /* ─── Market Snapshot Table ─── */
 const snapshotBody = document.getElementById('snapshotBody');
+const liveTimerEl = document.getElementById('liveTimer');
 
 function renderSnapshot(items) {
   if (!items || items.length === 0) {
@@ -553,30 +389,19 @@ function renderSnapshot(items) {
 }
 
 async function loadIndices() {
-  if (!amILeader()) {
-    const cached = getCached(INDICES_URL);
-    if (cached) renderSnapshot(cached.items || []);
-    return;
-  }
-
-  const cached = getCached(INDICES_URL);
-  if (cached) renderSnapshot(cached.items || []);
-
   try {
-    const res = await throttledFetch(INDICES_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(INDICES_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    setCached(INDICES_URL, data);
     renderSnapshot(data.items || []);
     lastUpdateTime = Date.now();
   } catch (e) {
     snapshotBody.innerHTML = '<tr><td colspan="3" class="snapshot-loading">Could not load indices.</td></tr>';
-    console.error(e);
+    console.error('[Indices]', e);
   }
 }
 
-/* ─── Live Timer ─── */
-const liveTimerEl = document.getElementById('liveTimer');
+/* ─── Live Timer (1 second) ─── */
 setInterval(() => {
   const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
   if (liveTimerEl) liveTimerEl.textContent = `Updated ${secs} sec ago`;
@@ -584,7 +409,6 @@ setInterval(() => {
 
 /* ─── Statistics ─── */
 function updateStats(items) {
-  // Only count items within the trading window
   const visibleItems = items.filter(it => isWithinTradingWindow(it.created_at));
   const counts = { Positive: 0, Negative: 0, Neutral: 0 };
   visibleItems.forEach(it => {
@@ -603,31 +427,8 @@ const feedEl = document.getElementById('feed');
 const priceTicker = document.getElementById('tickerTrack');
 const lastUpdatedEl = document.getElementById('lastUpdated');
 
-function isWithinTradingWindow(isoDate) {
-  const itemDate = new Date(isoDate);
-  const now = new Date();
-
-  // Indian market closes at 3:30 PM IST (15:30)
-  // Get today's 15:30 IST in local time
-  const marketCloseToday = new Date(now);
-  marketCloseToday.setHours(15, 30, 0, 0);
-
-  // If current time is before 3:30 PM, show items from yesterday 3:30 PM onwards
-  // If current time is after 3:30 PM, show items from today 3:30 PM onwards
-  const cutoff = now < marketCloseToday 
-    ? new Date(marketCloseToday.getTime() - 24 * 60 * 60 * 1000) // Yesterday 3:30 PM
-    : marketCloseToday; // Today 3:30 PM
-
-  return itemDate >= cutoff;
-}
-
 function getFilteredItems() {
-  let items = allNewsItems;
-
-  // Filter: only show news relevant for next trading session
-  // (posted after last market close)
-  items = items.filter(it => isWithinTradingWindow(it.created_at));
-
+  let items = allNewsItems.filter(it => isWithinTradingWindow(it.created_at));
   if (currentFilter !== 'all') {
     items = items.filter(it => impactClass(it.short_term_impact || it.impact) === currentFilter);
   }
@@ -684,96 +485,31 @@ function renderNews() {
 }
 
 async function loadNews() {
-  // Only the leader tab fetches from the server
-  // Other tabs listen via BroadcastChannel for updates
-  if (!amILeader()) {
-    console.log('[Follower] Skipping fetch, waiting for leader broadcast');
-    // Try cache as fallback
-    const cached = getCached(NEWS_URL);
-    if (cached) {
-      allNewsItems = cached.items || [];
-      updateStats(allNewsItems);
-      renderNews();
-    }
-    return;
-  }
-
-  // Check cache first
-  const cached = getCached(NEWS_URL);
-  if (cached) {
-    allNewsItems = cached.items || [];
-    updateStats(allNewsItems);
-    renderNews();
-    broadcastUpdate(allNewsItems);
-  }
-
   try {
-    const res = await throttledFetch(NEWS_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(NEWS_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     allNewsItems = data.items || [];
-    setCached(NEWS_URL, data);
     updateStats(allNewsItems);
     renderNews();
     lastUpdatedEl.textContent = 'updated ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     lastUpdateTime = Date.now();
-    updateSessionLabel();
-    broadcastUpdate(allNewsItems);
   } catch (e) {
-    if (e.message.includes('429')) {
-      lastUpdatedEl.textContent = 'Rate limited — retrying soon';
-    } else {
-      lastUpdatedEl.textContent = 'Connection lost';
-    }
-    console.error(e);
-  }
-}
-
-function updateSessionLabel() {
-  const now = new Date();
-  const marketClose = new Date(now);
-  marketClose.setHours(15, 30, 0, 0);
-  const isBeforeClose = now < marketClose;
-  const label = document.getElementById('sessionLabel');
-  if (label) {
-    label.textContent = isBeforeClose 
-      ? 'Showing news since yesterday 3:30 PM IST'
-      : 'Showing news since today 3:30 PM IST';
+    lastUpdatedEl.textContent = 'Connection lost — ' + e.message;
+    console.error('[News]', e);
   }
 }
 
 /* ─── Price Ticker ─── */
-async function loadPrices() {
-  // Only leader fetches; followers use cache
-  if (!amILeader()) {
-    const cached = getCached(PRICES_URL);
-    if (cached) renderPrices(cached.items || []);
-    return;
-  }
-
-  const cached = getCached(PRICES_URL);
-  if (cached) renderPrices(cached.items || []);
-
-  try {
-    const res = await throttledFetch(PRICES_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    setCached(PRICES_URL, data);
-    renderPrices(data.items || []);
-  } catch (e) {
-    console.error('[Prices]', e);
-  }
-}
-
 function renderPrices(items) {
   if (!items || items.length === 0) {
     priceTicker.innerHTML = '<span class="ticker-loading">No live prices for current session.</span>';
     return;
   }
-  // Build price lookup map for news cards
+  // Build price lookup
   priceMap = {};
   items.forEach(p => { priceMap[p.symbol] = p; });
-  // Only show prices for stocks that have news in the current trading window
+  // Filter to news symbols
   const visibleSymbols = new Set(allNewsItems
     .filter(it => isWithinTradingWindow(it.created_at))
     .map(it => it.symbol)
@@ -781,23 +517,34 @@ function renderPrices(items) {
   if (visibleSymbols.size > 0) {
     items = items.filter(p => visibleSymbols.has(p.symbol));
   }
-  // Sort alphabetically by symbol (A to Z)
   items.sort((a, b) => a.symbol.localeCompare(b.symbol));
   if (items.length === 0) {
     priceTicker.innerHTML = '<span class="ticker-loading">No live prices for current session.</span>';
     return;
   }
   const itemsHtml = items.map(p => {
-      const up = Number(p.change_percent) >= 0;
-      return `
-        <span class="ticker-item">
-          <span class="ticker-symbol">${p.symbol}</span>
-          <span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
-          <span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(Number(p.change_percent)).toFixed(2)}%</span>
-        </span>
-      `;
-    }).join('');
-    priceTicker.innerHTML = itemsHtml + itemsHtml;
+    const up = Number(p.change_percent) >= 0;
+    return `
+      <span class="ticker-item">
+        <span class="ticker-symbol">${p.symbol}</span>
+        <span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+        <span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(Number(p.change_percent)).toFixed(2)}%</span>
+      </span>
+    `;
+  }).join('');
+  priceTicker.innerHTML = itemsHtml + itemsHtml;
+}
+
+async function loadPrices() {
+  try {
+    const res = await fetch(PRICES_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    renderPrices(data.items || []);
+  } catch (e) {
+    priceTicker.innerHTML = '<span class="ticker-loading">Could not load prices.</span>';
+    console.error('[Prices]', e);
+  }
 }
 
 /* ─── Search & Filter Handlers ─── */
@@ -807,7 +554,6 @@ searchInput.addEventListener('input', (e) => {
   renderNews();
 });
 
-// Stat cards act as filter buttons
 document.getElementById('statsGrid').addEventListener('click', (e) => {
   const card = e.target.closest('.stat-card');
   if (!card) return;
@@ -817,7 +563,6 @@ document.getElementById('statsGrid').addEventListener('click', (e) => {
   renderNews();
 });
 
-// Keyboard support for stat cards
 document.getElementById('statsGrid').addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
   const card = e.target.closest('.stat-card');
@@ -842,7 +587,7 @@ form.addEventListener('submit', async (e) => {
   const message = document.getElementById('cf-message').value.trim();
 
   try {
-    const res = await throttledFetch(CONTACT_URL, {
+    const res = await fetch(CONTACT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, message })
@@ -861,13 +606,19 @@ form.addEventListener('submit', async (e) => {
 });
 
 /* ─── Init ─── */
-// Set Total card as active by default
 document.querySelector('.stat-card[data-filter="all"]').classList.add('active');
-loadNews();
-loadPrices();
-loadIndices();
+
+// Load sequentially: news first, then prices (needs news symbols), then indices
+async function init() {
+  await loadNews();
+  await loadPrices();
+  await loadIndices();
+}
+init();
+
+// Refresh intervals (staggered)
 setInterval(loadNews, REFRESH_MS);
-setInterval(loadPrices, REFRESH_MS);
+setInterval(loadPrices, REFRESH_MS + 5000);
 setInterval(loadIndices, 30000);
 </script>
 </body>
