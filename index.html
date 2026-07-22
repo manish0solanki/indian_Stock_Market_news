@@ -37,19 +37,43 @@
   --radius-lg: 14px;
   --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
 }
+[data-theme="dark"] {
+  --bg: #0F0F1A;
+  --surface: #1A1A2E;
+  --surface-hover: #222240;
+  --border: #2A2A4A;
+  --text: #E8E8F0;
+  --text-secondary: #A0A0B8;
+  --text-muted: #6B6B8A;
+  --positive: #4ADE80;
+  --positive-bg: rgba(74,222,128,0.12);
+  --positive-light: rgba(74,222,128,0.2);
+  --negative: #F87171;
+  --negative-bg: rgba(248,113,113,0.12);
+  --negative-light: rgba(248,113,113,0.2);
+  --neutral: #F5A623;
+  --neutral-bg: rgba(245,166,35,0.12);
+  --neutral-light: rgba(245,166,35,0.2);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s, color 0.3s; }
 
-/* ─── Topbar ─── */
+/* Topbar */
 .topbar { background: var(--indigo); color: #fff; padding: 10px 24px; position: sticky; top: 0; z-index: 100; }
 .topbar-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 .topbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
 .topbar-brand .diamond { width: 10px; height: 10px; background: #F5A623; transform: rotate(45deg); display: inline-block; border-radius: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
 .topbar-status { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: rgba(255,255,255,0.75); }
 .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; animation: pulse 2.5s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); } 70% { box-shadow: 0 0 0 6px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
+.theme-toggle { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 36px; height: 36px; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background var(--transition); }
+.theme-toggle:hover { background: rgba(255,255,255,0.25); }
 
-/* ─── Ticker ─── */
+/* Ticker */
 .ticker-wrap { background: var(--indigo-dark); overflow: hidden; white-space: nowrap; padding: 10px 0; border-bottom: 3px solid #F5A623; }
 .ticker-track { display: inline-flex; animation: scroll-ticker 50s linear infinite; will-change: transform; }
 .ticker-wrap:hover .ticker-track { animation-play-state: paused; }
@@ -61,24 +85,54 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .ticker-change.down { color: #F87171; }
 .ticker-loading { padding: 0 20px; color: rgba(255,255,255,0.5); font-family: var(--font-mono); font-size: 13px; }
 
-/* ─── Dashboard Container ─── */
+/* Dashboard */
 .dashboard { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; }
 
-/* ─── Split Layout: Snapshot Left, Stats Right ─── */
-.snapshot-split { display: flex; gap: 20px; margin-bottom: 28px; align-items: flex-start; }
+/* Mood Banner */
+.mood-banner { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-sm); }
+.mood-left { display: flex; align-items: center; gap: 16px; }
+.mood-emoji { font-size: 40px; line-height: 1; }
+.mood-text h3 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.mood-text p { font-size: 13px; color: var(--text-secondary); }
+.mood-ratio { display: flex; gap: 16px; font-family: var(--font-mono); font-size: 13px; }
+.mood-ratio span { display: flex; align-items: center; gap: 6px; }
+.mood-ratio .pos { color: var(--positive); }
+.mood-ratio .neg { color: var(--negative); }
+.mood-ratio .neu { color: var(--neutral); }
+
+/* Timeline */
+.timeline-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+.timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.timeline-title { font-size: 16px; font-weight: 700; }
+.timeline-legend { display: flex; gap: 16px; font-size: 12px; }
+.timeline-legend span { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.legend-dot.pos { background: var(--positive); }
+.legend-dot.neg { background: var(--negative); }
+.legend-dot.neu { background: var(--neutral); }
+.timeline-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 20px; }
+.timeline-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.timeline-bars { display: flex; align-items: flex-end; gap: 3px; width: 100%; height: 80px; }
+.timeline-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.6s ease; }
+.timeline-bar.pos { background: var(--positive); }
+.timeline-bar.neg { background: var(--negative); }
+.timeline-bar.neu { background: var(--neutral); }
+.timeline-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+/* Snapshot + Stats Row */
+.snapshot-row { display: flex; gap: 20px; margin-bottom: 24px; align-items: flex-start; }
 .snapshot-left { flex: 0 0 380px; min-width: 0; }
 .snapshot-right { flex: 1; min-width: 0; }
 
-/* ─── Market Snapshot Table ─── */
+/* Snapshot Table */
 .snapshot-section { margin-bottom: 0; }
 .snapshot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .snapshot-title { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
 .live-badge { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--positive); background: var(--positive-bg); padding: 3px 8px; border-radius: 20px; font-weight: 600; }
 .live-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--positive); animation: pulse 2.5s infinite; }
-
 .snapshot-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
 .snapshot-table { width: 100%; border-collapse: collapse; }
-.snapshot-table thead { background: #FAFAFC; }
+.snapshot-table thead { background: var(--surface-hover); }
 .snapshot-table th { padding: 10px 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); }
 .snapshot-table th:nth-child(2), .snapshot-table th:nth-child(3), .snapshot-table th:nth-child(4) { text-align: right; }
 .snapshot-table td { padding: 10px 10px; font-size: 13px; border-bottom: 1px solid var(--border); transition: background var(--transition); }
@@ -95,7 +149,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .index-trend.down { color: var(--negative); background: var(--negative-light); }
 .snapshot-loading { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
-/* ─── Stats Cards ─── */
+/* Stats Cards */
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); transition: transform var(--transition), box-shadow var(--transition); cursor: pointer; position: relative; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -117,7 +171,20 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stat-card.total .stat-value { color: var(--indigo); }
 .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
 
-/* ─── Search & Filters ─── */
+/* Global Headlines */
+.global-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 24px; }
+.global-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.global-title .globe { font-size: 16px; }
+.global-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.global-item:last-child { border-bottom: none; }
+.global-source { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.global-headline { font-size: 14px; line-height: 1.5; color: var(--text); font-weight: 500; }
+.global-headline a { color: var(--indigo); text-decoration: none; }
+.global-headline a:hover { text-decoration: underline; }
+.global-time { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.global-loading { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
+
+/* Search & Filters */
 .controls-bar { display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; align-items: center; }
 .search-wrap { position: relative; flex: 1; min-width: 220px; max-width: 400px; }
 .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
@@ -125,11 +192,17 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .search-input:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
 .search-input::placeholder { color: var(--text-muted); }
 
-/* ─── Date Heading ─── */
+/* Old News Toggle */
+.old-news-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px; background: var(--surface-hover); border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: background var(--transition); }
+.old-news-toggle:hover { background: var(--border); }
+.old-news-toggle input { width: 16px; height: 16px; accent-color: var(--indigo); }
+.old-news-toggle.hidden { display: none; }
+
+/* Date Heading */
 .date-heading { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .date-heading:first-child { margin-top: 0; }
 
-/* ─── News Cards ─── */
+/* News Cards */
 .news-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--neutral); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 10px; box-shadow: var(--shadow-sm); transition: transform var(--transition), box-shadow var(--transition); animation: fadeInUp 0.35s ease-out both; }
 .news-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .news-card.positive { border-left-color: var(--positive); }
@@ -159,7 +232,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .feed-empty { text-align: center; color: var(--text-muted); padding: 60px 0; font-size: 14px; }
 .no-results { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
 
-/* ─── Contact ─── */
+/* Contact */
 .contact { border-top: 1px solid var(--border); background: var(--surface); padding: 50px 24px; }
 .contact-inner { max-width: 460px; margin: 0 auto; }
 .contact-inner h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
@@ -174,19 +247,19 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .contact-status.success { color: var(--positive); }
 .contact-status.error { color: var(--negative); }
 
-/* ─── Footer ─── */
+/* Footer */
 .site-footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px; background: var(--bg); }
 
-/* ─── Focus & Reduced Motion ─── */
-a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+/* Reduced Motion */
 @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } .pulse-dot { animation: none; } .news-card { animation: none; } }
 
-/* ─── Responsive ─── */
+/* Responsive */
 @media (max-width: 900px) {
-  .snapshot-split { flex-direction: column; }
+  .snapshot-row { flex-direction: column; }
   .snapshot-left { flex: 1 1 auto; width: 100%; }
   .snapshot-right { flex: 1 1 auto; width: 100%; }
   .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .mood-banner { flex-direction: column; gap: 12px; text-align: center; }
 }
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -204,30 +277,61 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   .dashboard { padding: 20px 16px 40px; }
   .snapshot-title { font-size: 15px; }
   .news-card { padding: 14px 16px; }
+  .mood-emoji { font-size: 32px; }
 }
 </style>
 </head>
 <body>
 
-  <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-inner">
       <span class="topbar-brand"><span class="diamond"></span>MarketPulse</span>
-      <span class="topbar-status"><span class="pulse-dot"></span><span id="lastUpdated">connecting…</span></span>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">🌙</button>
+        <span class="topbar-status"><span class="pulse-dot"></span><span id="lastUpdated">connecting…</span></span>
+      </div>
     </div>
   </div>
 
-  <!-- Stock Ticker -->
   <div class="ticker-wrap" id="tickerWrap">
     <div class="ticker-track" id="tickerTrack"><span class="ticker-loading">Loading market data…</span></div>
   </div>
 
-  <!-- Dashboard -->
   <div class="dashboard">
 
-    <!-- Split Layout: Snapshot Left, Stats Right -->
-    <div class="snapshot-split">
-      <!-- Left: Market Snapshot Table -->
+    <!-- Market Mood -->
+    <div class="mood-banner" id="moodBanner">
+      <div class="mood-left">
+        <span class="mood-emoji" id="moodEmoji">😐</span>
+        <div class="mood-text">
+          <h3 id="moodTitle">Market Mood: Neutral</h3>
+          <p id="moodSubtitle">Based on today's news sentiment</p>
+        </div>
+      </div>
+      <div class="mood-ratio" id="moodRatio">
+        <span class="pos">● 0 Bullish</span>
+        <span class="neg">● 0 Bearish</span>
+        <span class="neu">● 0 Mixed</span>
+      </div>
+    </div>
+
+    <!-- Sentiment Timeline -->
+    <div class="timeline-section">
+      <div class="timeline-header">
+        <span class="timeline-title">3-Day Sentiment Timeline</span>
+        <div class="timeline-legend">
+          <span><span class="legend-dot pos"></span> Bullish</span>
+          <span><span class="legend-dot neg"></span> Bearish</span>
+          <span><span class="legend-dot neu"></span> Mixed</span>
+        </div>
+      </div>
+      <div class="timeline-chart" id="timelineChart">
+        <div style="color:var(--text-muted);font-size:13px;">Loading timeline…</div>
+      </div>
+    </div>
+
+    <!-- Snapshot + Stats Row -->
+    <div class="snapshot-row">
       <div class="snapshot-left">
         <div class="snapshot-section">
           <div class="snapshot-header">
@@ -237,12 +341,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
           <div class="snapshot-table-wrap">
             <table class="snapshot-table" id="snapshotTable">
               <thead>
-                <tr>
-                  <th>Index</th>
-                  <th style="text-align:right">Price</th>
-                  <th style="text-align:right">Change</th>
-                  <th style="text-align:right">% Chg</th>
-                </tr>
+                <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Change</th><th style="text-align:right">% Chg</th></tr>
               </thead>
               <tbody id="snapshotBody">
                 <tr><td colspan="4" class="snapshot-loading">Loading indices…</td></tr>
@@ -251,32 +350,28 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
           </div>
         </div>
       </div>
-
-      <!-- Right: Statistics Cards -->
       <div class="snapshot-right">
         <div class="stats-grid" id="statsGrid">
           <div class="stat-card positive" data-filter="positive" role="button" tabindex="0">
-            <div class="stat-label">Positive</div>
-            <div class="stat-value" id="statPositive">0</div>
-            <div class="stat-sub">bullish signals</div>
+            <div class="stat-label">Positive</div><div class="stat-value" id="statPositive">0</div><div class="stat-sub">bullish signals</div>
           </div>
           <div class="stat-card negative" data-filter="negative" role="button" tabindex="0">
-            <div class="stat-label">Negative</div>
-            <div class="stat-value" id="statNegative">0</div>
-            <div class="stat-sub">bearish signals</div>
+            <div class="stat-label">Negative</div><div class="stat-value" id="statNegative">0</div><div class="stat-sub">bearish signals</div>
           </div>
           <div class="stat-card neutral" data-filter="neutral" role="button" tabindex="0">
-            <div class="stat-label">Neutral</div>
-            <div class="stat-value" id="statNeutral">0</div>
-            <div class="stat-sub">mixed signals</div>
+            <div class="stat-label">Neutral</div><div class="stat-value" id="statNeutral">0</div><div class="stat-sub">mixed signals</div>
           </div>
           <div class="stat-card total" data-filter="all" role="button" tabindex="0">
-            <div class="stat-label">Total</div>
-            <div class="stat-value" id="statTotal">0</div>
-            <div class="stat-sub">news items</div>
+            <div class="stat-label">Total</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">news items</div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Global Headlines -->
+    <div class="global-section" id="globalSection">
+      <div class="global-title"><span class="globe">🌍</span> Global Headlines</div>
+      <div id="globalHeadlines"><div class="global-loading">Loading global news…</div></div>
     </div>
 
     <!-- Search -->
@@ -287,6 +382,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
       </div>
     </div>
 
+    <!-- Old News Toggle -->
+    <label class="old-news-toggle" id="oldNewsToggle">
+      <input type="checkbox" id="showOldNews">
+      <span>Show news from before market close (3:30 PM)</span>
+    </label>
+
     <!-- News Feed -->
     <main id="feed">
       <div class="feed-empty" id="feedEmpty">Loading latest news…</div>
@@ -294,7 +395,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
   </div>
 
-  <!-- Contact -->
   <section class="contact" id="contact">
     <div class="contact-inner">
       <h2>Send a note</h2>
@@ -313,13 +413,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  CONFIG: Update this URL to your current Cloudflare tunnel
+//  CONFIG
 // ═══════════════════════════════════════════════════════════════
 const API_BASE = "https://adams-exchanges-pole-vocal.trycloudflare.com/webhook";
+const NEWSAPI_KEY = "YOUR_NEWSAPI_KEY";
 
 const NEWS_URL     = API_BASE + "/news-feed";
 const PRICES_URL   = API_BASE + "/price-feed";
 const INDICES_URL  = API_BASE + "/index-feed";
+const GLOBAL_URL   = API_BASE + "/global-news";
 const CONTACT_URL  = API_BASE + "/contact-message";
 const REFRESH_MS   = 60000;
 
@@ -328,6 +430,23 @@ let currentFilter = 'all';
 let currentSearch = '';
 let lastUpdateTime = Date.now();
 let priceMap = {};
+let showOldNews = false;
+
+/* ─── Dark Mode ─── */
+const themeToggle = document.getElementById('themeToggle');
+const savedTheme = localStorage.getItem('marketpulse-theme');
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+if (savedTheme) applyTheme(savedTheme);
+else if (window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  localStorage.setItem('marketpulse-theme', next);
+});
 
 /* ─── Utilities ─── */
 function fmtTime(iso) {
@@ -360,19 +479,89 @@ function animateValue(el, start, end, duration) {
   requestAnimationFrame(step);
 }
 
-/* ─── Trading Window Filter ─── */
+/* ─── Market Close Logic ─── */
+function getMarketClose() {
+  const now = new Date();
+  const close = new Date(now);
+  close.setHours(15, 30, 0, 0);
+  return close;
+}
+function isAfterMarketClose() {
+  return new Date() > getMarketClose();
+}
 function isWithinTradingWindow(isoDate) {
   const itemDate = new Date(isoDate);
   const now = new Date();
-  const marketCloseToday = new Date(now);
-  marketCloseToday.setHours(15, 30, 0, 0);
-  const cutoff = now < marketCloseToday 
-    ? new Date(marketCloseToday.getTime() - 24 * 60 * 60 * 1000)
-    : marketCloseToday;
+  const marketClose = getMarketClose();
+  const cutoff = now < marketClose
+    ? new Date(marketClose.getTime() - 24 * 60 * 60 * 1000)
+    : marketClose;
   return itemDate >= cutoff;
 }
+function isOldNews(isoDate) {
+  const itemDate = new Date(isoDate);
+  const marketClose = getMarketClose();
+  return itemDate < marketClose;
+}
 
-/* ─── Market Snapshot Table ─── */
+/* ─── Market Mood ─── */
+function updateMood(items) {
+  const visibleItems = items.filter(it => isWithinTradingWindow(it.created_at));
+  const counts = { Positive: 0, Negative: 0, Neutral: 0 };
+  visibleItems.forEach(it => {
+    const impact = it.short_term_impact || it.impact;
+    if (counts[impact] !== undefined) counts[impact]++;
+    else counts.Neutral++;
+  });
+  const total = visibleItems.length;
+  const posPct = total ? Math.round((counts.Positive / total) * 100) : 0;
+  const negPct = total ? Math.round((counts.Negative / total) * 100) : 0;
+  const emoji = document.getElementById('moodEmoji');
+  const title = document.getElementById('moodTitle');
+  const subtitle = document.getElementById('moodSubtitle');
+  const ratio = document.getElementById('moodRatio');
+  if (counts.Positive > counts.Negative) {
+    emoji.textContent = '🚀'; title.textContent = 'Market Mood: Bullish';
+    subtitle.textContent = `${posPct}% of today's signals are positive`;
+  } else if (counts.Negative > counts.Positive) {
+    emoji.textContent = '📉'; title.textContent = 'Market Mood: Bearish';
+    subtitle.textContent = `${negPct}% of today's signals are negative`;
+  } else {
+    emoji.textContent = '😐'; title.textContent = 'Market Mood: Neutral';
+    subtitle.textContent = 'Mixed signals today';
+  }
+  ratio.innerHTML = `<span class="pos">● ${counts.Positive} Bullish</span><span class="neg">● ${counts.Negative} Bearish</span><span class="neu">● ${counts.Neutral} Mixed</span>`;
+}
+
+/* ─── Sentiment Timeline ─── */
+function renderTimeline(items) {
+  const chart = document.getElementById('timelineChart');
+  const days = {};
+  const today = new Date();
+  for (let i = 2; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days[d.toDateString()] = { Positive: 0, Negative: 0, Neutral: 0, label: i === 0 ? 'Today' : i === 1 ? 'Yesterday' : d.toLocaleDateString('en-IN', { weekday: 'short' }) };
+  }
+  items.forEach(it => {
+    const d = new Date(it.created_at).toDateString();
+    if (days[d]) {
+      const impact = it.short_term_impact || it.impact;
+      if (days[d][impact] !== undefined) days[d][impact]++;
+      else days[d].Neutral++;
+    }
+  });
+  const dayEntries = Object.entries(days);
+  const maxVal = Math.max(...dayEntries.map(([,v]) => Math.max(v.Positive, v.Negative, v.Neutral)), 1);
+  chart.innerHTML = dayEntries.map(([date, data]) => {
+    const posH = Math.round((data.Positive / maxVal) * 80);
+    const negH = Math.round((data.Negative / maxVal) * 80);
+    const neuH = Math.round((data.Neutral / maxVal) * 80);
+    return `<div class="timeline-day"><div class="timeline-bars"><div class="timeline-bar pos" style="height:${posH || 4}px" title="Bullish: ${data.Positive}"></div><div class="timeline-bar neg" style="height:${negH || 4}px" title="Bearish: ${data.Negative}"></div><div class="timeline-bar neu" style="height:${neuH || 4}px" title="Mixed: ${data.Neutral}"></div></div><span class="timeline-label">${data.label}</span></div>`;
+  }).join('');
+}
+
+/* ─── Market Snapshot ─── */
 const snapshotBody = document.getElementById('snapshotBody');
 const liveTimerEl = document.getElementById('liveTimer');
 
@@ -386,14 +575,7 @@ function renderSnapshot(items) {
     const price = Number(idx.price).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     const change = Number(idx.change || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const pct = Math.abs(Number(idx.change_percent)).toFixed(2);
-    return `
-      <tr style="animation: fadeInUp 0.3s ease-out ${i * 0.05}s both;">
-        <td class="index-name-cell">${idx.display_name || '—'}</td>
-        <td class="index-price-cell" style="text-align:right">${price}</td>
-        <td class="index-change-cell ${up ? 'up' : 'down'}" style="text-align:right">${up ? '+' : ''}${change}</td>
-        <td style="text-align:right"><span class="index-trend ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${pct}%</span></td>
-      </tr>
-    `;
+    return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.05}s both;"><td class="index-name-cell">${idx.display_name || '—'}</td><td class="index-price-cell" style="text-align:right">${price}</td><td class="index-change-cell ${up ? 'up' : 'down'}" style="text-align:right">${up ? '+' : ''}${change}</td><td style="text-align:right"><span class="index-trend ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${pct}%</span></td></tr>`;
   }).join('');
 }
 
@@ -402,20 +584,11 @@ async function loadIndices() {
     const res = await fetch(INDICES_URL);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-
-    // Handle single object, array, or wrapped { items: [...] }
     let items;
-    if (Array.isArray(data)) {
-      items = data;
-    } else if (data.items && Array.isArray(data.items)) {
-      items = data.items;
-    } else if (typeof data === 'object' && data !== null && data.symbol) {
-      // Single object response — wrap in array
-      items = [data];
-    } else {
-      items = [];
-    }
-
+    if (Array.isArray(data)) items = data;
+    else if (data.items && Array.isArray(data.items)) items = data.items;
+    else if (typeof data === 'object' && data !== null && data.symbol) items = [data];
+    else items = [];
     renderSnapshot(items);
     lastUpdateTime = Date.now();
   } catch (e) {
@@ -424,7 +597,6 @@ async function loadIndices() {
   }
 }
 
-/* ─── Live Timer (1 second) ─── */
 setInterval(() => {
   const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
   if (liveTimerEl) liveTimerEl.textContent = `Updated ${secs} sec ago`;
@@ -449,9 +621,13 @@ function updateStats(items) {
 const feedEl = document.getElementById('feed');
 const priceTicker = document.getElementById('tickerTrack');
 const lastUpdatedEl = document.getElementById('lastUpdated');
+const oldNewsToggle = document.getElementById('oldNewsToggle');
 
 function getFilteredItems() {
-  let items = allNewsItems.filter(it => isWithinTradingWindow(it.created_at));
+  let items = allNewsItems;
+  if (!showOldNews && isAfterMarketClose()) {
+    items = items.filter(it => !isOldNews(it.created_at));
+  }
   if (currentFilter !== 'all') {
     items = items.filter(it => impactClass(it.short_term_impact || it.impact) === currentFilter);
   }
@@ -464,6 +640,13 @@ function getFilteredItems() {
     );
   }
   return items;
+}
+
+function getActiveSymbols() {
+  const items = getFilteredItems();
+  const symbols = new Set();
+  items.forEach(it => { if (it.symbol) symbols.add(it.symbol); });
+  return symbols;
 }
 
 function renderNews() {
@@ -488,25 +671,7 @@ function renderNews() {
     const p = item.symbol && priceMap[item.symbol] ? priceMap[item.symbol] : null;
     const priceHtml = p ? `<span class="news-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>` : '';
     const changeHtml = p && p.change !== undefined ? `<span class="news-change ${Number(p.change) >= 0 ? 'up' : 'down'}">${Number(p.change) >= 0 ? '+' : ''}${Number(p.change).toFixed(2)}</span>` : '';
-    html += `
-      <div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.04}s">
-        <div class="news-card-top">
-          <div class="news-company-wrap">
-            <span class="news-company">${item.company_name || 'Unknown'}</span>
-            ${item.symbol ? `<span class="news-symbol">${item.symbol}</span>` : ''}
-            ${priceHtml}
-            ${changeHtml}
-          </div>
-          <span class="news-time">${fmtTime(item.created_at)}</span>
-        </div>
-        <p class="news-summary">${item.summary || ''}</p>
-        <div class="news-meta">
-          <span class="impact-tag ${impactClass(impact)}">${impact || '—'}</span>
-          ${item.confidence ? `<span class="impact-tag neutral">Confidence: ${item.confidence}</span>` : ''}
-          ${item.source_link ? `<a class="news-link" href="${item.source_link}" target="_blank" rel="noopener noreferrer">Source →</a>` : ''}
-        </div>
-      </div>
-    `;
+    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.04}s"><div class="news-card-top"><div class="news-company-wrap"><span class="news-company">${item.company_name || 'Unknown'}</span>${item.symbol ? `<span class="news-symbol">${item.symbol}</span>` : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(item.created_at)}</span></div><p class="news-summary">${item.summary || ''}</p><div class="news-meta"><span class="impact-tag ${impactClass(impact)}">${impact || '—'}</span>${item.confidence ? `<span class="impact-tag neutral">Confidence: ${item.confidence}</span>` : ''}${item.source_link ? `<a class="news-link" href="${item.source_link}" target="_blank" rel="noopener noreferrer">Source →</a>` : ''}</div></div>`;
   });
   feedEl.innerHTML = html;
 }
@@ -516,49 +681,51 @@ async function loadNews() {
     const res = await fetch(NEWS_URL);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-
-    // Handle single object, array, or wrapped { items: [...] }
-    if (Array.isArray(data)) {
-      allNewsItems = data;
-    } else if (data.items && Array.isArray(data.items)) {
-      allNewsItems = data.items;
-    } else if (typeof data === 'object' && data !== null) {
-      allNewsItems = [data];
-    } else {
-      allNewsItems = [];
-    }
-
+    if (Array.isArray(data)) allNewsItems = data;
+    else if (data.items && Array.isArray(data.items)) allNewsItems = data.items;
+    else if (typeof data === 'object' && data !== null) allNewsItems = [data];
+    else allNewsItems = [];
     updateStats(allNewsItems);
+    updateMood(allNewsItems);
+    renderTimeline(allNewsItems);
     renderNews();
     lastUpdatedEl.textContent = 'updated ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     lastUpdateTime = Date.now();
+    // Show/hide old news toggle based on market close
+    oldNewsToggle.classList.toggle('hidden', !isAfterMarketClose());
   } catch (e) {
     lastUpdatedEl.textContent = 'Connection lost — ' + e.message;
     console.error('[News]', e);
   }
 }
 
+/* ─── Old News Toggle ─── */
+document.getElementById('showOldNews').addEventListener('change', (e) => {
+  showOldNews = e.target.checked;
+  renderNews();
+  renderPrices(getPriceItems());
+});
+
 /* ─── Price Ticker ─── */
+function getPriceItems() {
+  const allPrices = Object.values(priceMap);
+  if (!showOldNews && isAfterMarketClose()) {
+    const activeSymbols = getActiveSymbols();
+    return allPrices.filter(p => activeSymbols.has(p.symbol));
+  }
+  return allPrices;
+}
+
 function renderPrices(items) {
   if (!items || items.length === 0) {
     priceTicker.innerHTML = '<span class="ticker-loading">No live prices available.</span>';
     return;
   }
-  // Build price lookup map for news cards
-  priceMap = {};
-  items.forEach(p => { priceMap[p.symbol] = p; });
-  // Ticker shows ALL prices sorted A-Z (not filtered by news)
   items.sort((a, b) => a.symbol.localeCompare(b.symbol));
   const itemsHtml = items.map(p => {
     const up = Number(p.change_percent) >= 0;
     const change = Number(p.change || 0).toFixed(2);
-    return `
-      <span class="ticker-item">
-        <span class="ticker-symbol">${p.symbol}</span>
-        <span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
-        <span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span>
-      </span>
-    `;
+    return `<span class="ticker-item"><span class="ticker-symbol">${p.symbol}</span><span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span></span>`;
   }).join('');
   priceTicker.innerHTML = itemsHtml + itemsHtml;
 }
@@ -568,29 +735,47 @@ async function loadPrices() {
     const res = await fetch(PRICES_URL);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-
-    // Handle single object, array, or wrapped { items: [...] }
     let items;
-    if (Array.isArray(data)) {
-      items = data;
-    } else if (data.items && Array.isArray(data.items)) {
-      items = data.items;
-    } else if (typeof data === 'object' && data !== null && data.symbol) {
-      items = [data];
-    } else {
-      items = [];
-    }
-
-    renderPrices(items);
+    if (Array.isArray(data)) items = data;
+    else if (data.items && Array.isArray(data.items)) items = data.items;
+    else if (typeof data === 'object' && data !== null && data.symbol) items = [data];
+    else items = [];
+    priceMap = {};
+    items.forEach(p => { priceMap[p.symbol] = p; });
+    renderPrices(getPriceItems());
   } catch (e) {
     priceTicker.innerHTML = '<span class="ticker-loading">Could not load prices.</span>';
     console.error('[Prices]', e);
   }
 }
 
+/* ─── Global Headlines ─── */
+async function loadGlobalHeadlines() {
+  const container = document.getElementById('globalHeadlines');
+  try {
+    const res = await fetch(GLOBAL_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const articles = Array.isArray(data) ? data : (data.articles || []);
+    if (articles.length === 0) {
+      container.innerHTML = '<div class="global-loading">No global headlines available</div>';
+      return;
+    }
+    container.innerHTML = articles.slice(0, 5).map(article => {
+      const time = article.publishedAt ? new Date(article.publishedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+      const sourceName = article.source?.name || article.source || 'News';
+      const title = article.title || 'No title';
+      const url = article.url || '#';
+      return `<div class="global-item"><div class="global-source">${sourceName}</div><div class="global-headline"><a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a></div>${time ? `<div class="global-time">${time}</div>` : ''}</div>`;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="global-loading">Could not load global headlines</div>';
+    console.error('[Global]', e);
+  }
+}
+
 /* ─── Search & Filter Handlers ─── */
-const searchInput = document.getElementById('searchInput');
-searchInput.addEventListener('input', (e) => {
+document.getElementById('searchInput').addEventListener('input', (e) => {
   currentSearch = e.target.value;
   renderNews();
 });
@@ -616,17 +801,14 @@ document.getElementById('statsGrid').addEventListener('keydown', (e) => {
 const form = document.getElementById('contactForm');
 const statusEl = document.getElementById('cf-status');
 const submitBtn = document.getElementById('cf-submit');
-
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   submitBtn.disabled = true;
   statusEl.textContent = 'Sending…';
   statusEl.className = 'contact-status';
-
   const name = document.getElementById('cf-name').value.trim();
   const email = document.getElementById('cf-email').value.trim();
   const message = document.getElementById('cf-message').value.trim();
-
   try {
     const res = await fetch(CONTACT_URL, {
       method: 'POST',
@@ -649,18 +831,16 @@ form.addEventListener('submit', async (e) => {
 /* ─── Init ─── */
 document.querySelector('.stat-card[data-filter="all"]').classList.add('active');
 
-// Load sequentially: news first, then prices (needs news symbols), then indices
 async function init() {
   await loadNews();
   await loadPrices();
   await loadIndices();
+  await loadGlobalHeadlines();
 }
 init();
 
-// Refresh intervals (staggered)
 setInterval(loadNews, REFRESH_MS);
-setInterval(loadPrices, REFRESH_MS + 5000);
+setInterval(loadPrices, REFRESH_MS + 1000);
 setInterval(loadIndices, 30000);
 </script>
 </body>
-</html>
