@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -172,16 +173,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
 
 /* Global Headlines */
-.global-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 24px; }
-.global-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-.global-title .globe { font-size: 16px; }
-.global-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
-.global-item:last-child { border-bottom: none; }
+.global-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-bottom: 24px; overflow: hidden; }
+.global-toggle { width: 100%; background: none; border: none; padding: 16px 20px; font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background var(--transition); }
+.global-toggle:hover { background: var(--surface-hover); }
+.global-chevron { font-size: 12px; color: var(--text-muted); transition: transform var(--transition); }
+.global-chevron.open { transform: rotate(180deg); }
+.global-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; padding: 0 20px; }
+.global-content.open { max-height: 800px; padding: 0 20px 20px; }
+.global-content.hidden { max-height: 0; padding: 0 20px; }
+.global-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px; transition: transform var(--transition), box-shadow var(--transition); }
+.global-card:last-child { margin-bottom: 0; }
+.global-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .global-source { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-.global-headline { font-size: 14px; line-height: 1.5; color: var(--text); font-weight: 500; }
-.global-headline a { color: var(--indigo); text-decoration: none; }
+.global-headline { font-size: 13px; line-height: 1.5; color: var(--text); font-weight: 500; }
+.global-headline a { color: var(--black); text-decoration: none; }
 .global-headline a:hover { text-decoration: underline; }
-.global-time { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.global-time { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 6px; }
 .global-loading { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
 
 /* Search & Filters */
@@ -370,8 +377,13 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
     <!-- Global Headlines -->
     <div class="global-section" id="globalSection">
-      <div class="global-title"><span class="globe">🌍</span> Global Headlines</div>
-      <div id="globalHeadlines"><div class="global-loading">Loading global news…</div></div>
+      <button class="global-toggle" id="globalToggle">
+        <span>🌍 Global Headlines</span>
+        <span class="global-chevron" id="globalChevron">▼</span>
+      </button>
+      <div class="global-content hidden" id="globalContent">
+        <div id="globalHeadlines"><div class="global-loading">Loading global news…</div></div>
+      </div>
     </div>
 
     <!-- Search -->
@@ -699,6 +711,17 @@ async function loadNews() {
   }
 }
 
+/* ─── Global Headlines Toggle ─── */
+const globalToggle = document.getElementById('globalToggle');
+const globalContent = document.getElementById('globalContent');
+const globalChevron = document.getElementById('globalChevron');
+globalToggle.addEventListener('click', () => {
+  const isOpen = globalContent.classList.toggle('open');
+  globalContent.classList.toggle('hidden', !isOpen);
+  globalChevron.classList.toggle('open', isOpen);
+});
+
+
 /* ─── Old News Toggle ─── */
 document.getElementById('showOldNews').addEventListener('change', (e) => {
   showOldNews = e.target.checked;
@@ -766,7 +789,7 @@ async function loadGlobalHeadlines() {
       const sourceName = article.source?.name || article.source || 'News';
       const title = article.title || 'No title';
       const url = article.url || '#';
-      return `<div class="global-item"><div class="global-source">${sourceName}</div><div class="global-headline"><a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a></div>${time ? `<div class="global-time">${time}</div>` : ''}</div>`;
+      return `<div class="global-card"><div class="global-source">${sourceName}</div><div class="global-headline"><a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a></div>${time ? `<div class="global-time">${time}</div>` : ''}</div>`;
     }).join('');
   } catch (e) {
     container.innerHTML = '<div class="global-loading">Could not load global headlines</div>';
