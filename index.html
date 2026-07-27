@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,7 +75,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
 /* Ticker */
 .ticker-wrap { background: var(--indigo-dark); overflow: hidden; white-space: nowrap; padding: 10px 0; border-bottom: 3px solid #F5A623; }
-.ticker-track { display: inline-flex; animation: scroll-ticker 50s linear infinite; will-change: transform; }
+.ticker-track { display: inline-flex; animation: scroll-ticker linear infinite; will-change: transform; }
 .ticker-wrap:hover .ticker-track { animation-play-state: paused; }
 @keyframes scroll-ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 .ticker-item { display: inline-flex; align-items: baseline; gap: 8px; padding: 0 24px; font-family: var(--font-mono); font-size: 13px; color: #fff; border-right: 1px solid rgba(255,255,255,0.12); }
@@ -751,6 +750,10 @@ function renderPrices(items) {
     return `<span class="ticker-item"><span class="ticker-symbol">${p.symbol}</span><span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span></span>`;
   }).join('');
   priceTicker.innerHTML = itemsHtml + itemsHtml;
+  
+  // Dynamic speed: 4 seconds per company, minimum 20 seconds
+  const duration = Math.max(items.length * 4, 20);
+  priceTicker.style.animationDuration = duration + 's';
 }
 
 async function loadPrices() {
