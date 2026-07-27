@@ -457,7 +457,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         <div class="modal-field">
           <label for="settingApiBase">n8n API Base URL</label>
           <input type="url" id="settingApiBase" placeholder="https://your-tunnel.trycloudflare.com/webhook">
-          <span class="hint">Paste your Cloudflare tunnel URL + /webhook path</span>
+          <span class="hint">Central config loaded from <code>/config.json</code>. You can override per-device here.</span>
         </div>
         <div class="modal-field">
           <label for="settingNewsKey">NewsAPI Key</label>
@@ -466,7 +466,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-secondary" id="btnResetDefaults">Reset Defaults</button>
+        <button class="btn-secondary" id="btnClearOverride">Clear Override</button>
         <button class="btn-primary" id="btnSaveSettings">Save & Reload</button>
       </div>
     </div>
@@ -474,27 +474,52 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  CONFIG — loaded from localStorage or falls back to defaults
+//  CONFIG — centralized via /config.json, overridable per-device
 // ═══════════════════════════════════════════════════════════════
+
 const DEFAULT_API_BASE = "https://experiences-rocks-vol-skiing.trycloudflare.com/webhook";
 const DEFAULT_NEWS_KEY = "a4fac4b78f404e5ab4ab09156144834d";
 
-function getConfig() {
-  return {
-    apiBase: localStorage.getItem('mp_api_base') || DEFAULT_API_BASE,
-    newsKey: localStorage.getItem('mp_news_key') || DEFAULT_NEWS_KEY
-  };
+let API_BASE = DEFAULT_API_BASE;
+let NEWSAPI_KEY = DEFAULT_NEWS_KEY;
+
+async function initConfig() {
+  // 1. Start with hardcoded defaults
+  let config = { apiBase: DEFAULT_API_BASE, newsKey: DEFAULT_NEWS_KEY };
+
+  // 2. Try to fetch centralized config.json from the server
+  try {
+    const res = await fetch('/config.json');
+    if (res.ok) {
+      const json = await res.json();
+      if (json.apiBase) config.apiBase = json.apiBase;
+      if (json.newsApiKey) config.newsKey = json.newsApiKey;
+    }
+  } catch (e) {
+    console.log('[Config] No config.json found, using defaults');
+  }
+
+  // 3. Check for localStorage per-device overrides
+  const lsBase = localStorage.getItem('mp_api_base');
+  const lsKey = localStorage.getItem('mp_news_key');
+  if (lsBase) config.apiBase = lsBase;
+  if (lsKey) config.newsKey = lsKey;
+
+  API_BASE = config.apiBase;
+  NEWSAPI_KEY = config.newsKey;
+
+  // Update settings modal to show currently active values
+  const elBase = document.getElementById('settingApiBase');
+  const elKey = document.getElementById('settingNewsKey');
+  if (elBase) elBase.value = config.apiBase;
+  if (elKey) elKey.value = config.newsKey;
 }
 
-let cfg = getConfig();
-let API_BASE = cfg.apiBase;
-let NEWSAPI_KEY = cfg.newsKey;
-
-const NEWS_URL     = API_BASE + "/news-feed";
-const PRICES_URL   = API_BASE + "/price-feed";
-const INDICES_URL  = API_BASE + "/index-feed";
-const GLOBAL_URL   = API_BASE + "/global-news";
-const CONTACT_URL  = API_BASE + "/contact-message";
+const NEWS_URL     = () => API_BASE + "/news-feed";
+const PRICES_URL   = () => API_BASE + "/price-feed";
+const INDICES_URL  = () => API_BASE + "/index-feed";
+const GLOBAL_URL   = () => API_BASE + "/global-news";
+const CONTACT_URL  = () => API_BASE + "/contact-message";
 const REFRESH_MS   = 60000;
 
 let allNewsItems = [];
@@ -511,12 +536,9 @@ const modalClose = document.getElementById('modalClose');
 const settingApiBase = document.getElementById('settingApiBase');
 const settingNewsKey = document.getElementById('settingNewsKey');
 const btnSaveSettings = document.getElementById('btnSaveSettings');
-const btnResetDefaults = document.getElementById('btnResetDefaults');
+const btnClearOverride = document.getElementById('btnClearOverride');
 
 function openSettings() {
-  const c = getConfig();
-  settingApiBase.value = c.apiBase;
-  settingNewsKey.value = c.newsKey;
   settingsModal.classList.add('open');
 }
 function closeSettings() {
@@ -540,7 +562,7 @@ btnSaveSettings.addEventListener('click', () => {
   window.location.reload();
 });
 
-btnResetDefaults.addEventListener('click', () => {
+btnClearOverride.addEventListener('click', () => {
   localStorage.removeItem('mp_api_base');
   localStorage.removeItem('mp_news_key');
   window.location.reload();
@@ -695,7 +717,7 @@ function renderSnapshot(items) {
 
 async function loadIndices() {
   try {
-    const res = await fetch(INDICES_URL);
+    const res = await fetch(INDICES_URL());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     let items;
@@ -792,7 +814,7 @@ function renderNews() {
 
 async function loadNews() {
   try {
-    const res = await fetch(NEWS_URL);
+    const res = await fetch(NEWS_URL());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (Array.isArray(data)) allNewsItems = data;
@@ -805,7 +827,6 @@ async function loadNews() {
     renderNews();
     lastUpdatedEl.textContent = 'updated ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     lastUpdateTime = Date.now();
-    // Show/hide old news toggle based on market close
     oldNewsToggle.classList.toggle('hidden', !isAfterMarketClose());
   } catch (e) {
     lastUpdatedEl.textContent = 'Connection lost — ' + e.message;
@@ -854,14 +875,13 @@ function renderPrices(items) {
   }).join('');
   priceTicker.innerHTML = itemsHtml + itemsHtml;
   
-  // Dynamic speed: 4 seconds per company, minimum 20 seconds
   const duration = Math.max(items.length * 4, 20);
   priceTicker.style.animationDuration = duration + 's';
 }
 
 async function loadPrices() {
   try {
-    const res = await fetch(PRICES_URL);
+    const res = await fetch(PRICES_URL());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     let items;
@@ -882,7 +902,7 @@ async function loadPrices() {
 async function loadGlobalHeadlines() {
   const container = document.getElementById('globalHeadlines');
   try {
-    const res = await fetch(GLOBAL_URL);
+    const res = await fetch(GLOBAL_URL());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const articles = Array.isArray(data) ? data : (data.articles || []);
@@ -939,7 +959,7 @@ form.addEventListener('submit', async (e) => {
   const email = document.getElementById('cf-email').value.trim();
   const message = document.getElementById('cf-message').value.trim();
   try {
-    const res = await fetch(CONTACT_URL, {
+    const res = await fetch(CONTACT_URL(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, message })
@@ -961,6 +981,7 @@ form.addEventListener('submit', async (e) => {
 document.querySelector('.stat-card[data-filter="all"]').classList.add('active');
 
 async function init() {
+  await initConfig();
   await loadNews();
   await loadPrices();
   await loadIndices();
