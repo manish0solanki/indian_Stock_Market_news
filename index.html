@@ -66,12 +66,34 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .topbar-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 .topbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
 .topbar-brand .diamond { width: 10px; height: 10px; background: #F5A623; transform: rotate(45deg); display: inline-block; border-radius: 1px; }
-.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
 .topbar-status { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: rgba(255,255,255,0.75); }
 .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; animation: pulse 2.5s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); } 70% { box-shadow: 0 0 0 6px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
-.theme-toggle { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 36px; height: 36px; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background var(--transition); }
-.theme-toggle:hover { background: rgba(255,255,255,0.25); }
+.theme-toggle, .settings-toggle { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 36px; height: 36px; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background var(--transition); }
+.theme-toggle:hover, .settings-toggle:hover { background: rgba(255,255,255,0.25); }
+
+/* Settings Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15,15,26,0.6); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.25s ease; }
+.modal-overlay.open { display: flex; opacity: 1; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 420px; box-shadow: var(--shadow-lg); transform: translateY(10px); transition: transform 0.25s ease; }
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+.modal-close { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); transition: background var(--transition); }
+.modal-close:hover { background: var(--bg); color: var(--text); }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-field { display: flex; flex-direction: column; gap: 6px; }
+.modal-field label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.modal-field input, .modal-field textarea { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; color: var(--text); font-family: var(--font-body); font-size: 14px; transition: border-color var(--transition), box-shadow var(--transition); }
+.modal-field input:focus, .modal-field textarea:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
+.modal-field .hint { font-size: 12px; color: var(--text-muted); }
+.modal-actions { display: flex; gap: 10px; padding: 0 20px 20px; }
+.modal-actions button { flex: 1; padding: 11px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; cursor: pointer; transition: background var(--transition), transform var(--transition); border: none; }
+.modal-actions .btn-primary { background: var(--indigo); color: #fff; }
+.modal-actions .btn-primary:hover { background: var(--indigo-dark); transform: translateY(-1px); }
+.modal-actions .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.modal-actions .btn-secondary:hover { background: var(--surface-hover); }
 
 /* Ticker */
 .ticker-wrap { background: var(--indigo-dark); overflow: hidden; white-space: nowrap; padding: 10px 0; border-bottom: 3px solid #F5A623; }
@@ -275,6 +297,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   .news-card-top { flex-direction: column; gap: 4px; }
   .news-time { order: -1; margin-top: 0; }
   .topbar-inner { flex-direction: column; gap: 4px; align-items: flex-start; }
+  .topbar-right { align-self: flex-end; }
 }
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -293,6 +316,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     <div class="topbar-inner">
       <span class="topbar-brand"><span class="diamond"></span>MarketPulse</span>
       <div class="topbar-right">
+        <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints">⚙️</button>
         <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">🌙</button>
         <span class="topbar-status"><span class="pulse-dot"></span><span id="lastUpdated">connecting…</span></span>
       </div>
@@ -422,12 +446,49 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
   <footer class="site-footer"><span>MarketPulse — automated news, human judgment still required.</span></footer>
 
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>API Settings</h3>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="settingApiBase">n8n API Base URL</label>
+          <input type="url" id="settingApiBase" placeholder="https://your-tunnel.trycloudflare.com/webhook">
+          <span class="hint">Paste your Cloudflare tunnel URL + /webhook path</span>
+        </div>
+        <div class="modal-field">
+          <label for="settingNewsKey">NewsAPI Key</label>
+          <input type="text" id="settingNewsKey" placeholder="a4fac4b78f404e5ab4ab09156144834d">
+          <span class="hint">Only needed if you use NewsAPI directly in the browser</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btnResetDefaults">Reset Defaults</button>
+        <button class="btn-primary" id="btnSaveSettings">Save & Reload</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  CONFIG
+//  CONFIG — loaded from localStorage or falls back to defaults
 // ═══════════════════════════════════════════════════════════════
-const API_BASE = "https://experiences-rocks-vol-skiing.trycloudflare.com/webhook";
-const NEWSAPI_KEY = "a4fac4b78f404e5ab4ab09156144834d";
+const DEFAULT_API_BASE = "https://experiences-rocks-vol-skiing.trycloudflare.com/webhook";
+const DEFAULT_NEWS_KEY = "a4fac4b78f404e5ab4ab09156144834d";
+
+function getConfig() {
+  return {
+    apiBase: localStorage.getItem('mp_api_base') || DEFAULT_API_BASE,
+    newsKey: localStorage.getItem('mp_news_key') || DEFAULT_NEWS_KEY
+  };
+}
+
+let cfg = getConfig();
+let API_BASE = cfg.apiBase;
+let NEWSAPI_KEY = cfg.newsKey;
 
 const NEWS_URL     = API_BASE + "/news-feed";
 const PRICES_URL   = API_BASE + "/price-feed";
@@ -442,6 +503,48 @@ let currentSearch = '';
 let lastUpdateTime = Date.now();
 let priceMap = {};
 let showOldNews = false;
+
+/* ─── Settings Modal ─── */
+const settingsModal = document.getElementById('settingsModal');
+const settingsToggle = document.getElementById('settingsToggle');
+const modalClose = document.getElementById('modalClose');
+const settingApiBase = document.getElementById('settingApiBase');
+const settingNewsKey = document.getElementById('settingNewsKey');
+const btnSaveSettings = document.getElementById('btnSaveSettings');
+const btnResetDefaults = document.getElementById('btnResetDefaults');
+
+function openSettings() {
+  const c = getConfig();
+  settingApiBase.value = c.apiBase;
+  settingNewsKey.value = c.newsKey;
+  settingsModal.classList.add('open');
+}
+function closeSettings() {
+  settingsModal.classList.remove('open');
+}
+settingsToggle.addEventListener('click', openSettings);
+modalClose.addEventListener('click', closeSettings);
+settingsModal.addEventListener('click', (e) => {
+  if (e.target === settingsModal) closeSettings();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && settingsModal.classList.contains('open')) closeSettings();
+});
+
+btnSaveSettings.addEventListener('click', () => {
+  const base = settingApiBase.value.trim();
+  const key = settingNewsKey.value.trim();
+  if (!base) { alert('Please enter an API Base URL'); return; }
+  localStorage.setItem('mp_api_base', base);
+  localStorage.setItem('mp_news_key', key);
+  window.location.reload();
+});
+
+btnResetDefaults.addEventListener('click', () => {
+  localStorage.removeItem('mp_api_base');
+  localStorage.removeItem('mp_news_key');
+  window.location.reload();
+});
 
 /* ─── Dark Mode ─── */
 const themeToggle = document.getElementById('themeToggle');
@@ -870,3 +973,4 @@ setInterval(loadPrices, REFRESH_MS + 1000);
 setInterval(loadIndices, 30000);
 </script>
 </body>
+</html>
