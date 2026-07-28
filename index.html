@@ -8,55 +8,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --indigo: #2E1F82;
-  --indigo-dark: #1B134F;
-  --indigo-light: #4C3DB5;
-  --bg: #F3F4F8;
-  --surface: #FFFFFF;
-  --surface-hover: #FAFAFC;
-  --border: #E2E4EE;
-  --text: #0F0F1A;
-  --text-secondary: #5A5D6B;
-  --text-muted: #8B8FA3;
-  --positive: #0F8A3E;
-  --positive-bg: #E7F7EC;
-  --positive-light: #D1F2DA;
-  --negative: #C72B2B;
-  --negative-bg: #FCEBEB;
-  --negative-light: #F5D0D0;
-  --neutral: #B8860B;
-  --neutral-bg: #FBF3DF;
-  --neutral-light: #F5E6C0;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  --indigo: #2E1F82; --indigo-dark: #1B134F; --indigo-light: #4C3DB5;
+  --bg: #F3F4F8; --surface: #FFFFFF; --surface-hover: #FAFAFC; --border: #E2E4EE;
+  --text: #0F0F1A; --text-secondary: #5A5D6B; --text-muted: #8B8FA3;
+  --positive: #0F8A3E; --positive-bg: #E7F7EC; --positive-light: #D1F2DA;
+  --negative: #C72B2B; --negative-bg: #FCEBEB; --negative-light: #F5D0D0;
+  --neutral: #B8860B; --neutral-bg: #FBF3DF; --neutral-light: #F5E6C0;
+  --font-body: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono: 'JetBrains Mono','SF Mono',monospace;
   --shadow-sm: 0 1px 2px rgba(20,20,50,0.04);
   --shadow-md: 0 4px 12px rgba(20,20,50,0.06);
   --shadow-lg: 0 8px 24px rgba(20,20,50,0.08);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
   --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
 }
 [data-theme="dark"] {
-  --bg: #0F0F1A;
-  --surface: #1A1A2E;
-  --surface-hover: #222240;
-  --border: #2A2A4A;
-  --text: #E8E8F0;
-  --text-secondary: #A0A0B8;
-  --text-muted: #6B6B8A;
-  --positive: #4ADE80;
-  --positive-bg: rgba(74,222,128,0.12);
-  --positive-light: rgba(74,222,128,0.2);
-  --negative: #F87171;
-  --negative-bg: rgba(248,113,113,0.12);
-  --negative-light: rgba(248,113,113,0.2);
-  --neutral: #F5A623;
-  --neutral-bg: rgba(245,166,35,0.12);
-  --neutral-light: rgba(245,166,35,0.2);
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --bg: #0F0F1A; --surface: #1A1A2E; --surface-hover: #222240; --border: #2A2A4A;
+  --text: #E8E8F0; --text-secondary: #A0A0B8; --text-muted: #6B6B8A;
+  --positive: #4ADE80; --positive-bg: rgba(74,222,128,0.12); --positive-light: rgba(74,222,128,0.2);
+  --negative: #F87171; --negative-bg: rgba(248,113,113,0.12); --negative-light: rgba(248,113,113,0.2);
+  --neutral: #F5A623; --neutral-bg: rgba(245,166,35,0.12); --neutral-light: rgba(245,166,35,0.2);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.4); --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s, color 0.3s; }
@@ -193,6 +165,25 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stat-card.total .stat-value { color: var(--indigo); }
 .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
 
+/* Stock Detail Card */
+.stock-detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-md); animation: fadeInUp 0.4s ease-out; display: none; }
+.stock-detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
+.stock-name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+.stock-symbol-tag { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--indigo); background: rgba(46,31,130,0.08); padding: 3px 10px; border-radius: 20px; margin-right: 8px; }
+[data-theme="dark"] .stock-symbol-tag { background: rgba(140,130,255,0.15); color: #A5A0FF; }
+.stock-sector { font-size: 13px; color: var(--text-secondary); }
+.stock-price-block { text-align: right; }
+.stock-price { font-family: var(--font-mono); font-size: 28px; font-weight: 700; display: block; letter-spacing: -0.02em; }
+.stock-change { font-family: var(--font-mono); font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-top: 4px; }
+.stock-change.up { color: var(--positive); background: var(--positive-bg); }
+.stock-change.down { color: var(--negative); background: var(--negative-bg); }
+.stock-metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.metric { display: flex; flex-direction: column; gap: 4px; }
+.metric-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.metric-value { font-family: var(--font-mono); font-size: 15px; font-weight: 600; color: var(--text); }
+.metric.promoters .metric-value { color: var(--indigo); }
+.stock-search-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
 /* Global Headlines */
 .global-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-bottom: 24px; overflow: hidden; }
 .global-toggle { width: 100%; background: none; border: none; padding: 16px 20px; font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background var(--transition); }
@@ -213,12 +204,23 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .global-loading { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
 
 /* Search & Filters */
-.controls-bar { display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; align-items: center; }
+.controls-bar { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
 .search-wrap { position: relative; flex: 1; min-width: 220px; max-width: 400px; }
 .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .search-input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px 10px 38px; font-size: 14px; color: var(--text); font-family: var(--font-body); transition: border-color var(--transition), box-shadow var(--transition); }
 .search-input:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
 .search-input::placeholder { color: var(--text-muted); }
+.search-dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 50; max-height: 260px; overflow-y: auto; display: none; }
+.search-dropdown.open { display: block; }
+.search-dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background var(--transition); }
+.search-dropdown-item:last-child { border-bottom: none; }
+.search-dropdown-item:hover { background: var(--surface-hover); }
+.search-dropdown-item .dd-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.search-dropdown-item .dd-symbol { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); background: var(--bg); padding: 2px 7px; border-radius: 4px; }
+.search-dropdown-empty { padding: 14px; font-size: 13px; color: var(--text-muted); text-align: center; }
+.search-btn { background: var(--indigo); color: #fff; border: none; border-radius: var(--radius-md); padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background var(--transition), transform var(--transition); white-space: nowrap; }
+.search-btn:hover { background: var(--indigo-dark); transform: translateY(-1px); }
+.search-btn:active { transform: translateY(0); }
 
 /* Old News Toggle */
 .old-news-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px; background: var(--surface-hover); border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: background var(--transition); }
@@ -288,6 +290,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   .snapshot-right { flex: 1 1 auto; width: 100%; }
   .stats-grid { grid-template-columns: repeat(4, 1fr); }
   .mood-banner { flex-direction: column; gap: 12px; text-align: center; }
+  .stock-metrics-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -298,6 +301,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   .news-time { order: -1; margin-top: 0; }
   .topbar-inner { flex-direction: column; gap: 4px; align-items: flex-start; }
   .topbar-right { align-self: flex-end; }
+  .stock-detail-header { flex-direction: column; gap: 8px; }
+  .stock-price-block { text-align: left; }
+  .stock-metrics-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -307,6 +313,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   .snapshot-title { font-size: 15px; }
   .news-card { padding: 14px 16px; }
   .mood-emoji { font-size: 32px; }
+  .stock-metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .stock-name { font-size: 18px; }
+  .stock-price { font-size: 22px; }
 }
 </style>
 </head>
@@ -409,12 +418,35 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       </div>
     </div>
 
+    <!-- Stock Detail Card -->
+    <div class="stock-detail-card" id="stockDetailCard">
+      <div class="stock-detail-header">
+        <div>
+          <div class="stock-name" id="sdName">—</div>
+          <div style="margin-top:4px;">
+            <span class="stock-symbol-tag" id="sdSymbol">—</span>
+            <span class="stock-sector" id="sdSector">—</span>
+          </div>
+        </div>
+        <div class="stock-price-block">
+          <span class="stock-price" id="sdPrice">—</span>
+          <span class="stock-change" id="sdChange">—</span>
+        </div>
+      </div>
+      <div class="stock-metrics-grid" id="sdMetrics">
+        <!-- injected via JS -->
+      </div>
+      <div class="stock-search-hint" id="sdHint"></div>
+    </div>
+
     <!-- Search -->
     <div class="controls-bar">
-      <div class="search-wrap">
+      <div class="search-wrap" style="position:relative;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
         <input type="text" id="searchInput" class="search-input" placeholder="Search company, symbol, or keyword…" autocomplete="off">
+        <div class="search-dropdown" id="searchDropdown"></div>
       </div>
+      <button class="search-btn" id="searchBtn">Search</button>
     </div>
 
     <!-- Old News Toggle -->
@@ -476,7 +508,6 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG — centralized via /config.json, overridable per-device
 // ═══════════════════════════════════════════════════════════════
-
 const DEFAULT_API_BASE = "https://experiences-rocks-vol-skiing.trycloudflare.com/webhook";
 const DEFAULT_NEWS_KEY = "a4fac4b78f404e5ab4ab09156144834d";
 
@@ -484,10 +515,7 @@ let API_BASE = DEFAULT_API_BASE;
 let NEWSAPI_KEY = DEFAULT_NEWS_KEY;
 
 async function initConfig() {
-  // 1. Start with hardcoded defaults
   let config = { apiBase: DEFAULT_API_BASE, newsKey: DEFAULT_NEWS_KEY };
-
-  // 2. Try to fetch centralized config.json from the server
   try {
     const res = await fetch('/config.json');
     if (res.ok) {
@@ -495,20 +523,13 @@ async function initConfig() {
       if (json.apiBase) config.apiBase = json.apiBase;
       if (json.newsApiKey) config.newsKey = json.newsApiKey;
     }
-  } catch (e) {
-    console.log('[Config] No config.json found, using defaults');
-  }
-
-  // 3. Check for localStorage per-device overrides
+  } catch (e) { console.log('[Config] No config.json, using defaults'); }
   const lsBase = localStorage.getItem('mp_api_base');
   const lsKey = localStorage.getItem('mp_news_key');
   if (lsBase) config.apiBase = lsBase;
   if (lsKey) config.newsKey = lsKey;
-
   API_BASE = config.apiBase;
   NEWSAPI_KEY = config.newsKey;
-
-  // Update settings modal to show currently active values
   const elBase = document.getElementById('settingApiBase');
   const elKey = document.getElementById('settingNewsKey');
   if (elBase) elBase.value = config.apiBase;
@@ -520,6 +541,8 @@ const PRICES_URL   = () => API_BASE + "/price-feed";
 const INDICES_URL  = () => API_BASE + "/index-feed";
 const GLOBAL_URL   = () => API_BASE + "/global-news";
 const CONTACT_URL  = () => API_BASE + "/contact-message";
+const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
+const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 const REFRESH_MS   = 60000;
 
 let allNewsItems = [];
@@ -528,6 +551,7 @@ let currentSearch = '';
 let lastUpdateTime = Date.now();
 let priceMap = {};
 let showOldNews = false;
+let stockSearchDebounce = null;
 
 /* ─── Settings Modal ─── */
 const settingsModal = document.getElementById('settingsModal');
@@ -538,20 +562,12 @@ const settingNewsKey = document.getElementById('settingNewsKey');
 const btnSaveSettings = document.getElementById('btnSaveSettings');
 const btnClearOverride = document.getElementById('btnClearOverride');
 
-function openSettings() {
-  settingsModal.classList.add('open');
-}
-function closeSettings() {
-  settingsModal.classList.remove('open');
-}
+function openSettings() { settingsModal.classList.add('open'); }
+function closeSettings() { settingsModal.classList.remove('open'); }
 settingsToggle.addEventListener('click', openSettings);
 modalClose.addEventListener('click', closeSettings);
-settingsModal.addEventListener('click', (e) => {
-  if (e.target === settingsModal) closeSettings();
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && settingsModal.classList.contains('open')) closeSettings();
-});
+settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsModal.classList.contains('open')) closeSettings(); });
 
 btnSaveSettings.addEventListener('click', () => {
   const base = settingApiBase.value.trim();
@@ -561,7 +577,6 @@ btnSaveSettings.addEventListener('click', () => {
   localStorage.setItem('mp_news_key', key);
   window.location.reload();
 });
-
 btnClearOverride.addEventListener('click', () => {
   localStorage.removeItem('mp_api_base');
   localStorage.removeItem('mp_news_key');
@@ -592,8 +607,7 @@ function fmtTime(iso) {
 function fmtDateHeading(iso) {
   const d = new Date(iso);
   const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
+  const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
   const sameDay = (a, b) => a.toDateString() === b.toDateString();
   if (sameDay(d, today)) return 'Today';
   if (sameDay(d, yesterday)) return 'Yesterday';
@@ -614,31 +628,33 @@ function animateValue(el, start, end, duration) {
   }
   requestAnimationFrame(step);
 }
+function fmtNum(n, frac=2) {
+  if (n === undefined || n === null || n === '') return '—';
+  const num = Number(n);
+  if (isNaN(num)) return String(n);
+  if (Math.abs(num) >= 1e7) return (num / 1e7).toFixed(frac) + ' Cr';
+  if (Math.abs(num) >= 1e5) return (num / 1e5).toFixed(frac) + ' L';
+  return num.toLocaleString('en-IN', { minimumFractionDigits: frac, maximumFractionDigits: frac });
+}
+function fmtPct(n) {
+  if (n === undefined || n === null || n === '') return '—';
+  const num = Number(n);
+  if (isNaN(num)) return String(n);
+  const sign = num >= 0 ? '+' : '';
+  return sign + num.toFixed(2) + '%';
+}
 
 /* ─── Market Close Logic ─── */
-function getMarketClose() {
-  const now = new Date();
-  const close = new Date(now);
-  close.setHours(15, 30, 0, 0);
-  return close;
-}
-function isAfterMarketClose() {
-  return new Date() > getMarketClose();
-}
+function getMarketClose() { const now = new Date(); const close = new Date(now); close.setHours(15,30,0,0); return close; }
+function isAfterMarketClose() { return new Date() > getMarketClose(); }
 function isWithinTradingWindow(isoDate) {
   const itemDate = new Date(isoDate);
   const now = new Date();
   const marketClose = getMarketClose();
-  const cutoff = now < marketClose
-    ? new Date(marketClose.getTime() - 24 * 60 * 60 * 1000)
-    : marketClose;
+  const cutoff = now < marketClose ? new Date(marketClose.getTime() - 24*60*60*1000) : marketClose;
   return itemDate >= cutoff;
 }
-function isOldNews(isoDate) {
-  const itemDate = new Date(isoDate);
-  const marketClose = getMarketClose();
-  return itemDate < marketClose;
-}
+function isOldNews(isoDate) { const itemDate = new Date(isoDate); const marketClose = getMarketClose(); return itemDate < marketClose; }
 
 /* ─── Market Mood ─── */
 function updateMood(items) {
@@ -675,8 +691,7 @@ function renderTimeline(items) {
   const days = {};
   const today = new Date();
   for (let i = 2; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
+    const d = new Date(today); d.setDate(d.getDate() - i);
     days[d.toDateString()] = { Positive: 0, Negative: 0, Neutral: 0, label: i === 0 ? 'Today' : i === 1 ? 'Yesterday' : d.toLocaleDateString('en-IN', { weekday: 'short' }) };
   }
   items.forEach(it => {
@@ -844,7 +859,6 @@ globalToggle.addEventListener('click', () => {
   globalChevron.classList.toggle('open', isOpen);
 });
 
-
 /* ─── Old News Toggle ─── */
 document.getElementById('showOldNews').addEventListener('change', (e) => {
   showOldNews = e.target.checked;
@@ -874,7 +888,6 @@ function renderPrices(items) {
     return `<span class="ticker-item"><span class="ticker-symbol">${p.symbol}</span><span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span></span>`;
   }).join('');
   priceTicker.innerHTML = itemsHtml + itemsHtml;
-  
   const duration = Math.max(items.length * 4, 20);
   priceTicker.style.animationDuration = duration + 's';
 }
@@ -923,75 +936,220 @@ async function loadGlobalHeadlines() {
   }
 }
 
-/* ─── Search & Filter Handlers ─── */
-document.getElementById('searchInput').addEventListener('input', (e) => {
-  currentSearch = e.target.value;
-  renderNews();
-});
+/* ─── Stock Search from NSE_TESTING Sheet ─── */
+const stockDetailCard = document.getElementById('stockDetailCard');
+const sdName = document.getElementById('sdName');
+const sdSymbol = document.getElementById('sdSymbol');
+const sdSector = document.getElementById('sdSector');
+const sdPrice = document.getElementById('sdPrice');
+const sdChange = document.getElementById('sdChange');
+const sdMetrics = document.getElementById('sdMetrics');
+const sdHint = document.getElementById('sdHint');
 
-document.getElementById('statsGrid').addEventListener('click', (e) => {
-  const card = e.target.closest('.stat-card');
-  if (!card) return;
-  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
-  card.classList.add('active');
-  currentFilter = card.dataset.filter;
-  renderNews();
-});
+function renderStockDetail(stock) {
+  if (!stock) {
+    stockDetailCard.style.display = 'none';
+    return;
+  }
+  sdName.textContent = stock.company_name || stock.name || '—';
+  sdSymbol.textContent = stock.symbol || '—';
+  sdSector.textContent = stock.sector || '—';
 
-document.getElementById('statsGrid').addEventListener('keydown', (e) => {
-  if (e.key !== 'Enter' && e.key !== ' ') return;
-  const card = e.target.closest('.stat-card');
-  if (!card) return;
-  e.preventDefault();
-  card.click();
+  const price = Number(stock.price);
+  const prevClose = Number(stock.previous_close);
+  let changePct = stock.change_percent;
+  if ((changePct === undefined || changePct === null || changePct === '') && !isNaN(price) && !isNaN(prevClose) && prevClose !== 0) {
+    changePct = ((price - prevClose) / prevClose) * 100;
+  }
+  const isUp = Number(changePct) >= 0;
+
+  sdPrice.textContent = !isNaN(price) ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+  sdChange.textContent = fmtPct(changePct);
+  sdChange.className = 'stock-change ' + (isUp ? 'up' : 'down');
+
+  const metrics = [
+    { label: 'Open', value: fmtNum(stock.open, 2) },
+    { label: 'Prev Close', value: fmtNum(stock.previous_close, 2) },
+    { label: 'Day High', value: fmtNum(stock.high, 2) },
+    { label: 'Day Low', value: fmtNum(stock.low, 2) },
+    { label: '52W High', value: fmtNum(stock.high_52w, 2) },
+    { label: '52W Low', value: fmtNum(stock.low_52w, 2) },
+    { label: 'Market Cap', value: fmtNum(stock.market_cap, 2) },
+    { label: 'P/E', value: fmtNum(stock.pe, 2) },
+    { label: 'ROE', value: fmtNum(stock.roe, 2) },
+    { label: 'ROCE', value: fmtNum(stock.roce, 2) },
+    { label: 'Book Value', value: fmtNum(stock.book_value, 2) },
+    { label: 'Face Value', value: fmtNum(stock.face_value, 2) },
+    { label: 'Div Yield', value: fmtNum(stock.dividend_yield, 2) + (stock.dividend_yield ? '%' : '') },
+    { label: 'Promoters (Latest)', value: fmtNum(stock.last_quarter_promoters, 2) + (stock.last_quarter_promoters ? '%' : ''), cls: 'promoters' },
+    { label: 'Promoters (Prev)', value: fmtNum(stock.previous_quarter_promoters, 2) + (stock.previous_quarter_promoters ? '%' : ''), cls: 'promoters' },
+    { label: 'Promoters Chg', value: fmtNum(stock.promoters_change, 2) + (stock.promoters_change ? '%' : ''), cls: 'promoters' }
+  ];
+
+  sdMetrics.innerHTML = metrics.map(m =>
+    `<div class="metric ${m.cls || ''}"><span class="metric-label">${m.label}</span><span class="metric-value">${m.value}</span></div>`
+  ).join('');
+
+  stockDetailCard.style.display = 'block';
+}
+
+async function searchStock(query) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (!query || query.length < 2) {
+    stockDetailCard.style.display = 'none';
+    sdHint.textContent = '';
+    if (dropdown) dropdown.classList.remove('open');
+    return;
+  }
+  sdHint.textContent = 'Searching…';
+  try {
+    const res = await fetch(STOCK_SEARCH_URL() + '?q=' + encodeURIComponent(query));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    let stocks = [];
+    if (Array.isArray(data)) stocks = data;
+    else if (data.items && Array.isArray(data.items)) stocks = data.items;
+    else if (typeof data === 'object' && data !== null && (data.symbol || data.company_name)) stocks = [data];
+
+    if (!dropdown) return;
+    dropdown.innerHTML = '';
+    if (stocks.length === 0) {
+      dropdown.innerHTML = '<div class="search-dropdown-empty">No matches found</div>';
+      dropdown.classList.add('open');
+      stockDetailCard.style.display = 'none';
+      sdHint.textContent = '';
+      return;
+    }
+
+    stocks.forEach(stock => {
+      const div = document.createElement('div');
+      div.className = 'search-dropdown-item';
+      div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
+      div.addEventListener('click', () => {
+        dropdown.classList.remove('open');
+        searchInput.value = stock.company_name || stock.symbol || '';
+        sdHint.textContent = 'Fetching live data…';
+        stockDetailCard.style.display = 'none';
+
+        fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(stock.symbol))
+          .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+          })
+          .then(data => {
+            renderStockDetail(data);
+            sdHint.textContent = '';
+          })
+          .catch(e => {
+            sdHint.textContent = 'Could not load live data. Showing cached.';
+            renderStockDetail(stock);
+            console.error('[Stock Detail]', e);
+          });
+      });
+      dropdown.appendChild(div);
+    });
+    dropdown.classList.add('open');
+    sdHint.textContent = `${stocks.length} result${stocks.length > 1 ? 's' : ''} — tap to select`;
+  } catch (e) {
+    stockDetailCard.style.display = 'none';
+    sdHint.textContent = 'Could not search stocks right now.';
+    if (dropdown) dropdown.classList.remove('open');
+    console.error('[Stock Search]', e);
+  }
+}
+
+/* ─── Search Input (news filter + debounced stock lookup) ─── */
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+
+function doSearch() {
+  currentSearch = searchInput.value;
+  renderNews();
+  renderPrices(getPriceItems());
+
+  clearTimeout(stockSearchDebounce);
+  const q = currentSearch.trim();
+  if (q.length < 2) {
+    stockDetailCard.style.display = 'none';
+    sdHint.textContent = '';
+    return;
+  }
+  stockSearchDebounce = setTimeout(() => searchStock(q), 400);
+}
+
+searchInput.addEventListener('input', doSearch);
+searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+searchBtn.addEventListener('click', doSearch);
+
+/* ─── Stat Card Filters ─── */
+const statCards = document.querySelectorAll('.stat-card');
+statCards.forEach(card => {
+  const activate = () => {
+    const filter = card.getAttribute('data-filter');
+    currentFilter = (currentFilter === filter) ? 'all' : filter;
+    statCards.forEach(c => c.classList.toggle('active', c.getAttribute('data-filter') === currentFilter));
+    renderNews();
+  };
+  card.addEventListener('click', activate);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+  });
 });
 
 /* ─── Contact Form ─── */
-const form = document.getElementById('contactForm');
-const statusEl = document.getElementById('cf-status');
-const submitBtn = document.getElementById('cf-submit');
-form.addEventListener('submit', async (e) => {
+const contactForm = document.getElementById('contactForm');
+const cfSubmit = document.getElementById('cf-submit');
+const cfStatus = document.getElementById('cf-status');
+contactForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  submitBtn.disabled = true;
-  statusEl.textContent = 'Sending…';
-  statusEl.className = 'contact-status';
   const name = document.getElementById('cf-name').value.trim();
   const email = document.getElementById('cf-email').value.trim();
   const message = document.getElementById('cf-message').value.trim();
+  if (!name || !email || !message) return;
+
+  cfSubmit.disabled = true;
+  cfSubmit.textContent = 'Sending…';
+  cfStatus.textContent = '';
+  cfStatus.className = 'contact-status';
+
   try {
     const res = await fetch(CONTACT_URL(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, message })
+      body: JSON.stringify({ name, email, message, sent_at: new Date().toISOString() })
     });
-    if (!res.ok) throw new Error('Request failed');
-    statusEl.textContent = 'Message sent. Thanks!';
-    statusEl.className = 'contact-status success';
-    form.reset();
-  } catch (err) {
-    statusEl.textContent = 'Something went wrong. Please try again.';
-    statusEl.className = 'contact-status error';
-    console.error(err);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    cfStatus.textContent = 'Message sent — thanks!';
+    cfStatus.className = 'contact-status success';
+    contactForm.reset();
+  } catch (e) {
+    cfStatus.textContent = 'Could not send message. Please try again.';
+    cfStatus.className = 'contact-status error';
+    console.error('[Contact]', e);
   } finally {
-    submitBtn.disabled = false;
+    cfSubmit.disabled = false;
+    cfSubmit.textContent = 'Send message';
   }
 });
 
-/* ─── Init ─── */
-document.querySelector('.stat-card[data-filter="all"]').classList.add('active');
-
+/* ─── Init & Refresh Loop ─── */
 async function init() {
   await initConfig();
-  await loadNews();
-  await loadPrices();
-  await loadIndices();
-  await loadGlobalHeadlines();
+  await Promise.all([loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines()]);
 }
-init();
 
+init();
 setInterval(loadNews, REFRESH_MS);
-setInterval(loadPrices, REFRESH_MS + 1000);
-setInterval(loadIndices, 30000);
+setInterval(loadPrices, REFRESH_MS);
+setInterval(loadIndices, REFRESH_MS);
+setInterval(loadGlobalHeadlines, REFRESH_MS * 5);
+
+// Close stock search dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('searchDropdown');
+  const wrap = document.querySelector('.search-wrap');
+  if (dropdown && wrap && !wrap.contains(e.target)) dropdown.classList.remove('open');
+});
 </script>
 </body>
 </html>
