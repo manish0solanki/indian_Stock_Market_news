@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -222,6 +223,40 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .search-btn:hover { background: var(--indigo-dark); transform: translateY(-1px); }
 .search-btn:active { transform: translateY(0); }
 
+/* Sector Indices */
+.sector-indices-section { margin-bottom: 24px; }
+
+/* Sector Explorer */
+.sector-explorer { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+.sector-explorer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.sector-explorer-title { font-size: 16px; font-weight: 700; }
+.sector-select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14px; color: var(--text); font-family: var(--font-body); min-width: 220px; cursor: pointer; }
+.sector-select:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
+.sector-sentiment-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 10px; background: var(--bg); }
+.sector-sentiment-pos { background: var(--positive); transition: width 0.4s ease; }
+.sector-sentiment-neg { background: var(--negative); transition: width 0.4s ease; }
+.sector-sentiment-neu { background: var(--neutral); transition: width 0.4s ease; }
+.sector-sentiment-labels { display: flex; gap: 16px; font-size: 12px; margin-bottom: 16px; font-family: var(--font-mono); }
+.sector-sentiment-labels .pos { color: var(--positive); }
+.sector-sentiment-labels .neg { color: var(--negative); }
+.sector-sentiment-labels .neu { color: var(--neutral); }
+.sector-sentiment-mood { font-size: 13px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.sector-table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border); }
+.sector-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sector-table thead { background: var(--surface-hover); }
+.sector-table th { padding: 10px 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.sector-table th:nth-child(3), .sector-table th:nth-child(4), .sector-table th:nth-child(5), .sector-table th:nth-child(6), .sector-table th:nth-child(7) { text-align: right; }
+.sector-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); transition: background var(--transition); white-space: nowrap; }
+.sector-table tr:hover td { background: var(--surface-hover); cursor: pointer; }
+.sector-table tr:last-child td { border-bottom: none; }
+.sector-table td:nth-child(3), .sector-table td:nth-child(4), .sector-table td:nth-child(5), .sector-table td:nth-child(6), .sector-table td:nth-child(7) { text-align: right; font-family: var(--font-mono); }
+.sector-table .st-symbol { font-weight: 600; font-size: 13px; }
+.sector-table .st-name { color: var(--text-secondary); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.sector-table .st-change.up { color: var(--positive); font-weight: 600; }
+.sector-table .st-change.down { color: var(--negative); font-weight: 600; }
+.sector-table .st-promoters { color: var(--indigo); font-weight: 600; }
+.sector-empty { padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px; }
+
 /* Old News Toggle */
 .old-news-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px; background: var(--surface-hover); border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: background var(--transition); }
 .old-news-toggle:hover { background: var(--border); }
@@ -407,6 +442,62 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       </div>
     </div>
 
+    <!-- Sector Indices -->
+    <div class="sector-indices-section" id="sectorIndicesSection">
+      <button class="global-toggle" id="sectorToggle">
+        <span>📊 Sectoral Indices</span>
+        <span class="global-chevron" id="sectorChevron">▼</span>
+      </button>
+      <div class="global-content hidden" id="sectorContent">
+        <div class="snapshot-header" style="padding: 12px 0;">
+          <span class="live-badge"><span class="dot"></span>Live · <span id="sectorLiveTimer">Updated 0 sec ago</span></span>
+        </div>
+        <div class="snapshot-table-wrap">
+          <table class="snapshot-table" id="sectorIndicesTable">
+            <thead>
+              <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Change</th><th style="text-align:right">% Chg</th></tr>
+            </thead>
+            <tbody id="sectorIndicesBody">
+              <tr><td colspan="4" class="snapshot-loading">Loading sector indices…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sector Explorer -->
+    <div class="sector-explorer" id="sectorExplorer">
+      <div class="sector-explorer-header">
+        <span class="sector-explorer-title">Sector Explorer</span>
+        <select class="sector-select" id="sectorSelect">
+          <option value="">Select a sector…</option>
+        </select>
+      </div>
+      <div id="sectorSentiment" style="display:none;">
+        <div class="sector-sentiment-mood" id="sectorSentimentMood"></div>
+        <div class="sector-sentiment-bar" id="sectorSentimentBar"></div>
+        <div class="sector-sentiment-labels" id="sectorSentimentLabels"></div>
+      </div>
+      <div class="sector-table-wrap">
+        <table class="sector-table" id="sectorTable">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Company</th>
+              <th>Price</th>
+              <th>Chg %</th>
+              <th>P/E</th>
+              <th>Market Cap</th>
+              <th>Promoters</th>
+            </tr>
+          </thead>
+          <tbody id="sectorTableBody">
+            <tr><td colspan="7" class="sector-empty">Choose a sector to view stocks</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Global Headlines -->
     <div class="global-section" id="globalSection">
       <button class="global-toggle" id="globalToggle">
@@ -543,6 +634,9 @@ const GLOBAL_URL   = () => API_BASE + "/global-news";
 const CONTACT_URL  = () => API_BASE + "/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
+const SECTOR_INDICES_URL = () => API_BASE + "/sector-indices";
+const SECTOR_LIST_URL    = () => API_BASE + "/sector-list";
+const SECTOR_STOCKS_URL  = () => API_BASE + "/sector-stocks";
 const REFRESH_MS   = 30000;
 
 let allNewsItems = [];
@@ -552,6 +646,8 @@ let lastUpdateTime = Date.now();
 let priceMap = {};
 let showOldNews = false;
 let stockSearchDebounce = null;
+let sectorLastUpdateTime = Date.now();
+
 
 /* ─── Settings Modal ─── */
 const settingsModal = document.getElementById('settingsModal');
@@ -751,6 +847,9 @@ async function loadIndices() {
 setInterval(() => {
   const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
   if (liveTimerEl) liveTimerEl.textContent = `Updated ${secs} sec ago`;
+  const sectorSecs = Math.floor((Date.now() - sectorLastUpdateTime) / 1000);
+  const sectorTimer = document.getElementById('sectorLiveTimer');
+  if (sectorTimer) sectorTimer.textContent = `Updated ${sectorSecs} sec ago`;
 }, 1000);
 
 /* ─── Statistics ─── */
@@ -857,6 +956,16 @@ globalToggle.addEventListener('click', () => {
   const isOpen = globalContent.classList.toggle('open');
   globalContent.classList.toggle('hidden', !isOpen);
   globalChevron.classList.toggle('open', isOpen);
+});
+
+/* ─── Sector Indices Toggle ─── */
+const sectorToggle = document.getElementById('sectorToggle');
+const sectorContent = document.getElementById('sectorContent');
+const sectorChevron = document.getElementById('sectorChevron');
+sectorToggle.addEventListener('click', () => {
+  const isOpen = sectorContent.classList.toggle('open');
+  sectorContent.classList.toggle('hidden', !isOpen);
+  sectorChevron.classList.toggle('open', isOpen);
 });
 
 /* ─── Old News Toggle ─── */
@@ -1132,10 +1241,169 @@ contactForm.addEventListener('submit', async (e) => {
   }
 });
 
+/* ─── Sector Indices ─── */
+function renderSectorIndices(items) {
+  const tbody = document.getElementById('sectorIndicesBody');
+  if (!items || items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="snapshot-loading">No sector index data.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map((idx, i) => {
+    const up = Number(idx.change_percent) >= 0;
+    const price = Number(idx.price);
+    // Calculate change if only change_percent is provided
+    let changeVal = idx.change;
+    if ((changeVal === undefined || changeVal === null) && price && idx.change_percent !== undefined) {
+      changeVal = price * (idx.change_percent / 100);
+    }
+    const priceStr = price.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    const changeStr = Number(changeVal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const pct = Math.abs(Number(idx.change_percent)).toFixed(2);
+    return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.05}s both; cursor:pointer;" onclick="document.getElementById('sectorSelect').value='${idx.sector_key || ''}'; document.getElementById('sectorSelect').dispatchEvent(new Event('change')); window.scrollTo({top:document.getElementById('sectorExplorer').offsetTop-80,behavior:'smooth'});"><td class="index-name-cell">${idx.display_name || '—'}</td><td class="index-price-cell" style="text-align:right">₹${priceStr}</td><td class="index-change-cell ${up ? 'up' : 'down'}" style="text-align:right">${up ? '+' : ''}${changeStr}</td><td style="text-align:right"><span class="index-trend ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${pct}%</span></td></tr>`;
+  }).join('');
+}
+
+async function loadSectorIndices() {
+  try {
+    const res = await fetch(SECTOR_INDICES_URL());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data.items || []);
+    if (items.length === 0) {
+      document.getElementById('sectorIndicesSection').style.display = 'none';
+      return;
+    }
+    document.getElementById('sectorIndicesSection').style.display = 'block';
+    renderSectorIndices(items);
+    sectorLastUpdateTime = Date.now();
+  } catch (e) {
+    document.getElementById('sectorIndicesSection').style.display = 'none';
+    console.error('[Sector Indices]', e);
+  }
+}
+
+/* ─── Sector List & Explorer ─── */
+async function loadSectorList() {
+  const select = document.getElementById('sectorSelect');
+  try {
+    const res = await fetch(SECTOR_LIST_URL());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    console.log('[Sector List] raw:', data);
+    
+    let sectors = [];
+    
+    if (Array.isArray(data)) {
+      // Handle [{sector: 'X'}] or [{json: {sector: 'X'}}]
+      sectors = data.map(x => {
+        if (x.sector) return x.sector;
+        if (x.json?.sector) return x.json.sector;
+        if (typeof x === 'string') return x;
+        return null;
+      }).filter(s => s && typeof s === 'string');
+    } else if (data && typeof data === 'object') {
+      // Handle single object: {sector: 'X'}
+      if (data.sector) sectors = [data.sector];
+      else if (Array.isArray(data.items)) sectors = data.items.map(x => x.sector || x.json?.sector).filter(Boolean);
+      else if (Array.isArray(data.sectors)) sectors = data.sectors;
+    }
+    
+    console.log('[Sector List] parsed:', sectors);
+    
+    if (sectors.length === 0) {
+      select.innerHTML = '<option value="">No sectors found</option>';
+      return;
+    }
+    
+    select.innerHTML = '<option value="">Select a sector…</option>' + 
+      sectors.map(s => `<option value="${s}">${s}</option>`).join('');
+  } catch (e) {
+    console.error('[Sector List]', e);
+    select.innerHTML = '<option value="">Error loading sectors</option>';
+  }
+}
+
+function analyzeSectorSentiment(sectorName, stocks) {
+  const sectorSymbols = new Set(stocks.map(s => s.symbol).filter(Boolean));
+  const relevantNews = allNewsItems.filter(it => it.symbol && sectorSymbols.has(it.symbol));
+  const counts = { Positive: 0, Negative: 0, Neutral: 0 };
+  relevantNews.forEach(it => {
+    const impact = it.short_term_impact || it.impact;
+    if (counts[impact] !== undefined) counts[impact]++;
+    else counts.Neutral++;
+  });
+  const total = relevantNews.length || 1;
+  const posW = Math.round((counts.Positive / total) * 100);
+  const negW = Math.round((counts.Negative / total) * 100);
+  const neuW = Math.max(0, 100 - posW - negW);
+  
+  const moodEl = document.getElementById('sectorSentimentMood');
+  const bar = document.getElementById('sectorSentimentBar');
+  const labels = document.getElementById('sectorSentimentLabels');
+  const wrap = document.getElementById('sectorSentiment');
+  
+  let moodText = 'Mixed signals';
+  let moodEmoji = '😐';
+  if (counts.Positive > counts.Negative) { moodText = `Bullish — ${posW}% positive`; moodEmoji = '🚀'; }
+  else if (counts.Negative > counts.Positive) { moodText = `Bearish — ${negW}% negative`; moodEmoji = '📉'; }
+  
+  if (moodEl) moodEl.innerHTML = `<span style="font-size:22px">${moodEmoji}</span> <span>${sectorName}: ${moodText}</span>`;
+  if (bar) bar.innerHTML = `<div class="sector-sentiment-pos" style="width:${posW}%"></div><div class="sector-sentiment-neg" style="width:${negW}%"></div><div class="sector-sentiment-neu" style="width:${neuW}%"></div>`;
+  if (labels) labels.innerHTML = `<span class="pos">● ${counts.Positive} Bullish</span><span class="neg">● ${counts.Negative} Bearish</span><span class="neu">● ${counts.Neutral} Mixed</span>`;
+  if (wrap) wrap.style.display = 'block';
+}
+
+async function loadSectorStocks(sector) {
+  const tbody = document.getElementById('sectorTableBody');
+  if (!sector) {
+    tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">Choose a sector to view stocks</td></tr>';
+    document.getElementById('sectorSentiment').style.display = 'none';
+    return;
+  }
+  tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">Loading…</td></tr>';
+  try {
+    const res = await fetch(SECTOR_STOCKS_URL() + '?sector=' + encodeURIComponent(sector));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    console.log('[Sector Stocks] raw:', data);
+    
+    let stocks = [];
+    if (Array.isArray(data)) stocks = data;
+    else if (data.items && Array.isArray(data.items)) stocks = data.items;
+    
+    analyzeSectorSentiment(sector, stocks);
+    
+    if (stocks.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">No stocks found in this sector</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = stocks.map((s, i) => {
+      const rawChange = s.change_percent;
+      const changeNum = Number(rawChange);
+      const isValid = !isNaN(changeNum);
+      const isUp = isValid && changeNum >= 0;
+      const price = Number(s.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const changeStr = isValid ? (isUp ? '+' : '') + changeNum.toFixed(2) + '%' : '—';
+      const promoters = s.last_quarter_promoters;
+      const promoStr = (promoters !== undefined && promoters !== null && promoters !== '') ? Number(promoters).toFixed(2) + '%' : '—';
+      
+      return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.03}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top: document.getElementById('stockDetailCard').offsetTop - 100, behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>₹${price}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap || '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">Could not load stocks</td></tr>';
+    console.error('[Sector Stocks]', e);
+  }
+}
+
+document.getElementById('sectorSelect').addEventListener('change', (e) => {
+  loadSectorStocks(e.target.value);
+});
+
 /* ─── Init & Refresh Loop ─── */
 async function init() {
   await initConfig();
-  await Promise.all([loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines()]);
+  await Promise.all([loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines(), loadSectorIndices(), loadSectorList()]);
 }
 
 init();
@@ -1143,6 +1411,7 @@ setInterval(loadNews, REFRESH_MS);
 setInterval(loadPrices, REFRESH_MS);
 setInterval(loadIndices, REFRESH_MS);
 setInterval(loadGlobalHeadlines, REFRESH_MS * 5);
+setInterval(loadSectorIndices, REFRESH_MS);
 
 // Close stock search dropdown when clicking outside
 document.addEventListener('click', (e) => {
