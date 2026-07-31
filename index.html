@@ -613,24 +613,6 @@ th[data-sort].desc .sort-icon::after { content: '▼'; color: var(--indigo); }
 
     <!-- Market Snapshot + Sector Indices Row -->
     <div class="market-row">
-      <div class="market-col sector-col">
-        <!-- Sector Indices -->
-    <div class="snapshot-section" id="sectorIndicesSection">
-      <div class="snapshot-header">
-        <h2 class="snapshot-title">📊 Sectoral Indices</h2>
-      </div>
-      <div class="snapshot-table-wrap" style="max-height: 320px; overflow-y: auto;">
-        <table class="snapshot-table" id="sectorIndicesTable">
-          <thead>
-            <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Change</th><th style="text-align:right">% Chg</th></tr>
-          </thead>
-          <tbody id="sectorIndicesBody">
-            <tr><td colspan="4" class="snapshot-loading">Loading sector indices…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-      </div>
       <div class="market-col snapshot-col">
         <!-- Market Snapshot -->
     <div class="snapshot-section" id="marketSnapshotSection">
@@ -645,6 +627,24 @@ th[data-sort].desc .sort-icon::after { content: '▼'; color: var(--indigo); }
           </thead>
           <tbody id="snapshotBody">
             <tr><td colspan="4" class="snapshot-loading">Loading indices…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+      </div>
+      <div class="market-col sector-col">
+        <!-- Sector Indices -->
+    <div class="snapshot-section" id="sectorIndicesSection">
+      <div class="snapshot-header">
+        <h2 class="snapshot-title">📊 Sectoral Indices</h2>
+      </div>
+      <div class="snapshot-table-wrap" style="max-height: 320px; overflow-y: auto;">
+        <table class="snapshot-table" id="sectorIndicesTable">
+          <thead>
+            <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Change</th><th style="text-align:right">% Chg</th></tr>
+          </thead>
+          <tbody id="sectorIndicesBody">
+            <tr><td colspan="4" class="snapshot-loading">Loading sector indices…</td></tr>
           </tbody>
         </table>
       </div>
