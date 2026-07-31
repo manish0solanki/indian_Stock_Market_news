@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -315,6 +316,25 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 /* Footer */
 .site-footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px; background: var(--bg); }
 
+/* F&O Badge */
+.fno-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--indigo);
+  background: rgba(46,31,130,0.08);
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+  vertical-align: middle;
+  display: inline-block;
+}
+[data-theme="dark"] .fno-badge {
+  background: rgba(140,130,255,0.15);
+  color: #A5A0FF;
+}
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } .pulse-dot { animation: none; } .news-card { animation: none; } }
 
@@ -353,6 +373,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   .stock-price { font-size: 22px; }
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -637,6 +658,7 @@ const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 const SECTOR_INDICES_URL = () => API_BASE + "/sector-indices";
 const SECTOR_LIST_URL    = () => API_BASE + "/sector-list";
 const SECTOR_STOCKS_URL  = () => API_BASE + "/sector-stocks";
+const FNO_URL = () => API_BASE + "/fno-list";
 const REFRESH_MS   = 30000;
 
 let allNewsItems = [];
@@ -647,6 +669,7 @@ let priceMap = {};
 let showOldNews = false;
 let stockSearchDebounce = null;
 let sectorLastUpdateTime = Date.now();
+let fnoSymbols = new Set();
 
 
 /* ─── Settings Modal ─── */
@@ -921,7 +944,7 @@ function renderNews() {
     const p = item.symbol && priceMap[item.symbol] ? priceMap[item.symbol] : null;
     const priceHtml = p ? `<span class="news-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>` : '';
     const changeHtml = p && p.change !== undefined ? `<span class="news-change ${Number(p.change) >= 0 ? 'up' : 'down'}">${Number(p.change) >= 0 ? '+' : ''}${Number(p.change).toFixed(2)}</span>` : '';
-    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.04}s"><div class="news-card-top"><div class="news-company-wrap"><span class="news-company">${item.company_name || 'Unknown'}</span>${item.symbol ? `<span class="news-symbol">${item.symbol}</span>` : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(item.created_at)}</span></div><p class="news-summary">${item.summary || ''}</p><div class="news-meta"><span class="impact-tag ${impactClass(impact)}">${impact || '—'}</span>${item.confidence ? `<span class="impact-tag neutral">Confidence: ${item.confidence}</span>` : ''}${item.source_link ? `<a class="news-link" href="${item.source_link}" target="_blank" rel="noopener noreferrer">Source →</a>` : ''}</div></div>`;
+    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.04}s"><div class="news-card-top"><div class="news-company-wrap"><span class="news-company">${item.company_name || 'Unknown'}</span>${item.symbol ? `<span class="news-symbol">${item.symbol}</span>` : ''}${item.symbol && fnoSymbols.has(item.symbol.toUpperCase()) ? '<span class="fno-badge">F&O</span>' : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(item.created_at)}</span></div><p class="news-summary">${item.summary || ''}</p><div class="news-meta"><span class="impact-tag ${impactClass(impact)}">${impact || '—'}</span>${item.confidence ? `<span class="impact-tag neutral">Confidence: ${item.confidence}</span>` : ''}${item.source_link ? `<a class="news-link" href="${item.source_link}" target="_blank" rel="noopener noreferrer">Source →</a>` : ''}</div></div>`;
   });
   feedEl.innerHTML = html;
 }
@@ -994,7 +1017,7 @@ function renderPrices(items) {
   const itemsHtml = items.map(p => {
     const up = Number(p.change_percent) >= 0;
     const change = Number(p.change || 0).toFixed(2);
-    return `<span class="ticker-item"><span class="ticker-symbol">${p.symbol}</span><span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span></span>`;
+    return `<span class="ticker-item"><span class="ticker-symbol">${p.symbol}${p.symbol && fnoSymbols.has(p.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span></span>`;
   }).join('');
   priceTicker.innerHTML = itemsHtml + itemsHtml;
   const duration = Math.max(items.length * 4, 20);
@@ -1062,7 +1085,8 @@ function renderStockDetail(stock) {
   }
   sdName.textContent = stock.company_name || stock.name || '—';
   sdSymbol.textContent = stock.symbol || '—';
-  sdSector.textContent = stock.sector || '—';
+  const isFnoDetail = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
+sdSector.innerHTML = (stock.sector || '—') + (isFnoDetail ? ' <span class="fno-badge">F&O</span>' : '');
 
   const price = Number(stock.price);
   const prevClose = Number(stock.previous_close);
@@ -1133,7 +1157,8 @@ async function searchStock(query) {
     stocks.forEach(stock => {
       const div = document.createElement('div');
       div.className = 'search-dropdown-item';
-      div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
+      const isFnoSearch = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
+div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
       div.addEventListener('click', () => {
         dropdown.classList.remove('open');
         searchInput.value = stock.company_name || stock.symbol || '';
@@ -1240,6 +1265,26 @@ contactForm.addEventListener('submit', async (e) => {
     cfSubmit.textContent = 'Send message';
   }
 });
+
+
+/* ─── F&O List ─── */
+async function loadFnoList() {
+  try {
+    const res = await fetch(FNO_URL());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    let symbols = [];
+    if (Array.isArray(data)) symbols = data;
+    else if (data.symbols && Array.isArray(data.symbols)) symbols = data.symbols;
+    else if (data.items && Array.isArray(data.items)) symbols = data.items.map(x => x.fnoRows || x.Symbol || x.symbol);
+    fnoSymbols = new Set(symbols.map(s => String(s).trim().toUpperCase()).filter(Boolean));
+    console.log('[F&O] Loaded', fnoSymbols.size, 'symbols');
+    renderNews();
+    renderPrices(getPriceItems());
+  } catch (e) {
+    console.error('[F&O]', e);
+  }
+}
 
 /* ─── Sector Indices ─── */
 function renderSectorIndices(items) {
@@ -1388,7 +1433,7 @@ async function loadSectorStocks(sector) {
       const promoters = s.last_quarter_promoters;
       const promoStr = (promoters !== undefined && promoters !== null && promoters !== '') ? Number(promoters).toFixed(2) + '%' : '—';
       
-      return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.03}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top: document.getElementById('stockDetailCard').offsetTop - 100, behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>₹${price}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap || '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
+      return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.03}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top: document.getElementById('stockDetailCard').offsetTop - 100, behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}${s.symbol && fnoSymbols.has(s.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>₹${price}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap || '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
     }).join('');
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">Could not load stocks</td></tr>';
@@ -1403,7 +1448,7 @@ document.getElementById('sectorSelect').addEventListener('change', (e) => {
 /* ─── Init & Refresh Loop ─── */
 async function init() {
   await initConfig();
-  await Promise.all([loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines(), loadSectorIndices(), loadSectorList()]);
+  await Promise.all([loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines(), loadSectorIndices(), loadSectorList(), loadFnoList()]);
 }
 
 init();
