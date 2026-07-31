@@ -494,6 +494,13 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     max-height: 280px;
   }
 }
+/* Sort icons */
+.sort-icon { font-size: 10px; color: var(--text-muted); margin-left: 4px; }
+th[data-sort] { cursor: pointer; }
+th[data-sort] .sort-icon::after { content: '⇅'; }
+th[data-sort].asc .sort-icon::after { content: '▲'; color: var(--indigo); }
+th[data-sort].desc .sort-icon::after { content: '▼'; color: var(--indigo); }
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } .pulse-dot { animation: none; } .news-card { animation: none; } }
 
@@ -659,17 +666,29 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         <div class="sector-sentiment-bar" id="sectorSentimentBar"></div>
         <div class="sector-sentiment-labels" id="sectorSentimentLabels"></div>
       </div>
+      <div class="sector-controls" style="display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+        <div class="search-wrap" style="position:relative; flex:1; min-width:180px; max-width:320px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <input type="text" id="sectorSearchInput" placeholder="Find company in sector…" style="width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:0 12px 0 36px; font-size:13px; color:var(--text); font-family:var(--font-body); height:36px; line-height:36px; box-sizing:border-box;">
+        </div>
+        <div class="compact-stats" style="margin-bottom:0; justify-content:flex-start;">
+          <div class="compact-stat positive" data-sfilter="positive" role="button" tabindex="0" title="Show bullish stocks"><span class="cs-dot"></span><span class="cs-label">Bullish</span></div>
+          <div class="compact-stat negative" data-sfilter="negative" role="button" tabindex="0" title="Show bearish stocks"><span class="cs-dot"></span><span class="cs-label">Bearish</span></div>
+          <div class="compact-stat neutral" data-sfilter="neutral" role="button" tabindex="0" title="Show flat stocks"><span class="cs-dot"></span><span class="cs-label">Mixed</span></div>
+          <div class="compact-stat total active" data-sfilter="all" role="button" tabindex="0" title="Show all stocks"><span class="cs-dot"></span><span class="cs-label">All</span></div>
+        </div>
+      </div>
       <div class="sector-table-wrap">
         <table class="sector-table" id="sectorTable">
           <thead>
             <tr>
-              <th>Symbol</th>
-              <th>Company</th>
-              <th>Price</th>
-              <th>Chg %</th>
-              <th>P/E</th>
-              <th>Market Cap</th>
-              <th>Promoters</th>
+              <th data-sort="symbol">Symbol <span class="sort-icon"></span></th>
+              <th data-sort="company">Company <span class="sort-icon"></span></th>
+              <th data-sort="price">Price <span class="sort-icon"></span></th>
+              <th data-sort="change">Chg % <span class="sort-icon"></span></th>
+              <th data-sort="pe">P/E <span class="sort-icon"></span></th>
+              <th data-sort="cap">Market Cap <span class="sort-icon"></span></th>
+              <th data-sort="promoters">Promoters <span class="sort-icon"></span></th>
             </tr>
           </thead>
           <tbody id="sectorTableBody">
@@ -796,6 +815,11 @@ let showOldNews = false;
 let stockSearchDebounce = null;
 let sectorLastUpdateTime = Date.now();
 let fnoSymbols = new Set();
+let currentSectorStocks = [];
+let currentSectorName = '';
+let sectorSort = { col: null, dir: 'asc' };
+let sectorFilter = 'all';
+let sectorSearchQuery = '';
 
 
 /* ─── Settings Modal ─── */
@@ -1386,6 +1410,68 @@ contactForm.addEventListener('submit', async (e) => {
   }
 });
 
+/* ─── Sector Table Helpers ─── */
+function getSectorFilteredStocks() {
+  let stocks = [...currentSectorStocks];
+  if (sectorFilter !== 'all') {
+    stocks = stocks.filter(s => {
+      const change = Number(s.change_percent);
+      if (sectorFilter === 'positive') return !isNaN(change) && change > 0;
+      if (sectorFilter === 'negative') return !isNaN(change) && change < 0;
+      if (sectorFilter === 'neutral') return !isNaN(change) && change === 0;
+      return true;
+    });
+  }
+  if (sectorSearchQuery.trim()) {
+    const q = sectorSearchQuery.toLowerCase();
+    stocks = stocks.filter(s =>
+      (s.symbol || '').toLowerCase().includes(q) ||
+      (s.company_name || s.name || '').toLowerCase().includes(q)
+    );
+  }
+  if (sectorSort.col) {
+    stocks.sort((a, b) => {
+      let av, bv;
+      switch(sectorSort.col) {
+        case 'symbol': av = a.symbol || ''; bv = b.symbol || ''; break;
+        case 'company': av = a.company_name || a.name || ''; bv = b.company_name || b.name || ''; break;
+        case 'price': av = Number(a.price) || 0; bv = Number(b.price) || 0; break;
+        case 'change': av = Number(a.change_percent) || 0; bv = Number(b.change_percent) || 0; break;
+        case 'pe': av = Number(a.pe) || 0; bv = Number(b.pe) || 0; break;
+        case 'cap': av = Number(a.market_cap) || 0; bv = Number(b.market_cap) || 0; break;
+        case 'promoters': av = Number(a.last_quarter_promoters) || 0; bv = Number(b.last_quarter_promoters) || 0; break;
+        default: return 0;
+      }
+      if (av < bv) return sectorSort.dir === 'asc' ? -1 : 1;
+      if (av > bv) return sectorSort.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  return stocks;
+}
+
+function renderSectorTable() {
+  const tbody = document.getElementById('sectorTableBody');
+  const stocks = getSectorFilteredStocks();
+  if (currentSectorStocks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">No stocks found in this sector</td></tr>';
+    return;
+  }
+  if (stocks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">No matches</td></tr>';
+    return;
+  }
+  tbody.innerHTML = stocks.map((s, i) => {
+    const rawChange = s.change_percent;
+    const changeNum = Number(rawChange);
+    const isValid = !isNaN(changeNum);
+    const isUp = isValid && changeNum >= 0;
+    const price = Number(s.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const changeStr = isValid ? (isUp ? '+' : '') + changeNum.toFixed(2) + '%' : '—';
+    const promoStr = fmtPromoter(s.last_quarter_promoters);
+    return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.03}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top: document.getElementById('stockDetailCard').offsetTop - 100, behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}${s.symbol && fnoSymbols.has(s.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>₹${price}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap || '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
+  }).join('');
+}
 
 /* ─── F&O List ─── */
 async function loadFnoList() {
@@ -1489,15 +1575,15 @@ async function loadSectorList() {
 }
 
 function analyzeSectorSentiment(sectorName, stocks) {
-  const sectorSymbols = new Set(stocks.map(s => s.symbol).filter(Boolean));
-  const relevantNews = allNewsItems.filter(it => it.symbol && sectorSymbols.has(it.symbol));
   const counts = { Positive: 0, Negative: 0, Neutral: 0 };
-  relevantNews.forEach(it => {
-    const impact = it.short_term_impact || it.impact;
-    if (counts[impact] !== undefined) counts[impact]++;
+  stocks.forEach(s => {
+    const change = Number(s.change_percent);
+    if (isNaN(change)) counts.Neutral++;
+    else if (change > 0) counts.Positive++;
+    else if (change < 0) counts.Negative++;
     else counts.Neutral++;
   });
-  const total = relevantNews.length || 1;
+  const total = stocks.length || 1;
   const posW = Math.round((counts.Positive / total) * 100);
   const negW = Math.round((counts.Negative / total) * 100);
   const neuW = Math.max(0, 100 - posW - negW);
@@ -1509,8 +1595,8 @@ function analyzeSectorSentiment(sectorName, stocks) {
   
   let moodText = 'Mixed signals';
   let moodEmoji = '😐';
-  if (counts.Positive > counts.Negative) { moodText = `Bullish — ${posW}% positive`; moodEmoji = '🚀'; }
-  else if (counts.Negative > counts.Positive) { moodText = `Bearish — ${negW}% negative`; moodEmoji = '📉'; }
+  if (counts.Positive > counts.Negative) { moodText = `Bullish — ${posW}% stocks up`; moodEmoji = '🚀'; }
+  else if (counts.Negative > counts.Positive) { moodText = `Bearish — ${negW}% stocks down`; moodEmoji = '📉'; }
   
   if (moodEl) moodEl.innerHTML = `<span style="font-size:22px">${moodEmoji}</span> <span>${sectorName}: ${moodText}</span>`;
   if (bar) bar.innerHTML = `<div class="sector-sentiment-pos" style="width:${posW}%"></div><div class="sector-sentiment-neg" style="width:${negW}%"></div><div class="sector-sentiment-neu" style="width:${neuW}%"></div>`;
@@ -1520,6 +1606,16 @@ function analyzeSectorSentiment(sectorName, stocks) {
 
 async function loadSectorStocks(sector) {
   const tbody = document.getElementById('sectorTableBody');
+  currentSectorName = sector;
+  currentSectorStocks = [];
+  sectorSearchQuery = '';
+  sectorFilter = 'all';
+  sectorSort = { col: null, dir: 'asc' };
+  document.querySelectorAll('[data-sfilter]').forEach(el => el.classList.toggle('active', el.getAttribute('data-sfilter') === 'all'));
+  const sSearch = document.getElementById('sectorSearchInput');
+  if (sSearch) sSearch.value = '';
+  document.querySelectorAll('#sectorTable thead th[data-sort]').forEach(h => h.classList.remove('asc', 'desc'));
+  
   if (!sector) {
     tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">Choose a sector to view stocks</td></tr>';
     document.getElementById('sectorSentiment').style.display = 'none';
@@ -1531,30 +1627,12 @@ async function loadSectorStocks(sector) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     console.log('[Sector Stocks] raw:', data);
-    
     let stocks = [];
     if (Array.isArray(data)) stocks = data;
     else if (data.items && Array.isArray(data.items)) stocks = data.items;
-    
+    currentSectorStocks = stocks;
     analyzeSectorSentiment(sector, stocks);
-    
-    if (stocks.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">No stocks found in this sector</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = stocks.map((s, i) => {
-      const rawChange = s.change_percent;
-      const changeNum = Number(rawChange);
-      const isValid = !isNaN(changeNum);
-      const isUp = isValid && changeNum >= 0;
-      const price = Number(s.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const changeStr = isValid ? (isUp ? '+' : '') + changeNum.toFixed(2) + '%' : '—';
-      const promoters = s.last_quarter_promoters;
-      const promoStr = fmtPromoter(promoters);
-      
-      return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.03}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top: document.getElementById('stockDetailCard').offsetTop - 100, behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}${s.symbol && fnoSymbols.has(s.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>₹${price}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap || '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
-    }).join('');
+    renderSectorTable();
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">Could not load stocks</td></tr>';
     console.error('[Sector Stocks]', e);
@@ -1564,6 +1642,48 @@ async function loadSectorStocks(sector) {
 document.getElementById('sectorSelect').addEventListener('change', (e) => {
   loadSectorStocks(e.target.value);
 });
+
+/* ─── Sector Table Sort ─── */
+document.querySelectorAll('#sectorTable thead th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.getAttribute('data-sort');
+    if (sectorSort.col === col) {
+      sectorSort.dir = sectorSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sectorSort.col = col;
+      sectorSort.dir = 'asc';
+    }
+    document.querySelectorAll('#sectorTable thead th[data-sort]').forEach(h => {
+      h.classList.remove('asc', 'desc');
+      if (h.getAttribute('data-sort') === col) h.classList.add(sectorSort.dir);
+    });
+    renderSectorTable();
+  });
+});
+
+/* ─── Sector Search ─── */
+const sectorSearchInput = document.getElementById('sectorSearchInput');
+if (sectorSearchInput) {
+  sectorSearchInput.addEventListener('input', (e) => {
+    sectorSearchQuery = e.target.value;
+    renderSectorTable();
+  });
+}
+
+/* ─── Sector Filter ─── */
+document.querySelectorAll('[data-sfilter]').forEach(el => {
+  const activate = () => {
+    const filter = el.getAttribute('data-sfilter');
+    sectorFilter = (sectorFilter === filter) ? 'all' : filter;
+    document.querySelectorAll('[data-sfilter]').forEach(c => c.classList.toggle('active', c.getAttribute('data-sfilter') === sectorFilter));
+    renderSectorTable();
+  };
+  el.addEventListener('click', activate);
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+  });
+});
+
 
 /* ─── Init & Refresh Loop ─── */
 async function init() {
