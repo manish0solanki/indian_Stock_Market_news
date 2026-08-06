@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +14,57 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+
+/* Voice Search */
+.voice-btn {
+  position: absolute;
+  right: 38px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none; /* shown via JS only if supported */
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+  padding: 0;
+  z-index: 10;
+}
+.voice-btn:hover { background: var(--border); color: var(--text); }
+.voice-btn.active {
+  background: rgba(248,113,113,0.15);
+  color: #F87171;
+  animation: voicePulse 1.2s infinite;
+}
+@keyframes voicePulse {
+  0% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(248,113,113,0); }
+  100% { box-shadow: 0 0 0 0 rgba(248,113,113,0); }
+}
+.voice-hint {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+}
+.voice-hint.show { opacity: 1; }
+.voice-hint.error { color: var(--negative); }
+.search-input.voice-active { padding-right: 68px; }
+
+
 :root {
   --indigo: #2E1F82; --indigo-dark: #1B134F; --indigo-light: #4C3DB5;
   --bg: #0F0F1A; --surface: #1A1A2E; --surface-hover: #222240; --border: #2A2A4A;
@@ -382,6 +434,13 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
       <input type="text" id="searchInput" class="search-input" placeholder="Search company, symbol, or keyword…" autocomplete="off">
       <button class="search-clear" id="searchClear" title="Clear search">×</button>
+      <button class="voice-btn" id="voiceBtn" title="Voice search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+        </svg>
+      </button>
+      <div class="voice-hint" id="voiceHint"></div>
       <div class="search-dropdown" id="searchDropdown"></div>
     </div>
     <button class="search-btn" id="searchBtn">Search</button>
@@ -1779,6 +1838,101 @@ searchInput.addEventListener('input', doSearch);
 searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 searchBtn.addEventListener('click', doSearch);
 
+
+/* ─── Voice Search ─── */
+const voiceBtn = document.getElementById('voiceBtn');
+const voiceHint = document.getElementById('voiceHint');
+let recognition = null;
+let voiceTimeout = null;
+
+function initVoiceSearch() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition || !voiceBtn) return;
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-IN';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  voiceBtn.style.display = 'inline-flex';
+  searchInput.classList.add('voice-active');
+
+  voiceBtn.addEventListener('click', toggleVoice);
+  voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); toggleVoice(); });
+
+  recognition.onresult = (event) => {
+    const transcript = Array.from(event.results)
+      .map(r => r[0].transcript)
+      .join('');
+    
+    // Strip trailing punctuation (periods, commas, etc.) that speech API adds
+    const clean = transcript.trim().replace(/[.,?!;:'"\-]+$/g, '').trim();
+    searchInput.value = clean;
+    updateClearBtn();
+
+    // Auto-search on final result — no button press needed
+    if (event.results[event.results.length - 1].isFinal) {
+      stopVoice();
+      doSearch(); // refresh news & ticker filters instantly
+      if (clean.length >= 2) {
+        clearTimeout(stockSearchDebounce); // cancel the 400ms debounce
+        searchStock(clean); // instant stock lookup
+      }
+    }
+  };
+
+  recognition.onerror = (event) => {
+    const map = {
+      'no-speech': 'No speech detected',
+      'audio-capture': 'No microphone found',
+      'not-allowed': 'Microphone blocked',
+      'network': 'Network error',
+      'aborted': 'Cancelled'
+    };
+    showVoiceHint(map[event.error] || 'Voice error', true);
+    stopVoice();
+  };
+
+  recognition.onend = () => {
+    if (voiceBtn.classList.contains('active')) stopVoice();
+  };
+}
+
+function toggleVoice() {
+  if (!recognition) return;
+  voiceBtn.classList.contains('active') ? stopVoice() : startVoice();
+}
+
+function startVoice() {
+  try {
+    recognition.start();
+    voiceBtn.classList.add('active');
+    voiceBtn.title = 'Listening… tap to stop';
+    showVoiceHint('Listening…');
+    voiceTimeout = setTimeout(() => { if (voiceBtn.classList.contains('active')) stopVoice(); }, 6000);
+  } catch (e) {
+    showVoiceHint('Could not start mic', true);
+  }
+}
+
+function stopVoice() {
+  clearTimeout(voiceTimeout);
+  try { recognition.stop(); } catch (e) {}
+  voiceBtn.classList.remove('active');
+  voiceBtn.title = 'Voice search';
+  voiceHint.classList.remove('show');
+}
+
+function showVoiceHint(msg, isError) {
+  voiceHint.textContent = msg;
+  voiceHint.classList.toggle('error', !!isError);
+  voiceHint.classList.add('show');
+  if (isError) {
+    setTimeout(() => { voiceHint.classList.remove('show'); voiceHint.classList.remove('error'); }, 2500);
+  }
+}
+
 /* ─── Filter Chips ─── */
 const filterChips = document.querySelectorAll('[data-filter]');
 filterChips.forEach(chip => {
@@ -1860,6 +2014,7 @@ setInterval(() => {
 /* ─── Init ─── */
 async function init() {
   await initConfig();
+  initVoiceSearch();
   await Promise.all([
     loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines(),
     loadSectorIndices(), loadSectorList(), loadFnoList(),
