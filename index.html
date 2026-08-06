@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -275,6 +276,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .news-link { font-size: 11px; color: var(--indigo-light); text-decoration: none; margin-left: auto; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; transition: gap var(--transition); }
 [data-theme="light"] .news-link { color: var(--indigo); }
 .news-link:hover { gap: 5px; text-decoration: underline; }
+
+/* Grouped News */
+.news-entries { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.news-entry { padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.news-entry:last-child { border-bottom: none; padding-bottom: 0; }
+.news-entry.hidden { display: none; }
+.entry-time { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-bottom: 4px; display: block; }
+.entry-summary { font-size: 13px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 6px; }
+.entry-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.news-group-toggle { margin-top: 6px; font-size: 11px; font-weight: 600; color: var(--indigo-light); cursor: pointer; background: none; border: none; padding: 0; font-family: var(--font-body); }
+[data-theme="light"] .news-group-toggle { color: var(--indigo); }
+.news-group-toggle:hover { text-decoration: underline; }
 
 /* Date Heading */
 .date-heading { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
@@ -1453,21 +1466,59 @@ function renderNews() {
     feedEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:13px;">No results match your filters.</div>';
     return;
   }
+
+  // Group by company
+  const groups = {};
+  items.forEach(item => {
+    const key = (item.company_name || item.symbol || 'Unknown').trim();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
+
+  // Sort items inside each group newest-first, then sort groups by newest item
+  const sortedGroups = Object.values(groups).map(g => {
+    g.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return g;
+  }).sort((a, b) => new Date(b[0].created_at) - new Date(a[0].created_at));
+
   let html = '';
-  let currentDateLabel = null;
-  items.forEach((item, i) => {
-    const impact = item.short_term_impact || item.impact;
-    const dateLabel = fmtDateHeading(item.created_at);
-    if (dateLabel !== currentDateLabel) {
-      html += `<div class="date-heading">${dateLabel}</div>`;
-      currentDateLabel = dateLabel;
-    }
-    const p = item.symbol && priceMap[item.symbol] ? priceMap[item.symbol] : null;
+  sortedGroups.forEach((group, i) => {
+    const latest = group[0];
+    const impact = latest.short_term_impact || latest.impact;
+    const p = latest.symbol && priceMap[latest.symbol] ? priceMap[latest.symbol] : null;
     const priceHtml = p ? `<span class="news-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>` : '';
     const changeHtml = p && p.change !== undefined ? `<span class="news-change ${Number(p.change) >= 0 ? 'up' : 'down'}">${Number(p.change) >= 0 ? '+' : ''}${Number(p.change).toFixed(2)}</span>` : '';
-    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.03}s"><div class="news-card-top"><div class="news-company-wrap"><span class="news-company">${item.company_name || 'Unknown'}</span>${item.symbol ? `<span class="news-symbol">${item.symbol}</span>` : ''}${item.symbol && fnoSymbols.has(item.symbol.toUpperCase()) ? '<span class="fno-badge">F&O</span>' : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(item.created_at)}</span></div><p class="news-summary">${item.summary || ''}</p><div class="news-meta"><span class="impact-tag ${impactClass(impact)}">${impact || '—'}</span>${item.confidence ? `<span class="impact-tag neutral">Conf: ${item.confidence}</span>` : ''}${item.source_link ? `<a class="news-link" href="${item.source_link}" target="_blank" rel="noopener noreferrer">Source →</a>` : ''}</div></div>`;
+
+    const entriesHtml = group.map((item, idx) => {
+      const hiddenClass = idx >= 2 ? 'hidden' : '';
+      const itemImpact = item.short_term_impact || item.impact;
+      return `<div class="news-entry ${hiddenClass}"><span class="entry-time">${fmtDateHeading(item.created_at)} · ${fmtTime(item.created_at)}</span><p class="entry-summary">${item.summary || ''}</p><div class="entry-meta"><span class="impact-tag ${impactClass(itemImpact)}">${itemImpact || '—'}</span>${item.confidence ? `<span class="impact-tag neutral">Conf: ${item.confidence}</span>` : ''}${item.source_link ? `<a class="news-link" href="${item.source_link}" target="_blank" rel="noopener noreferrer">Source →</a>` : ''}</div></div>`;
+    }).join('');
+
+    const toggleHtml = group.length > 2
+      ? `<button class="news-group-toggle" onclick="event.stopPropagation();toggleNewsGroup(this)">+ ${group.length - 2} more update${group.length - 2 > 1 ? 's' : ''}</button>`
+      : '';
+
+    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.03}s"><div class="news-card-top"><div class="news-company-wrap"><span class="news-company">${latest.company_name || 'Unknown'}</span>${latest.symbol ? `<span class="news-symbol">${latest.symbol}</span>` : ''}${latest.symbol && fnoSymbols.has(latest.symbol.toUpperCase()) ? '<span class="fno-badge">F&O</span>' : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(latest.created_at)}</span></div><div class="news-entries">${entriesHtml}</div>${toggleHtml}</div>`;
   });
+
   feedEl.innerHTML = html;
+}
+
+function toggleNewsGroup(btn) {
+  const card = btn.closest('.news-card');
+  const hidden = card.querySelectorAll('.news-entry.hidden');
+  const isExpanded = btn.getAttribute('data-expanded') === 'true';
+  if (isExpanded) {
+    hidden.forEach(el => el.style.display = 'none');
+    const total = card.querySelectorAll('.news-entry').length;
+    btn.textContent = `+ ${total - 2} more update${total - 2 > 1 ? 's' : ''}`;
+    btn.setAttribute('data-expanded', 'false');
+  } else {
+    hidden.forEach(el => el.style.display = 'block');
+    btn.textContent = 'Show less';
+    btn.setAttribute('data-expanded', 'true');
+  }
 }
 
 async function loadNews() {
