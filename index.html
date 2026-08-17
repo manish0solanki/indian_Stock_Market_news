@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,7 +166,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stock-detail-inner { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-md); }
 .stock-detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
 .stock-name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
-.stock-symbol-tag { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--indigo-light); background: rgba(140,130,255,0.12); padding: 2px 8px; border-radius: 20px; margin-right: 6px; }
+.stock-symbol-tag { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #ffffff; background: rgba(140,130,255,0.12); padding: 2px 8px; border-radius: 20px; margin-right: 6px; }
 [data-theme="light"] .stock-symbol-tag { background: rgba(46,31,130,0.08); color: var(--indigo); }
 .stock-sector { font-size: 12px; color: var(--text-secondary); }
 .stock-price-block { text-align: right; }
@@ -370,8 +371,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .site-footer { text-align: center; padding: 20px; color: var(--text-muted); font-size: 11px; background: var(--bg); }
 
 /* F&O Badge */
-.fno-badge { font-family: var(--font-mono); font-size: 8px; font-weight: 700; color: var(--indigo-light); background: rgba(140,130,255,0.12); padding: 1px 5px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-left: 3px; vertical-align: middle; display: inline-block; }
-[data-theme="light"] .fno-badge { background: rgba(46,31,130,0.08); color: var(--indigo); }
+.fno-badge { font-family: var(--font-mono); font-size: 8px; font-weight: 700; color: #ffffff; background: rgba(140,130,255,0.12); padding: 1px 5px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-left: 3px; vertical-align: middle; display: inline-block; }
+[data-theme="light"] .fno-badge { background: rgba(46,31,130,0.08); color: #000000; }
+[data-theme="light"] .ticker-item .fno-badge { color: #ffffff; }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
