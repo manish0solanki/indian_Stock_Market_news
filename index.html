@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1532,7 +1533,7 @@ function renderNews() {
   // Group by company
   const groups = {};
   items.forEach(item => {
-    const key = (item.company_name || item.symbol || 'Unknown').trim();
+    const key = (item.symbol || item.company_name || 'Unknown').trim();
     if (!groups[key]) groups[key] = [];
     groups[key].push(item);
   });
