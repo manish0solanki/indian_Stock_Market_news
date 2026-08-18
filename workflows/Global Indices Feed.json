@@ -1,0 +1,4263 @@
+{
+  "name": "Global Indices Feed",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://www.livemint.com/rss/markets",
+        "options": {}
+      },
+      "id": "c398e251-2ee2-476b-a730-526df89c476a",
+      "name": "RSS - LiveMint",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        144
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://economictimes.indiatimes.com/markets/stocks/news/rssfeeds/2146842.cms",
+        "options": {}
+      },
+      "id": "85567764-d479-4527-8536-11c42526b282",
+      "name": "RSS - Economic Times",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        336
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.business-standard.com/rss/markets-106.rss",
+        "options": {}
+      },
+      "id": "723f9b70-8a60-4dda-b3df-d7b520a723bb",
+      "name": "RSS - Business Standard",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        528
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "2eac5d63-b14e-46c1-9ccf-f76ee0e10ab8",
+      "name": "Merge Feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -544,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "link",
+        "options": {}
+      },
+      "id": "10650196-fbd6-48f9-b178-9e812621c9d2",
+      "name": "Remove Duplicates (seen before)",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        352,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json && i.json.link && !i.json.error);"
+      },
+      "id": "8a7b10d7-6b8f-4066-9221-52383a1281f4",
+      "name": "Keep Valid Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\nconst sources = $('Remove Duplicates (seen before)').all();\nconst all = $input.all();\nfor (let idx = 0; idx < all.length; idx++) {\n  const item = all[idx];\n  const src = sources[idx] ? sources[idx].json : {};\n  let raw = (item.json.output && item.json.output[0] && item.json.output[0].content && item.json.output[0].content[0] && item.json.output[0].content[0].text) || (item.json.content && item.json.content[0] && item.json.content[0].text) || '';\n  raw = raw.replace(/```json|```/g, '').trim();\n  let parsed;\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    parsed = { is_relevant: false };\n  }\n  items.push({\n    json: {\n      ...parsed,\n      source_title: src.title || '',\n      source_link: src.link || ''\n    }\n  });\n}\nreturn items;"
+      },
+      "id": "3dbe983c-505e-49ed-9622-5f24c0c07937",
+      "name": "Parse Claude JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_relevant }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "4ce28a90-e366-42a2-aba4-1b6a73d26161"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5ac35387-6bda-4a04-a634-da381c137222",
+      "name": "Is Relevant?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1962665152,
+          "mode": "list",
+          "cachedResultName": "NSE_LIST",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=1962665152"
+        },
+        "options": {}
+      },
+      "id": "711ca712-ca31-4e1c-8c38-ba838d959c76",
+      "name": "Get NSE List (once per run)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -352,
+        -48
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const nseList = $('Get NSE List (once per run)').all().map(i => i.json);\nconst results = [];\nfor (const item of $input.all()) {\n  const ai = item.json;\n  if (!ai.is_relevant) continue;\n  const guess = (ai.nse_symbol_guess || '').toString().toUpperCase().trim();\n  const nameGuess = (ai.company_name || '').toString().toLowerCase().trim();\n  let match = nseList.find(r => (r.SYMBOL || '').toString().toUpperCase().trim() === guess);\n  if (!match && nameGuess) {\n    const firstWord = nameGuess.split(' ')[0];\n    match = nseList.find(r => (r['NAME OF COMPANY'] || '').toString().toLowerCase().includes(firstWord));\n  }\n  if (!match) continue;\n  results.push({\n    json: {\n      company_name: ai.company_name || match['NAME OF COMPANY'],\n      symbol: match.SYMBOL,\n      summary: ai.summary || '',\n      impact: ai.impact || 'Neutral',\n      short_term_impact: ai.impact || 'Neutral',\n      long_term_impact: ai.impact || 'Neutral',\n      confidence: ai.confidence || 'N/A',\n      source_link: ai.source_link || '',\n      created_at: new Date().toISOString()\n    }\n  });\n}\nreturn results;"
+      },
+      "id": "633f681b-de9f-486e-9568-9076482d337f",
+      "name": "Match Against NSE List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\nfor (const item of $input.all()) {\n  const d = item.json;\n  const emoji = d.impact === 'Positive' ? '\\ud83d\\udfe2' : d.impact === 'Negative' ? '\\ud83d\\udd34' : '\\ud83d\\udfe1';\n  const readMore = d.source_link ? `\\n[Read more](${d.source_link})` : '';\n  const msg = `${emoji} *${d.company_name}* (${d.symbol})\\n${d.summary}\\nImpact: *${d.impact}* (confidence: ${d.confidence})${readMore}`;\n  results.push({ json: { ...d, message: msg } });\n}\nreturn results;"
+      },
+      "id": "0b430f3f-91c8-4a4c-83c9-dfbb81339a0d",
+      "name": "Format Telegram Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "1301207410",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "1cf6319f-e7cc-4101-8fdf-34c674112e58",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2048,
+        336
+      ],
+      "webhookId": "7bce4527-d5f5-4eee-b3c8-1fe8ef08f8e7",
+      "retryOnFail": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "M7Vv2t2OcTdnDLdU",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ JSON.stringify({\n  model: \"GPT-4.1\",\n  max_tokens: 200,\n  system: \"You are a financial news analyst for Indian equity markets. Given a news headline and description, identify the SINGLE primary Indian company it is about (if any). Respond with ONLY raw JSON, no markdown fences, no preamble, in this exact shape: {\\\"is_relevant\\\": boolean, \\\"company_name\\\": string, \\\"nse_symbol_guess\\\": string, \\\"summary\\\": string (max 20 words), \\\"impact\\\": \\\"Positive\\\" | \\\"Negative\\\" | \\\"Neutral\\\", \\\"confidence\\\": \\\"High\\\" | \\\"Medium\\\" | \\\"Low\\\"}. Set is_relevant to false if the news is macro/general market commentary not tied to one specific listed company.\",\n  messages: [\n    { role: \"user\", content: \"Headline: \" + $json.title + \"\\n\\nDescription: \" + ($json.contentSnippet || $json.content || \"\") }\n  ]\n}) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "b3116cb6-f7a9-44cd-a668-94338f26af05",
+      "name": "Message a model",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        336
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "oXU3LLSmgIbHWU3n",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "isoDate",
+              "order": "descending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5998e9c8-ff3d-4f92-9b89-6e59c45affbc",
+      "name": "Sort by Newest1",
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "id": "010ac056-94b7-4fa9-b3b7-0aa1f2fc9153",
+      "name": "Limit to Top ",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        128,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -992,
+        -48
+      ],
+      "id": "dfcd7327-7fbd-4106-a578-17f23e58aad5",
+      "name": "Telegram Trigger",
+      "webhookId": "f5643a7b-1898-4bbc-8d94-c53c312ef8b8",
+      "credentials": {
+        "telegramApi": {
+          "id": "M7Vv2t2OcTdnDLdU",
+          "name": "Telegram account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "NewsLog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "company_name": "={{ $json.company_name }}",
+            "symbol": "={{ $json.symbol }}",
+            "summary": "={{ $json.summary }}",
+            "short_term_impact": "={{ $json.impact }}",
+            "long_term_impact": "={{ $json.impact }}",
+            "confidence": "={{ $json.confidence }}",
+            "source_link": "={{ $json.source_link }}",
+            "created_at": "={{ $json.created_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "symbol",
+              "displayName": "symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "short_term_impact",
+              "displayName": "short_term_impact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "long_term_impact",
+              "displayName": "long_term_impact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source_link",
+              "displayName": "source_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "SYMBOL",
+              "displayName": "SYMBOL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "impact",
+              "displayName": "impact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pubDate",
+              "displayName": "pubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "contentSnippet",
+              "displayName": "contentSnippet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "guid",
+              "displayName": "guid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "isoDate",
+              "displayName": "isoDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "enclosure",
+              "displayName": "enclosure",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "is_relevant",
+              "displayName": "is_relevant",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nse_symbol_guess",
+              "displayName": "nse_symbol_guess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source_title",
+              "displayName": "source_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "a89392b4-89a8-4b88-b94f-19c0d55304dc",
+      "name": "Log to NewsLog Sheet1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1600,
+        336
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "15,30,45 9 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "*/15 10-14 * * 1-5"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0,15,30 15 * * 1-5"
+            },
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "e9c0cfe1-a49f-465e-8edd-23fa7670f80a",
+      "name": "Every 15 Min - Prices",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -992,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "NewsLog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "4b43aea9-95a3-4cbc-a0a5-f0cfa93628f8",
+      "name": "Read Recent NewsLog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -544,
+        1136
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst seen = new Set();\nconst symbols = [];\nfor (const r of rows) {\n  const s = (r.symbol || '').toString().trim().toUpperCase();\n  if (s && !seen.has(s)) { seen.add(s); symbols.push(s); }\n}\nreturn symbols.slice(0, 100).map(s => ({ json: { symbol: s } }));"
+      },
+      "id": "c011a6be-1d4e-478d-b7d6-24b74281935d",
+      "name": "Distinct Symbols",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.symbol }}.NS",
+        "options": {}
+      },
+      "id": "1538917b-228d-4f16-9fd5-6e8d13d221dc",
+      "name": "Fetch Price (Yahoo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -96,
+        1136
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\nfor (const item of $input.all()) {\n  try {\n    const r = item.json.chart.result[0];\n    const meta = r.meta;\n    const price = meta.regularMarketPrice;\n    const prevClose = meta.previousClose || meta.chartPreviousClose;\n    const change = prevClose ? price - prevClose : 0;\n    const changePct = prevClose ? (change / prevClose) * 100 : 0;\n    \n    results.push({ json: {\n      symbol: meta.symbol.replace('.NS', ''),\n      company_name: meta.symbol.replace('.NS', ''),\n      price: Math.round(price * 100) / 100,\n      change: Math.round(change * 100) / 100,\n      change_percent: Math.round(changePct * 100) / 100,\n      updated_at: new Date().toISOString()\n    }});\n  } catch (e) { /* skip symbols Yahoo couldn't resolve */ }\n}\nreturn results;\n"
+      },
+      "id": "edd2ac9c-ac48-4ab9-8a3a-1ef8b65f3f9b",
+      "name": "Parse Price Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2130267680,
+          "mode": "list",
+          "cachedResultName": "Prices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=2130267680"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "symbol": "={{ $json.symbol }}",
+            "company_name": "={{ $json.company_name }}",
+            "price": "={{ $json.price }}",
+            "change": "={{ $json.change }}",
+            "change_percent": "={{ $json.change_percent }}",
+            "updated_at": "={{ $json.updated_at }}"
+          },
+          "matchingColumns": [
+            "symbol"
+          ],
+          "schema": [
+            {
+              "id": "symbol",
+              "displayName": "symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "change",
+              "displayName": "change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "change_percent",
+              "displayName": "change_percent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "fa9d0aef-ba64-4876-86cb-56d4eab131b6",
+      "name": "Update Prices Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        352,
+        1136
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "news-feed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "54adb4ad-ffa2-4872-b623-05f44131c54f",
+      "name": "Webhook - Get News",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        752
+      ],
+      "webhookId": "5df118d9-4901-44b1-8eb5-a8b47b51b121"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "NewsLog",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "de19483a-e922-4194-9aca-630753132335",
+      "name": "Read NewsLog Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -768,
+        752
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nrows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));\nreturn [{ json: { items: rows.slice(0, 100) } }];"
+      },
+      "id": "17b87ecf-3def-4bb6-8375-008d8e68c292",
+      "name": "Sort Newest First",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "cb6dc0b0-a3a7-4af8-a4b5-80d7f53c896c",
+      "name": "Respond - News",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "path": "price-feed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e2b45c33-fe27-498c-aa9a-3300ddbb0f96",
+      "name": "Webhook - Get Prices",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        944
+      ],
+      "webhookId": "6cc347c7-3087-4ed9-a13d-cbf242bc442f"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2130267680,
+          "mode": "list",
+          "cachedResultName": "Prices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=2130267680"
+        },
+        "options": {}
+      },
+      "id": "8014a61e-1df3-4784-8c5f-e77592165660",
+      "name": "Read Prices Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -544,
+        944
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nreturn [{ json: { items: rows } }];"
+      },
+      "id": "92803811-054c-4158-bcdf-e94cb39e0b62",
+      "name": "Wrap Prices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6cd468c8-d2a4-4382-92d7-fe21890d9495",
+      "name": "Respond - Prices",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "contact-message",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1746f5f-430e-442e-8d63-8d4fe1366567",
+      "name": "Webhook - Contact Form",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        2048
+      ],
+      "webhookId": "bd3f9646-71fa-411a-8a8e-eb824ae5b5d4"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1883933598,
+          "mode": "list",
+          "cachedResultName": "Messages",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=1883933598"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "name": "={{ $json.body.name }}",
+            "email": "={{ $json.body.email }}",
+            "message": "={{ $json.body.message }}",
+            "created_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ec25f3f0-9d84-4488-8f01-dcd44a55ed32",
+      "name": "Append to Messages Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -768,
+        1744
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "731108a0-3db3-4ec8-a91b-eeac94a6341e",
+      "name": "Respond - Contact",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -544,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */3 * * *"
+            },
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "29030a8b-552e-4cfd-8b80-b387a947854b",
+      "name": "Every 3hr",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -992,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const indices = [\n  { symbol: '^NSEI', display_name: 'NIFTY 50' },\n  { symbol: '^NSEBANK', display_name: 'BANK NIFTY' },\n  { symbol: '^BSESN', display_name: 'SENSEX' },\n  { symbol: 'YM=F', display_name: 'DOW FUT' },\n  { symbol: '^DJI', display_name: 'DOW JONES' },\n  { symbol: 'CL=F', display_name: 'CRUDE OIL' },\n];\nreturn indices.map(i => ({ json: i }));\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        2224
+      ],
+      "id": "b31729b3-da16-4203-b711-dd7993dd6c4d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ encodeURIComponent($json.symbol) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -544,
+        2224
+      ],
+      "id": "c55a8a08-1247-4202-af90-cf888ba06009",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\nconst items = $input.all();\nconst indexList = $('Code in JavaScript').all();\n\nfor (let i = 0; i < items.length; i++) {\n  try {\n    const meta = items[i].json.chart.result[0].meta;\n    const price = meta.regularMarketPrice;\n    const prevClose = meta.previousClose || meta.chartPreviousClose;\n    const change = prevClose ? price - prevClose : 0;\n    const changePct = prevClose ? (change / prevClose) * 100 : 0;\n\n    results.push({\n      json: {\n        symbol: indexList[i].json.symbol,\n        display_name: indexList[i].json.display_name,\n        price: Math.round(price * 100) / 100,\n        change: Math.round(change * 100) / 100,\n        change_percent: Math.round(changePct * 100) / 100,\n        updated_at: new Date().toISOString()\n      }\n    });\n\n  } catch (e) {\n    console.log(e);\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        2224
+      ],
+      "id": "13c8234f-250a-4000-b495-1576e21fc190",
+      "name": "Parse Index Data"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1417733683,
+          "mode": "list",
+          "cachedResultName": "Indices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=1417733683"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "symbol"
+          ],
+          "schema": [
+            {
+              "id": "symbol",
+              "displayName": "symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "display_name",
+              "displayName": "display_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "change",
+              "displayName": "change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "change_percent",
+              "displayName": "change_percent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "items",
+              "displayName": "items",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -96,
+        2224
+      ],
+      "id": "9a5c22f5-a42e-4436-bc53-c6576580f56e",
+      "name": "Update Indices Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "clear",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2130267680,
+          "mode": "list",
+          "cachedResultName": "Prices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=2130267680"
+        },
+        "keepFirstRow": true
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        1184
+      ],
+      "id": "ec1f26a3-ee52-4215-883e-a77c9b05fac0",
+      "name": "Clear sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -992,
+        1552
+      ],
+      "id": "93922f02-b423-41e5-b8bc-412bde0cf9f6",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -768,
+        944
+      ],
+      "id": "23f6f18e-a126-44cb-9071-4278dd993228",
+      "name": "Wait",
+      "webhookId": "43e657e1-1184-48ef-b6d8-71247139cb4a"
+    },
+    {
+      "parameters": {
+        "jsCode": "const indices = [\n  { symbol: '^NSEI', display_name: 'NIFTY 50' },\n  { symbol: '^NSEBANK', display_name: 'BANK NIFTY' },\n  { symbol: '^BSESN', display_name: 'SENSEX' },\n  { symbol: 'NIFTY_FIN_SERVICE.NS', display_name: 'FIN NIFTY' },\n  { symbol: 'NIFTY_MIDCAP_100.NS', display_name: 'MIDCAP NIFTY' },\n  { symbol: 'BSE-BANK.BO', display_name: 'BANKEX' },\n\n];\nreturn indices.map(i => ({ json: i }));\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        2416
+      ],
+      "id": "7a734499-4433-4dfa-8ee4-da6bc9fd5ca9",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ encodeURIComponent($json.symbol) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -544,
+        2416
+      ],
+      "id": "ba7545a2-4d95-4175-ae42-e620c90e2144",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=[{{ $input.all().map(item => JSON.stringify(item.json)).join(',') }}]\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -96,
+        2416
+      ],
+      "id": "e846b580-1779-4076-ac7b-5277108ef661",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "path": "index-feed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        2624
+      ],
+      "id": "6a3233e2-4405-40de-b728-c53d8ef2c1c7",
+      "name": "Webhook1",
+      "webhookId": "53a5c5ef-ceea-4727-8fdf-7edbb654eb0b",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "path": "index-feed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1136,
+        2800
+      ],
+      "id": "d63f6892-15e1-47ea-ab5f-4c4c45063ee9",
+      "name": "Webhook",
+      "webhookId": "53a5c5ef-ceea-4727-8fdf-7edbb654eb0b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\nconst items = $input.all();\nconst indexList = $('Code in JavaScript1').all();\n\nfor (let i = 0; i < items.length; i++) {\n  try {\n    const meta = items[i].json.chart.result[0].meta;\n    const price = meta.regularMarketPrice;\n    const prevClose = meta.previousClose || meta.chartPreviousClose;\n    const change = prevClose ? price - prevClose : 0;\n    const changePct = prevClose ? (change / prevClose) * 100 : 0;\n\n    results.push({\n      json: {\n        symbol: indexList[i].json.symbol,\n        display_name: indexList[i].json.display_name,\n        price: Math.round(price * 100) / 100,\n        change: Math.round(change * 100) / 100,\n        change_percent: Math.round(changePct * 100) / 100,\n        updated_at: new Date().toISOString()\n      }\n    });\n\n  } catch (e) {\n    console.log(e);\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        2416
+      ],
+      "id": "95656dec-d613-4f03-882d-6cb46c9a2e2d",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/top-headlines?category=business&pageSize=5&apiKey=a4fac4b78f404e5ab4ab09156144834d",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -768,
+        1936
+      ],
+      "id": "900eabdc-a060-435a-8f6a-a92181c6ede5",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.articles }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -544,
+        1936
+      ],
+      "id": "453888ef-9eae-4023-b11b-7845292dbff6",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "path": "global-news",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        2240
+      ],
+      "id": "ecf2b797-e109-4043-a576-20ef38c6c9d7",
+      "name": "Global News",
+      "webhookId": "00fdda65-fa39-4a44-a94b-2220e16bfb84"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 46694602,
+          "mode": "list",
+          "cachedResultName": "NSE_TESTING",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=46694602"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        4880
+      ],
+      "id": "99a68cdb-5172-40a6-913f-06e028720d8a",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.screener.in/company/{{ $json.SYMBOL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {},
+            {
+              "name": "Cookie"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -320,
+        4800
+      ],
+      "id": "71b98ca5-cd39-486d-85ba-872afc93a25d",
+      "name": "HTTP Request3",
+      "onError": "continueRegularOutput",
+      "notes": "={{$json.error}}"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "cssSelector": "a[title=\"Industry\"]"
+            },
+            {
+              "key": "Sector",
+              "cssSelector": "a[title=\"Industry\"]"
+            },
+            {
+              "key": "MarketCap",
+              "cssSelector": "span.name:contains(\"Market Cap\") + span span.number"
+            },
+            {
+              "key": "DividendYield",
+              "cssSelector": "span.name:contains(\"Dividend Yield\") + span span.number"
+            },
+            {
+              "key": "p/e",
+              "cssSelector": "button[data-title=\"Price to Earning\"] + span.number, li:contains(\"Stock P/E\") span.number"
+            },
+            {
+              "key": "ROE",
+              "cssSelector": "li:contains(\"ROE\") span.number"
+            },
+            {
+              "key": "ROCE",
+              "cssSelector": "li:contains(\"ROCE\") span.number"
+            },
+            {
+              "key": "Book Value",
+              "cssSelector": "li:contains(\"Book Value\") span.number"
+            },
+            {
+              "key": "Face Value",
+              "cssSelector": "li:contains(\"Face Value\") span.number"
+            },
+            {
+              "key": "Promoters Holdings",
+              "cssSelector": "tr:contains(\"Promoters\") td:last-child"
+            },
+            {
+              "key": "Quarters",
+              "cssSelector": "#quarterly-shp table.data-table thead th",
+              "returnArray": true
+            },
+            {
+              "key": "Promoters",
+              "cssSelector": "#quarterly-shp tbody tr:nth-child(1) td",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        4800
+      ],
+      "id": "cd81f5a2-172c-412f-a25d-344e17078e13",
+      "name": "HTML",
+      "notesInFlow": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 46694602,
+          "mode": "list",
+          "cachedResultName": "NSE_TESTING",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=46694602"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Sector": "={{ $json.Sector }}",
+            "SYMBOL": "={{ $('Get row(s) in sheet').item.json.SYMBOL }}",
+            "Dividend Yield": "={{ $json.DividendYield + \"%\"}}",
+            "Market Cap": "={{ $json.MarketCap + \"cr\" }}",
+            "P/E": "={{ $json['p/e'] }}",
+            "ROE": "={{ $json.ROE }}",
+            "ROCE": "={{ $json.ROCE }}",
+            "Book Value": "={{ $json['Book Value'] }}",
+            "Face Value": "={{ $json['Face Value'] }}",
+            "Last Quarter": "={{ $json.Quarters[12] }}",
+            "Previous Quarter": "={{ $json.Quarters[11] }}",
+            "Promoters": "={{ $json.Promoters[11] }}",
+            "Promoters ": "={{ $json.Promoters[12] }}"
+          },
+          "matchingColumns": [
+            "SYMBOL"
+          ],
+          "schema": [
+            {
+              "id": "SYMBOL",
+              "displayName": "SYMBOL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NAME OF COMPANY",
+              "displayName": "NAME OF COMPANY",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "SERIES",
+              "displayName": "SERIES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DATE OF LISTING",
+              "displayName": "DATE OF LISTING",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "PAID UP VALUE",
+              "displayName": "PAID UP VALUE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MARKET LOT",
+              "displayName": "MARKET LOT",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ISIN NUMBER",
+              "displayName": "ISIN NUMBER",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FACE VALUE",
+              "displayName": "FACE VALUE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sector",
+              "displayName": "Sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Macro Sector",
+              "displayName": "Macro Sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Price",
+              "displayName": "Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Open",
+              "displayName": "Open",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Previous Close",
+              "displayName": "Previous Close",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Percentage Change",
+              "displayName": "Percentage Change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Dividend Yield",
+              "displayName": "Dividend Yield",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "52W High",
+              "displayName": "52W High",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "52W Low",
+              "displayName": "52W Low",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Market Cap",
+              "displayName": "Market Cap",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "High",
+              "displayName": "High",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Low",
+              "displayName": "Low",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "P/E",
+              "displayName": "P/E",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ROE",
+              "displayName": "ROE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ROCE",
+              "displayName": "ROCE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Book Value",
+              "displayName": "Book Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Face Value",
+              "displayName": "Face Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Quarter",
+              "displayName": "Last Quarter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Promoters ",
+              "displayName": "Promoters ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Previous Quarter",
+              "displayName": "Previous Quarter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Promoters",
+              "displayName": "Promoters",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Promoters Change",
+              "displayName": "Promoters Change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        4800
+      ],
+      "id": "f0ba58e5-ce33-46e6-828d-c6b208ab7cea",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const row = item.json;\n\n  const quarters = (row.Quarters || []).filter(q => q.trim() !== \"\");\n  const promoters = (row.Promoters || []).slice(1);\n\n  row.LatestQuarter = quarters.at(-1) || \"\";\n  row.PreviousQuarter = quarters.at(-2) || \"\";\n\n  row.LatestPromoterHolding = promoters.at(-1) || \"\";\n  row.PreviousPromoterHolding = promoters.at(-2) || \"\";\n\n  return { json: row };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        4800
+      ],
+      "id": "9684b151-062d-4bf0-81af-026be71cc128",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        4880
+      ],
+      "id": "11fe497d-7cd8-481f-999c-47a379702090",
+      "name": "Wait1",
+      "webhookId": "7acf6ea0-347c-4724-9f8a-723097ce9386"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -544,
+        4880
+      ],
+      "id": "6c7ff64f-ed2f-4f35-b3f0-d346e7617e51",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -992,
+        4880
+      ],
+      "id": "c916476f-c394-43fb-8d94-17f30a46c73d",
+      "name": "Schedule Trigger NSE Data"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 46694602,
+          "mode": "list",
+          "cachedResultName": "NSE_TESTING",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=46694602"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        3040
+      ],
+      "id": "371513c9-9bfb-49b7-ad68-4cb1de655b6f",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhook = $('Webhook - stock-search').first().json;\n\nconst query = (\n    webhook.query.q ??\n    webhook.query.query ??\n    webhook.q ??\n    ''\n).toLowerCase().trim();\n\nif (!query) return [];\n\nconst rows = $input.all();\n\nconst filtered = rows.map(item => {\n    const row = item.json;\n    const name = String(row[\"NAME OF COMPANY\"] || \"\").toLowerCase();\n    const symbol = String(row[\"SYMBOL\"] || \"\").toLowerCase();\n\n    let score = 0;\n    if (symbol === query) score += 100;\n    else if (symbol.startsWith(query)) score += 50;\n    else if (symbol.includes(query)) score += 20;\n\n    if (name === query) score += 80;\n    else if (name.startsWith(query)) score += 40;\n    else if (name.includes(query)) score += 10;\n\n    return { item, score };\n}).filter(x => x.score > 0)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, 5)\n  .map(x => x.item);\n\nreturn filtered.map(item => {\n    const row = item.json;\n\n    return {\n        json: {\n            symbol: row.SYMBOL,\n            company_name: row[\"NAME OF COMPANY\"],\n            sector: row.Sector,\n\n            price: row.Price,\n            open: row.Open,\n            previous_close: row[\"Previous Close\"],\n            change_percent: row[\"Percentage Change\"],\n\n            dividend_yield: row[\"Dividend Yield\"],\n            high_52w: row[\"52W High\"],\n            low_52w: row[\"52W Low\"],\n\n            market_cap: row[\"Market Cap\"],\n            high: row.High,\n            low: row.Low,\n\n            pe: row[\"P/E\"],\n            roe: row.ROE,\n            roce: row.ROCE,\n\n            book_value: row[\"Book Value\"],\n            face_value: row[\"Face Value\"],\n\n            last_quarter_promoters: row[\"Promoters \"],\n            previous_quarter_promoters: row.Promoters,\n            promoters_change: row[\"Promoters Change\"]\n        }\n    };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        3040
+      ],
+      "id": "5da31825-a7f6-4f97-a019-2f72d0b2edd9",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "path": "stock-search",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        3040
+      ],
+      "id": "34a02ba8-0915-4194-bd5b-23f3ff36d056",
+      "name": "Webhook - stock-search",
+      "webhookId": "930edafa-9914-468f-b1c2-1c1016777024"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=[{{ $input.all().map(item => JSON.stringify(item.json)).join(',') }}]\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -320,
+        4352
+      ],
+      "id": "14342a49-2310-4271-8fd7-48a19975a126",
+      "name": "Respond to stock-search"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 46694602,
+          "mode": "list",
+          "cachedResultName": "NSE_TESTING",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=46694602"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        3904
+      ],
+      "id": "2258b808-ad4c-4c16-b6ef-1330618976e9",
+      "name": "Get row(s) in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sheet = $('Filter Symbol').first().json;\nconst yahoo = $input.first().json;\n\n// v8 chart API structure: chart.result[0].meta + indicators.quote[0]\nconst result = yahoo?.chart?.result?.[0] || {};\nconst meta = result.meta || {};\nconst quote = result.indicators?.quote?.[0] || {};\n\n// Extract live fields from CORRECT v8 paths\nconst price = meta.regularMarketPrice;\nconst prevClose = meta.chartPreviousClose;\nconst open = quote.open?.[0];           // open is inside indicators array\nconst dayHigh = meta.regularMarketDayHigh;\nconst dayLow = meta.regularMarketDayLow;\nconst high52 = meta.fiftyTwoWeekHigh;\nconst low52 = meta.fiftyTwoWeekLow;\n\n// Calculate change percent from live price & prev close\nlet changePct;\nif (price !== undefined && prevClose !== undefined && prevClose !== 0) {\n  changePct = ((price - prevClose) / prevClose) * 100;\n} else {\n  changePct = sheet[\"Percentage Change\"];\n}\n\n// Helper: use Yahoo value if it exists and is a number, else fallback to sheet\nconst pick = (live, sheetVal) => (live !== undefined && live !== null && !isNaN(live)) ? live : sheetVal;\n\nreturn [{\n  json: {\n    symbol: sheet.SYMBOL,\n    company_name: sheet[\"NAME OF COMPANY\"],\n    sector: sheet.Sector,\n\n    // Live from Yahoo v8 chart\n    price: pick(price, sheet.Price),\n    open: pick(open, sheet.Open),\n    previous_close: pick(prevClose, sheet[\"Previous Close\"]),\n    change_percent: changePct,\n\n    // Sheet data for rest\n    dividend_yield: sheet[\"Dividend Yield\"],\n    high_52w: pick(high52, sheet[\"52W High\"]),\n    low_52w: pick(low52, sheet[\"52W Low\"]),\n\n    market_cap: sheet[\"Market Cap\"],\n    high: pick(dayHigh, sheet.High),\n    low: pick(dayLow, sheet.Low),\n\n    pe: sheet[\"P/E\"],\n    roe: sheet.ROE,\n    roce: sheet.ROCE,\n\n    book_value: sheet[\"Book Value\"],\n    face_value: sheet[\"Face Value\"],\n\n    last_quarter_promoters: sheet[\"Promoters \"],\n    previous_quarter_promoters: sheet.Promoters,\n    promoters_change: sheet[\"Promoters Change\"]\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        3904
+      ],
+      "id": "69aaa40d-1f8f-479c-98df-27dc37437324",
+      "name": "Merge Data"
+    },
+    {
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.SYMBOL }}.NS?interval=1d&range=1d",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -320,
+        3904
+      ],
+      "id": "31c8a61f-ad47-4860-ba8d-f3791bb2ba02",
+      "name": "Yahoo Finance"
+    },
+    {
+      "parameters": {
+        "jsCode": "const symbol = $('Webhook - stock-detail').first().json.query.symbol;\nconst rows = $input.all();\n\nconst match = rows.find(r => \n  String(r.json.SYMBOL).toUpperCase() === String(symbol).toUpperCase()\n);\n\nreturn match ? [match] : [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        3888
+      ],
+      "id": "07989575-1ec8-47a9-a68e-112ffe52b9c1",
+      "name": "Filter Symbol"
+    },
+    {
+      "parameters": {
+        "path": "stock-detail",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        3904
+      ],
+      "id": "b67f62a1-9588-4aa1-9543-79e699b43799",
+      "name": "Webhook - stock-detail",
+      "webhookId": "92c87bf8-2ff1-4ab8-95ca-39355d9b0330"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        128,
+        3904
+      ],
+      "id": "7248a78c-aede-4cb8-82ce-3946cbeb2dc9",
+      "name": "Respond to Webhook - stock-detail"
+    },
+    {
+      "parameters": {
+        "path": "sector-list",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        4128
+      ],
+      "id": "370fdf94-e457-41c2-919d-2eb7f8f4ad0a",
+      "name": "Webhook - sector-list",
+      "webhookId": "9b22fc4b-7a83-4d06-8305-2e44e049a17a"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 46694602,
+          "mode": "list",
+          "cachedResultName": "NSE_TESTING",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=46694602"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        4128
+      ],
+      "id": "a9fefdd3-81f3-4737-915e-156a89ae1870",
+      "name": "Get row(s) in sheet3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst sectors = new Set();\n\nrows.forEach(r => {\n  const json = r.json || {};\n  \n  // Try exact header match first\n  let val = json[\"Macro Sector\"];\n  \n  // Then common variations\n  if (!val) val = json[\"Macro sector\"];\n  if (!val) val = json[\"Sector\"];\n  if (!val) val = json[\"sector\"];\n  \n  // Last resort: scan all keys case-insensitively + trim spaces\n  if (!val) {\n    const key = Object.keys(json).find(k => \n      k.trim().toLowerCase() === 'macro sector'\n    );\n    if (key) val = json[key];\n  }\n  \n  if (val && String(val).trim()) {\n    sectors.add(String(val).trim());\n  }\n});\n\n// Debug: check n8n execution output to see this\nconst sorted = Array.from(sectors).sort();\nreturn sorted.map(s => ({ json: { sector: s } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        4128
+      ],
+      "id": "3bc27747-bf86-48bc-ac74-61937173ae5f",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 46694602,
+          "mode": "list",
+          "cachedResultName": "NSE_TESTING",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=46694602"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        4352
+      ],
+      "id": "5d8363b2-0118-466e-9bb2-a0dc44280c02",
+      "name": "Get row(s) in sheet4",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhook = $('Webhook - sector-stocks').first()?.json?.query || {};\nconst requestedSector = (webhook.sector || '').toLowerCase().trim();\nif (!requestedSector) return [];\n\nconst rows = $input.all();\nconst filtered = rows.filter(r => {\n  const json = r.json || {};\n  const val = json[\"Macro Sector\"] || json[\"Macro sector\"] || json[\"Sector\"] || json[\"sector\"];\n  const sector = String(val || '').toLowerCase().trim();\n  return sector === requestedSector;\n});\n\nreturn filtered.map(r => {\n  const row = r.json;\n  return {\n    json: {\n      symbol: row.SYMBOL,\n      company_name: row[\"NAME OF COMPANY\"],\n      price: row.Price,\n      change_percent: row[\"Percentage Change\"],\n      pe: row[\"P/E\"],\n      market_cap: row[\"Market Cap\"],\n      last_quarter_promoters: row[\"Promoters \"],\n      sector: row[\"Macro Sector\"] || row[\"Macro sector\"] || row.Sector\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        4352
+      ],
+      "id": "75bd29bf-4aa3-442b-a5db-fd1efd59033b",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "path": "sector-indices",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        4576
+      ],
+      "id": "b07dfdb0-d5c1-44b7-abb6-0e70d45a7766",
+      "name": "Webhook - sector-indices",
+      "webhookId": "3f34f036-11d2-4c07-a05a-4f5fa0b4a6a4"
+    },
+    {
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ encodeURIComponent($json.symbol) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -544,
+        4576
+      ],
+      "id": "b308b21f-c7e5-4ae8-a55c-b830a7d2a5e1",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\nconst items = $input.all();\nconst indexList = $('Code in JavaScript8').all();\n\nfor (let i = 0; i < items.length; i++) {\n  try {\n    const meta = items[i].json.chart.result[0].meta;\n    const price = meta.regularMarketPrice;\n    const prevClose = meta.previousClose || meta.chartPreviousClose;\n    const change = prevClose ? price - prevClose : 0;\n    const changePct = prevClose ? (change / prevClose) * 100 : 0;\n\n    results.push({\n      json: {\n        symbol: indexList[i].json.symbol,\n        display_name: indexList[i].json.display_name,\n        price: Math.round(price * 100) / 100,\n        change: Math.round(change * 100) / 100,\n        change_percent: Math.round(changePct * 100) / 100,\n        updated_at: new Date().toISOString()\n      }\n    });\n\n  } catch (e) {\n    console.log(e);\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        4576
+      ],
+      "id": "1b0afb31-dffa-4e7f-8a0b-979c6ed5dfb1",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=[{{ $input.all().map(item => JSON.stringify(item.json)).join(',') }}]\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -320,
+        4128
+      ],
+      "id": "151484bc-35de-437c-b16e-c7d7953132c2",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=[{{ $input.all().map(item => JSON.stringify(item.json)).join(',') }}]\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -96,
+        4576
+      ],
+      "id": "867eb47b-4635-4a6e-8cf7-d36a055146b8",
+      "name": "Respond to stock-search1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const indices = [\n  { symbol: '^CNXIT', display_name: 'NIFTY IT' },\n  { symbol: '^CNXAUTO', display_name: 'NIFTY AUTO' },\n  { symbol: '^CNXPHARMA', display_name: 'NIFTY PHARMA' },\n  { symbol: '^CNXFMCG', display_name: 'NIFTY FMCG' },\n  { symbol: '^CNXMETAL', display_name: 'NIFTY METAL' },\n  { symbol: '^CNXREALTY', display_name: 'NIFTY REALTY' },\n  { symbol: '^CNXENERGY', display_name: 'NIFTY ENERGY' },\n  { symbol: '^CNXINFRA', display_name: 'NIFTY INFRA' },\n  { symbol: '^CNXMEDIA', display_name: 'NIFTY MEDIA' },\t\n];\nreturn indices.map(i => ({ json: i }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        4576
+      ],
+      "id": "e2118765-a328-4e7b-8487-80ee7e9a345e",
+      "name": "Code in JavaScript8"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1962665152,
+          "mode": "list",
+          "cachedResultName": "NSE_LIST",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=1962665152"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "id": "c448f2b9-40db-4b78-8f0f-8ddf88245aea",
+      "name": "Read Master List (SET YOUR SHEET ID)1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        112,
+        3152
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "SYMBOL",
+              "field2": "SYMBOL"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b73eacfe-15ad-40cd-9916-c3e6f45782e8",
+      "name": "Merge: Symbols + Master Rows1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        576,
+        3360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const symbols = new Set();\n\nfor (const item of items) {\n    const sym =\n        item.json.SYMBOL ||\n        item.json.symbol ||\n        item.json.TckrSymb ||\n        item.json.TCKRSYMB ||\n        item.json.Symbol;\n\n    if (sym) {\n        symbols.add(String(sym).trim().toUpperCase());\n    }\n}\n\nreturn [{\n    json: {\n        total: symbols.size,\n        fnoSymbols: [...symbols].sort()\n    }\n}];"
+      },
+      "id": "916f081f-9811-4785-90dc-3f31ba4525ae",
+      "name": "Filter: Master intersect F&O1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        3360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 492609115,
+          "mode": "list",
+          "cachedResultName": "F&O_Only",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=492609115"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "fnoRows": "="
+          },
+          "matchingColumns": [
+            "fnoRows"
+          ],
+          "schema": [
+            {
+              "id": "fnoRows",
+              "displayName": "fnoRows",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Symbol",
+              "displayName": "Symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "0300fb83-e1f7-452c-af30-546cfe02e63d",
+      "name": "Write F&O List (SET YOUR SHEET ID)1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1248,
+        3360
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const symbols = $input.first().json.fnoSymbols;\n\nreturn symbols.map(symbol => ({\n  json: {\n    Symbol: symbol\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        3360
+      ],
+      "id": "75ce7fdd-c797-42eb-bfa6-626946105c29",
+      "name": "Code in JavaScript10"
+    },
+    {
+      "parameters": {
+        "operation": "clear",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 492609115,
+          "mode": "list",
+          "cachedResultName": "F&O_Only",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=492609115"
+        },
+        "keepFirstRow": true
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        3456
+      ],
+      "id": "56d9e40a-6253-4808-98ad-b73c8cb713dc",
+      "name": "Clear sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "fno-list",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f758832a-70f4-4aee-812d-460bbbbc4054",
+      "name": "Webhook - FNO List",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        3680
+      ],
+      "webhookId": "fno-list"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 492609115,
+          "mode": "list",
+          "cachedResultName": "F&O_Only",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=492609115"
+        },
+        "options": {}
+      },
+      "id": "48cfac89-5e01-4681-8551-bfe61d168e44",
+      "name": "Read F&O_Only Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -768,
+        3680
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst symbols = rows.map(r => {\n  const j = r.json;\n  return j.fnoRows || j.Symbol || j.symbol || j.SYMBOL || j.TckrSymb;\n}).filter(Boolean).map(s => String(s).trim().toUpperCase());\n\nreturn [{\n  json: {\n    symbols: symbols,\n    count: symbols.length,\n    updated: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "b5222f48-1c30-471a-9ecc-684a38a4348f",
+      "name": "Format FNO Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        3680
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -320,
+        3680
+      ],
+      "id": "1a07418b-0950-47df-af77-132bf0a3ec64",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.first().json.data; // adjust field name to match your HTTP node's output\n\n// Match each futures row: <a title=\"Company Name\" href=\"/derivatives/SLUG-futures\">\nconst regex = /<a title=\"([^\"]+)\" href=\"\\/derivatives\\/([a-z0-9&-]+)-futures\">/gi;\n\nconst results = [];\nconst seen = new Set();\n\nlet match;\nwhile ((match = regex.exec(html)) !== null) {\n  const name = match[1]\n    .replace(/&amp;/g, '&')\n    .trim();\n  const slug = match[2];\n\n  // Derive symbol from slug: uppercase, remove trailing \"-futures\" already stripped\n  const symbol = slug.toUpperCase();\n\n  if (!seen.has(symbol)) {\n    seen.add(symbol);\n    results.push({ json: { name, symbol } });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        3520
+      ],
+      "id": "0b28d1c9-5f63-42bf-a5a3-4b7b47d88950",
+      "name": "Code in JavaScript9"
+    },
+    {
+      "parameters": {
+        "url": "https://www.5paisa.com/fno-list/all",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -528,
+        3504
+      ],
+      "id": "838ee7bc-42e6-4263-90c4-1f4d1ffe542e",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -992,
+        3360
+      ],
+      "id": "d12051a7-e88e-455e-8ec9-bf9e0fd05fd7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "path": "heatmap-data",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -608,
+        5360
+      ],
+      "id": "63949f58-c2a2-4920-b2eb-ad331c194b71",
+      "name": "Webhook - heatmap-data",
+      "webhookId": "f5e7e2f3-6bbc-406f-a7ed-54eb500674a4"
+    },
+    {
+      "parameters": {
+        "url": "https://www.nseindia.com/api/allIndices",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Cookies",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -400,
+        5360
+      ],
+      "id": "2bef950f-4457-4386-9fac-9c6c306326eb",
+      "name": "HTTP Request6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// DEBUG: Log what we actually received\nconsole.log(\"Raw input keys:\", Object.keys(input));\nconsole.log(\"Raw input sample:\", JSON.stringify(input).substring(0, 500));\n\n// Try multiple possible locations for the indices array\nlet allIndices = \n  input.data || \n  input.indices || \n  input.result || \n  input.payload || \n  input;\n\n// If it's not an array, try to find an array inside\nif (!Array.isArray(allIndices)) {\n  for (const key of Object.keys(input)) {\n    if (Array.isArray(input[key]) && input[key].length > 0) {\n      allIndices = input[key];\n      console.log(`Found array in key: ${key}`);\n      break;\n    }\n  }\n}\n\nconsole.log(\"Total indices found:\", allIndices.length);\nconsole.log(\"First item keys:\", allIndices.length > 0 ? Object.keys(allIndices[0]) : \"NONE\");\n\n// --- ONLY THESE 12 INDICES WILL BE OUTPUT ---\nconst weights = {\n  \"NIFTY BANK\": 12.8,\n  \"NIFTY IT\": 15.2,\n  \"NIFTY FINANCIAL SERVICES\": 18.5,\n  \"NIFTY FMCG\": 8.5,\n  \"NIFTY ENERGY\": 6.2,\n  \"NIFTY OIL & GAS\": 5.8,\n  \"NIFTY AUTO\": 4.1,\n  \"NIFTY PHARMA\": 3.8,\n  \"NIFTY METAL\": 3.2,\n  \"NIFTY INFRASTRUCTURE\": 2.8,\n  \"NIFTY REALTY\": 1.1\n};\n\nconst sectoral = allIndices\n  .filter(idx => {\n    const name = idx.indexName || idx.index || idx.key || idx.symbol || idx.name || '';\n    // Only keep indices that exist in the weights object above\n    return name && weights[name] !== undefined;\n  })\n  .map(idx => {\n    const name = idx.indexName || idx.index || idx.key || idx.symbol || idx.name || '';\n    const lastPrice = Number(idx.last || idx.lastPrice || idx.close || idx.value || idx.price || 0);\n    const changeVal = Number(idx.change || idx.variation || idx.absoluteChange || 0);\n    const changePct = Number(idx.percentChange || idx.pChange || idx.changePercent || 0);\n    \n    return {\n      name: name.replace('NIFTY ', ''),\n      full_name: name,\n      price: lastPrice,\n      change: changeVal,\n      change_percent: changePct,\n      market_cap_weight: weights[name]\n    };\n  })\n  .sort((a, b) => b.change_percent - a.change_percent);\n\nreturn [{ \n  json: { \n    data: sectoral, \n    count: sectoral.length,\n    updated_at: new Date().toISOString() \n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        5360
+      ],
+      "id": "bc327703-3b53-43ca-b59b-b09e313d370f",
+      "name": "Code in JavaScript11"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=[{{ $input.all().map(item => JSON.stringify(item.json)).join(',') }}]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        32,
+        5360
+      ],
+      "id": "d6934461-6de6-4f51-9a06-a0a4677161aa",
+      "name": "Respond to Webhook4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet advances = 0, declines = 0, unchanged = 0;\n\nitems.forEach(item => {\n  const json = item.json || {};\n  \n  // Skip if no symbol (empty row)\n  if (!json.Symbol) return;\n  \n  // Access \"Change %\" with bracket notation because of the space\n  const changePct = Number(json['Change %'] ?? json.change_pct ?? 0);\n  \n  if (changePct > 0.01) advances++;\n  else if (changePct < -0.01) declines++;\n  else unchanged++;\n});\n\nconst total = advances + declines + unchanged;\nconst adRatio = declines > 0 ? Number((advances / declines).toFixed(2)) : (advances || 0);\n\nreturn [{\n  json: {\n    advances,\n    declines,\n    unchanged,\n    total_stocks: total,\n    ad_ratio: adRatio,\n    advance_percent: total > 0 ? Number(((advances / total) * 100).toFixed(2)) : 0,\n    decline_percent: total > 0 ? Number(((declines / total) * 100).toFixed(2)) : 0,\n    sample_size: \"NIFTY 50 via Google Sheets\",\n    updated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        5584
+      ],
+      "id": "65083ac3-1ccf-4e0c-b1cf-c970e55b21a4",
+      "name": "Code in JavaScript12"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        16,
+        5584
+      ],
+      "id": "36aad26b-4723-42ac-8829-889b8088958b",
+      "name": "Respond to Webhook5"
+    },
+    {
+      "parameters": {
+        "path": "market-breadth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        5584
+      ],
+      "id": "146d36bb-962b-4740-8971-41983a2691eb",
+      "name": "Webhook - market-breadth",
+      "webhookId": "f5e7e2f3-6bbc-406f-a7ed-54eb500674a4"
+    },
+    {
+      "parameters": {
+        "url": "https://www.nseindia.com/api/fiidiiTradeReact",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0"
+            },
+            {
+              "name": "Cookies",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -400,
+        5824
+      ],
+      "id": "0fbfa65a-bff6-45af-b756-557d6ab2652f",
+      "name": "HTTP Request8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all rows from the HTTP node\nconst rows = $input.all().map(item => item.json);\n\nconst byDate = {};\n\nfor (const row of rows) {\n  if (!row.date) continue;\n  \n  if (!byDate[row.date]) {\n    byDate[row.date] = {\n      date: row.date,\n      fiiNet: 0,\n      diiNet: 0\n    };\n  }\n  \n  // Parse string numbers (handles \"15,241.39\" and \"-936.14\")\n  const netStr = String(row.netValue || '0').replace(/,/g, '');\n  const net = parseFloat(netStr) || 0;\n  \n  const cat = String(row.category || '').toUpperCase();\n  \n  // \"FII/FPI\" → FII, \"DII\" → DII\n  if (cat.includes('FII')) {\n    byDate[row.date].fiiNet = net;\n  } else if (cat.includes('DII')) {\n    byDate[row.date].diiNet = net;\n  }\n}\n\n// Sort by date, keep last 5 days\nconst result = Object.values(byDate)\n  .sort((a, b) => new Date(a.date) - new Date(b.date))\n  .slice(-5);\n\n// Return in n8n item format\nreturn result.map(item => ({ json: item }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        5824
+      ],
+      "id": "851bb30e-93b5-4336-a956-c84e1820639b",
+      "name": "Code in JavaScript13"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=[{{ $input.all().map(item => JSON.stringify(item.json)).join(',') }}]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        64,
+        5824
+      ],
+      "id": "4969bacc-51d0-46bd-b6ee-582fd337ab57",
+      "name": "Respond to Webhook6"
+    },
+    {
+      "parameters": {
+        "path": "fii-dii-data",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -608,
+        5824
+      ],
+      "id": "e365ccf7-f2e5-475a-a7e0-fc58a0498250",
+      "name": "Webhook - fii-dii-data",
+      "webhookId": "f5e7e2f3-6bbc-406f-a7ed-54eb500674a4"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2069422978,
+          "mode": "list",
+          "cachedResultName": "NIFTY50_BREADTH",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=2069422978"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -416,
+        5584
+      ],
+      "id": "134bbb57-77c3-4ed7-9d32-f1716f117407",
+      "name": "Get row(s) in sheet5",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Global indices mapping: friendly name -> Yahoo Finance symbol\nconst indices = [\n  { symbol: 'ES=F', display_name: 'S&P 500' },\n  { symbol: '^IXIC', display_name: 'Nasdaq' },\n  { symbol: '^DJI', display_name: 'Dow Jones' },\n  { symbol: '^FTSE', display_name: 'FTSE 100' },\n  { symbol: '^N225', display_name: 'Nikkei 225' },\n  { symbol: '^HSI', display_name: 'Hang Seng' },\n  { symbol: '^GDAXI', display_name: 'DAX' },\n  { symbol: '^FCHI', display_name: 'CAC 40' },\n  { symbol: 'CL=F', display_name: 'CRUDE OIL' },\n  { symbol: 'BTC-USD', display_name: 'BITCOIN' }\n];\n\nreturn indices.map(i => ({ json: i }));"
+      },
+      "id": "e0479505-3292-4bf1-9b48-b33dc019301c",
+      "name": "Fetch Global Indices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        2624
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=[{{ $input.all().map(item => JSON.stringify(item.json)).join(',') }}]\n\n",
+        "options": {}
+      },
+      "id": "5a657d35-77b5-48af-bdc7-433db2b2b101",
+      "name": "Respond to Webhook7",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        2624
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{ $json.symbol }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -544,
+        2624
+      ],
+      "id": "370f0d8f-2ada-4775-8818-f5c571762f5f",
+      "name": "HTTP Request7"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\nconst items = $input.all();\nconst indexList = $('Fetch Global Indices').all();\n\nfor (let i = 0; i < items.length; i++) {\n  try {\n    const meta = items[i].json.chart.result[0].meta;\n    const price = meta.regularMarketPrice;\n    const prevClose = meta.previousClose || meta.chartPreviousClose;\n    const change = prevClose ? price - prevClose : 0;\n    const changePct = prevClose ? (change / prevClose) * 100 : 0;\n\n    results.push({\n      json: {\n        symbol: indexList[i].json.symbol,\n        display_name: indexList[i].json.display_name,\n        price: Math.round(price * 100) / 100,\n        change: Math.round(change * 100) / 100,\n        change_percent: Math.round(changePct * 100) / 100,\n        updated_at: new Date().toISOString()\n      }\n    });\n\n  } catch (e) {\n    console.log(e);\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        2624
+      ],
+      "id": "77adb40b-5244-4bfa-8165-de57a4e42ea0",
+      "name": "Code in JavaScript14"
+    },
+    {
+      "parameters": {
+        "path": "global-indices",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        2880
+      ],
+      "id": "9dc86006-fbb5-4a4e-9847-ceac0fc40e4f",
+      "name": "Webhook - global-indices",
+      "webhookId": "8602bda0-ae97-493b-893a-f5a308085609"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ea8b77a-4a37-436a-88a8-26c0694356fe",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "c3350178-3ce0-4421-8537-3a85440cf1e9",
+              "name": "symbol",
+              "value": "={{ $json.symbol }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        16,
+        3520
+      ],
+      "id": "bc6cabc4-b672-4d05-9922-8a99f508b446",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0",
+          "mode": "list",
+          "cachedResultName": "MarketPluse",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1835274435,
+          "mode": "list",
+          "cachedResultName": "F&O Temp",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Du10XZij4YlMEbNhPSrqMDd7RsIWdi00DeG0EkOlro0/edit#gid=1835274435"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SYMBOL": "={{ $json.symbol }}",
+            "NAME": "={{ $json.name }}"
+          },
+          "matchingColumns": [
+            "SYMBOL"
+          ],
+          "schema": [
+            {
+              "id": "SYMBOL",
+              "displayName": "SYMBOL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NAME",
+              "displayName": "NAME",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        3456
+      ],
+      "id": "fc298d56-7b5b-4dc1-b39c-6f9266da6d49",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IqcJrxM68GQ2qHUO",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "sector-stocks",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        4352
+      ],
+      "id": "b4372961-ea7c-47a1-9a75-89a826fb3f98",
+      "name": "Webhook - sector-stocks",
+      "webhookId": "df54c107-b7e5-4d2a-8c9e-2957e0b9c05f"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "RSS - LiveMint": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS - Economic Times": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS - Business Standard": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge Feeds": {
+      "main": [
+        [
+          {
+            "node": "Keep Valid Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Valid Items": {
+      "main": [
+        [
+          {
+            "node": "Sort by Newest1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates (seen before)": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Claude JSON": {
+      "main": [
+        [
+          {
+            "node": "Is Relevant?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Relevant?": {
+      "main": [
+        [
+          {
+            "node": "Match Against NSE List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Against NSE List": {
+      "main": [
+        [
+          {
+            "node": "Log to NewsLog Sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Parse Claude JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort by Newest1": {
+      "main": [
+        [
+          {
+            "node": "Limit to Top ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit to Top ": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates (seen before)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 Min - Prices": {
+      "main": [
+        [
+          {
+            "node": "Read Recent NewsLog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Recent NewsLog": {
+      "main": [
+        [
+          {
+            "node": "Distinct Symbols",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Distinct Symbols": {
+      "main": [
+        [
+          {
+            "node": "Fetch Price (Yahoo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Price (Yahoo)": {
+      "main": [
+        [
+          {
+            "node": "Parse Price Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Price Data": {
+      "main": [
+        [
+          {
+            "node": "Update Prices Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS - LiveMint",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS - Economic Times",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS - Business Standard",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get NSE List (once per run)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Get News": {
+      "main": [
+        [
+          {
+            "node": "Read NewsLog Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read NewsLog Sheet": {
+      "main": [
+        [
+          {
+            "node": "Sort Newest First",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort Newest First": {
+      "main": [
+        [
+          {
+            "node": "Respond - News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Get Prices": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Recent NewsLog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Prices Sheet": {
+      "main": [
+        [
+          {
+            "node": "Wrap Prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Prices": {
+      "main": [
+        [
+          {
+            "node": "Respond - Prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Contact Form": {
+      "main": [
+        [
+          {
+            "node": "Append to Messages Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Messages Sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond - Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 3hr": {
+      "main": [
+        [
+          {
+            "node": "RSS - Economic Times",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS - Business Standard",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS - LiveMint",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get NSE List (once per run)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Parse Index Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Index Data": {
+      "main": [
+        [
+          {
+            "node": "Update Indices Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear sheet": {
+      "main": [
+        []
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read NewsLog Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Prices Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Clear sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Global Indices",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append to Messages Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Read Prices Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to NewsLog Sheet1": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Indices Sheet": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Global News": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get NSE List (once per run)": {
+      "main": [
+        []
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger NSE Data": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - stock-search": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Filter Symbol",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - stock-detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yahoo Finance": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Symbol": {
+      "main": [
+        [
+          {
+            "node": "Yahoo Finance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - stock-detail": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - sector-list": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Respond to stock-search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - sector-indices": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "Respond to stock-search1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript8": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Master List (SET YOUR SHEET ID)1": {
+      "main": [
+        [
+          {
+            "node": "Merge: Symbols + Master Rows1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge: Symbols + Master Rows1": {
+      "main": [
+        [
+          {
+            "node": "Filter: Master intersect F&O1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Master intersect F&O1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript10": {
+      "main": [
+        [
+          {
+            "node": "Write F&O List (SET YOUR SHEET ID)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear sheet1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - FNO List": {
+      "main": [
+        [
+          {
+            "node": "Read F&O_Only Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read F&O_Only Sheet": {
+      "main": [
+        [
+          {
+            "node": "Format FNO Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format FNO Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Clear sheet1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Master List (SET YOUR SHEET ID)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript9": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - heatmap-data": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request6": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript11": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript12": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - market-breadth": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request8": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript13",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript13": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - fii-dii-data": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Global Indices": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request7": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript14": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - global-indices": {
+      "main": [
+        [
+          {
+            "node": "Fetch Global Indices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Merge: Symbols + Master Rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - sector-stocks": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "25c52b9f-8de7-45e7-89fc-1f8a84bfc389",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6aac8b93eccbefa3a59ba18907d51f1b07b31bcf030b96ce378f90691af7c9a"
+  },
+  "nodeGroups": [],
+  "id": "Q2j4YyLjDvZFYhAw",
+  "tags": []
+}
