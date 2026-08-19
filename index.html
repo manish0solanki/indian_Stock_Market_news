@@ -1,3 +1,8 @@
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -280,6 +285,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .filter-chip.negative.active { border-color: var(--negative); background: var(--negative-bg); }
 .filter-chip.neutral.active { border-color: var(--neutral); background: var(--neutral-bg); }
 .filter-chip.total.active { border-color: var(--indigo); background: rgba(46,31,130,0.08); }
+.filter-chip.fno.active { border-color: #8C82FF; background: rgba(140,130,255,0.15); }
+.filter-chip.fno .fc-dot { background: #8C82FF; }
 .fc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .filter-chip.positive .fc-dot { background: var(--positive); }
 .filter-chip.negative .fc-dot { background: var(--negative); }
@@ -636,6 +643,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         </div>
         <div class="filter-chip total" data-filter="all" role="button" tabindex="0" title="Show all news">
           <span class="fc-dot"></span><span class="fc-num" id="statTotal">0</span><span class="fc-label">Total</span>
+        </div>
+        <div class="filter-chip fno" data-filter="fno" role="button" tabindex="0" title="Show F&O stocks only">
+          <span class="fc-dot"></span><span class="fc-num" id="statFno">0</span><span class="fc-label">F&O</span>
         </div>
       </div>
 
@@ -1480,6 +1490,8 @@ function updateStats(items) {
   animateValue(document.getElementById('statNegative'), parseInt(document.getElementById('statNegative').textContent) || 0, counts.Negative, 600);
   animateValue(document.getElementById('statNeutral'), parseInt(document.getElementById('statNeutral').textContent) || 0, counts.Neutral, 600);
   animateValue(document.getElementById('statTotal'), parseInt(document.getElementById('statTotal').textContent) || 0, visibleItems.length, 600);
+  const fnoCount = visibleItems.filter(it => it.symbol && fnoSymbols.has(it.symbol.toUpperCase())).length;
+  animateValue(document.getElementById('statFno'), parseInt(document.getElementById('statFno').textContent) || 0, fnoCount, 600);
 }
 
 /* ─── News Feed ─── */
@@ -1494,7 +1506,9 @@ function getFilteredItems() {
     // Always filter to current trading session, not just after market close
     items = items.filter(it => isWithinTradingWindow(it.created_at));
   }
-  if (currentFilter !== 'all') {
+  if (currentFilter === 'fno') {
+    items = items.filter(it => it.symbol && fnoSymbols.has(it.symbol.toUpperCase()));
+  } else if (currentFilter !== 'all') {
     items = items.filter(it => impactClass(it.short_term_impact || it.impact) === currentFilter);
   }
   if (currentSearch.trim()) {
@@ -1958,6 +1972,7 @@ async function loadFnoList() {
     else if (data.symbols && Array.isArray(data.symbols)) symbols = data.symbols;
     else if (data.items && Array.isArray(data.items)) symbols = data.items.map(x => x.fnoRows || x.Symbol || x.symbol);
     fnoSymbols = new Set(symbols.map(s => String(s).trim().toUpperCase()).filter(Boolean));
+    updateStats(allNewsItems);
     renderNews();
     renderPrices(getPriceItems());
   } catch (e) {
