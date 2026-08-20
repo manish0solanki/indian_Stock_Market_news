@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -417,6 +418,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 </style>
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -426,7 +428,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       <div class="topbar-right">
         <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints">⚙️</button>
         <button class="theme-toggle" id="themeToggle" title="Toggle light mode">☀️</button>
-        <span class="topbar-status"><span class="pulse-dot"></span><span id="lastUpdated">connecting…</span></span>
+        <span class="topbar-status"><span class="pulse-dot"></span><span id="lastUpdated">connecting…</span><span id="cacheStatus" style="margin-left:10px;font-size:10px;opacity:0.7;font-family:var(--font-mono);"></span></span>
       </div>
     </div>
   </div>
@@ -721,7 +723,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════════════
-const DEFAULT_API_BASE = "https://experiences-rocks-vol-skiing.trycloudflare.com/webhook";
+const DEFAULT_API_BASE = "https://marketpulse-cache.manish0solanki20078.workers.dev";
 const DEFAULT_NEWS_KEY = "a4fac4b78f404e5ab4ab09156144834d";
 
 let API_BASE = DEFAULT_API_BASE;
@@ -780,6 +782,31 @@ let currentSectorName = '';
 let sectorSort = { col: null, dir: 'asc' };
 let sectorFilter = 'all';
 let sectorSearchQuery = '';
+
+/* ─── API Fetch Wrapper (Cache Status) ─── */
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+  if (url.startsWith(API_BASE)) {
+    const res = await originalFetch.apply(this, args);
+    const status = res.headers.get('X-Cache-Status');
+    if (status) updateCacheStatus(status);
+    return res;
+  }
+  return originalFetch.apply(this, args);
+};
+function updateCacheStatus(status) {
+  const el = document.getElementById('cacheStatus');
+  if (!el) return;
+  const map = {
+    'HIT':    { t: '● Cached',    c: 'var(--neutral)' },
+    'MISS':   { t: '● Live',      c: '#4ADE80' },
+    'STALE':  { t: '● Refreshing',c: 'var(--neutral)' },
+    'BYPASS': { t: '● Direct',    c: '#F5A623' }
+  };
+  const s = map[status];
+  if (s) { el.textContent = s.t; el.style.color = s.c; }
+}
 
 /* ─── Settings Modal ─── */
 const settingsModal = document.getElementById('settingsModal');
