@@ -791,11 +791,14 @@ let sectorSearchQuery = '';
 /* ─── API Fetch Wrapper (Cache Status) ─── */
 const originalFetch = window.fetch;
 window.fetch = async function(...args) {
-  const url = typeof args[0] === 'string' ? args[0] : args[0].url;
-  if (url.startsWith(API_BASE)) {
+  const reqUrl = typeof args[0] === 'string' ? args[0] : (args[0].url || '');
+  const isWorker = reqUrl.includes('marketpulse-cache.manish0solanki20078.workers.dev');
+  
+  if (isWorker) {
     try {
       const res = await originalFetch.apply(this, args);
       const status = res.headers.get('X-Cache-Status');
+      console.log('[CacheStatus]', reqUrl.split('/').pop(), '→', status); // debug
       updateCacheStatus(status || 'UNKNOWN');
       return res;
     } catch (err) {
@@ -809,15 +812,18 @@ window.fetch = async function(...args) {
 function updateCacheStatus(status) {
   const el = document.getElementById('cacheStatus');
   if (!el) return;
+  
   const map = {
-    'HIT':    { t: '● Cached',     c: '#4ADE80' },
-    'MISS':   { t: '● Live',       c: '#4ADE80' },
-    'STALE':  { t: '● Refreshing', c: '#F5A623' },
-    'BYPASS': { t: '● Direct',     c: '#F5A623' },
-    'ERROR':  { t: '● Error',      c: '#F87171' },
-    'UNKNOWN':{ t: '● ...',        c: '#6B6B8A' }
+    'HIT':     { t: '● Cached',     c: '#4ADE80' },
+    'MISS':    { t: '● Live',       c: '#4ADE80' },
+    'STALE':   { t: '● Refreshing', c: '#F5A623' },
+    'BYPASS':  { t: '● Direct',     c: '#F5A623' },
+    'ERROR':   { t: '● Error',      c: '#F87171' }
   };
-  const s = map[status] || map['UNKNOWN'];
+  
+  const s = map[status];
+  if (!s) return; // Don't update if status is null/unknown
+  
   el.textContent = s.t;
   el.style.color = s.c;
   el.style.opacity = '0.85';
@@ -2089,7 +2095,7 @@ setInterval(loadSectorIndices, REFRESH_MS);
 setInterval(loadBreadth, REFRESH_MS);
 setInterval(loadFiiDii, REFRESH_MS);
 setInterval(loadHeatmap, REFRESH_MS);
-setInterval(loadGlobalIndices, REFRESH_MS * 2);
+setInterval(loadGlobalIndices, REFRESH_MS);
 
 // Close dropdown on outside click
 document.addEventListener('click', (e) => {
