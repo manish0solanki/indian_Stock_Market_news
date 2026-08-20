@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -428,7 +429,11 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       <div class="topbar-right">
         <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints">⚙️</button>
         <button class="theme-toggle" id="themeToggle" title="Toggle light mode">☀️</button>
-        <span class="topbar-status"><span class="pulse-dot"></span><span id="lastUpdated">connecting…</span><span id="cacheStatus" style="margin-left:10px;font-size:10px;opacity:0.7;font-family:var(--font-mono);"></span></span>
+        <span class="topbar-status">
+  <span class="pulse-dot"></span>
+  <span id="lastUpdated">connecting…</span>
+  <span id="cacheStatus" style="margin-left:10px;font-size:10px;opacity:0.85;font-family:var(--font-mono);font-weight:600;"></span>
+</span>
       </div>
     </div>
   </div>
@@ -788,24 +793,35 @@ const originalFetch = window.fetch;
 window.fetch = async function(...args) {
   const url = typeof args[0] === 'string' ? args[0] : args[0].url;
   if (url.startsWith(API_BASE)) {
-    const res = await originalFetch.apply(this, args);
-    const status = res.headers.get('X-Cache-Status');
-    if (status) updateCacheStatus(status);
-    return res;
+    try {
+      const res = await originalFetch.apply(this, args);
+      const status = res.headers.get('X-Cache-Status');
+      updateCacheStatus(status || 'UNKNOWN');
+      return res;
+    } catch (err) {
+      updateCacheStatus('ERROR');
+      throw err;
+    }
   }
   return originalFetch.apply(this, args);
 };
+
 function updateCacheStatus(status) {
   const el = document.getElementById('cacheStatus');
   if (!el) return;
   const map = {
-    'HIT':    { t: '● Cached',    c: 'var(--neutral)' },
-    'MISS':   { t: '● Live',      c: '#4ADE80' },
-    'STALE':  { t: '● Refreshing',c: 'var(--neutral)' },
-    'BYPASS': { t: '● Direct',    c: '#F5A623' }
+    'HIT':    { t: '● Cached',     c: '#4ADE80' },
+    'MISS':   { t: '● Live',       c: '#4ADE80' },
+    'STALE':  { t: '● Refreshing', c: '#F5A623' },
+    'BYPASS': { t: '● Direct',     c: '#F5A623' },
+    'ERROR':  { t: '● Error',      c: '#F87171' },
+    'UNKNOWN':{ t: '● ...',        c: '#6B6B8A' }
   };
-  const s = map[status];
-  if (s) { el.textContent = s.t; el.style.color = s.c; }
+  const s = map[status] || map['UNKNOWN'];
+  el.textContent = s.t;
+  el.style.color = s.c;
+  el.style.opacity = '0.85';
+  el.style.fontWeight = '600';
 }
 
 /* ─── Settings Modal ─── */
