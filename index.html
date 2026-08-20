@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -788,11 +789,19 @@ let sectorSort = { col: null, dir: 'asc' };
 let sectorFilter = 'all';
 let sectorSearchQuery = '';
 
-/* ─── API Fetch Wrapper (Cache Status) ─── */
+/* ─── API Fetch Wrapper (Cache Status + No Browser Cache) ─── */
 const originalFetch = window.fetch;
 window.fetch = async function(...args) {
   const reqUrl = typeof args[0] === 'string' ? args[0] : (args[0].url || '');
   const isWorker = reqUrl.includes('marketpulse-cache.manish0solanki20078.workers.dev');
+  
+  // Inject cache: 'no-store' for all Worker requests so browser never caches
+  if (isWorker && typeof args[0] === 'string') {
+    const opts = args[1] || {};
+    if (!opts.cache) {
+      args[1] = { ...opts, cache: 'no-store' };
+    }
+  }
   
   if (isWorker) {
     try {
