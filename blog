@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2E1F82">
+<meta name="description" content="Market analysis, stock insights, and trading strategies from MarketPulse — your daily source for Indian market intelligence.">
+<meta name="keywords" content="Indian stock market, Nifty 50, Sensex, stock analysis, FII DII data, sector analysis, market breadth">
+<meta property="og:title" content="MarketPulse Blog — Indian Stock Market Analysis">
+<meta property="og:description" content="Daily market wraps, sector deep-dives, and trading insights.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://marketpulse.vercel.app/blog/">
+<meta name="twitter:card" content="summary_large_image">
+<title>MarketPulse Blog — Indian Stock Market Analysis</title>
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --indigo: #2E1F82; --indigo-dark: #1B134F; --indigo-light: #4C3DB5;
+  --bg: #0F0F1A; --surface: #1A1A2E; --surface-hover: #222240; --border: #2A2A4A;
+  --text: #E8E8F0; --text-secondary: #A0A0B8; --text-muted: #6B6B8A;
+  --positive: #4ADE80; --positive-bg: rgba(74,222,128,0.12); --positive-light: rgba(74,222,128,0.2);
+  --negative: #F87171; --negative-bg: rgba(248,113,113,0.12); --negative-light: rgba(248,113,113,0.2);
+  --neutral: #F5A623; --neutral-bg: rgba(245,166,35,0.12); --neutral-light: rgba(245,166,35,0.2);
+  --font-body: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono: 'JetBrains Mono','SF Mono',monospace;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+  --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme="light"] {
+  --bg: #F3F4F8; --surface: #FFFFFF; --surface-hover: #FAFAFC; --border: #E2E4EE;
+  --text: #0F0F1A; --text-secondary: #5A5D6B; --text-muted: #8B8FA3;
+  --positive: #0F8A3E; --positive-bg: #E7F7EC; --positive-light: #D1F2DA;
+  --negative: #C72B2B; --negative-bg: #FCEBEB; --negative-light: #F5D0D0;
+  --neutral: #B8860B; --neutral-bg: #FBF3DF; --neutral-light: #F5E6C0;
+  --shadow-sm: 0 1px 2px rgba(20,20,50,0.04);
+  --shadow-md: 0 4px 12px rgba(20,20,50,0.06);
+  --shadow-lg: 0 8px 24px rgba(20,20,50,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+/* Topbar */
+.topbar { background: var(--indigo); color: #fff; padding: 10px 24px; position: sticky; top: 0; z-index: 100; height: 52px; box-sizing: border-box; }
+.topbar-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+.topbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.02em; text-decoration: none; color: #fff; }
+.topbar-brand .diamond { width: 9px; height: 9px; background: #F5A623; transform: rotate(45deg); display: inline-block; border-radius: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.theme-toggle { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 34px; height: 34px; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background var(--transition); }
+.theme-toggle:hover { background: rgba(255,255,255,0.25); }
+
+/* Hero */
+.blog-hero { max-width: 1200px; margin: 0 auto; padding: 40px 24px 20px; }
+.blog-hero h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
+.blog-hero p { font-size: 15px; color: var(--text-secondary); max-width: 560px; line-height: 1.6; }
+
+/* Filters */
+.blog-filters { max-width: 1200px; margin: 0 auto; padding: 0 24px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filter-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; transition: all var(--transition); user-select: none; color: var(--text-secondary); font-weight: 500; }
+.filter-chip:hover { background: var(--surface-hover); transform: translateY(-1px); }
+.filter-chip.active { border-color: var(--indigo); background: rgba(46,31,130,0.08); color: var(--text); }
+.filter-chip .count { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.filter-chip.active .count { color: var(--indigo-light); }
+
+/* Search */
+.blog-search-wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 24px; }
+.blog-search { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 16px; font-size: 14px; color: var(--text); font-family: var(--font-body); transition: border-color var(--transition), box-shadow var(--transition); height: 42px; line-height: 42px; box-sizing: border-box; }
+.blog-search:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
+.blog-search::placeholder { color: var(--text-muted); }
+
+/* Grid */
+.blog-grid { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+/* Featured (first post, spans 2 cols) */
+.blog-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: transform var(--transition), box-shadow var(--transition); cursor: pointer; display: flex; flex-direction: column; }
+.blog-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.blog-card.featured { grid-column: span 2; flex-direction: row; }
+.blog-card.featured .card-image { width: 45%; min-height: 260px; }
+.blog-card.featured .card-body { flex: 1; padding: 28px; }
+
+.card-image { width: 100%; height: 180px; background: linear-gradient(135deg, var(--indigo-dark) 0%, var(--indigo) 50%, var(--indigo-light) 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.card-image::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+.card-image .card-emoji { font-size: 48px; z-index: 1; }
+.card-image .card-category-badge { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); color: #fff; font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; z-index: 2; }
+
+.card-body { padding: 18px; flex: 1; display: flex; flex-direction: column; }
+.card-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.card-date { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.card-readtime { font-size: 11px; color: var(--text-muted); }
+.card-readtime::before { content: '· '; }
+.card-title { font-size: 17px; font-weight: 700; line-height: 1.35; margin-bottom: 8px; letter-spacing: -0.01em; color: var(--text); text-decoration: none; display: block; }
+.card-title:hover { color: var(--indigo-light); }
+[data-theme="light"] .card-title:hover { color: var(--indigo); }
+.card-excerpt { font-size: 13px; color: var(--text-secondary); line-height: 1.6; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card-footer { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.card-tag { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; background: var(--bg); color: var(--text-muted); }
+.card-tag.bullish { background: var(--positive-bg); color: var(--positive); }
+.card-tag.bearish { background: var(--negative-bg); color: var(--negative); }
+.card-arrow { font-size: 18px; color: var(--text-muted); transition: transform var(--transition), color var(--transition); }
+.blog-card:hover .card-arrow { transform: translateX(4px); color: var(--indigo-light); }
+
+/* Empty state */
+.blog-empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.blog-empty-icon { font-size: 48px; margin-bottom: 12px; }
+.blog-empty h3 { font-size: 18px; color: var(--text); margin-bottom: 6px; }
+.blog-empty p { font-size: 14px; }
+
+/* Pagination */
+.blog-pagination { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; display: flex; justify-content: center; gap: 8px; }
+.page-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+.page-btn:hover { background: var(--surface-hover); }
+.page-btn.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Footer */
+.site-footer { text-align: center; padding: 20px; color: var(--text-muted); font-size: 11px; background: var(--bg); border-top: 1px solid var(--border); }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .blog-grid { grid-template-columns: repeat(2, 1fr); }
+  .blog-card.featured { grid-column: span 2; }
+}
+@media (max-width: 768px) {
+  .blog-hero h1 { font-size: 24px; }
+  .blog-grid { grid-template-columns: 1fr; }
+  .blog-card.featured { grid-column: span 1; flex-direction: column; }
+  .blog-card.featured .card-image { width: 100%; min-height: 180px; }
+  .blog-card.featured .card-body { padding: 18px; }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <a href="../" class="topbar-brand"><span class="diamond"></span>MarketPulse</a>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="themeToggle" title="Toggle light mode">☀️</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="blog-hero">
+    <h1>📰 MarketPulse Blog</h1>
+    <p>Daily market wraps, sector deep-dives, stock spotlights, and trading strategies — powered by real-time data.</p>
+  </div>
+
+  <div class="blog-filters" id="blogFilters">
+    <div class="filter-chip active" data-category="all">All <span class="count" id="countAll">0</span></div>
+    <div class="filter-chip" data-category="daily-wrap">Daily Wrap <span class="count" id="countDaily">0</span></div>
+    <div class="filter-chip" data-category="sector-analysis">Sector Analysis <span class="count" id="countSector">0</span></div>
+    <div class="filter-chip" data-category="stock-spotlight">Stock Spotlight <span class="count" id="countStock">0</span></div>
+    <div class="filter-chip" data-category="fiidii-flows">FII/DII Flows <span class="count" id="countFiiDii">0</span></div>
+    <div class="filter-chip" data-category="guide">Guides <span class="count" id="countGuide">0</span></div>
+    <div class="filter-chip" data-category="earnings">Earnings <span class="count" id="countEarnings">0</span></div>
+  </div>
+
+  <div class="blog-search-wrap">
+    <input type="text" class="blog-search" id="blogSearch" placeholder="Search articles by title, tag, or keyword…">
+  </div>
+
+  <div class="blog-grid" id="blogGrid">
+    <div class="blog-empty">
+      <div class="blog-empty-icon">📡</div>
+      <h3>Loading articles…</h3>
+      <p>Hang tight while we fetch the latest market insights.</p>
+    </div>
+  </div>
+
+  <div class="blog-pagination" id="blogPagination"></div>
+
+  <footer class="site-footer">
+    <span>MarketPulse Blog — automated analysis, human judgment still required.</span>
+  </footer>
+
+<script>
+const POSTS_PER_PAGE = 9;
+let allPosts = [];
+let filteredPosts = [];
+let currentPage = 1;
+let currentCategory = 'all';
+let currentSearch = '';
+
+/* ─── Theme ─── */
+const themeToggle = document.getElementById('themeToggle');
+const savedTheme = localStorage.getItem('marketpulse-theme');
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggle.textContent = theme === 'light' ? '🌙' : '☀️';
+}
+if (savedTheme) applyTheme(savedTheme); else applyTheme('dark');
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  localStorage.setItem('marketpulse-theme', next);
+});
+
+/* ─── Load Posts ─── */
+async function loadPosts() {
+  try {
+    const res = await fetch('../posts.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    allPosts = await res.json();
+    allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    updateCounts();
+    filterAndRender();
+  } catch (e) {
+    document.getElementById('blogGrid').innerHTML = `
+      <div class="blog-empty">
+        <div class="blog-empty-icon">⚠️</div>
+        <h3>Could not load articles</h3>
+        <p>Check your connection and try again.</p>
+      </div>`;
+    console.error('[Blog]', e);
+  }
+}
+
+function updateCounts() {
+  const cats = ['daily-wrap','sector-analysis','stock-spotlight','fiidii-flows','guide','earnings'];
+  document.getElementById('countAll').textContent = allPosts.length;
+  cats.forEach(cat => {
+    const count = allPosts.filter(p => p.category === cat).length;
+    const map = {'daily-wrap':'Daily','sector-analysis':'Sector','stock-spotlight':'Stock','fiidii-flows':'FiiDii','guide':'Guide','earnings':'Earnings'};
+    const el = document.getElementById('count' + map[cat]);
+    if (el) el.textContent = count;
+  });
+}
+
+function filterAndRender() {
+  filteredPosts = allPosts.filter(p => {
+    const catMatch = currentCategory === 'all' || p.category === currentCategory;
+    const searchMatch = !currentSearch ||
+      (p.title || '').toLowerCase().includes(currentSearch) ||
+      (p.excerpt || '').toLowerCase().includes(currentSearch) ||
+      (p.tags || []).some(t => t.toLowerCase().includes(currentSearch)) ||
+      (p.category || '').toLowerCase().includes(currentSearch);
+    return catMatch && searchMatch;
+  });
+  currentPage = 1;
+  renderGrid();
+  renderPagination();
+}
+
+function getCategoryEmoji(cat) {
+  const map = {
+    'daily-wrap': '📈', 'sector-analysis': '📊', 'stock-spotlight': '🔍',
+    'fiidii-flows': '🏦', 'guide': '📚', 'earnings': '💰', 'market-breadth': '🎯'
+  };
+  return map[cat] || '📰';
+}
+
+function getCategoryLabel(cat) {
+  const map = {
+    'daily-wrap': 'Daily Wrap', 'sector-analysis': 'Sector Analysis', 'stock-spotlight': 'Stock Spotlight',
+    'fiidii-flows': 'FII/DII Flows', 'guide': 'Guide', 'earnings': 'Earnings', 'market-breadth': 'Market Breadth'
+  };
+  return map[cat] || cat;
+}
+
+function getSentimentClass(tag) {
+  const t = (tag || '').toLowerCase();
+  if (t.includes('bull') || t.includes('buy') || t.includes('up')) return 'bullish';
+  if (t.includes('bear') || t.includes('sell') || t.includes('down')) return 'bearish';
+  return '';
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function renderGrid() {
+  const grid = document.getElementById('blogGrid');
+  if (filteredPosts.length === 0) {
+    grid.innerHTML = `
+      <div class="blog-empty">
+        <div class="blog-empty-icon">🔍</div>
+        <h3>No articles found</h3>
+        <p>Try a different search or category.</p>
+      </div>`;
+    return;
+  }
+
+  const start = (currentPage - 1) * POSTS_PER_PAGE;
+  const pagePosts = filteredPosts.slice(start, start + POSTS_PER_PAGE);
+
+  grid.innerHTML = pagePosts.map((post, i) => {
+    const isFeatured = currentPage === 1 && i === 0 && currentCategory === 'all' && !currentSearch;
+    const emoji = getCategoryEmoji(post.category);
+    const catLabel = getCategoryLabel(post.category);
+    const tagsHtml = (post.tags || []).slice(0, 3).map(t =>
+      `<span class="card-tag ${getSentimentClass(t)}">${t}</span>`
+    ).join('');
+    const readTime = post.readTime || Math.max(3, Math.ceil((post.excerpt || '').length / 500)) + ' min read';
+
+    return `<article class="blog-card ${isFeatured ? 'featured' : ''}" onclick="window.location.href='${post.slug}/'" role="link" tabindex="0">
+      <div class="card-image">
+        <span class="card-category-badge">${catLabel}</span>
+        <span class="card-emoji">${emoji}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-meta">
+          <span class="card-date">${fmtDate(post.date)}</span>
+          <span class="card-readtime">${readTime}</span>
+        </div>
+        <a href="${post.slug}/" class="card-title">${post.title}</a>
+        <p class="card-excerpt">${post.excerpt || ''}</p>
+        <div class="card-footer">
+          <div class="card-tags">${tagsHtml}</div>
+          <span class="card-arrow">→</span>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  const pagination = document.getElementById('blogPagination');
+  if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+
+  let html = '';
+  html += `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Prev</button>`;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (i === currentPage - 2 || i === currentPage + 2) {
+      html += `<span style="color:var(--text-muted);padding:8px 4px;">…</span>`;
+    }
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+  pagination.innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderGrid();
+  renderPagination();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ─── Filters ─── */
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    currentCategory = chip.getAttribute('data-category');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-category') === currentCategory));
+    filterAndRender();
+  });
+});
+
+/* ─── Search ─── */
+document.getElementById('blogSearch').addEventListener('input', (e) => {
+  currentSearch = e.target.value.toLowerCase().trim();
+  filterAndRender();
+});
+
+/* ─── Init ─── */
+loadPosts();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "name": "MarketPulse Blog",
+  "description": "Indian stock market analysis, daily wraps, and trading insights",
+  "url": "https://marketpulse.vercel.app/blog/",
+  "publisher": {
+    "@type": "Organization",
+    "name": "MarketPulse",
+    "logo": { "@type": "ImageObject", "url": "https://marketpulse.vercel.app/favicon-16x16.png" }
+  }
+}
+</script>
+
+</body>
+</html>
