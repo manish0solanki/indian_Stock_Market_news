@@ -1,0 +1,74 @@
+[
+  {
+    "slug": "nifty-50-daily-wrap-23-aug-2026",
+    "title": "Nifty 50 Closes at 25,420: Banks Lead, IT Lags — Daily Market Wrap (23 Aug 2026)",
+    "excerpt": "Nifty 50 gained 142 points to close at 25,420, driven by strong banking and financial services performance. IT and Pharma sectors underperformed as global tech weakness spilled over.",
+    "category": "daily-wrap",
+    "date": "2026-08-23T15:30:00+05:30",
+    "readTime": "4 min read",
+    "tags": ["Nifty 50", "Bank Nifty", "bullish", "market wrap", "FII buying"],
+    "author": "MarketPulse AI",
+    "featured": true,
+    "dataSources": ["price-feed", "index-feed", "heatmap-data", "market-breadth", "fii-dii-data"]
+  },
+  {
+    "slug": "nifty-it-underperformance-explained",
+    "title": "Why Nifty IT Is Underperforming: A Technical & Fundamental Deep-Dive",
+    "excerpt": "Nifty IT has dropped 4.2% over the past month. We break down the sector's PE contraction, FII selling patterns, and key support levels for Infosys, TCS, and HCL Tech.",
+    "category": "sector-analysis",
+    "date": "2026-08-22T10:00:00+05:30",
+    "readTime": "6 min read",
+    "tags": ["Nifty IT", "Infosys", "TCS", "bearish", "technical analysis", "PE ratio"],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": ["sector-indices", "sector-stocks", "fii-dii-data"]
+  },
+  {
+    "slug": "fii-net-buyers-5th-day",
+    "title": "FII Net Buyers for 5th Consecutive Day: What It Means for Nifty",
+    "excerpt": "Foreign Institutional Investors poured in ₹3,240 Cr on Friday, taking the 5-day cumulative net buying to ₹14,800 Cr. We analyze the sectoral flow and historical precedents.",
+    "category": "fiidii-flows",
+    "date": "2026-08-21T18:00:00+05:30",
+    "readTime": "5 min read",
+    "tags": ["FII", "DII", "Nifty 50", "bullish", "capital flows", "institutional buying"],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": ["fii-dii-data", "index-feed"]
+  },
+  {
+    "slug": "how-to-read-market-breadth",
+    "title": "How to Read Market Breadth Like a Pro: A Complete Guide",
+    "excerpt": "Market breadth tells you what the average stock is doing, not just the index heavyweights. Learn to interpret advance-decline ratios, new highs vs lows, and the McClellan Oscillator.",
+    "category": "guide",
+    "date": "2026-08-20T09:00:00+05:30",
+    "readTime": "8 min read",
+    "tags": ["market breadth", "advance-decline", "trading guide", "education", "technical analysis"],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": ["market-breadth"]
+  },
+  {
+    "slug": "tcs-q1-fy27-earnings-analysis",
+    "title": "TCS Q1 FY27: Revenue Beats, Margin Pressure — Should You Buy, Hold, or Sell?",
+    "excerpt": "TCS reported 3.8% QoQ revenue growth but EBIT margins contracted 80 bps. We analyze the earnings call highlights, management guidance, and fair value estimate.",
+    "category": "stock-spotlight",
+    "date": "2026-08-19T16:00:00+05:30",
+    "readTime": "7 min read",
+    "tags": ["TCS", "IT sector", "earnings", "neutral", "Q1 FY27", "margin pressure"],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": ["stock-detail", "sector-stocks"]
+  },
+  {
+    "slug": "reliance-infosys-hdfc-earnings-week",
+    "title": "Q1 Results This Week: Reliance, Infosys, HDFC Bank — What to Expect",
+    "excerpt": "Three heavyweights report earnings this week. We preview consensus estimates, key metrics to watch, and how their results could move the Nifty 50 and Bank Nifty.",
+    "category": "earnings",
+    "date": "2026-08-18T08:00:00+05:30",
+    "readTime": "5 min read",
+    "tags": ["earnings calendar", "Reliance", "Infosys", "HDFC Bank", "Nifty 50", "preview"],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": ["index-feed", "stock-search"]
+  }
+]
