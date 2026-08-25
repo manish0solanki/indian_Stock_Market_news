@@ -1,15 +1,36 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-25-aug-2026",
+    "title": "Nifty 50 Daily Wrap — 25 Aug 2026: Gains +0.48%",
+    "excerpt": "Nifty 50 gained +0.48% to close at 24,334.55.",
+    "date": "2026-08-25T10:47:49.078Z",
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
     "slug": "nifty-50-daily-wrap-23-aug-2026",
     "title": "Nifty 50 Closes at 25,420: Banks Lead, IT Lags — Daily Market Wrap (23 Aug 2026)",
     "excerpt": "Nifty 50 gained 142 points to close at 25,420, driven by strong banking and financial services performance. IT and Pharma sectors underperformed as global tech weakness spilled over.",
     "category": "daily-wrap",
     "date": "2026-08-23T15:30:00+05:30",
     "readTime": "4 min read",
-    "tags": ["Nifty 50", "Bank Nifty", "bullish", "market wrap", "FII buying"],
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bullish",
+      "market wrap",
+      "FII buying"
+    ],
     "author": "MarketPulse AI",
     "featured": true,
-    "dataSources": ["price-feed", "index-feed", "heatmap-data", "market-breadth", "fii-dii-data"]
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
   },
   {
     "slug": "nifty-it-underperformance-explained",
@@ -18,10 +39,21 @@
     "category": "sector-analysis",
     "date": "2026-08-22T10:00:00+05:30",
     "readTime": "6 min read",
-    "tags": ["Nifty IT", "Infosys", "TCS", "bearish", "technical analysis", "PE ratio"],
+    "tags": [
+      "Nifty IT",
+      "Infosys",
+      "TCS",
+      "bearish",
+      "technical analysis",
+      "PE ratio"
+    ],
     "author": "MarketPulse AI",
     "featured": false,
-    "dataSources": ["sector-indices", "sector-stocks", "fii-dii-data"]
+    "dataSources": [
+      "sector-indices",
+      "sector-stocks",
+      "fii-dii-data"
+    ]
   },
   {
     "slug": "fii-net-buyers-5th-day",
@@ -30,10 +62,20 @@
     "category": "fiidii-flows",
     "date": "2026-08-21T18:00:00+05:30",
     "readTime": "5 min read",
-    "tags": ["FII", "DII", "Nifty 50", "bullish", "capital flows", "institutional buying"],
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "bullish",
+      "capital flows",
+      "institutional buying"
+    ],
     "author": "MarketPulse AI",
     "featured": false,
-    "dataSources": ["fii-dii-data", "index-feed"]
+    "dataSources": [
+      "fii-dii-data",
+      "index-feed"
+    ]
   },
   {
     "slug": "how-to-read-market-breadth",
@@ -42,10 +84,18 @@
     "category": "guide",
     "date": "2026-08-20T09:00:00+05:30",
     "readTime": "8 min read",
-    "tags": ["market breadth", "advance-decline", "trading guide", "education", "technical analysis"],
+    "tags": [
+      "market breadth",
+      "advance-decline",
+      "trading guide",
+      "education",
+      "technical analysis"
+    ],
     "author": "MarketPulse AI",
     "featured": false,
-    "dataSources": ["market-breadth"]
+    "dataSources": [
+      "market-breadth"
+    ]
   },
   {
     "slug": "tcs-q1-fy27-earnings-analysis",
@@ -54,10 +104,20 @@
     "category": "stock-spotlight",
     "date": "2026-08-19T16:00:00+05:30",
     "readTime": "7 min read",
-    "tags": ["TCS", "IT sector", "earnings", "neutral", "Q1 FY27", "margin pressure"],
+    "tags": [
+      "TCS",
+      "IT sector",
+      "earnings",
+      "neutral",
+      "Q1 FY27",
+      "margin pressure"
+    ],
     "author": "MarketPulse AI",
     "featured": false,
-    "dataSources": ["stock-detail", "sector-stocks"]
+    "dataSources": [
+      "stock-detail",
+      "sector-stocks"
+    ]
   },
   {
     "slug": "reliance-infosys-hdfc-earnings-week",
@@ -66,9 +126,19 @@
     "category": "earnings",
     "date": "2026-08-18T08:00:00+05:30",
     "readTime": "5 min read",
-    "tags": ["earnings calendar", "Reliance", "Infosys", "HDFC Bank", "Nifty 50", "preview"],
+    "tags": [
+      "earnings calendar",
+      "Reliance",
+      "Infosys",
+      "HDFC Bank",
+      "Nifty 50",
+      "preview"
+    ],
     "author": "MarketPulse AI",
     "featured": false,
-    "dataSources": ["index-feed", "stock-search"]
+    "dataSources": [
+      "index-feed",
+      "stock-search"
+    ]
   }
 ]
