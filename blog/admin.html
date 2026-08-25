@@ -563,8 +563,52 @@
 
   https://substantially-granny-housewives-change.trycloudflare.com/webhook/blog-admin
 */
-const ADMIN_API =
-  'https://marketpulse-cache.manish0solanki20078.workers.dev/blog-admin';
+const CONFIG_URL =
+  'https://raw.githubusercontent.com/manish0solanki/indian_Stock_Market_news/main/config.json';
+
+let ADMIN_API = '';
+
+async function loadConfig() {
+  try {
+    const response = await fetch(CONFIG_URL, {
+      method: 'GET',
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        'Could not load config.json. HTTP ' + response.status
+      );
+    }
+
+    const config = await response.json();
+
+    if (!config.apiBase) {
+      throw new Error(
+        'apiBase is missing from config.json'
+      );
+    }
+
+    // Remove trailing slash if present
+    ADMIN_API =
+      config.apiBase.replace(/\/+$/, '') +
+      '/blog-admin';
+
+    console.log('Admin API:', ADMIN_API);
+
+    return config;
+
+  } catch (error) {
+    console.error('Configuration error:', error);
+
+    loginError.textContent =
+      'Could not load API configuration. Please try again later.';
+
+    loginError.style.display = 'block';
+
+    throw error;
+  }
+}
 
 
 /* ============================================================
