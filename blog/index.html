@@ -210,7 +210,7 @@ themeToggle.addEventListener('click', () => {
 /* ─── Load Posts ─── */
 async function loadPosts() {
   try {
-    const res = await fetch('../posts.json', { cache: 'no-store' });
+    const res = await fetch('./posts.json', { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     allPosts = await res.json();
     allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
