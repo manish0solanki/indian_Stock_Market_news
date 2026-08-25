@@ -1,411 +1,437 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
 
 <title>MarketPulse Admin</title>
 
 <style>
-  :root {
-    --bg: #0d0d16;
-    --card: #151522;
-    --card-hover: #1b1b2b;
-    --border: #292943;
-    --text: #f4f4f8;
-    --muted: #8d8da8;
-    --primary: #f5a623;
-    --danger: #ff5c6c;
-    --success: #38d996;
-    --purple: #35228a;
-  }
 
-  * {
-    box-sizing: border-box;
-  }
+:root {
+  --bg: #0d0d16;
+  --card: #151522;
+  --card-hover: #1b1b2b;
+  --border: #292943;
+  --text: #f4f4f8;
+  --muted: #8d8da8;
+  --primary: #f5a623;
+  --danger: #ff5c6c;
+  --success: #38d996;
+  --purple: #35228a;
+}
 
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family:
-      Inter,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-  }
+* {
+  box-sizing: border-box;
+}
 
-  button,
-  input {
-    font: inherit;
-  }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
 
-  /* =========================
-     LOGIN
-     ========================= */
+button,
+input {
+  font: inherit;
+}
 
-  .login-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
 
-  .login-card {
-    width: 100%;
-    max-width: 420px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 32px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.35);
-  }
+/* =========================
+   LOGIN
+   ========================= */
 
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 8px;
-  }
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
 
-  .brand-dot {
-    width: 13px;
-    height: 13px;
-    background: var(--primary);
-    transform: rotate(45deg);
-  }
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
 
-  .login-subtitle {
-    color: var(--muted);
-    margin-bottom: 28px;
-  }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
 
-  .field {
-    margin-bottom: 16px;
-  }
+.brand-dot {
+  width: 13px;
+  height: 13px;
+  background: var(--primary);
+  transform: rotate(45deg);
+}
 
-  .field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 7px;
-    color: #c7c7d9;
-  }
+.login-subtitle {
+  color: var(--muted);
+  margin-bottom: 28px;
+}
 
-  .field input {
-    width: 100%;
-    padding: 13px 14px;
-    background: #10101b;
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    outline: none;
-  }
+.field {
+  margin-bottom: 16px;
+}
 
-  .field input:focus {
-    border-color: var(--primary);
-  }
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 7px;
+  color: #c7c7d9;
+}
 
-  .login-button {
-    width: 100%;
-    padding: 13px;
-    margin-top: 8px;
-    border: none;
-    border-radius: 10px;
-    background: var(--primary);
-    color: #17120a;
-    font-weight: 800;
-    cursor: pointer;
-  }
+.field input {
+  width: 100%;
+  padding: 13px 14px;
+  background: #10101b;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+}
 
-  .login-button:hover {
-    filter: brightness(1.08);
-  }
+.field input:focus {
+  border-color: var(--primary);
+}
 
-  .login-error {
-    display: none;
-    margin-top: 14px;
-    padding: 11px 12px;
-    border-radius: 9px;
-    background: rgba(255,92,108,.1);
-    border: 1px solid rgba(255,92,108,.25);
-    color: #ff8995;
-    font-size: 13px;
-  }
+.login-button {
+  width: 100%;
+  padding: 13px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #17120a;
+  font-weight: 800;
+  cursor: pointer;
+}
 
-  /* =========================
-     ADMIN
-     ========================= */
+.login-button:hover {
+  filter: brightness(1.08);
+}
 
-  .admin-page {
-    display: none;
-    min-height: 100vh;
-  }
+.login-button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.login-error {
+  display: none;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: rgba(255,92,108,.1);
+  border: 1px solid rgba(255,92,108,.25);
+  color: #ff8995;
+  font-size: 13px;
+}
+
+
+/* =========================
+   ADMIN
+   ========================= */
+
+.admin-page {
+  display: none;
+  min-height: 100vh;
+}
+
+.topbar {
+  height: 58px;
+  background: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.topbar-button {
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.1);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.topbar-button:hover {
+  background: rgba(255,255,255,.2);
+}
+
+.container {
+  width: min(1100px, calc(100% - 30px));
+  margin: 0 auto;
+  padding: 30px 0 60px;
+}
+
+.page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.page-heading h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.page-heading p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.count {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.search-row {
+  margin-bottom: 18px;
+}
+
+.search {
+  width: 100%;
+  max-width: 550px;
+  padding: 13px 15px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  color: var(--text);
+  outline: none;
+}
+
+.search:focus {
+  border-color: var(--primary);
+}
+
+.status {
+  display: none;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.status.success {
+  display: block;
+  background: rgba(56,217,150,.1);
+  border: 1px solid rgba(56,217,150,.25);
+  color: var(--success);
+}
+
+.status.error {
+  display: block;
+  background: rgba(255,92,108,.1);
+  border: 1px solid rgba(255,92,108,.25);
+  color: #ff8995;
+}
+
+.articles {
+  display: grid;
+  gap: 12px;
+}
+
+.article {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  transition: background .2s, border-color .2s;
+}
+
+.article:hover {
+  background: var(--card-hover);
+  border-color: #363653;
+}
+
+.article-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.article-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.article-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 9px;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(245,166,35,.1);
+  color: var(--primary);
+  border: 1px solid rgba(245,166,35,.18);
+}
+
+.article-slug {
+  color: #777791;
+  font-family: monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.article-excerpt {
+  margin-top: 10px;
+  color: #a5a5bd;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.article-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.action-button {
+  border: 1px solid var(--border);
+  background: #10101b;
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.action-button:hover {
+  background: #202035;
+}
+
+.delete-button {
+  color: #ff7c88;
+  border-color: rgba(255,92,108,.25);
+}
+
+.delete-button:hover {
+  background: rgba(255,92,108,.1);
+}
+
+.empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width: 700px) {
 
   .topbar {
-    height: 58px;
-    background: var(--purple);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 22px;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-  }
-
-  .topbar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 18px;
-    font-weight: 800;
-  }
-
-  .topbar-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .topbar-button {
-    border: 1px solid rgba(255,255,255,.15);
-    background: rgba(255,255,255,.1);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 9px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .topbar-button:hover {
-    background: rgba(255,255,255,.2);
+    padding: 0 14px;
   }
 
   .container {
-    width: min(1100px, calc(100% - 30px));
-    margin: 0 auto;
-    padding: 30px 0 60px;
+    width: min(100% - 20px, 1100px);
+    padding-top: 20px;
   }
 
   .page-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 20px;
-    margin-bottom: 22px;
-  }
-
-  .page-heading h1 {
-    margin: 0;
-    font-size: 28px;
-  }
-
-  .page-heading p {
-    margin: 6px 0 0;
-    color: var(--muted);
-    font-size: 14px;
-  }
-
-  .count {
-    color: var(--primary);
-    font-weight: 800;
-  }
-
-  .search-row {
-    margin-bottom: 18px;
-  }
-
-  .search {
-    width: 100%;
-    max-width: 550px;
-    padding: 13px 15px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    color: var(--text);
-    outline: none;
-  }
-
-  .search:focus {
-    border-color: var(--primary);
-  }
-
-  .status {
-    display: none;
-    padding: 12px 14px;
-    margin-bottom: 18px;
-    border-radius: 10px;
-    font-size: 13px;
-  }
-
-  .status.success {
-    display: block;
-    background: rgba(56,217,150,.1);
-    border: 1px solid rgba(56,217,150,.25);
-    color: var(--success);
-  }
-
-  .status.error {
-    display: block;
-    background: rgba(255,92,108,.1);
-    border: 1px solid rgba(255,92,108,.25);
-    color: #ff8995;
-  }
-
-  .articles {
-    display: grid;
-    gap: 12px;
-  }
-
-  .article {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 18px;
-    transition: background .2s, border-color .2s;
-  }
-
-  .article:hover {
-    background: var(--card-hover);
-    border-color: #363653;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .article-main {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-  }
-
-  .article-content {
-    min-width: 0;
-    flex: 1;
-  }
-
-  .article-title {
-    margin: 0 0 8px;
-    font-size: 17px;
-    line-height: 1.35;
-  }
-
-  .article-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    color: var(--muted);
-    font-size: 12px;
-    margin-bottom: 9px;
-  }
-
-  .badge {
-    display: inline-flex;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(245,166,35,.1);
-    color: var(--primary);
-    border: 1px solid rgba(245,166,35,.18);
-  }
-
-  .article-slug {
-    color: #777791;
-    font-family: monospace;
-    font-size: 11px;
-    word-break: break-all;
-  }
-
-  .article-excerpt {
-    margin-top: 10px;
-    color: #a5a5bd;
-    font-size: 13px;
-    line-height: 1.5;
+    flex-direction: column;
   }
 
   .article-actions {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    flex-shrink: 0;
+    width: 100%;
   }
 
   .action-button {
-    border: 1px solid var(--border);
-    background: #10101b;
-    color: var(--text);
-    padding: 9px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 700;
+    flex: 1;
   }
 
-  .action-button:hover {
-    background: #202035;
+  .topbar-button {
+    padding: 7px 9px;
+    font-size: 11px;
   }
 
-  .delete-button {
-    color: #ff7c88;
-    border-color: rgba(255,92,108,.25);
-  }
+}
 
-  .delete-button:hover {
-    background: rgba(255,92,108,.1);
-  }
-
-  .empty {
-    padding: 60px 20px;
-    text-align: center;
-    color: var(--muted);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-  }
-
-  .loading {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
-
-  /* =========================
-     MOBILE
-     ========================= */
-
-  @media (max-width: 700px) {
-    .topbar {
-      padding: 0 14px;
-    }
-
-    .container {
-      width: min(100% - 20px, 1100px);
-      padding-top: 20px;
-    }
-
-    .page-heading {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .article-main {
-      flex-direction: column;
-    }
-
-    .article-actions {
-      width: 100%;
-    }
-
-    .action-button {
-      flex: 1;
-    }
-  }
 </style>
+
 </head>
 
+
 <body>
+
 
 <!-- =========================
      LOGIN PAGE
@@ -427,7 +453,11 @@
     <form id="loginForm">
 
       <div class="field">
-        <label for="username">Username</label>
+
+        <label for="username">
+          Username
+        </label>
+
         <input
           id="username"
           type="text"
@@ -435,10 +465,16 @@
           placeholder="Enter username"
           required
         >
+
       </div>
 
+
       <div class="field">
-        <label for="password">Password</label>
+
+        <label for="password">
+          Password
+        </label>
+
         <input
           id="password"
           type="password"
@@ -446,33 +482,52 @@
           placeholder="Enter password"
           required
         >
+
       </div>
 
-      <button class="login-button" type="submit">
-        Login
+
+      <button
+        class="login-button"
+        id="loginButton"
+        type="submit"
+        disabled
+      >
+        Loading configuration...
       </button>
 
     </form>
 
-    <div class="login-error" id="loginError"></div>
+
+    <div
+      class="login-error"
+      id="loginError"
+    ></div>
 
   </div>
 
 </section>
 
 
+
 <!-- =========================
      ADMIN PAGE
      ========================= -->
 
-<section class="admin-page" id="adminPage">
+<section
+  class="admin-page"
+  id="adminPage"
+>
 
   <header class="topbar">
 
     <div class="topbar-brand">
+
       <span class="brand-dot"></span>
+
       MarketPulse Admin
+
     </div>
+
 
     <div class="topbar-actions">
 
@@ -484,6 +539,7 @@
         ↻ Refresh
       </button>
 
+
       <button
         class="topbar-button"
         id="blogButton"
@@ -491,6 +547,7 @@
       >
         📝 Blog
       </button>
+
 
       <button
         class="topbar-button"
@@ -505,21 +562,37 @@
   </header>
 
 
+
   <main class="container">
+
 
     <div class="page-heading">
 
       <div>
-        <h1>Blog Articles</h1>
+
+        <h1>
+          Blog Articles
+        </h1>
 
         <p>
+
           Manage your generated MarketPulse articles.
+
           Total:
-          <span class="count" id="articleCount">0</span>
+
+          <span
+            class="count"
+            id="articleCount"
+          >
+            0
+          </span>
+
         </p>
+
       </div>
 
     </div>
+
 
 
     <div class="search-row">
@@ -534,9 +607,18 @@
     </div>
 
 
-    <div id="status" class="status"></div>
 
-    <div id="articles" class="articles">
+    <div
+      id="status"
+      class="status"
+    ></div>
+
+
+
+    <div
+      id="articles"
+      class="articles"
+    >
 
       <div class="loading">
         Loading articles...
@@ -544,71 +626,73 @@
 
     </div>
 
+
   </main>
 
 </section>
 
 
+
 <script>
+
+
 /* ============================================================
-   CONFIG
+   CONFIGURATION
    ============================================================ */
 
+
 /*
-  TEST URL
+  IMPORTANT:
 
-  Use this while testing the n8n workflow.
+  The API URL is NOT hardcoded anymore.
 
-  When everything is working, change it to:
+  It is loaded from:
 
-  https://substantially-granny-housewives-change.trycloudflare.com/webhook/blog-admin
+  https://raw.githubusercontent.com/manish0solanki/indian_Stock_Market_news/main/config.json
+
+  config.json contains:
+
+  {
+    "apiBase": "https://marketpulse-cache.manish0solanki20078.workers.dev",
+    "newsApiKey": "..."
+  }
+
+  We only use apiBase here.
+
+  The newsApiKey is NOT used by this frontend.
 */
+
+
 const CONFIG_URL =
   'https://raw.githubusercontent.com/manish0solanki/indian_Stock_Market_news/main/config.json';
 
+
+/*
+  This will be populated after config.json loads.
+
+  Example:
+
+  apiBase:
+  https://marketpulse-cache.manish0solanki20078.workers.dev
+
+  becomes:
+
+  ADMIN_API:
+  https://marketpulse-cache.manish0solanki20078.workers.dev/blog-admin
+*/
+
 let ADMIN_API = '';
 
-async function loadConfig() {
-  try {
-    const response = await fetch(CONFIG_URL, {
-      method: 'GET',
-      cache: 'no-store'
-    });
 
-    if (!response.ok) {
-      throw new Error(
-        'Could not load config.json. HTTP ' + response.status
-      );
-    }
+/*
+  Store the complete configuration in memory.
 
-    const config = await response.json();
+  We don't actually need newsApiKey here,
+  but keeping the object available makes the
+  configuration easier to extend later.
+*/
 
-    if (!config.apiBase) {
-      throw new Error(
-        'apiBase is missing from config.json'
-      );
-    }
-
-    // Remove trailing slash if present
-    ADMIN_API =
-      config.apiBase.replace(/\/+$/, '') +
-      '/blog-admin';
-
-    console.log('Admin API:', ADMIN_API);
-
-    return config;
-
-  } catch (error) {
-    console.error('Configuration error:', error);
-
-    loginError.textContent =
-      'Could not load API configuration. Please try again later.';
-
-    loginError.style.display = 'block';
-
-    throw error;
-  }
-}
+let appConfig = null;
 
 
 /* ============================================================
@@ -624,30 +708,213 @@ let posts = [];
    ELEMENTS
    ============================================================ */
 
-const loginPage = document.getElementById('loginPage');
-const adminPage = document.getElementById('adminPage');
+const loginPage =
+  document.getElementById('loginPage');
 
-const loginForm = document.getElementById('loginForm');
-const loginError = document.getElementById('loginError');
+const adminPage =
+  document.getElementById('adminPage');
 
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
 
-const articlesEl = document.getElementById('articles');
-const articleCountEl = document.getElementById('articleCount');
+const loginForm =
+  document.getElementById('loginForm');
 
-const searchInput = document.getElementById('searchInput');
+const loginError =
+  document.getElementById('loginError');
 
-const statusEl = document.getElementById('status');
 
-const refreshButton = document.getElementById('refreshButton');
-const logoutButton = document.getElementById('logoutButton');
-const blogButton = document.getElementById('blogButton');
+const usernameInput =
+  document.getElementById('username');
+
+const passwordInput =
+  document.getElementById('password');
+
+
+const loginButton =
+  document.getElementById('loginButton');
+
+
+const articlesEl =
+  document.getElementById('articles');
+
+const articleCountEl =
+  document.getElementById('articleCount');
+
+
+const searchInput =
+  document.getElementById('searchInput');
+
+
+const statusEl =
+  document.getElementById('status');
+
+
+const refreshButton =
+  document.getElementById('refreshButton');
+
+const logoutButton =
+  document.getElementById('logoutButton');
+
+const blogButton =
+  document.getElementById('blogButton');
+
+
+/* ============================================================
+   LOAD CONFIGURATION
+   ============================================================ */
+
+
+/*
+  Fetch config.json from GitHub.
+
+  We use cache: 'no-store' so that when you change
+  apiBase in config.json, the browser doesn't keep
+  using an old cached configuration.
+*/
+
+async function loadConfig() {
+
+  try {
+
+    console.log(
+      'Loading configuration from:',
+      CONFIG_URL
+    );
+
+
+    const response = await fetch(
+      CONFIG_URL,
+      {
+        method: 'GET',
+        cache: 'no-store'
+      }
+    );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        'Could not load config.json. HTTP ' +
+        response.status
+      );
+
+    }
+
+
+    const config =
+      await response.json();
+
+
+    /*
+      Validate apiBase.
+    */
+
+    if (
+      !config ||
+      typeof config.apiBase !== 'string' ||
+      !config.apiBase.trim()
+    ) {
+
+      throw new Error(
+        'apiBase is missing or invalid in config.json'
+      );
+
+    }
+
+
+    /*
+      Store configuration.
+    */
+
+    appConfig = config;
+
+
+    /*
+      Remove trailing slash from apiBase.
+
+      This prevents:
+
+      /blog-admin
+
+      becoming:
+
+      //blog-admin
+    */
+
+    const apiBase =
+      config.apiBase
+        .trim()
+        .replace(/\/+$/, '');
+
+
+    /*
+      Build the actual admin API endpoint.
+    */
+
+    ADMIN_API =
+      apiBase + '/blog-admin';
+
+
+    console.log(
+      'Configuration loaded successfully.'
+    );
+
+    console.log(
+      'API Base:',
+      apiBase
+    );
+
+    console.log(
+      'Admin API:',
+      ADMIN_API
+    );
+
+
+    /*
+      Enable login now that the API is ready.
+    */
+
+    loginButton.disabled = false;
+
+    loginButton.textContent = 'Login';
+
+
+    return config;
+
+
+  } catch (error) {
+
+    console.error(
+      'Configuration error:',
+      error
+    );
+
+
+    loginButton.disabled = true;
+
+    loginButton.textContent =
+      'Configuration Error';
+
+
+    loginError.textContent =
+      'Could not load API configuration. ' +
+      'Please refresh the page and try again.';
+
+
+    loginError.style.display =
+      'block';
+
+
+    throw error;
+
+  }
+
+}
 
 
 /* ============================================================
    HELPERS
    ============================================================ */
+
 
 function escapeHtml(value) {
 
@@ -664,29 +931,49 @@ function escapeHtml(value) {
 function formatDate(dateString) {
 
   if (!dateString) {
+
     return 'Unknown date';
+
   }
 
-  const date = new Date(dateString);
 
-  if (Number.isNaN(date.getTime())) {
+  const date =
+    new Date(dateString);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
     return dateString;
+
   }
 
-  return date.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
+
+  return date.toLocaleDateString(
+    'en-IN',
+    {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }
+  );
 
 }
 
 
-function showStatus(message, type = 'success') {
+function showStatus(
+  message,
+  type = 'success'
+) {
 
-  statusEl.textContent = message;
+  statusEl.textContent =
+    message;
 
-  statusEl.className = 'status ' + type;
+  statusEl.className =
+    'status ' + type;
 
 }
 
@@ -695,7 +982,8 @@ function clearStatus() {
 
   statusEl.textContent = '';
 
-  statusEl.className = 'status';
+  statusEl.className =
+    'status';
 
 }
 
@@ -704,137 +992,278 @@ function clearStatus() {
    LOGIN
    ============================================================ */
 
-loginForm.addEventListener('submit', async (event) => {
 
-  event.preventDefault();
+loginForm.addEventListener(
+  'submit',
+  async (event) => {
 
-  loginError.style.display = 'none';
-
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!username || !password) {
-    return;
-  }
-
-  try {
-
-    const response = await fetch(ADMIN_API, {
-
-      method: 'POST',
-
-      headers: {
-        'Content-Type': 'application/json'
-      },
-
-      body: JSON.stringify({
-        username,
-        password,
-        action: 'login'
-      })
-
-    });
+    event.preventDefault();
 
 
-    if (!response.ok) {
-
-      throw new Error(
-        'HTTP ' + response.status
-      );
-
-    }
+    loginError.style.display =
+      'none';
 
 
-    const data = await response.json();
+    const username =
+      usernameInput.value.trim();
+
+    const password =
+      passwordInput.value;
 
 
-    if (
-      !data.success ||
-      !data.authenticated
-    ) {
+    if (!username || !password) {
 
-      throw new Error(
-        data.error || 'Invalid username or password'
-      );
+      return;
 
     }
 
 
     /*
-      Keep credentials in memory only.
+      Safety check.
 
-      They are NOT stored in localStorage.
+      If config.json hasn't loaded,
+      don't attempt the API request.
     */
 
-    adminUsername = username;
-    adminPassword = password;
+    if (!ADMIN_API) {
+
+      loginError.textContent =
+        'API configuration has not loaded yet. ' +
+        'Please refresh the page.';
+
+      loginError.style.display =
+        'block';
+
+      return;
+
+    }
 
 
-    loginPage.style.display = 'none';
-    adminPage.style.display = 'block';
+    /*
+      Disable login button while
+      authentication is happening.
+    */
+
+    loginButton.disabled = true;
+
+    loginButton.textContent =
+      'Logging in...';
 
 
-    await loadPosts();
+    try {
 
 
-  } catch (error) {
+      const response =
+        await fetch(
+          ADMIN_API,
+          {
+            method: 'POST',
 
-    console.error(error);
+            headers: {
+              'Content-Type':
+                'application/json'
+            },
 
-    loginError.textContent =
-      error.message || 'Login failed';
+            body: JSON.stringify({
 
-    loginError.style.display = 'block';
+              username,
+              password,
+
+              action: 'login'
+
+            })
+
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          'HTTP ' +
+          response.status
+        );
+
+      }
+
+
+      const data =
+        await response.json();
+
+
+      if (
+        !data.success ||
+        !data.authenticated
+      ) {
+
+        throw new Error(
+          data.error ||
+          'Invalid username or password'
+        );
+
+      }
+
+
+      /*
+        Keep credentials in memory only.
+
+        They are NOT stored in:
+
+        localStorage
+        sessionStorage
+        cookies
+
+        Once the page is closed,
+        they are gone.
+      */
+
+      adminUsername =
+        username;
+
+      adminPassword =
+        password;
+
+
+      /*
+        Show admin page.
+      */
+
+      loginPage.style.display =
+        'none';
+
+      adminPage.style.display =
+        'block';
+
+
+      /*
+        Load articles.
+      */
+
+      await loadPosts();
+
+
+    } catch (error) {
+
+      console.error(
+        'Login error:',
+        error
+      );
+
+
+      loginError.textContent =
+        error.message ||
+        'Login failed';
+
+
+      loginError.style.display =
+        'block';
+
+
+    } finally {
+
+      loginButton.disabled =
+        false;
+
+      loginButton.textContent =
+        'Login';
+
+    }
 
   }
-
-});
+);
 
 
 /* ============================================================
    LOAD POSTS
    ============================================================ */
 
+
 async function loadPosts() {
 
   clearStatus();
 
+
   articlesEl.innerHTML = `
+
     <div class="loading">
+
       Loading articles...
+
     </div>
+
   `;
+
+
+  /*
+    Make sure API exists.
+  */
+
+  if (!ADMIN_API) {
+
+    articlesEl.innerHTML = `
+
+      <div class="empty">
+
+        API configuration is not available.
+
+        <br>
+
+        <small>
+          Please refresh the page.
+        </small>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
 
 
   try {
 
-    const response = await fetch(ADMIN_API, {
 
-      method: 'POST',
+    const response =
+      await fetch(
+        ADMIN_API,
+        {
+          method: 'POST',
 
-      headers: {
-        'Content-Type': 'application/json'
-      },
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
 
-      body: JSON.stringify({
-        username: adminUsername,
-        password: adminPassword,
-        action: 'list'
-      })
+          body: JSON.stringify({
 
-    });
+            username:
+              adminUsername,
+
+            password:
+              adminPassword,
+
+            action:
+              'list'
+
+          })
+
+        }
+      );
 
 
     if (!response.ok) {
 
       throw new Error(
-        'HTTP ' + response.status
+        'HTTP ' +
+        response.status
       );
 
     }
 
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
 
     if (
@@ -843,29 +1272,46 @@ async function loadPosts() {
     ) {
 
       throw new Error(
-        data.error || 'Could not load posts'
+        data.error ||
+        'Could not load posts'
       );
 
     }
 
 
-    posts = data.posts;
+    posts =
+      data.posts;
 
-    articleCountEl.textContent = posts.length;
+
+    articleCountEl.textContent =
+      posts.length;
+
 
     renderPosts();
 
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      'Load posts error:',
+      error
+    );
+
 
     articlesEl.innerHTML = `
+
       <div class="empty">
+
         Could not load articles.
+
         <br>
-        <small>${escapeHtml(error.message)}</small>
+
+        <small>
+          ${escapeHtml(error.message)}
+        </small>
+
       </div>
+
     `;
 
   }
@@ -877,39 +1323,57 @@ async function loadPosts() {
    RENDER POSTS
    ============================================================ */
 
+
 function renderPosts() {
 
   const query =
-    searchInput.value.trim().toLowerCase();
-
-
-  const filtered = posts.filter(post => {
-
-    const searchable = [
-
-      post.title,
-      post.slug,
-      post.category,
-      post.excerpt,
-      ...(Array.isArray(post.tags) ? post.tags : [])
-
-    ]
-      .filter(Boolean)
-      .join(' ')
+    searchInput.value
+      .trim()
       .toLowerCase();
 
 
-    return searchable.includes(query);
+  const filtered =
+    posts.filter(
+      post => {
 
-  });
+        const searchable = [
+
+          post.title,
+
+          post.slug,
+
+          post.category,
+
+          post.excerpt,
+
+          ...(Array.isArray(post.tags)
+            ? post.tags
+            : [])
+
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+
+        return searchable.includes(
+          query
+        );
+
+      }
+    );
 
 
   if (!filtered.length) {
 
     articlesEl.innerHTML = `
+
       <div class="empty">
+
         No articles found.
+
       </div>
+
     `;
 
     return;
@@ -918,16 +1382,25 @@ function renderPosts() {
 
 
   articlesEl.innerHTML =
-    filtered.map(renderPost).join('');
+    filtered
+      .map(renderPost)
+      .join('');
 
 }
+
+
+/* ============================================================
+   RENDER SINGLE POST
+   ============================================================ */
 
 
 function renderPost(post) {
 
   const articleUrl =
     './' +
-    encodeURIComponent(post.slug) +
+    encodeURIComponent(
+      post.slug
+    ) +
     '/';
 
 
@@ -943,49 +1416,92 @@ function renderPost(post) {
 
       <div class="article-main">
 
+
         <div class="article-content">
 
+
           <h2 class="article-title">
-            ${escapeHtml(post.title)}
+
+            ${escapeHtml(
+              post.title
+            )}
+
           </h2>
+
 
           <div class="article-meta">
 
             <span>
-              ${escapeHtml(formatDate(post.date))}
+
+              ${escapeHtml(
+                formatDate(
+                  post.date
+                )
+              )}
+
             </span>
 
-            <span>•</span>
-
-            <span class="badge">
-              ${escapeHtml(post.category)}
-            </span>
-
-            <span>•</span>
 
             <span>
-              ${escapeHtml(post.readTime || '')}
+              •
+            </span>
+
+
+            <span class="badge">
+
+              ${escapeHtml(
+                post.category
+              )}
+
+            </span>
+
+
+            <span>
+              •
+            </span>
+
+
+            <span>
+
+              ${escapeHtml(
+                post.readTime || ''
+              )}
+
             </span>
 
           </div>
 
+
           <div class="article-slug">
-            ${escapeHtml(post.slug)}
+
+            ${escapeHtml(
+              post.slug
+            )}
+
           </div>
+
 
           ${
             post.excerpt
               ? `
+
                 <div class="article-excerpt">
-                  ${escapeHtml(post.excerpt)}
+
+                  ${escapeHtml(
+                    post.excerpt
+                  )}
+
                 </div>
+
               `
               : ''
           }
 
+
           ${
             tags
               ? `
+
                 <div
                   style="
                     margin-top:8px;
@@ -993,34 +1509,52 @@ function renderPost(post) {
                     font-size:11px;
                   "
                 >
-                  ${escapeHtml(tags)}
+
+                  ${escapeHtml(
+                    tags
+                  )}
+
                 </div>
+
               `
               : ''
           }
+
 
         </div>
 
 
         <div class="article-actions">
 
+
           <button
             class="action-button"
             type="button"
-            onclick="viewPost(${JSON.stringify(post.slug)})"
+            onclick="viewPost(${JSON.stringify(
+              post.slug
+            )})"
           >
+
             View
+
           </button>
+
 
           <button
             class="action-button delete-button"
             type="button"
-            onclick="deletePost(${JSON.stringify(post.slug)})"
+            onclick="deletePost(${JSON.stringify(
+              post.slug
+            )})"
           >
+
             Delete
+
           </button>
 
+
         </div>
+
 
       </div>
 
@@ -1035,6 +1569,7 @@ function renderPost(post) {
    SEARCH
    ============================================================ */
 
+
 searchInput.addEventListener(
   'input',
   renderPosts
@@ -1045,13 +1580,19 @@ searchInput.addEventListener(
    VIEW ARTICLE
    ============================================================ */
 
+
 function viewPost(slug) {
 
   window.open(
+
     './' +
-    encodeURIComponent(slug) +
+    encodeURIComponent(
+      slug
+    ) +
     '/',
+
     '_blank'
+
   );
 
 }
@@ -1061,19 +1602,27 @@ function viewPost(slug) {
    DELETE
    ============================================================ */
 
+
 /*
   DELETE IS NOT ENABLED YET.
 
-  We are intentionally not sending a delete request until
-  the n8n delete workflow is built and tested.
+  We are intentionally not sending
+  a delete request until the n8n
+  delete workflow is built and tested.
 
-  This prevents accidentally deleting GitHub files.
+  This prevents accidentally deleting
+  GitHub files.
 */
+
 
 async function deletePost(slug) {
 
   alert(
-    'Delete is not enabled yet. We will connect this after the GitHub deletion workflow is tested.'
+
+    'Delete is not enabled yet. ' +
+    'We will connect this after the ' +
+    'GitHub deletion workflow is tested.'
+
   );
 
 }
@@ -1082,6 +1631,7 @@ async function deletePost(slug) {
 /* ============================================================
    REFRESH
    ============================================================ */
+
 
 refreshButton.addEventListener(
   'click',
@@ -1093,11 +1643,13 @@ refreshButton.addEventListener(
    BLOG BUTTON
    ============================================================ */
 
+
 blogButton.addEventListener(
   'click',
   () => {
 
-    window.location.href = './';
+    window.location.href =
+      './';
 
   }
 );
@@ -1107,27 +1659,96 @@ blogButton.addEventListener(
    LOGOUT
    ============================================================ */
 
+
 logoutButton.addEventListener(
   'click',
   () => {
 
+
+    /*
+      Clear credentials from memory.
+    */
+
     adminUsername = '';
+
     adminPassword = '';
+
     posts = [];
 
-    adminPage.style.display = 'none';
-    loginPage.style.display = 'flex';
 
-    usernameInput.value = '';
-    passwordInput.value = '';
+    /*
+      Hide admin page.
+    */
 
-    articlesEl.innerHTML = '';
+    adminPage.style.display =
+      'none';
+
+
+    /*
+      Show login page.
+    */
+
+    loginPage.style.display =
+      'flex';
+
+
+    /*
+      Clear login fields.
+    */
+
+    usernameInput.value =
+      '';
+
+    passwordInput.value =
+      '';
+
+
+    /*
+      Clear articles.
+    */
+
+    articlesEl.innerHTML =
+      '';
+
+
+    /*
+      Clear status.
+    */
 
     clearStatus();
 
   }
 );
+
+
+/* ============================================================
+   INITIALIZE APPLICATION
+   ============================================================ */
+
+
+/*
+  Load config.json as soon as the
+  application starts.
+
+  The login button remains disabled
+  until this succeeds.
+*/
+
+loadConfig()
+  .catch(
+    error => {
+
+      console.error(
+        'Failed to initialize application:',
+        error
+      );
+
+    }
+  );
+
+
 </script>
 
 </body>
+
 </html>
