@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -110,6 +111,32 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; animation: pulse 2.5s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); } 70% { box-shadow: 0 0 0 6px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
 .theme-toggle, .settings-toggle { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 34px; height: 34px; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background var(--transition); }
+.blog-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #fff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background var(--transition), transform var(--transition);
+  white-space: nowrap;
+}
+
+.blog-nav:hover {
+  background: rgba(255,255,255,0.25);
+  transform: translateY(-1px);
+}
+
+.blog-nav.active {
+  background: rgba(245,166,35,0.22);
+  border-color: rgba(245,166,35,0.35);
+}
 .theme-toggle:hover, .settings-toggle:hover { background: rgba(255,255,255,0.25); }
 
 /* Settings Modal */
@@ -427,9 +454,13 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   <div class="topbar">
     <div class="topbar-inner">
       <span class="topbar-brand"><span class="diamond"></span>MarketPulse</span>
-      <div class="topbar-right">
-        <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints">⚙️</button>
-        <button class="theme-toggle" id="themeToggle" title="Toggle light mode">☀️</button>
+  <div class="topbar-right">
+    <a class="blog-nav" href="/blog/" target="_self" title="MarketPulse Blog">
+      📝 Blog
+    </a>
+
+  <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints">⚙️</button>
+  <button class="theme-toggle" id="themeToggle" title="Toggle light mode">☀️</button>
         <span class="topbar-status">
   <span class="pulse-dot"></span>
   <span id="lastUpdated">connecting…</span>
