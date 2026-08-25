@@ -23,30 +23,6 @@
     ]
   },
   {
-    "slug": "nifty-50-daily-wrap-23-aug-2026",
-    "title": "Nifty 50 Closes at 25,420: Banks Lead, IT Lags — Daily Market Wrap (23 Aug 2026)",
-    "excerpt": "Nifty 50 gained 142 points to close at 25,420, driven by strong banking and financial services performance. IT and Pharma sectors underperformed as global tech weakness spilled over.",
-    "category": "daily-wrap",
-    "date": "2026-08-23T15:30:00+05:30",
-    "readTime": "4 min read",
-    "tags": [
-      "Nifty 50",
-      "Bank Nifty",
-      "bullish",
-      "market wrap",
-      "FII buying"
-    ],
-    "author": "MarketPulse AI",
-    "featured": true,
-    "dataSources": [
-      "price-feed",
-      "index-feed",
-      "heatmap-data",
-      "market-breadth",
-      "fii-dii-data"
-    ]
-  },
-  {
     "slug": "nifty-it-underperformance-explained",
     "title": "Why Nifty IT Is Underperforming: A Technical & Fundamental Deep-Dive",
     "excerpt": "Nifty IT has dropped 4.2% over the past month. We break down the sector's PE contraction, FII selling patterns, and key support levels for Infosys, TCS, and HCL Tech.",
