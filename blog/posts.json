@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-26-aug-2026",
+    "title": "Nifty 50 Daily Wrap — 26 Aug 2026: Drops +0.52%",
+    "excerpt": "Nifty 50 dropped +0.52% to close at 24,207.75.",
+    "category": "daily-wrap",
+    "date": "2026-08-26T21:42:24+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "nifty-50-daily-wrap-25-aug-2026",
     "title": "Nifty 50 Daily Wrap — 25 Aug 2026: Gains +0.48%",
     "excerpt": "Nifty 50 gained +0.48% to close at 24,334.55.",
