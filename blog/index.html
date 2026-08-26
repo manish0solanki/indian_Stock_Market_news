@@ -409,7 +409,7 @@ function renderGrid() {
         post.readTime ||
         (Math.max(3, Math.ceil((post.excerpt || '').length / 500)) + ' min read');
 
-      const articleUrl = `${post.slug}.html`;
+      const articleUrl = `/blog/${post.slug}/`;
 
       return `<article
           class="blog-card ${isFeatured ? 'featured' : ''}"
