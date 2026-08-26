@@ -1,7 +1,3 @@
-
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -138,6 +134,14 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   border-color: rgba(245,166,35,0.35);
 }
 .theme-toggle:hover, .settings-toggle:hover { background: rgba(255,255,255,0.25); }
+
+.blog-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  margin-right: 6px;
+}
 
 /* Settings Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(15,15,26,0.7); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.25s ease; }
@@ -456,7 +460,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       <span class="topbar-brand"><span class="diamond"></span>MarketPulse</span>
   <div class="topbar-right">
     <a class="blog-nav" href="/blog/" target="_self" title="MarketPulse Blog">
-      📝 Blog
+       <img src="/blogger.png" alt="Blog" class="blog-icon"> 
+       <span>Blog</span>
     </a>
 
   <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints">⚙️</button>
