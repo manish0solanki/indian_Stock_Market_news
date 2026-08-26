@@ -72,12 +72,72 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .blog-search:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
 .blog-search::placeholder { color: var(--text-muted); }
 
-/* Grid */
-.blog-grid { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+/* Article buckets */
+.blog-grid { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; display: block; }
 
-/* Featured (first post, spans 2 cols) */
+.article-bucket {
+  margin-bottom: 42px;
+}
+
+.article-bucket:last-child {
+  margin-bottom: 0;
+}
+
+.bucket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bucket-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bucket-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(46,31,130,0.18);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.bucket-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.bucket-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.bucket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
 .blog-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: transform var(--transition), box-shadow var(--transition); cursor: pointer; display: flex; flex-direction: column; }
 .blog-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+
+/* Featured article inside the first bucket */
 .blog-card.featured { grid-column: span 2; flex-direction: row; }
 .blog-card.featured .card-image { width: 45%; min-height: 260px; }
 .blog-card.featured .card-body { flex: 1; padding: 28px; }
@@ -127,15 +187,17 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .blog-grid { grid-template-columns: repeat(2, 1fr); }
+  .bucket-grid { grid-template-columns: repeat(2, 1fr); }
   .blog-card.featured { grid-column: span 2; }
 }
 @media (max-width: 768px) {
   .blog-hero h1 { font-size: 24px; }
-  .blog-grid { grid-template-columns: 1fr; }
+  .bucket-grid { grid-template-columns: 1fr; }
   .blog-card.featured { grid-column: span 1; flex-direction: column; }
   .blog-card.featured .card-image { width: 100%; min-height: 180px; }
   .blog-card.featured .card-body { padding: 18px; }
+  .bucket-header { margin-bottom: 12px; }
+  .bucket-title { font-size: 18px; }
 }
 </style>
 <base target="_blank">
@@ -283,6 +345,7 @@ function fmtDate(iso) {
 
 function renderGrid() {
   const grid = document.getElementById('blogGrid');
+
   if (filteredPosts.length === 0) {
     grid.innerHTML = `
       <div class="blog-empty">
@@ -293,64 +356,121 @@ function renderGrid() {
     return;
   }
 
-  const start = (currentPage - 1) * POSTS_PER_PAGE;
-  const pagePosts = filteredPosts.slice(start, start + POSTS_PER_PAGE);
+  /*
+   * When "All" is selected, articles are grouped into their
+   * respective category buckets.
+   *
+   * When searching, the matching results remain grouped by
+   * category, so search still works across the entire blog.
+   *
+   * When a specific category is selected, only that bucket
+   * is displayed.
+   */
+  const categoryOrder = [
+    'daily-wrap',
+    'sector-analysis',
+    'stock-spotlight',
+    'fiidii-flows',
+    'guide',
+    'earnings',
+    'market-breadth'
+  ];
 
-  grid.innerHTML = pagePosts.map((post, i) => {
-    const isFeatured = currentPage === 1 && i === 0 && currentCategory === 'all' && !currentSearch;
-    const emoji = getCategoryEmoji(post.category);
-    const catLabel = getCategoryLabel(post.category);
-    const tagsHtml = (post.tags || []).slice(0, 3).map(t =>
-      `<span class="card-tag ${getSentimentClass(t)}">${t}</span>`
-    ).join('');
-    const readTime = post.readTime || Math.max(3, Math.ceil((post.excerpt || '').length / 500)) + ' min read';
+  const groups = {};
 
-    return `<article class="blog-card ${isFeatured ? 'featured' : ''}" onclick="window.location.href='${post.slug}/'" role="link" tabindex="0">
-      <div class="card-image">
-        <span class="card-category-badge">${catLabel}</span>
-        <span class="card-emoji">${emoji}</span>
-      </div>
-      <div class="card-body">
-        <div class="card-meta">
-          <span class="card-date">${fmtDate(post.date)}</span>
-          <span class="card-readtime">${readTime}</span>
+  filteredPosts.forEach(post => {
+    const category = post.category || 'other';
+    if (!groups[category]) groups[category] = [];
+    groups[category].push(post);
+  });
+
+  const orderedCategories = [
+    ...categoryOrder.filter(cat => groups[cat]),
+    ...Object.keys(groups).filter(cat => !categoryOrder.includes(cat))
+  ];
+
+  grid.innerHTML = orderedCategories.map((category, bucketIndex) => {
+    const posts = groups[category];
+    const emoji = getCategoryEmoji(category);
+    const label = getCategoryLabel(category);
+
+    const cardsHtml = posts.map((post, i) => {
+      const isFeatured =
+        !currentSearch &&
+        currentCategory === 'all' &&
+        bucketIndex === 0 &&
+        i === 0;
+
+      const tagsHtml = (post.tags || []).slice(0, 3).map(t =>
+        `<span class="card-tag ${getSentimentClass(t)}">${t}</span>`
+      ).join('');
+
+      const readTime =
+        post.readTime ||
+        (Math.max(3, Math.ceil((post.excerpt || '').length / 500)) + ' min read');
+
+      const articleUrl = `${post.slug}.html`;
+
+      return `<article
+          class="blog-card ${isFeatured ? 'featured' : ''}"
+          onclick="window.location.href='${articleUrl}'"
+          role="link"
+          tabindex="0"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='${articleUrl}';}"
+        >
+          <div class="card-image">
+            <span class="card-category-badge">${label}</span>
+            <span class="card-emoji">${emoji}</span>
+          </div>
+
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="card-date">${fmtDate(post.date)}</span>
+              <span class="card-readtime">${readTime}</span>
+            </div>
+
+            <a
+              href="${articleUrl}"
+              class="card-title"
+              onclick="event.stopPropagation()"
+            >${post.title}</a>
+
+            <p class="card-excerpt">${post.excerpt || ''}</p>
+
+            <div class="card-footer">
+              <div class="card-tags">${tagsHtml}</div>
+              <span class="card-arrow">→</span>
+            </div>
+          </div>
+        </article>`;
+    }).join('');
+
+    return `
+      <section class="article-bucket">
+        <div class="bucket-header">
+          <div class="bucket-title-wrap">
+            <div class="bucket-icon">${emoji}</div>
+            <h2 class="bucket-title">${label}</h2>
+          </div>
+          <span class="bucket-count">${posts.length} ${posts.length === 1 ? 'article' : 'articles'}</span>
         </div>
-        <a href="${post.slug}/" class="card-title">${post.title}</a>
-        <p class="card-excerpt">${post.excerpt || ''}</p>
-        <div class="card-footer">
-          <div class="card-tags">${tagsHtml}</div>
-          <span class="card-arrow">→</span>
+
+        <div class="bucket-grid">
+          ${cardsHtml}
         </div>
-      </div>
-    </article>`;
+      </section>
+    `;
   }).join('');
 }
 
 function renderPagination() {
-  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
   const pagination = document.getElementById('blogPagination');
-  if (totalPages <= 1) { pagination.innerHTML = ''; return; }
-
-  let html = '';
-  html += `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Prev</button>`;
-  for (let i = 1; i <= totalPages; i++) {
-    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-      html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
-    } else if (i === currentPage - 2 || i === currentPage + 2) {
-      html += `<span style="color:var(--text-muted);padding:8px 4px;">…</span>`;
-    }
-  }
-  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
-  pagination.innerHTML = html;
+  pagination.innerHTML = '';
 }
 
 function goPage(p) {
-  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
-  if (p < 1 || p > totalPages) return;
-  currentPage = p;
-  renderGrid();
-  renderPagination();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Pagination is intentionally disabled in bucketed layout.
+  return;
 }
 
 /* ─── Filters ─── */
