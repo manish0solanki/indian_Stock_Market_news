@@ -1,28 +1,5 @@
 [
   {
-    "slug": "nifty-50-daily-wrap-27-aug-2026",
-    "title": "Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.52%",
-    "excerpt": "Nifty 50 dropped +0.52% to close at 24,207.75.",
-    "category": "daily-wrap",
-    "date": "2026-08-27T02:45:14+05:30",
-    "readTime": "4 min read",
-    "tags": [
-      "Nifty 50",
-      "Bank Nifty",
-      "bearish",
-      "market wrap"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "price-feed",
-      "index-feed",
-      "heatmap-data",
-      "market-breadth",
-      "fii-dii-data"
-    ]
-  },
-  {
     "slug": "nifty-it-falls-1-47-percent-as-large-cap-weakness-drags-sector",
     "title": "Nifty IT Falls 1.47% as Large-Cap Weakness Drags Sector",
     "excerpt": "Nifty IT declined 1.47% (452.95 points) to 30,318.85, with 82 of 145 stocks falling versus 59 advancing. The top 10 companies by market capitalization averaged -1.19% while smaller stocks averaged 0.27%, indicating large-cap-driven weakness rather than broad-based selling. The market-cap-weighted stock-universe change was -1.13% and the median stock change was -0.16%.",
