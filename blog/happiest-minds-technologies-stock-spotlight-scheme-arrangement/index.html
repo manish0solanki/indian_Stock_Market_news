@@ -65,17 +65,14 @@
     content="Stock Spotlight"
 >
 
+
 <style>
 
 /* ============================================================
-   MARKETPULSE GLOBAL
+   MARKETPULSE VARIABLES
    ============================================================ */
 
 :root{
-
-    --i:#2E1F82;
-
-    --id:#1B134F;
 
     --bg:#0F0F1A;
 
@@ -95,7 +92,12 @@
 
     --n:#F87171;
 
-    --f:Arial,Helvetica,sans-serif;
+    --i:#2E1F82;
+
+    --f:
+        Arial,
+        Helvetica,
+        sans-serif;
 
     --m:
         "Courier New",
@@ -138,7 +140,7 @@ body{
 
 
 /* ============================================================
-   TOP NAVIGATION
+   TOP BAR
    ============================================================ */
 
 .tb{
@@ -147,7 +149,9 @@ body{
 
     color:#fff;
 
-    padding:10px 24px;
+    padding:
+        10px
+        24px;
 
     position:sticky;
 
@@ -180,7 +184,7 @@ body{
             255,
             255,
             255,
-            .85
+            .88
         );
 
     text-decoration:none;
@@ -249,13 +253,13 @@ body{
 
 .bc a:hover{
 
-    color:#AEB9E8;
+    color:#B0B8E5;
 
 }
 
 
 /* ============================================================
-   CATEGORY
+   CATEGORY BADGE
    ============================================================ */
 
 .ac{
@@ -272,7 +276,10 @@ body{
 
     border-radius:22px;
 
-    border:1px solid #34345A;
+    border:
+        1px
+        solid
+        #34345A;
 
     background:#18182A;
 
@@ -299,7 +306,10 @@ body{
 
     max-width:1000px;
 
-    margin:0 0 16px;
+    margin:
+        0
+        0
+        16px;
 
     font-size:52px;
 
@@ -349,7 +359,7 @@ body{
 
 
 /* ============================================================
-   ARTICLE BODY
+   ARTICLE
    ============================================================ */
 
 .ab{
@@ -379,7 +389,7 @@ body{
 
 
 /* ============================================================
-   SECTION HEADINGS
+   HEADINGS
    ============================================================ */
 
 .ab h2{
@@ -523,7 +533,7 @@ body{
 
 
 /* ============================================================
-   DATA BLOCK
+   DATA BOX
    ============================================================ */
 
 .dw{
@@ -537,7 +547,8 @@ body{
 
     border-radius:14px;
 
-    padding:20px;
+    padding:
+        20px;
 
     margin:
         28px
@@ -833,7 +844,7 @@ body{
 
 
 /* ============================================================
-   RESPONSIVE
+   TABLET
    ============================================================ */
 
 @media(max-width:800px){
@@ -899,6 +910,10 @@ body{
 }
 
 
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
 @media(max-width:520px){
 
     .at{
@@ -924,8 +939,7 @@ body{
 
     .ks{
 
-        grid-template-columns:
-            1fr;
+        grid-template-columns:1fr;
 
     }
 
@@ -948,15 +962,6 @@ body{
 
     }
 
-
-    .tb{
-
-        padding:
-            9px
-            15px;
-
-    }
-
 }
 
 </style>
@@ -968,7 +973,7 @@ body{
 
 
 <!-- ==========================================================
-     TOP NAVIGATION
+     TOP BAR
      ========================================================== -->
 
 <div class="tb">
@@ -1065,28 +1070,34 @@ body{
 
     <div class="am">
 
-        <span
-            class="stock-meta"
-        >
+        <span class="stock-meta">
+
             HAPPSTMNDS
+
         </span>
 
         <span>·</span>
 
         <span>
+
             28 Aug 2026
+
         </span>
 
         <span>·</span>
 
         <span>
+
             Stock Spotlight
+
         </span>
 
         <span>·</span>
 
         <span>
+
             IT
+
         </span>
 
     </div>
@@ -1133,11 +1144,15 @@ body{
                 </div>
 
                 <div class="stock-name">
+
                     HAPPSTMNDS
+
                 </div>
 
                 <div class="ksu">
+
                     Happiest Minds Technologies Limited
+
                 </div>
 
             </div>
@@ -1152,17 +1167,21 @@ body{
                 </div>
 
                 <div class="kv">
+
                     ₹420.25
+
                 </div>
 
                 <div class="ksu">
+
                     Current price
+
                 </div>
 
             </div>
 
 
-            <!-- DAY CHANGE -->
+            <!-- TODAY -->
 
             <div class="k">
 
@@ -1171,9 +1190,14 @@ body{
                 </div>
 
                 <div
-                    class="kv negative"
+                    class="
+                        kv
+                        negative
+                    "
                 >
+
                     -6.16%
+
                 </div>
 
                 <div class="ksu">
@@ -1196,11 +1220,15 @@ body{
                 </div>
 
                 <div class="kv">
+
                     6,791cr
+
                 </div>
 
                 <div class="ksu">
+
                     IT
+
                 </div>
 
             </div>
@@ -1236,7 +1264,9 @@ body{
         <div class="dw">
 
             <div class="dt">
+
                 Price Performance
+
             </div>
 
 
@@ -1257,7 +1287,9 @@ body{
                                 
                             "
                         >
-                            +0.00%
+
+                            —
+
                         </td>
 
                     </tr>
@@ -1275,7 +1307,9 @@ body{
                                 
                             "
                         >
-                            +0.00%
+
+                            —
+
                         </td>
 
                     </tr>
@@ -1288,7 +1322,9 @@ body{
                         </td>
 
                         <td class="data-value">
-                            ₹0.00
+
+                            —
+
                         </td>
 
                     </tr>
@@ -1301,7 +1337,9 @@ body{
                         </td>
 
                         <td class="data-value">
-                            ₹0.00
+
+                            —
+
                         </td>
 
                     </tr>
@@ -1314,7 +1352,9 @@ body{
                         </td>
 
                         <td class="data-value">
+
                             ₹420.25
+
                         </td>
 
                     </tr>
@@ -1339,7 +1379,9 @@ body{
         <div class="dw">
 
             <div class="dt">
+
                 Trading Activity
+
             </div>
 
 
@@ -1355,7 +1397,9 @@ body{
                         </td>
 
                         <td class="data-value">
-                            0
+
+                            —
+
                         </td>
 
                     </tr>
@@ -1368,7 +1412,9 @@ body{
                         </td>
 
                         <td class="data-value">
-                            0
+
+                            —
+
                         </td>
 
                     </tr>
@@ -1381,7 +1427,9 @@ body{
                         </td>
 
                         <td class="data-value">
-                            0.00x
+
+                            —
+
                         </td>
 
                     </tr>
@@ -1401,7 +1449,9 @@ body{
         <div class="insight">
 
             <h3>
+
                 🔎 Why this stock?
+
             </h3>
 
             <p>
@@ -1418,7 +1468,9 @@ body{
              ====================================================== -->
 
         <h2>
+
             👀 What to watch next
+
         </h2>
 
 
@@ -1440,7 +1492,9 @@ body{
         <div class="scope">
 
             <strong>
+
                 Data &amp; Source Note
+
             </strong>
 
             Market data and company information are
@@ -1459,7 +1513,9 @@ body{
         <div class="cb">
 
             <h3>
+
                 📊 Track Indian Markets
+
             </h3>
 
             <p>
@@ -1473,7 +1529,9 @@ body{
             <a
                 href="https://tradesutra-chi.vercel.app/"
             >
+
                 Open MarketPulse →
+
             </a>
 
         </div>
@@ -1492,10 +1550,12 @@ body{
         >
 
             <em>
+
                 Data generated at
                 28 Aug 2026.
                 This article is for informational
                 purposes only and is not investment advice.
+
             </em>
 
         </p>
