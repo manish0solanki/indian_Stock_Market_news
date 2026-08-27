@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -10,17 +11,20 @@
   content="width=device-width,initial-scale=1.0"
 >
 
+
 <!-- ======================================================
      SEO
      ====================================================== -->
 
 <meta
   name="description"
-  content="Nifty 50 dropped +0.48% to close at 24,090.85."
+  content="Nifty 50 dropped 0.48% to close at 24,090.85."
 >
 
+
 <!-- ======================================================
-     OPEN GRAPH — TELEGRAM / FACEBOOK / WHATSAPP
+     OPEN GRAPH
+     Telegram / WhatsApp / Facebook / etc.
      ====================================================== -->
 
 <meta
@@ -30,12 +34,12 @@
 
 <meta
   property="og:title"
-  content="Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.48% — MarketPulse"
+  content="Nifty 50 Daily Wrap — 27 Aug 2026: Drops 0.48% — MarketPulse"
 >
 
 <meta
   property="og:description"
-  content="Nifty 50 dropped +0.48% to close at 24,090.85."
+  content="Nifty 50 dropped 0.48% to close at 24,090.85."
 >
 
 <meta
@@ -48,6 +52,27 @@
   content="MarketPulse"
 >
 
+
+<!-- ======================================================
+     OPEN GRAPH IMAGE
+     
+     Using the site's existing favicon as a guaranteed
+     valid image for now.
+     
+     Replace this later with a 1200x630 preview image.
+     ====================================================== -->
+
+<meta
+  property="og:image"
+  content="https://tradesutra-chi.vercel.app/favicon-16x16.png"
+>
+
+<meta
+  property="og:image:alt"
+  content="Nifty 50 Daily Wrap — 27 Aug 2026: Drops 0.48%"
+>
+
+
 <!-- ======================================================
      TWITTER / X
      ====================================================== -->
@@ -59,13 +84,19 @@
 
 <meta
   name="twitter:title"
-  content="Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.48% — MarketPulse"
+  content="Nifty 50 Daily Wrap — 27 Aug 2026: Drops 0.48% — MarketPulse"
 >
 
 <meta
   name="twitter:description"
-  content="Nifty 50 dropped +0.48% to close at 24,090.85."
+  content="Nifty 50 dropped 0.48% to close at 24,090.85."
 >
+
+<meta
+  name="twitter:image"
+  content="https://tradesutra-chi.vercel.app/favicon-16x16.png"
+>
+
 
 <!-- ======================================================
      CANONICAL
@@ -76,7 +107,11 @@
   href="https://tradesutra-chi.vercel.app/blog/nifty-50-daily-wrap-27-aug-2026/"
 >
 
-<title>Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.48% — MarketPulse</title>
+
+<title>
+Nifty 50 Daily Wrap — 27 Aug 2026: Drops 0.48% — MarketPulse
+</title>
+
 
 <!-- ======================================================
      FAVICON
@@ -86,17 +121,13 @@
   rel="icon"
   type="image/png"
   sizes="16x16"
-  href="../favicon-16x16.png"
+  href="https://tradesutra-chi.vercel.app/favicon-16x16.png"
 >
+
 
 <!-- ======================================================
-     FONTS
+     GOOGLE FONTS
      ====================================================== -->
-
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
-  rel="stylesheet"
->
 
 <link
   href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
@@ -132,12 +163,9 @@
 
   --f:'Inter',sans-serif;
   --m:'JetBrains Mono',monospace
+
 }
 
-
-/* ======================================================
-   LIGHT THEME
-   ====================================================== */
 
 [data-theme=light]{
 
@@ -155,23 +183,18 @@
 
   --n:#C72B2B;
   --nb:#FCEBEB
+
 }
 
 
-/* ======================================================
-   RESET
-   ====================================================== */
-
 *{
+
   box-sizing:border-box;
   margin:0;
   padding:0
+
 }
 
-
-/* ======================================================
-   BODY
-   ====================================================== */
 
 body{
 
@@ -183,6 +206,7 @@ body{
   line-height:1.6;
 
   min-height:100vh
+
 }
 
 
@@ -198,10 +222,10 @@ body{
   padding:10px 24px;
 
   position:sticky;
-
   top:0;
 
   z-index:100
+
 }
 
 
@@ -216,6 +240,7 @@ body{
   justify-content:space-between;
 
   align-items:center
+
 }
 
 
@@ -228,6 +253,7 @@ body{
   font-size:13px;
 
   font-weight:500
+
 }
 
 
@@ -242,11 +268,12 @@ body{
   margin:0 auto;
 
   padding:32px 24px 60px
+
 }
 
 
 /* ======================================================
-   BREADCRUMB
+   BREADCRUMBS
    ====================================================== */
 
 .bc{
@@ -262,6 +289,7 @@ body{
   margin-bottom:20px;
 
   flex-wrap:wrap
+
 }
 
 
@@ -270,6 +298,7 @@ body{
   color:var(--tm);
 
   text-decoration:none
+
 }
 
 
@@ -302,6 +331,7 @@ body{
   text-transform:uppercase;
 
   margin-bottom:14px
+
 }
 
 
@@ -318,6 +348,7 @@ body{
   line-height:1.2;
 
   margin-bottom:14px
+
 }
 
 
@@ -336,8 +367,13 @@ body{
   font-size:13px;
 
   color:var(--tm)
+
 }
 
+
+/* ======================================================
+   SENTIMENT
+   ====================================================== */
 
 .mt{
 
@@ -350,22 +386,23 @@ body{
   border-radius:10px;
 
   background:var(--bg)
+
 }
 
 
 .mt.bu{
 
   background:var(--pb);
-
   color:var(--p)
+
 }
 
 
 .mt.be{
 
   background:var(--nb);
-
   color:var(--n)
+
 }
 
 
@@ -378,6 +415,7 @@ body{
   font-size:16px;
 
   color:var(--ts)
+
 }
 
 
@@ -390,23 +428,26 @@ body{
   color:var(--t);
 
   margin:36px 0 14px
+
 }
 
 
 .ab p{
 
   margin-bottom:16px
+
 }
 
 
 .ab strong{
 
   color:var(--t)
+
 }
 
 
 /* ======================================================
-   DATA BLOCK
+   DATA BOX
    ====================================================== */
 
 .dw{
@@ -420,12 +461,9 @@ body{
   padding:20px;
 
   margin:24px 0
+
 }
 
-
-/* ======================================================
-   DATA BLOCK TITLE
-   ====================================================== */
 
 .dt{
 
@@ -436,6 +474,7 @@ body{
   color:var(--t);
 
   margin-bottom:12px
+
 }
 
 
@@ -450,6 +489,7 @@ body{
   border-collapse:collapse;
 
   font-size:13px
+
 }
 
 
@@ -470,6 +510,7 @@ body{
   border-bottom:1px solid var(--b);
 
   background:var(--sh)
+
 }
 
 
@@ -480,33 +521,37 @@ body{
   border-bottom:1px solid var(--b);
 
   font-family:var(--m)
+
 }
 
 
 .tb2 tr:last-child td{
 
   border-bottom:none
+
 }
 
 
 /* ======================================================
-   POSITIVE / NEGATIVE
+   UP / DOWN
    ====================================================== */
 
 .u{
 
   color:var(--p)
+
 }
 
 
 .d{
 
   color:var(--n)
+
 }
 
 
 /* ======================================================
-   KEY STATS
+   KEY STATISTICS
    ====================================================== */
 
 .ks{
@@ -519,6 +564,7 @@ body{
   gap:12px;
 
   margin:20px 0
+
 }
 
 
@@ -533,6 +579,7 @@ body{
   padding:14px;
 
   text-align:center
+
 }
 
 
@@ -547,6 +594,7 @@ body{
   text-transform:uppercase;
 
   margin-bottom:6px
+
 }
 
 
@@ -559,18 +607,21 @@ body{
   font-weight:700;
 
   color:var(--t)
+
 }
 
 
 .kv.u{
 
   color:var(--p)
+
 }
 
 
 .kv.d{
 
   color:var(--n)
+
 }
 
 
@@ -581,6 +632,7 @@ body{
   color:var(--tm);
 
   margin-top:4px
+
 }
 
 
@@ -606,6 +658,7 @@ body{
   color:#fff;
 
   text-align:center
+
 }
 
 
@@ -614,6 +667,7 @@ body{
   margin:0 0 8px;
 
   font-size:18px
+
 }
 
 
@@ -624,6 +678,7 @@ body{
   margin:0 0 16px;
 
   font-size:14px
+
 }
 
 
@@ -644,6 +699,7 @@ body{
   font-size:13px;
 
   text-decoration:none
+
 }
 
 
@@ -662,27 +718,37 @@ body{
   font-size:11px;
 
   border-top:1px solid var(--b)
+
 }
 
 
 /* ======================================================
-   RESPONSIVE
+   MOBILE
    ====================================================== */
 
 @media(max-width:768px){
 
   .at{
+
     font-size:24px
+
   }
+
 
   .aw{
+
     padding:20px 16px 40px
+
   }
 
+
   .ks{
+
     grid-template-columns:
       repeat(2,1fr)
+
   }
+
 }
 
 </style>
@@ -693,16 +759,16 @@ body{
 <body>
 
 
-<!-- ==========================================================
-     TOP NAVIGATION
-     ========================================================== -->
+<!-- ======================================================
+     TOP BAR
+     ====================================================== -->
 
 <div class="tb">
 
   <div class="tbi">
 
     <a
-      href="../../"
+      href="https://tradesutra-chi.vercel.app/"
       style="
         font-weight:700;
         font-size:15px;
@@ -723,15 +789,14 @@ body{
           transform:rotate(45deg);
           display:inline-block
         "
-      >
-      </span>
+      ></span>
 
       MarketPulse
 
     </a>
 
 
-    <a href="../">
+    <a href="https://tradesutra-chi.vercel.app/blog/">
       Blog
     </a>
 
@@ -740,26 +805,26 @@ body{
 </div>
 
 
-<!-- ==========================================================
+<!-- ======================================================
      ARTICLE
-     ========================================================== -->
+     ====================================================== -->
 
 <article class="aw">
 
 
-  <!-- ========================================================
-       BREADCRUMB
-       ======================================================== -->
+  <!-- ====================================================
+       BREADCRUMBS
+       ==================================================== -->
 
   <div class="bc">
 
-    <a href="../../">
+    <a href="https://tradesutra-chi.vercel.app/">
       Home
     </a>
 
     <span>/</span>
 
-    <a href="../">
+    <a href="https://tradesutra-chi.vercel.app/blog/">
       Blog
     </a>
 
@@ -772,31 +837,33 @@ body{
   </div>
 
 
-  <!-- ========================================================
+  <!-- ====================================================
        CATEGORY
-       ======================================================== -->
+       ==================================================== -->
 
   <div class="ac">
     📈 Daily Wrap
   </div>
 
 
-  <!-- ========================================================
+  <!-- ====================================================
        TITLE
-       ======================================================== -->
+       ==================================================== -->
 
   <h1 class="at">
-    Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.48%
+    Nifty 50 Daily Wrap — 27 Aug 2026: Drops 0.48%
   </h1>
 
 
-  <!-- ========================================================
+  <!-- ====================================================
        META
-       ======================================================== -->
+       ==================================================== -->
 
   <div class="am">
 
-    <span style="font-family:var(--m)">
+    <span
+      style="font-family:var(--m)"
+    >
       27 Aug 2026
     </span>
 
@@ -808,23 +875,25 @@ body{
 
     <span>·</span>
 
-    <span class="mt be">
+    <span
+      class="mt be"
+    >
       Bearish
     </span>
 
   </div>
 
 
-  <!-- ========================================================
-       ARTICLE BODY
-       ======================================================== -->
+  <!-- ====================================================
+       BODY
+       ==================================================== -->
 
   <div class="ab">
 
 
-    <!-- ======================================================
-         MARKET SUMMARY
-         ====================================================== -->
+    <!-- ==================================================
+         SUMMARY
+         ================================================== -->
 
     <p>
 
@@ -832,22 +901,27 @@ body{
         MarketPulse Summary:
       </strong>
 
-      Nifty 50 dropped
-      116.90 points
+      Nifty 50
+      dropped
+      116.90
+      points
       to close at
+
       <strong>
         24,090.85
       </strong>.
 
-      18 advances vs
-      31 declines.
+      18
+      advances vs
+      31
+      declines.
 
     </p>
 
 
-    <!-- ======================================================
+    <!-- ==================================================
          KEY NUMBERS
-         ====================================================== -->
+         ================================================== -->
 
     <h2>
       📊 Key Numbers
@@ -865,12 +939,14 @@ body{
           Nifty 50
         </div>
 
-        <div class="kv d">
+        <div
+          class="kv d"
+        >
           24,090.85
         </div>
 
         <div class="ksu">
-          -116.90%
+          -0.48%
         </div>
 
       </div>
@@ -936,9 +1012,9 @@ body{
     </div>
 
 
-    <!-- ======================================================
+    <!-- ==================================================
          SECTORS
-         ====================================================== -->
+         ================================================== -->
 
     <h2>
       📈 Sectors
@@ -962,7 +1038,9 @@ body{
               Sector
             </th>
 
-            <th style="text-align:right">
+            <th
+              style="text-align:right"
+            >
               Change
             </th>
 
@@ -974,111 +1052,125 @@ body{
         <tbody>
 
           
-<tr>
 
-  <td>
-    Pharma
-  </td>
+                <tr>
 
-  <td
-    style="text-align:right"
-    class="u"
-  >
-    +0.84%
-  </td>
+                  <td>
+                    Pharma
+                  </td>
 
-</tr>
+                  <td
+                    style="text-align:right"
+                    class="u"
+                  >
+                    +0.84%
+                  </td>
 
-<tr>
+                </tr>
 
-  <td>
-    Healthcare
-  </td>
+              
 
-  <td
-    style="text-align:right"
-    class="u"
-  >
-    +0.73%
-  </td>
+                <tr>
 
-</tr>
+                  <td>
+                    Healthcare
+                  </td>
 
-<tr>
+                  <td
+                    style="text-align:right"
+                    class="u"
+                  >
+                    +0.73%
+                  </td>
 
-  <td>
-    Pvt Bank
-  </td>
+                </tr>
 
-  <td
-    style="text-align:right"
-    class="u"
-  >
-    +0.09%
-  </td>
+              
 
-</tr>
+                <tr>
 
-<tr>
+                  <td>
+                    Pvt Bank
+                  </td>
 
-  <td>
-    Energy
-  </td>
+                  <td
+                    style="text-align:right"
+                    class="u"
+                  >
+                    +0.09%
+                  </td>
 
-  <td
-    style="text-align:right"
-    class="u"
-  >
-    +0.01%
-  </td>
+                </tr>
 
-</tr>
+              
 
-<tr>
+                <tr>
 
-  <td>
-    Realty
-  </td>
+                  <td>
+                    Energy
+                  </td>
 
-  <td
-    style="text-align:right"
-    class="d"
-  >
-    -0.06%
-  </td>
+                  <td
+                    style="text-align:right"
+                    class="u"
+                  >
+                    +0.01%
+                  </td>
 
-</tr>
+                </tr>
 
-<tr>
+              
 
-  <td>
-    IT
-  </td>
+                <tr>
 
-  <td
-    style="text-align:right"
-    class="d"
-  >
-    -0.32%
-  </td>
+                  <td>
+                    Realty
+                  </td>
 
-</tr>
+                  <td
+                    style="text-align:right"
+                    class="d"
+                  >
+                    -0.06%
+                  </td>
 
-<tr>
+                </tr>
 
-  <td>
-    Consumption
-  </td>
+              
 
-  <td
-    style="text-align:right"
-    class="d"
-  >
-    -0.39%
-  </td>
+                <tr>
 
-</tr>
+                  <td>
+                    IT
+                  </td>
 
+                  <td
+                    style="text-align:right"
+                    class="d"
+                  >
+                    -0.32%
+                  </td>
+
+                </tr>
+
+              
+
+                <tr>
+
+                  <td>
+                    Consumption
+                  </td>
+
+                  <td
+                    style="text-align:right"
+                    class="d"
+                  >
+                    -0.39%
+                  </td>
+
+                </tr>
+
+              
 
         </tbody>
 
@@ -1087,9 +1179,9 @@ body{
     </div>
 
 
-    <!-- ======================================================
+    <!-- ==================================================
          GAINERS
-         ====================================================== -->
+         ================================================== -->
 
     <h2>
       🚀 Gainers
@@ -1113,11 +1205,15 @@ body{
               Stock
             </th>
 
-            <th style="text-align:right">
+            <th
+              style="text-align:right"
+            >
               LTP
             </th>
 
-            <th style="text-align:right">
+            <th
+              style="text-align:right"
+            >
               %
             </th>
 
@@ -1129,111 +1225,131 @@ body{
         <tbody>
 
           
-<tr>
 
-  <td>
-    <strong>
-      ADANIENT
-    </strong>
-  </td>
+                <tr>
 
-  <td style="text-align:right">
-    ₹3,169.00
-  </td>
+                  <td>
+                    <strong>
+                      ADANIENT
+                    </strong>
+                  </td>
 
-  <td
-    class="u"
-    style="text-align:right"
-  >
-    +1.83%
-  </td>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹3,169.00
+                  </td>
 
-</tr>
+                  <td
+                    class="u"
+                    style="text-align:right"
+                  >
+                    +1.83%
+                  </td>
 
-<tr>
+                </tr>
 
-  <td>
-    <strong>
-      KOTAKBANK
-    </strong>
-  </td>
+              
 
-  <td style="text-align:right">
-    ₹424.20
-  </td>
+                <tr>
 
-  <td
-    class="u"
-    style="text-align:right"
-  >
-    +1.80%
-  </td>
+                  <td>
+                    <strong>
+                      KOTAKBANK
+                    </strong>
+                  </td>
 
-</tr>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹424.20
+                  </td>
 
-<tr>
+                  <td
+                    class="u"
+                    style="text-align:right"
+                  >
+                    +1.80%
+                  </td>
 
-  <td>
-    <strong>
-      ADANIPORTS
-    </strong>
-  </td>
+                </tr>
 
-  <td style="text-align:right">
-    ₹1,714.00
-  </td>
+              
 
-  <td
-    class="u"
-    style="text-align:right"
-  >
-    +1.33%
-  </td>
+                <tr>
 
-</tr>
+                  <td>
+                    <strong>
+                      ADANIPORTS
+                    </strong>
+                  </td>
 
-<tr>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹1,714.00
+                  </td>
 
-  <td>
-    <strong>
-      CIPLA
-    </strong>
-  </td>
+                  <td
+                    class="u"
+                    style="text-align:right"
+                  >
+                    +1.33%
+                  </td>
 
-  <td style="text-align:right">
-    ₹1,420.00
-  </td>
+                </tr>
 
-  <td
-    class="u"
-    style="text-align:right"
-  >
-    +1.23%
-  </td>
+              
 
-</tr>
+                <tr>
 
-<tr>
+                  <td>
+                    <strong>
+                      CIPLA
+                    </strong>
+                  </td>
 
-  <td>
-    <strong>
-      BEL
-    </strong>
-  </td>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹1,420.00
+                  </td>
 
-  <td style="text-align:right">
-    ₹411.00
-  </td>
+                  <td
+                    class="u"
+                    style="text-align:right"
+                  >
+                    +1.23%
+                  </td>
 
-  <td
-    class="u"
-    style="text-align:right"
-  >
-    +1.01%
-  </td>
+                </tr>
 
-</tr>
+              
 
+                <tr>
+
+                  <td>
+                    <strong>
+                      BEL
+                    </strong>
+                  </td>
+
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹411.00
+                  </td>
+
+                  <td
+                    class="u"
+                    style="text-align:right"
+                  >
+                    +1.01%
+                  </td>
+
+                </tr>
+
+              
 
         </tbody>
 
@@ -1242,9 +1358,9 @@ body{
     </div>
 
 
-    <!-- ======================================================
+    <!-- ==================================================
          LOSERS
-         ====================================================== -->
+         ================================================== -->
 
     <h2>
       📉 Losers
@@ -1268,11 +1384,15 @@ body{
               Stock
             </th>
 
-            <th style="text-align:right">
+            <th
+              style="text-align:right"
+            >
               LTP
             </th>
 
-            <th style="text-align:right">
+            <th
+              style="text-align:right"
+            >
               %
             </th>
 
@@ -1284,111 +1404,131 @@ body{
         <tbody>
 
           
-<tr>
 
-  <td>
-    <strong>
-      HINDALCO
-    </strong>
-  </td>
+                <tr>
 
-  <td style="text-align:right">
-    ₹1,024.00
-  </td>
+                  <td>
+                    <strong>
+                      HINDALCO
+                    </strong>
+                  </td>
 
-  <td
-    class="d"
-    style="text-align:right"
-  >
-    -2.75%
-  </td>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹1,024.00
+                  </td>
 
-</tr>
+                  <td
+                    class="d"
+                    style="text-align:right"
+                  >
+                    -2.75%
+                  </td>
 
-<tr>
+                </tr>
 
-  <td>
-    <strong>
-      HDFCBANK
-    </strong>
-  </td>
+              
 
-  <td style="text-align:right">
-    ₹711.00
-  </td>
+                <tr>
 
-  <td
-    class="d"
-    style="text-align:right"
-  >
-    -2.23%
-  </td>
+                  <td>
+                    <strong>
+                      HDFCBANK
+                    </strong>
+                  </td>
 
-</tr>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹711.00
+                  </td>
 
-<tr>
+                  <td
+                    class="d"
+                    style="text-align:right"
+                  >
+                    -2.23%
+                  </td>
 
-  <td>
-    <strong>
-      M&M
-    </strong>
-  </td>
+                </tr>
 
-  <td style="text-align:right">
-    ₹3,330.00
-  </td>
+              
 
-  <td
-    class="d"
-    style="text-align:right"
-  >
-    -2.01%
-  </td>
+                <tr>
 
-</tr>
+                  <td>
+                    <strong>
+                      M&amp;M
+                    </strong>
+                  </td>
 
-<tr>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹3,330.00
+                  </td>
 
-  <td>
-    <strong>
-      SHRIRAMFIN
-    </strong>
-  </td>
+                  <td
+                    class="d"
+                    style="text-align:right"
+                  >
+                    -2.01%
+                  </td>
 
-  <td style="text-align:right">
-    ₹1,101.00
-  </td>
+                </tr>
 
-  <td
-    class="d"
-    style="text-align:right"
-  >
-    -1.48%
-  </td>
+              
 
-</tr>
+                <tr>
 
-<tr>
+                  <td>
+                    <strong>
+                      SHRIRAMFIN
+                    </strong>
+                  </td>
 
-  <td>
-    <strong>
-      HCLTECH
-    </strong>
-  </td>
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹1,101.00
+                  </td>
 
-  <td style="text-align:right">
-    ₹1,282.00
-  </td>
+                  <td
+                    class="d"
+                    style="text-align:right"
+                  >
+                    -1.48%
+                  </td>
 
-  <td
-    class="d"
-    style="text-align:right"
-  >
-    -1.27%
-  </td>
+                </tr>
 
-</tr>
+              
 
+                <tr>
+
+                  <td>
+                    <strong>
+                      HCLTECH
+                    </strong>
+                  </td>
+
+                  <td
+                    style="text-align:right"
+                  >
+                    ₹1,282.00
+                  </td>
+
+                  <td
+                    class="d"
+                    style="text-align:right"
+                  >
+                    -1.27%
+                  </td>
+
+                </tr>
+
+              
 
         </tbody>
 
@@ -1397,9 +1537,9 @@ body{
     </div>
 
 
-    <!-- ======================================================
-         MARKET WRAP
-         ====================================================== -->
+    <!-- ==================================================
+         WRAP
+         ================================================== -->
 
     <h2>
       📝 Wrap
@@ -1409,11 +1549,17 @@ body{
     <p>Market Summary — 27 Aug 2026</p><p>Markets closed cautious as NIFTY 50 shed 117 points to end at 24,090.85, down 0.48%. Bears had the upper hand with 31 stocks declining against just 18 gainers.</p><p>Key movers: HDFCBank dragged the index most, crashing ₹16.2 (-2.23%) on heavy volumes of nearly 5 crore shares worth ₹3,328 Cr — its worst single-day fall in weeks signals institutional selling pressure. On the flip side, KotakBank rose ₹7.5 (+1.8%) with robust turnover of ₹1,393 Cr, showing selective buying in private lenders. Adani twins — AdaniEnt and AdaniPorts — bucked weakness, gaining 1.83% and 1.33% respectively, hinting at renewed comfort in the group post recent regulatory clarity.</p><p>Sector rotation: Pharma (+0.84%) and Healthcare (+0.73%) shone as defensive bets found takers amid uncertainty. PSU Banks (-0.94%) were the worst hit, continuing their recent underperformance. IT (-0.32%) stayed soft while Private Banks barely held green at +0.09%.</p><p>Metal major Hindalco (-2.75%) also cracked on global commodity worries.</p>
 
 
-    <!-- ======================================================
+    <!-- ==================================================
          DISCLAIMER
-         ====================================================== -->
+         ================================================== -->
 
-    <hr>
+    <hr
+      style="
+        border:0;
+        border-top:1px solid var(--b);
+        margin:30px 0 18px
+      "
+    >
 
 
     <p
@@ -1424,8 +1570,10 @@ body{
     >
 
       <em>
+
         Data from NSE, 3:30 PM IST.
         Not investment advice.
+
       </em>
 
     </p>
@@ -1434,9 +1582,9 @@ body{
   </div>
 
 
-  <!-- ========================================================
+  <!-- ====================================================
        CTA
-       ======================================================== -->
+       ==================================================== -->
 
   <div class="cb">
 
@@ -1445,10 +1593,12 @@ body{
     </h3>
 
     <p>
-      Real-time Nifty 50, heatmaps, FII/DII flows, AI news.
+      Real-time Nifty 50,
+      heatmaps, FII/DII flows,
+      AI news.
     </p>
 
-    <a href="../../">
+    <a href="https://tradesutra-chi.vercel.app/">
       Open Dashboard →
     </a>
 
@@ -1458,14 +1608,15 @@ body{
 </article>
 
 
-<!-- ==========================================================
+<!-- ======================================================
      FOOTER
-     ========================================================== -->
+     ====================================================== -->
 
 <div class="sf">
 
   MarketPulse —
-  automated analysis, human judgment still required.
+  automated analysis,
+  human judgment still required.
 
 </div>
 
