@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -9,13 +10,19 @@
   content="width=device-width,initial-scale=1.0"
 >
 
-<!-- SEO -->
+<!-- ======================================================
+     SEO
+     ====================================================== -->
+
 <meta
   name="description"
   content="Nifty 50 dropped +0.48% to close at 24,090.85."
 >
 
-<!-- Open Graph — Telegram / Facebook / WhatsApp -->
+<!-- ======================================================
+     OPEN GRAPH — TELEGRAM / FACEBOOK / WHATSAPP
+     ====================================================== -->
+
 <meta
   property="og:type"
   content="article"
@@ -41,7 +48,10 @@
   content="MarketPulse"
 >
 
-<!-- Twitter / X -->
+<!-- ======================================================
+     TWITTER / X
+     ====================================================== -->
+
 <meta
   name="twitter:card"
   content="summary"
@@ -57,13 +67,20 @@
   content="Nifty 50 dropped +0.48% to close at 24,090.85."
 >
 
-<!-- Canonical -->
+<!-- ======================================================
+     CANONICAL
+     ====================================================== -->
+
 <link
   rel="canonical"
   href="https://tradesutra-chi.vercel.app/blog/nifty-50-daily-wrap-27-aug-2026/"
 >
 
 <title>Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.48% — MarketPulse</title>
+
+<!-- ======================================================
+     FAVICON
+     ====================================================== -->
 
 <link
   rel="icon"
@@ -72,836 +89,1387 @@
   href="../favicon-16x16.png"
 >
 
+<!-- ======================================================
+     FONTS
+     ====================================================== -->
+
 <link
   href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
   rel="stylesheet"
 >
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+>
+
+
+<!-- ======================================================
+     STYLES
+     ====================================================== -->
 
 <style>
+
 :root{
---i:#2E1F82;
---id:#1B134F;
---bg:#0F0F1A;
---s:#1A1A2E;
---sh:#222240;
---b:#2A2A4A;
---t:#E8E8F0;
---ts:#A0A0B8;
---tm:#6B6B8A;
---p:#4ADE80;
---pb:rgba(74,222,128,.12);
---n:#F87171;
---nb:rgba(248,113,113,.12);
---f:'Inter',sans-serif;
---m:'JetBrains Mono',monospace
+
+  --i:#2E1F82;
+  --id:#1B134F;
+
+  --bg:#0F0F1A;
+  --s:#1A1A2E;
+  --sh:#222240;
+  --b:#2A2A4A;
+
+  --t:#E8E8F0;
+  --ts:#A0A0B8;
+  --tm:#6B6B8A;
+
+  --p:#4ADE80;
+  --pb:rgba(74,222,128,.12);
+
+  --n:#F87171;
+  --nb:rgba(248,113,113,.12);
+
+  --f:'Inter',sans-serif;
+  --m:'JetBrains Mono',monospace
 }
+
+
+/* ======================================================
+   LIGHT THEME
+   ====================================================== */
 
 [data-theme=light]{
---bg:#F3F4F8;
---s:#fff;
---sh:#FAFAFC;
---b:#E2E4EE;
---t:#0F0F1A;
---ts:#5A5D6B;
---tm:#8B8FA3;
---p:#0F8A3E;
---pb:#E7F7EC;
---n:#C72B2B;
---nb:#FCEBEB
+
+  --bg:#F3F4F8;
+  --s:#fff;
+  --sh:#FAFAFC;
+  --b:#E2E4EE;
+
+  --t:#0F0F1A;
+  --ts:#5A5D6B;
+  --tm:#8B8FA3;
+
+  --p:#0F8A3E;
+  --pb:#E7F7EC;
+
+  --n:#C72B2B;
+  --nb:#FCEBEB
 }
+
+
+/* ======================================================
+   RESET
+   ====================================================== */
 
 *{
-box-sizing:border-box;
-margin:0;
-padding:0
+  box-sizing:border-box;
+  margin:0;
+  padding:0
 }
+
+
+/* ======================================================
+   BODY
+   ====================================================== */
 
 body{
-background:var(--bg);
-color:var(--t);
-font-family:var(--f);
-line-height:1.6;
-min-height:100vh
+
+  background:var(--bg);
+  color:var(--t);
+
+  font-family:var(--f);
+
+  line-height:1.6;
+
+  min-height:100vh
 }
+
+
+/* ======================================================
+   TOP BAR
+   ====================================================== */
 
 .tb{
-background:var(--i);
-color:#fff;
-padding:10px 24px;
-position:sticky;
-top:0;
-z-index:100
+
+  background:var(--i);
+  color:#fff;
+
+  padding:10px 24px;
+
+  position:sticky;
+
+  top:0;
+
+  z-index:100
 }
+
 
 .tbi{
-max-width:1200px;
-margin:0 auto;
-display:flex;
-justify-content:space-between;
-align-items:center
+
+  max-width:1200px;
+
+  margin:0 auto;
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center
 }
+
 
 .tb a{
-color:rgba(255,255,255,.8);
-text-decoration:none;
-font-size:13px;
-font-weight:500
+
+  color:rgba(255,255,255,.8);
+
+  text-decoration:none;
+
+  font-size:13px;
+
+  font-weight:500
 }
 
+
+/* ======================================================
+   ARTICLE WRAPPER
+   ====================================================== */
+
 .aw{
-max-width:720px;
-margin:0 auto;
-padding:32px 24px 60px
+
+  max-width:720px;
+
+  margin:0 auto;
+
+  padding:32px 24px 60px
 }
+
+
+/* ======================================================
+   BREADCRUMB
+   ====================================================== */
 
 .bc{
-display:flex;
-gap:8px;
-font-size:12px;
-color:var(--tm);
-margin-bottom:20px;
-flex-wrap:wrap
+
+  display:flex;
+
+  gap:8px;
+
+  font-size:12px;
+
+  color:var(--tm);
+
+  margin-bottom:20px;
+
+  flex-wrap:wrap
 }
+
 
 .bc a{
-color:var(--tm);
-text-decoration:none
+
+  color:var(--tm);
+
+  text-decoration:none
 }
+
+
+/* ======================================================
+   CATEGORY
+   ====================================================== */
 
 .ac{
-display:inline-flex;
-align-items:center;
-gap:6px;
-background:var(--s);
-border:1px solid var(--b);
-border-radius:20px;
-padding:4px 12px;
-font-size:11px;
-font-weight:600;
-color:var(--ts);
-text-transform:uppercase;
-margin-bottom:14px
+
+  display:inline-flex;
+
+  align-items:center;
+
+  gap:6px;
+
+  background:var(--s);
+
+  border:1px solid var(--b);
+
+  border-radius:20px;
+
+  padding:4px 12px;
+
+  font-size:11px;
+
+  font-weight:600;
+
+  color:var(--ts);
+
+  text-transform:uppercase;
+
+  margin-bottom:14px
 }
 
+
+/* ======================================================
+   TITLE
+   ====================================================== */
+
 .at{
-font-size:32px;
-font-weight:700;
-line-height:1.2;
-margin-bottom:14px
+
+  font-size:32px;
+
+  font-weight:700;
+
+  line-height:1.2;
+
+  margin-bottom:14px
 }
+
+
+/* ======================================================
+   META
+   ====================================================== */
 
 .am{
-display:flex;
-gap:14px;
-flex-wrap:wrap;
-font-size:13px;
-color:var(--tm)
+
+  display:flex;
+
+  gap:14px;
+
+  flex-wrap:wrap;
+
+  font-size:13px;
+
+  color:var(--tm)
 }
+
 
 .mt{
-font-size:10px;
-font-weight:600;
-padding:2px 8px;
-border-radius:10px;
-background:var(--bg)
+
+  font-size:10px;
+
+  font-weight:600;
+
+  padding:2px 8px;
+
+  border-radius:10px;
+
+  background:var(--bg)
 }
+
 
 .mt.bu{
-background:var(--pb);
-color:var(--p)
+
+  background:var(--pb);
+
+  color:var(--p)
 }
+
 
 .mt.be{
-background:var(--nb);
-color:var(--n)
+
+  background:var(--nb);
+
+  color:var(--n)
 }
+
+
+/* ======================================================
+   ARTICLE BODY
+   ====================================================== */
 
 .ab{
-font-size:16px;
-color:var(--ts)
+
+  font-size:16px;
+
+  color:var(--ts)
 }
+
 
 .ab h2{
-font-size:22px;
-font-weight:700;
-color:var(--t);
-margin:36px 0 14px
+
+  font-size:22px;
+
+  font-weight:700;
+
+  color:var(--t);
+
+  margin:36px 0 14px
 }
+
 
 .ab p{
-margin-bottom:16px
+
+  margin-bottom:16px
 }
+
 
 .ab strong{
-color:var(--t)
+
+  color:var(--t)
 }
+
+
+/* ======================================================
+   DATA BLOCK
+   ====================================================== */
 
 .dw{
-background:var(--s);
-border:1px solid var(--b);
-border-radius:14px;
-padding:20px;
-margin:24px 0
+
+  background:var(--s);
+
+  border:1px solid var(--b);
+
+  border-radius:14px;
+
+  padding:20px;
+
+  margin:24px 0
 }
+
+
+/* ======================================================
+   DATA BLOCK TITLE
+   ====================================================== */
 
 .dt{
-font-size:13px;
-font-weight:700;
-color:var(--t);
-margin-bottom:12px
+
+  font-size:13px;
+
+  font-weight:700;
+
+  color:var(--t);
+
+  margin-bottom:12px
 }
+
+
+/* ======================================================
+   TABLE
+   ====================================================== */
 
 .tb2{
-width:100%;
-border-collapse:collapse;
-font-size:13px
+
+  width:100%;
+
+  border-collapse:collapse;
+
+  font-size:13px
 }
+
 
 .tb2 th{
-padding:8px 10px;
-font-size:10px;
-font-weight:600;
-text-transform:uppercase;
-color:var(--tm);
-text-align:left;
-border-bottom:1px solid var(--b);
-background:var(--sh)
+
+  padding:8px 10px;
+
+  font-size:10px;
+
+  font-weight:600;
+
+  text-transform:uppercase;
+
+  color:var(--tm);
+
+  text-align:left;
+
+  border-bottom:1px solid var(--b);
+
+  background:var(--sh)
 }
+
 
 .tb2 td{
-padding:8px 10px;
-border-bottom:1px solid var(--b);
-font-family:var(--m)
+
+  padding:8px 10px;
+
+  border-bottom:1px solid var(--b);
+
+  font-family:var(--m)
 }
+
 
 .tb2 tr:last-child td{
-border-bottom:none
+
+  border-bottom:none
 }
+
+
+/* ======================================================
+   POSITIVE / NEGATIVE
+   ====================================================== */
 
 .u{
-color:var(--p)
+
+  color:var(--p)
 }
+
 
 .d{
-color:var(--n)
+
+  color:var(--n)
 }
 
+
+/* ======================================================
+   KEY STATS
+   ====================================================== */
+
 .ks{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-gap:12px;
-margin:20px 0
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(auto-fit,minmax(140px,1fr));
+
+  gap:12px;
+
+  margin:20px 0
 }
+
 
 .k{
-background:var(--s);
-border:1px solid var(--b);
-border-radius:10px;
-padding:14px;
-text-align:center
+
+  background:var(--s);
+
+  border:1px solid var(--b);
+
+  border-radius:10px;
+
+  padding:14px;
+
+  text-align:center
 }
+
 
 .kl{
-font-size:10px;
-font-weight:600;
-color:var(--tm);
-text-transform:uppercase;
-margin-bottom:6px
+
+  font-size:10px;
+
+  font-weight:600;
+
+  color:var(--tm);
+
+  text-transform:uppercase;
+
+  margin-bottom:6px
 }
+
 
 .kv{
-font-family:var(--m);
-font-size:18px;
-font-weight:700;
-color:var(--t)
+
+  font-family:var(--m);
+
+  font-size:18px;
+
+  font-weight:700;
+
+  color:var(--t)
 }
+
 
 .kv.u{
-color:var(--p)
+
+  color:var(--p)
 }
+
 
 .kv.d{
-color:var(--n)
+
+  color:var(--n)
 }
+
 
 .ksu{
-font-size:11px;
-color:var(--tm);
-margin-top:4px
+
+  font-size:11px;
+
+  color:var(--tm);
+
+  margin-top:4px
 }
+
+
+/* ======================================================
+   CTA
+   ====================================================== */
 
 .cb{
-background:linear-gradient(135deg,var(--id),var(--i));
-border-radius:14px;
-padding:24px;
-margin:32px 0;
-color:#fff;
-text-align:center
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--id),
+      var(--i)
+    );
+
+  border-radius:14px;
+
+  padding:24px;
+
+  margin:32px 0;
+
+  color:#fff;
+
+  text-align:center
 }
+
 
 .cb h3{
-margin:0 0 8px;
-font-size:18px
+
+  margin:0 0 8px;
+
+  font-size:18px
 }
+
 
 .cb p{
-color:rgba(255,255,255,.8);
-margin:0 0 16px;
-font-size:14px
+
+  color:rgba(255,255,255,.8);
+
+  margin:0 0 16px;
+
+  font-size:14px
 }
+
 
 .cb a{
-display:inline-block;
-background:#fff;
-color:var(--i);
-padding:10px 24px;
-border-radius:10px;
-font-weight:600;
-font-size:13px;
-text-decoration:none
+
+  display:inline-block;
+
+  background:#fff;
+
+  color:var(--i);
+
+  padding:10px 24px;
+
+  border-radius:10px;
+
+  font-weight:600;
+
+  font-size:13px;
+
+  text-decoration:none
 }
+
+
+/* ======================================================
+   FOOTER
+   ====================================================== */
 
 .sf{
-text-align:center;
-padding:20px;
-color:var(--tm);
-font-size:11px;
-border-top:1px solid var(--b)
+
+  text-align:center;
+
+  padding:20px;
+
+  color:var(--tm);
+
+  font-size:11px;
+
+  border-top:1px solid var(--b)
 }
+
+
+/* ======================================================
+   RESPONSIVE
+   ====================================================== */
 
 @media(max-width:768px){
-.at{
-font-size:24px
+
+  .at{
+    font-size:24px
+  }
+
+  .aw{
+    padding:20px 16px 40px
+  }
+
+  .ks{
+    grid-template-columns:
+      repeat(2,1fr)
+  }
 }
 
-.aw{
-padding:20px 16px 40px
-}
-
-.ks{
-grid-template-columns:repeat(2,1fr)
-}
-}
 </style>
+
 </head>
+
 
 <body>
 
+
+<!-- ==========================================================
+     TOP NAVIGATION
+     ========================================================== -->
+
 <div class="tb">
-<div class="tbi">
 
-<a href="../../"
-style="font-weight:700;font-size:15px;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none">
+  <div class="tbi">
 
-<span
-style="width:9px;height:9px;background:#F5A623;transform:rotate(45deg);display:inline-block">
-</span>
+    <a
+      href="../../"
+      style="
+        font-weight:700;
+        font-size:15px;
+        letter-spacing:-0.02em;
+        display:flex;
+        align-items:center;
+        gap:10px;
+        color:#fff;
+        text-decoration:none
+      "
+    >
 
-MarketPulse
+      <span
+        style="
+          width:9px;
+          height:9px;
+          background:#F5A623;
+          transform:rotate(45deg);
+          display:inline-block
+        "
+      >
+      </span>
 
-</a>
+      MarketPulse
 
-<a href="../">Blog</a>
+    </a>
+
+
+    <a href="../">
+      Blog
+    </a>
+
+  </div>
 
 </div>
-</div>
+
+
+<!-- ==========================================================
+     ARTICLE
+     ========================================================== -->
 
 <article class="aw">
 
-<div class="bc">
-<a href="../../">Home</a>
-<span>/</span>
-<a href="../">Blog</a>
-<span>/</span>
-<span style="color:var(--tm)">Daily Wrap</span>
-</div>
 
-<div class="ac">📈 Daily Wrap</div>
+  <!-- ========================================================
+       BREADCRUMB
+       ======================================================== -->
 
-<h1 class="at">Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.48%</h1>
+  <div class="bc">
 
-<div class="am">
-<span style="font-family:var(--m)">27 Aug 2026</span>
-<span>·</span>
-<span>4 min read</span>
-<span>·</span>
-<span class="mt be">
-Bearish
-</span>
-</div>
+    <a href="../../">
+      Home
+    </a>
 
-<div class="ab">
+    <span>/</span>
 
-<p>
-<strong>MarketPulse Summary:</strong>
-Nifty 50 dropped
-116.90 points
-to close at
-<strong>24,090.85</strong>.
-18 advances vs
-31 declines.
-</p>
+    <a href="../">
+      Blog
+    </a>
 
-<h2>📊 Key Numbers</h2>
+    <span>/</span>
 
-<div class="ks">
+    <span style="color:var(--tm)">
+      Daily Wrap
+    </span>
 
-<div class="k">
-<div class="kl">Nifty 50</div>
+  </div>
 
-<div class="kv d">
-24,090.85
-</div>
 
-<div class="ksu">
--116.90%
-</div>
-</div>
+  <!-- ========================================================
+       CATEGORY
+       ======================================================== -->
 
-<div class="k">
-<div class="kl">Advances</div>
+  <div class="ac">
+    📈 Daily Wrap
+  </div>
 
-<div class="kv u">
-18
-</div>
 
-<div class="ksu">
-vs 31↓
-</div>
-</div>
+  <!-- ========================================================
+       TITLE
+       ======================================================== -->
 
-<div class="k">
-<div class="kl">Best Sector</div>
+  <h1 class="at">
+    Nifty 50 Daily Wrap — 27 Aug 2026: Drops +0.48%
+  </h1>
 
-<div class="kv u">
-Pharma
-</div>
 
-<div class="ksu">
-+0.84%
-</div>
-</div>
+  <!-- ========================================================
+       META
+       ======================================================== -->
 
-<div class="k">
-<div class="kl">Worst Sector</div>
+  <div class="am">
 
-<div class="kv d">
-PSU Bank
-</div>
+    <span style="font-family:var(--m)">
+      27 Aug 2026
+    </span>
 
-<div class="ksu">
--0.94%
-</div>
-</div>
+    <span>·</span>
 
-</div>
+    <span>
+      4 min read
+    </span>
 
-<h2>📈 Sectors</h2>
+    <span>·</span>
 
-<div class="dw">
+    <span class="mt be">
+      Bearish
+    </span>
 
-<div class="dt">
-Sector Performance
-</div>
+  </div>
 
-<table class="tb2">
 
-<thead>
-<tr>
-<th>Sector</th>
-<th style="text-align:right">Change</th>
-</tr>
-</thead>
+  <!-- ========================================================
+       ARTICLE BODY
+       ======================================================== -->
 
-<tbody>
+  <div class="ab">
 
 
-<tr>
-<td>Pharma</td>
+    <!-- ======================================================
+         MARKET SUMMARY
+         ====================================================== -->
 
-<td
-style="text-align:right"
-class="u">
+    <p>
 
-+0.84%
+      <strong>
+        MarketPulse Summary:
+      </strong>
 
-</td>
-</tr>
+      Nifty 50 dropped
+      116.90 points
+      to close at
+      <strong>
+        24,090.85
+      </strong>.
 
-<tr>
-<td>Healthcare</td>
+      18 advances vs
+      31 declines.
 
-<td
-style="text-align:right"
-class="u">
+    </p>
 
-+0.73%
 
-</td>
-</tr>
+    <!-- ======================================================
+         KEY NUMBERS
+         ====================================================== -->
 
-<tr>
-<td>Pvt Bank</td>
+    <h2>
+      📊 Key Numbers
+    </h2>
 
-<td
-style="text-align:right"
-class="u">
 
-+0.09%
+    <div class="ks">
 
-</td>
-</tr>
 
-<tr>
-<td>Energy</td>
+      <!-- NIFTY -->
 
-<td
-style="text-align:right"
-class="u">
+      <div class="k">
 
-+0.01%
+        <div class="kl">
+          Nifty 50
+        </div>
 
-</td>
-</tr>
+        <div class="kv d">
+          24,090.85
+        </div>
 
-<tr>
-<td>Realty</td>
+        <div class="ksu">
+          -116.90%
+        </div>
 
-<td
-style="text-align:right"
-class="d">
+      </div>
 
--0.06%
 
-</td>
-</tr>
+      <!-- ADVANCES -->
 
-<tr>
-<td>IT</td>
+      <div class="k">
 
-<td
-style="text-align:right"
-class="d">
+        <div class="kl">
+          Advances
+        </div>
 
--0.32%
+        <div class="kv u">
+          18
+        </div>
 
-</td>
-</tr>
+        <div class="ksu">
+          vs 31↓
+        </div>
 
-<tr>
-<td>Consumption</td>
+      </div>
 
-<td
-style="text-align:right"
-class="d">
 
--0.39%
+      <!-- BEST SECTOR -->
 
-</td>
-</tr>
+      <div class="k">
 
+        <div class="kl">
+          Best Sector
+        </div>
 
-</tbody>
+        <div class="kv u">
+          Pharma
+        </div>
 
-</table>
+        <div class="ksu">
+          +0.84%
+        </div>
 
-</div>
+      </div>
 
-<h2>🚀 Gainers</h2>
 
-<div class="dw">
+      <!-- WORST SECTOR -->
 
-<div class="dt">
-Top 5 Gainers
-</div>
+      <div class="k">
 
-<table class="tb2">
+        <div class="kl">
+          Worst Sector
+        </div>
 
-<thead>
-<tr>
-<th>Stock</th>
-<th style="text-align:right">LTP</th>
-<th style="text-align:right">%</th>
-</tr>
-</thead>
+        <div class="kv d">
+          PSU Bank
+        </div>
 
-<tbody>
+        <div class="ksu">
+          -0.94%
+        </div>
 
+      </div>
 
-<tr>
 
-<td>
-<strong>ADANIENT</strong>
-</td>
+    </div>
 
-<td style="text-align:right">
-₹3,169.00
-</td>
 
-<td
-class="u"
-style="text-align:right">
+    <!-- ======================================================
+         SECTORS
+         ====================================================== -->
 
-+1.83%
+    <h2>
+      📈 Sectors
+    </h2>
 
-</td>
 
-</tr>
+    <div class="dw">
 
+      <div class="dt">
+        Sector Performance
+      </div>
+
+
+      <table class="tb2">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Sector
+            </th>
+
+            <th style="text-align:right">
+              Change
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          
 <tr>
 
-<td>
-<strong>KOTAKBANK</strong>
-</td>
+  <td>
+    Pharma
+  </td>
 
-<td style="text-align:right">
-₹424.20
-</td>
-
-<td
-class="u"
-style="text-align:right">
-
-+1.80%
-
-</td>
+  <td
+    style="text-align:right"
+    class="u"
+  >
+    +0.84%
+  </td>
 
 </tr>
 
 <tr>
 
-<td>
-<strong>ADANIPORTS</strong>
-</td>
+  <td>
+    Healthcare
+  </td>
 
-<td style="text-align:right">
-₹1,714.00
-</td>
-
-<td
-class="u"
-style="text-align:right">
-
-+1.33%
-
-</td>
+  <td
+    style="text-align:right"
+    class="u"
+  >
+    +0.73%
+  </td>
 
 </tr>
 
 <tr>
 
-<td>
-<strong>CIPLA</strong>
-</td>
+  <td>
+    Pvt Bank
+  </td>
 
-<td style="text-align:right">
-₹1,420.00
-</td>
-
-<td
-class="u"
-style="text-align:right">
-
-+1.23%
-
-</td>
+  <td
+    style="text-align:right"
+    class="u"
+  >
+    +0.09%
+  </td>
 
 </tr>
 
 <tr>
 
-<td>
-<strong>BEL</strong>
-</td>
+  <td>
+    Energy
+  </td>
 
-<td style="text-align:right">
-₹411.00
-</td>
-
-<td
-class="u"
-style="text-align:right">
-
-+1.01%
-
-</td>
-
-</tr>
-
-
-</tbody>
-
-</table>
-
-</div>
-
-<h2>📉 Losers</h2>
-
-<div class="dw">
-
-<div class="dt">
-Top 5 Losers
-</div>
-
-<table class="tb2">
-
-<thead>
-<tr>
-<th>Stock</th>
-<th style="text-align:right">LTP</th>
-<th style="text-align:right">%</th>
-</tr>
-</thead>
-
-<tbody>
-
-
-<tr>
-
-<td>
-<strong>HINDALCO</strong>
-</td>
-
-<td style="text-align:right">
-₹1,024.00
-</td>
-
-<td
-class="d"
-style="text-align:right">
-
--2.75%
-
-</td>
+  <td
+    style="text-align:right"
+    class="u"
+  >
+    +0.01%
+  </td>
 
 </tr>
 
 <tr>
 
-<td>
-<strong>HDFCBANK</strong>
-</td>
+  <td>
+    Realty
+  </td>
 
-<td style="text-align:right">
-₹711.00
-</td>
-
-<td
-class="d"
-style="text-align:right">
-
--2.23%
-
-</td>
+  <td
+    style="text-align:right"
+    class="d"
+  >
+    -0.06%
+  </td>
 
 </tr>
 
 <tr>
 
-<td>
-<strong>M&M</strong>
-</td>
+  <td>
+    IT
+  </td>
 
-<td style="text-align:right">
-₹3,330.00
-</td>
-
-<td
-class="d"
-style="text-align:right">
-
--2.01%
-
-</td>
+  <td
+    style="text-align:right"
+    class="d"
+  >
+    -0.32%
+  </td>
 
 </tr>
 
 <tr>
 
-<td>
-<strong>SHRIRAMFIN</strong>
-</td>
+  <td>
+    Consumption
+  </td>
 
-<td style="text-align:right">
-₹1,101.00
-</td>
+  <td
+    style="text-align:right"
+    class="d"
+  >
+    -0.39%
+  </td>
 
-<td
-class="d"
-style="text-align:right">
+</tr>
 
--1.48%
 
-</td>
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- ======================================================
+         GAINERS
+         ====================================================== -->
+
+    <h2>
+      🚀 Gainers
+    </h2>
+
+
+    <div class="dw">
+
+      <div class="dt">
+        Top 5 Gainers
+      </div>
+
+
+      <table class="tb2">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Stock
+            </th>
+
+            <th style="text-align:right">
+              LTP
+            </th>
+
+            <th style="text-align:right">
+              %
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          
+<tr>
+
+  <td>
+    <strong>
+      ADANIENT
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹3,169.00
+  </td>
+
+  <td
+    class="u"
+    style="text-align:right"
+  >
+    +1.83%
+  </td>
 
 </tr>
 
 <tr>
 
-<td>
-<strong>HCLTECH</strong>
-</td>
+  <td>
+    <strong>
+      KOTAKBANK
+    </strong>
+  </td>
 
-<td style="text-align:right">
-₹1,282.00
-</td>
+  <td style="text-align:right">
+    ₹424.20
+  </td>
 
-<td
-class="d"
-style="text-align:right">
+  <td
+    class="u"
+    style="text-align:right"
+  >
+    +1.80%
+  </td>
 
--1.27%
+</tr>
 
-</td>
+<tr>
+
+  <td>
+    <strong>
+      ADANIPORTS
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹1,714.00
+  </td>
+
+  <td
+    class="u"
+    style="text-align:right"
+  >
+    +1.33%
+  </td>
+
+</tr>
+
+<tr>
+
+  <td>
+    <strong>
+      CIPLA
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹1,420.00
+  </td>
+
+  <td
+    class="u"
+    style="text-align:right"
+  >
+    +1.23%
+  </td>
+
+</tr>
+
+<tr>
+
+  <td>
+    <strong>
+      BEL
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹411.00
+  </td>
+
+  <td
+    class="u"
+    style="text-align:right"
+  >
+    +1.01%
+  </td>
 
 </tr>
 
 
-</tbody>
+        </tbody>
 
-</table>
+      </table>
 
-</div>
+    </div>
 
-<h2>📝 Wrap</h2>
 
-<p>Market Summary — 27 Aug 2026</p><p>Markets closed cautious as NIFTY 50 shed 117 points to end at 24,090.85, down 0.48%. Bears had the upper hand with 31 stocks declining against just 18 gainers.</p><p>Key movers: HDFCBank dragged the index most, crashing ₹16.2 (-2.23%) on heavy volumes of nearly 5 crore shares worth ₹3,328 Cr — its worst single-day fall in weeks signals institutional selling pressure. On the flip side, KotakBank rose ₹7.5 (+1.8%) with robust turnover of ₹1,393 Cr, showing selective buying in private lenders. Adani twins — AdaniEnt and AdaniPorts — bucked weakness, gaining 1.83% and 1.33% respectively, hinting at renewed comfort in the group post recent regulatory clarity.</p><p>Sector rotation: Pharma (+0.84%) and Healthcare (+0.73%) shone as defensive bets found takers amid uncertainty. PSU Banks (-0.94%) were the worst hit, continuing their recent underperformance. IT (-0.32%) stayed soft while Private Banks barely held green at +0.09%.</p><p>Metal major Hindalco (-2.75%) also cracked on global commodity worries.</p>
+    <!-- ======================================================
+         LOSERS
+         ====================================================== -->
 
-<hr>
+    <h2>
+      📉 Losers
+    </h2>
 
-<p
-style="font-size:13px;color:var(--tm)">
 
-<em>
-Data from NSE, 3:30 PM IST.
-Not investment advice.
-</em>
+    <div class="dw">
 
-</p>
+      <div class="dt">
+        Top 5 Losers
+      </div>
 
-</div>
 
-<div class="cb">
+      <table class="tb2">
 
-<h3>📊 Track Live</h3>
+        <thead>
 
-<p>
-Real-time Nifty 50, heatmaps, FII/DII flows, AI news.
-</p>
+          <tr>
 
-<a href="../../">
-Open Dashboard →
-</a>
+            <th>
+              Stock
+            </th>
 
-</div>
+            <th style="text-align:right">
+              LTP
+            </th>
+
+            <th style="text-align:right">
+              %
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          
+<tr>
+
+  <td>
+    <strong>
+      HINDALCO
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹1,024.00
+  </td>
+
+  <td
+    class="d"
+    style="text-align:right"
+  >
+    -2.75%
+  </td>
+
+</tr>
+
+<tr>
+
+  <td>
+    <strong>
+      HDFCBANK
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹711.00
+  </td>
+
+  <td
+    class="d"
+    style="text-align:right"
+  >
+    -2.23%
+  </td>
+
+</tr>
+
+<tr>
+
+  <td>
+    <strong>
+      M&M
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹3,330.00
+  </td>
+
+  <td
+    class="d"
+    style="text-align:right"
+  >
+    -2.01%
+  </td>
+
+</tr>
+
+<tr>
+
+  <td>
+    <strong>
+      SHRIRAMFIN
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹1,101.00
+  </td>
+
+  <td
+    class="d"
+    style="text-align:right"
+  >
+    -1.48%
+  </td>
+
+</tr>
+
+<tr>
+
+  <td>
+    <strong>
+      HCLTECH
+    </strong>
+  </td>
+
+  <td style="text-align:right">
+    ₹1,282.00
+  </td>
+
+  <td
+    class="d"
+    style="text-align:right"
+  >
+    -1.27%
+  </td>
+
+</tr>
+
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- ======================================================
+         MARKET WRAP
+         ====================================================== -->
+
+    <h2>
+      📝 Wrap
+    </h2>
+
+
+    <p>Market Summary — 27 Aug 2026</p><p>Markets closed cautious as NIFTY 50 shed 117 points to end at 24,090.85, down 0.48%. Bears had the upper hand with 31 stocks declining against just 18 gainers.</p><p>Key movers: HDFCBank dragged the index most, crashing ₹16.2 (-2.23%) on heavy volumes of nearly 5 crore shares worth ₹3,328 Cr — its worst single-day fall in weeks signals institutional selling pressure. On the flip side, KotakBank rose ₹7.5 (+1.8%) with robust turnover of ₹1,393 Cr, showing selective buying in private lenders. Adani twins — AdaniEnt and AdaniPorts — bucked weakness, gaining 1.83% and 1.33% respectively, hinting at renewed comfort in the group post recent regulatory clarity.</p><p>Sector rotation: Pharma (+0.84%) and Healthcare (+0.73%) shone as defensive bets found takers amid uncertainty. PSU Banks (-0.94%) were the worst hit, continuing their recent underperformance. IT (-0.32%) stayed soft while Private Banks barely held green at +0.09%.</p><p>Metal major Hindalco (-2.75%) also cracked on global commodity worries.</p>
+
+
+    <!-- ======================================================
+         DISCLAIMER
+         ====================================================== -->
+
+    <hr>
+
+
+    <p
+      style="
+        font-size:13px;
+        color:var(--tm)
+      "
+    >
+
+      <em>
+        Data from NSE, 3:30 PM IST.
+        Not investment advice.
+      </em>
+
+    </p>
+
+
+  </div>
+
+
+  <!-- ========================================================
+       CTA
+       ======================================================== -->
+
+  <div class="cb">
+
+    <h3>
+      📊 Track Live
+    </h3>
+
+    <p>
+      Real-time Nifty 50, heatmaps, FII/DII flows, AI news.
+    </p>
+
+    <a href="../../">
+      Open Dashboard →
+    </a>
+
+  </div>
+
 
 </article>
 
+
+<!-- ==========================================================
+     FOOTER
+     ========================================================== -->
+
 <div class="sf">
-MarketPulse — automated analysis, human judgment still required.
+
+  MarketPulse —
+  automated analysis, human judgment still required.
+
 </div>
 
+
 </body>
+
 </html>
