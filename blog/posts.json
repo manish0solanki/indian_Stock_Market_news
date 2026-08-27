@@ -1,5 +1,25 @@
 [
-   {
+  {
+    "slug": "happiest-minds-technologies-stock-spotlight",
+    "title": "Happiest Minds Technologies Stock Spotlight",
+    "excerpt": "Happiest Minds Technologies Limited (NSE: HAPPSTMNDS) is an IT services company focused on digital transformation, artificial intelligence, cloud, and security...",
+    "category": "stock-spotlight",
+    "date": "2026-08-28T03:49:12+05:30",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "HAPPSTMNDS",
+      "Happiest Minds Technologies Limited"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-falls-1-79-percent-as-85-stocks-decline",
     "title": "Nifty IT Falls 1.79% as 85 Stocks Decline",
     "excerpt": "Nifty IT declined 1.79% (550.65 points) to 30221.15. Within the broader IT universe, 85 of 145 stocks fell while 58 advanced. The top 10 companies by market capitalization averaged 0.07%, while smaller stocks averaged -0.37%.",
