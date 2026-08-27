@@ -11,501 +11,2384 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://marketpulse.vercel.app/blog/">
 <meta name="twitter:card" content="summary_large_image">
+
 <title>MarketPulse Blog — Indian Stock Market Analysis</title>
+
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
 <style>
+
 :root {
-  --indigo: #2E1F82; --indigo-dark: #1B134F; --indigo-light: #4C3DB5;
-  --bg: #0F0F1A; --surface: #1A1A2E; --surface-hover: #222240; --border: #2A2A4A;
-  --text: #E8E8F0; --text-secondary: #A0A0B8; --text-muted: #6B6B8A;
-  --positive: #4ADE80; --positive-bg: rgba(74,222,128,0.12); --positive-light: rgba(74,222,128,0.2);
-  --negative: #F87171; --negative-bg: rgba(248,113,113,0.12); --negative-light: rgba(248,113,113,0.2);
-  --neutral: #F5A623; --neutral-bg: rgba(245,166,35,0.12); --neutral-light: rgba(245,166,35,0.2);
+  --indigo: #2E1F82;
+  --indigo-dark: #1B134F;
+  --indigo-light: #4C3DB5;
+
+  --bg: #0F0F1A;
+  --surface: #1A1A2E;
+  --surface-hover: #222240;
+  --border: #2A2A4A;
+
+  --text: #E8E8F0;
+  --text-secondary: #A0A0B8;
+  --text-muted: #6B6B8A;
+
+  --positive: #4ADE80;
+  --positive-bg: rgba(74,222,128,0.12);
+
+  --negative: #F87171;
+  --negative-bg: rgba(248,113,113,0.12);
+
+  --neutral: #F5A623;
+  --neutral-bg: rgba(245,166,35,0.12);
+
   --font-body: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
   --font-mono: 'JetBrains Mono','SF Mono',monospace;
+
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
-  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
   --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
 }
+
 [data-theme="light"] {
-  --bg: #F3F4F8; --surface: #FFFFFF; --surface-hover: #FAFAFC; --border: #E2E4EE;
-  --text: #0F0F1A; --text-secondary: #5A5D6B; --text-muted: #8B8FA3;
-  --positive: #0F8A3E; --positive-bg: #E7F7EC; --positive-light: #D1F2DA;
-  --negative: #C72B2B; --negative-bg: #FCEBEB; --negative-light: #F5D0D0;
-  --neutral: #B8860B; --neutral-bg: #FBF3DF; --neutral-light: #F5E6C0;
+  --bg: #F3F4F8;
+  --surface: #FFFFFF;
+  --surface-hover: #FAFAFC;
+  --border: #E2E4EE;
+
+  --text: #0F0F1A;
+  --text-secondary: #5A5D6B;
+  --text-muted: #8B8FA3;
+
+  --positive: #0F8A3E;
+  --positive-bg: #E7F7EC;
+
+  --negative: #C72B2B;
+  --negative-bg: #FCEBEB;
+
+  --neutral: #B8860B;
+  --neutral-bg: #FBF3DF;
+
   --shadow-sm: 0 1px 2px rgba(20,20,50,0.04);
   --shadow-md: 0 4px 12px rgba(20,20,50,0.06);
   --shadow-lg: 0 8px 24px rgba(20,20,50,0.08);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s, color 0.3s; }
 
-/* Topbar */
-.topbar { background: var(--indigo); color: #fff; padding: 10px 24px; position: sticky; top: 0; z-index: 100; height: 52px; box-sizing: border-box; }
-.topbar-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-.topbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.02em; text-decoration: none; color: #fff; }
-.topbar-brand .diamond { width: 9px; height: 9px; background: #F5A623; transform: rotate(45deg); display: inline-block; border-radius: 1px; }
-.topbar-right { display: flex; align-items: center; gap: 10px; }
-.theme-toggle { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 34px; height: 34px; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background var(--transition); }
-.theme-toggle:hover { background: rgba(255,255,255,0.25); }
-
-/* Hero */
-.blog-hero { max-width: 1200px; margin: 0 auto; padding: 40px 24px 20px; }
-.blog-hero h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
-.blog-hero p { font-size: 15px; color: var(--text-secondary); max-width: 560px; line-height: 1.6; }
-
-/* Filters */
-.blog-filters { max-width: 1200px; margin: 0 auto; padding: 0 24px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.filter-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; transition: all var(--transition); user-select: none; color: var(--text-secondary); font-weight: 500; }
-.filter-chip:hover { background: var(--surface-hover); transform: translateY(-1px); }
-.filter-chip.active { border-color: var(--indigo); background: rgba(46,31,130,0.08); color: var(--text); }
-.filter-chip .count { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-muted); }
-.filter-chip.active .count { color: var(--indigo-light); }
-
-/* Search */
-.blog-search-wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 24px; }
-.blog-search { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 16px; font-size: 14px; color: var(--text); font-family: var(--font-body); transition: border-color var(--transition), box-shadow var(--transition); height: 42px; line-height: 42px; box-sizing: border-box; }
-.blog-search:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
-.blog-search::placeholder { color: var(--text-muted); }
-
-/* Article buckets */
-.blog-grid { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; display: block; }
-
-.article-bucket {
-  margin-bottom: 42px;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.article-bucket:last-child {
-  margin-bottom: 0;
+html {
+  scroll-behavior: smooth;
 }
 
-.bucket-header {
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.topbar {
+  background: var(--indigo);
+  color: #fff;
+  padding: 10px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 52px;
+}
+
+.topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topbar-brand {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+  gap: 10px;
+
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+
+  text-decoration: none;
+  color: #fff;
 }
 
-.bucket-title-wrap {
+.topbar-brand .diamond {
+  width: 9px;
+  height: 9px;
+
+  background: #F5A623;
+
+  transform: rotate(45deg);
+
+  display: inline-block;
+
+  border-radius: 1px;
+}
+
+.topbar-right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.bucket-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: rgba(46,31,130,0.18);
-  border: 1px solid var(--border);
+.theme-toggle {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: var(--radius-md);
+
+  cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+
+  font-size: 16px;
+
+  transition: background var(--transition);
 }
 
-.bucket-title {
-  font-size: 21px;
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.blog-hero {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  padding: 40px 24px 24px;
+}
+
+.blog-hero h1 {
+  font-size: 32px;
+  font-weight: 700;
+
+  letter-spacing: -0.03em;
+
+  margin-bottom: 8px;
+}
+
+.blog-hero p {
+  font-size: 15px;
+  color: var(--text-secondary);
+
+  max-width: 650px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   CATEGORY CARDS
+========================================================= */
+
+.category-section {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  padding: 0 24px 26px;
+}
+
+.category-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 14px;
+}
+
+.category-section-title {
+  font-size: 15px;
   font-weight: 700;
   color: var(--text);
+}
+
+.category-section-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.category-cards {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 14px;
+}
+
+.category-card {
+  position: relative;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius-lg);
+
+  padding: 20px;
+
+  cursor: pointer;
+
+  min-height: 175px;
+
+  display: flex;
+  flex-direction: column;
+
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.category-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow: var(--shadow-lg);
+
+  background: var(--surface-hover);
+}
+
+.category-card.active {
+  border-color: var(--indigo-light);
+
+  box-shadow:
+    0 0 0 1px var(--indigo-light),
+    var(--shadow-md);
+}
+
+.category-card-top {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  margin-bottom: 16px;
+}
+
+.category-card-icon {
+  width: 46px;
+  height: 46px;
+
+  border-radius: 12px;
+
+  background: rgba(46,31,130,0.15);
+
+  border: 1px solid var(--border);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 24px;
+}
+
+.category-card-arrow {
+  font-size: 20px;
+
+  color: var(--text-muted);
+
+  transition:
+    transform var(--transition),
+    color var(--transition);
+}
+
+.category-card:hover .category-card-arrow {
+  transform: translateX(4px);
+
+  color: var(--indigo-light);
+}
+
+.category-card-title {
+  font-size: 18px;
+
+  font-weight: 700;
+
+  letter-spacing: -0.02em;
+
+  margin-bottom: 7px;
+}
+
+.category-card-description {
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  color: var(--text-secondary);
+
+  flex: 1;
+
+  margin-bottom: 14px;
+}
+
+.category-card-footer {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding-top: 12px;
+
+  border-top: 1px solid var(--border);
+}
+
+.category-card-count {
+  font-family: var(--font-mono);
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  color: var(--text);
+}
+
+.category-card-latest {
+  font-size: 10px;
+
+  color: var(--text-muted);
+
+  text-align: right;
+}
+
+
+/* =========================================================
+   FILTER TABS
+========================================================= */
+
+.filters-section {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  padding: 0 24px 20px;
+}
+
+.blog-filters {
+  display: flex;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  padding-bottom: 2px;
+}
+
+.filter-chip {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border);
+
+  border-radius: 20px;
+
+  padding: 7px 14px;
+
+  font-size: 12px;
+
+  cursor: pointer;
+
+  transition: all var(--transition);
+
+  user-select: none;
+
+  color: var(--text-secondary);
+
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: var(--surface-hover);
+
+  transform: translateY(-1px);
+}
+
+.filter-chip.active {
+  border-color: var(--indigo);
+
+  background: rgba(46,31,130,0.12);
+
+  color: var(--text);
+}
+
+.filter-chip .count {
+  font-family: var(--font-mono);
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  color: var(--text-muted);
+}
+
+.filter-chip.active .count {
+  color: var(--indigo-light);
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.blog-search-wrap {
+  max-width: 1200px;
+
+  margin: 0 auto;
+
+  padding: 0 24px 24px;
+}
+
+.blog-search {
+  width: 100%;
+
+  max-width: 440px;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius-md);
+
+  padding: 0 16px;
+
+  font-size: 14px;
+
+  color: var(--text);
+
+  font-family: var(--font-body);
+
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
+
+  height: 42px;
+
+  line-height: 42px;
+}
+
+.blog-search:focus {
+  outline: none;
+
+  border-color: var(--indigo);
+
+  box-shadow:
+    0 0 0 3px rgba(46,31,130,0.08);
+}
+
+.blog-search::placeholder {
+  color: var(--text-muted);
+}
+
+
+/* =========================================================
+   ARTICLE AREA
+========================================================= */
+
+.blog-grid {
+  max-width: 1200px;
+
+  margin: 0 auto;
+
+  padding: 0 24px 60px;
+}
+
+
+/* =========================================================
+   ARTICLE HEADER
+========================================================= */
+
+.article-section-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 14px;
+
+  padding-bottom: 14px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.article-section-title-wrap {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+.article-section-icon {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 10px;
+
+  background: rgba(46,31,130,0.16);
+
+  border: 1px solid var(--border);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 19px;
+}
+
+.article-section-title {
+  font-size: 21px;
+
+  font-weight: 700;
+
   letter-spacing: -0.02em;
 }
 
-.bucket-count {
+.article-section-count {
   font-family: var(--font-mono);
+
   font-size: 11px;
+
   color: var(--text-muted);
+
   background: var(--surface);
+
   border: 1px solid var(--border);
-  padding: 4px 8px;
+
+  padding: 5px 9px;
+
   border-radius: 12px;
+
+  white-space: nowrap;
 }
 
-.bucket-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+
+/* =========================================================
+   ARTICLE LIST
+========================================================= */
+
+.article-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
 }
 
-.blog-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: transform var(--transition), box-shadow var(--transition); cursor: pointer; display: flex; flex-direction: column; }
-.blog-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.article-row {
+  display: flex;
 
-/* Featured article inside the first bucket */
-.blog-card.featured { grid-column: span 2; flex-direction: row; }
-.blog-card.featured .card-image { width: 45%; min-height: 260px; }
-.blog-card.featured .card-body { flex: 1; padding: 28px; }
+  align-items: center;
 
-.card-image { width: 100%; height: 180px; background: linear-gradient(135deg, var(--indigo-dark) 0%, var(--indigo) 50%, var(--indigo-light) 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.card-image::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
-.card-image .card-emoji { font-size: 48px; z-index: 1; }
-.card-image .card-category-badge { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); color: #fff; font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; z-index: 2; }
+  gap: 18px;
 
-.card-body { padding: 18px; flex: 1; display: flex; flex-direction: column; }
-.card-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.card-date { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
-.card-readtime { font-size: 11px; color: var(--text-muted); }
-.card-readtime::before { content: '· '; }
-.card-title { font-size: 17px; font-weight: 700; line-height: 1.35; margin-bottom: 8px; letter-spacing: -0.01em; color: var(--text); text-decoration: none; display: block; }
-.card-title:hover { color: var(--indigo-light); }
-[data-theme="light"] .card-title:hover { color: var(--indigo); }
-.card-excerpt { font-size: 13px; color: var(--text-secondary); line-height: 1.6; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.card-footer { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-.card-tag { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; background: var(--bg); color: var(--text-muted); }
-.card-tag.bullish { background: var(--positive-bg); color: var(--positive); }
-.card-tag.bearish { background: var(--negative-bg); color: var(--negative); }
-.card-arrow { font-size: 18px; color: var(--text-muted); transition: transform var(--transition), color var(--transition); }
-.blog-card:hover .card-arrow { transform: translateX(4px); color: var(--indigo-light); }
+  background: var(--surface);
 
-/* Empty state */
-.blog-empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted); }
-.blog-empty-icon { font-size: 48px; margin-bottom: 12px; }
-.blog-empty h3 { font-size: 18px; color: var(--text); margin-bottom: 6px; }
-.blog-empty p { font-size: 14px; }
+  border: 1px solid var(--border);
 
-/* Pagination */
-.blog-pagination { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; display: flex; justify-content: center; gap: 8px; }
-.page-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
-.page-btn:hover { background: var(--surface-hover); }
-.page-btn.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
-.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  border-radius: var(--radius-md);
 
-/* Footer */
-.site-footer { text-align: center; padding: 20px; color: var(--text-muted); font-size: 11px; background: var(--bg); border-top: 1px solid var(--border); }
+  padding: 15px 18px;
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  text-decoration: none;
 
-/* Responsive */
+  color: inherit;
+
+  cursor: pointer;
+
+  transition:
+    transform var(--transition),
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+.article-row:hover {
+  background: var(--surface-hover);
+
+  border-color: var(--indigo-light);
+
+  transform: translateX(3px);
+
+  box-shadow: var(--shadow-sm);
+}
+
+.article-row-date {
+  flex: 0 0 125px;
+
+  font-family: var(--font-mono);
+
+  font-size: 11px;
+
+  color: var(--text-muted);
+}
+
+.article-row-main {
+  flex: 1;
+
+  min-width: 0;
+}
+
+.article-row-title {
+  font-size: 14px;
+
+  font-weight: 600;
+
+  line-height: 1.4;
+
+  color: var(--text);
+
+  margin-bottom: 4px;
+}
+
+.article-row-excerpt {
+  font-size: 11px;
+
+  line-height: 1.5;
+
+  color: var(--text-secondary);
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.article-row-category {
+  font-size: 9px;
+
+  font-weight: 600;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.04em;
+
+  color: var(--text-muted);
+
+  background: var(--bg);
+
+  padding: 4px 8px;
+
+  border-radius: 10px;
+
+  white-space: nowrap;
+}
+
+.article-row-arrow {
+  flex: 0 0 auto;
+
+  font-size: 18px;
+
+  color: var(--text-muted);
+
+  transition:
+    transform var(--transition),
+    color var(--transition);
+}
+
+.article-row:hover .article-row-arrow {
+  transform: translateX(4px);
+
+  color: var(--indigo-light);
+}
+
+
+/* =========================================================
+   ALL ARTICLES CATEGORY LABEL
+========================================================= */
+
+.article-category-group {
+  margin-bottom: 30px;
+}
+
+.article-category-group:last-child {
+  margin-bottom: 0;
+}
+
+.article-category-group-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  margin-bottom: 10px;
+}
+
+.article-category-group-icon {
+  font-size: 18px;
+}
+
+.article-category-group-title {
+  font-size: 16px;
+
+  font-weight: 700;
+}
+
+.article-category-group-count {
+  font-family: var(--font-mono);
+
+  font-size: 10px;
+
+  color: var(--text-muted);
+}
+
+
+/* =========================================================
+   EMPTY / LOADING STATE
+========================================================= */
+
+.blog-empty {
+  text-align: center;
+
+  padding: 60px 20px;
+
+  color: var(--text-muted);
+}
+
+.blog-empty-icon {
+  font-size: 48px;
+
+  margin-bottom: 12px;
+}
+
+.blog-empty h3 {
+  font-size: 18px;
+
+  color: var(--text);
+
+  margin-bottom: 6px;
+}
+
+.blog-empty p {
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.site-footer {
+  text-align: center;
+
+  padding: 20px;
+
+  color: var(--text-muted);
+
+  font-size: 11px;
+
+  background: var(--bg);
+
+  border-top: 1px solid var(--border);
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+
+  border-radius: 3px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
 @media (max-width: 1024px) {
-  .bucket-grid { grid-template-columns: repeat(2, 1fr); }
-  .blog-card.featured { grid-column: span 2; }
+
+  .category-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
 }
+
+
 @media (max-width: 768px) {
-  .blog-hero h1 { font-size: 24px; }
-  .bucket-grid { grid-template-columns: 1fr; }
-  .blog-card.featured { grid-column: span 1; flex-direction: column; }
-  .blog-card.featured .card-image { width: 100%; min-height: 180px; }
-  .blog-card.featured .card-body { padding: 18px; }
-  .bucket-header { margin-bottom: 12px; }
-  .bucket-title { font-size: 18px; }
+
+  .blog-hero {
+    padding-top: 30px;
+  }
+
+  .blog-hero h1 {
+    font-size: 25px;
+  }
+
+  .category-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .category-card {
+    min-height: 150px;
+  }
+
+  .article-section-header {
+    align-items: flex-start;
+  }
+
+  .article-row {
+    gap: 10px;
+
+    padding: 14px;
+  }
+
+  .article-row-date {
+    flex: 0 0 auto;
+
+    width: 80px;
+  }
+
+  .article-row-category {
+    display: none;
+  }
+
+  .article-row-excerpt {
+    display: none;
+  }
+
+  .article-row-title {
+    font-size: 13px;
+  }
+
 }
+
+
+@media (max-width: 520px) {
+
+  .topbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .blog-hero,
+  .category-section,
+  .filters-section,
+  .blog-search-wrap,
+  .blog-grid {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .blog-hero h1 {
+    font-size: 23px;
+  }
+
+  .blog-filters {
+    flex-wrap: nowrap;
+
+    overflow-x: auto;
+
+    padding-bottom: 8px;
+
+    scrollbar-width: none;
+  }
+
+  .blog-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    flex: 0 0 auto;
+  }
+
+  .article-row {
+    align-items: flex-start;
+  }
+
+  .article-row-date {
+    width: 74px;
+
+    font-size: 10px;
+  }
+
+  .article-row-title {
+    font-size: 12px;
+  }
+
+  .article-row-arrow {
+    font-size: 16px;
+  }
+
+}
+
 </style>
+
 <base target="_blank">
+
 </head>
+
+
 <body>
 
-  <div class="topbar">
-    <div class="topbar-inner">
-      <a href="../" class="topbar-brand"><span class="diamond"></span>MarketPulse</a>
-      <div class="topbar-right">
-        <button class="theme-toggle" id="themeToggle" title="Toggle light mode">☀️</button>
-      </div>
+
+<!-- =====================================================
+     TOPBAR
+===================================================== -->
+
+<div class="topbar">
+
+  <div class="topbar-inner">
+
+    <a href="../" class="topbar-brand">
+
+      <span class="diamond"></span>
+
+      MarketPulse
+
+    </a>
+
+
+    <div class="topbar-right">
+
+      <button
+        class="theme-toggle"
+        id="themeToggle"
+        title="Toggle light mode"
+        aria-label="Toggle light mode"
+      >
+        ☀️
+      </button>
+
     </div>
+
   </div>
 
-  <div class="blog-hero">
-    <h1>📰 MarketPulse Blog</h1>
-    <p>Daily market wraps, sector deep-dives, stock spotlights, and trading strategies — powered by real-time data.</p>
-  </div>
+</div>
 
-  <div class="blog-filters" id="blogFilters">
-    <div class="filter-chip active" data-category="all">All <span class="count" id="countAll">0</span></div>
-    <div class="filter-chip" data-category="daily-wrap">Daily Wrap <span class="count" id="countDaily">0</span></div>
-    <div class="filter-chip" data-category="sector-analysis">Sector Analysis <span class="count" id="countSector">0</span></div>
-    <div class="filter-chip" data-category="stock-spotlight">Stock Spotlight <span class="count" id="countStock">0</span></div>
-    <div class="filter-chip" data-category="fiidii-flows">FII/DII Flows <span class="count" id="countFiiDii">0</span></div>
-    <div class="filter-chip" data-category="guide">Guides <span class="count" id="countGuide">0</span></div>
-    <div class="filter-chip" data-category="earnings">Earnings <span class="count" id="countEarnings">0</span></div>
-  </div>
 
-  <div class="blog-search-wrap">
-    <input type="text" class="blog-search" id="blogSearch" placeholder="Search articles by title, tag, or keyword…">
-  </div>
 
-  <div class="blog-grid" id="blogGrid">
-    <div class="blog-empty">
-      <div class="blog-empty-icon">📡</div>
-      <h3>Loading articles…</h3>
-      <p>Hang tight while we fetch the latest market insights.</p>
+<!-- =====================================================
+     HERO
+===================================================== -->
+
+<div class="blog-hero">
+
+  <h1>📰 MarketPulse Blog</h1>
+
+  <p>
+    Daily market wraps, sector deep-dives, stock spotlights,
+    and trading strategies — powered by real-time data.
+  </p>
+
+</div>
+
+
+
+<!-- =====================================================
+     CATEGORY CARDS
+===================================================== -->
+
+<section class="category-section">
+
+  <div class="category-section-header">
+
+    <div class="category-section-title">
+      Explore MarketPulse
     </div>
+
+    <div class="category-section-subtitle">
+      Choose an event to explore
+    </div>
+
   </div>
 
-  <div class="blog-pagination" id="blogPagination"></div>
 
-  <footer class="site-footer">
-    <span>MarketPulse Blog — automated analysis, human judgment still required.</span>
-  </footer>
+  <div
+    class="category-cards"
+    id="categoryCards"
+  >
+
+    <!-- Cards generated by JavaScript -->
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     CATEGORY TABS
+===================================================== -->
+
+<section class="filters-section">
+
+  <div
+    class="blog-filters"
+    id="blogFilters"
+  >
+
+    <div
+      class="filter-chip active"
+      data-category="all"
+    >
+      All
+
+      <span
+        class="count"
+        id="countAll"
+      >
+        0
+      </span>
+
+    </div>
+
+
+    <div
+      class="filter-chip"
+      data-category="daily-wrap"
+    >
+      Daily Wrap
+
+      <span
+        class="count"
+        id="countDaily"
+      >
+        0
+      </span>
+
+    </div>
+
+
+    <div
+      class="filter-chip"
+      data-category="sector-analysis"
+    >
+      Sector Analysis
+
+      <span
+        class="count"
+        id="countSector"
+      >
+        0
+      </span>
+
+    </div>
+
+
+    <div
+      class="filter-chip"
+      data-category="stock-spotlight"
+    >
+      Stock Spotlight
+
+      <span
+        class="count"
+        id="countStock"
+      >
+        0
+      </span>
+
+    </div>
+
+
+    <div
+      class="filter-chip"
+      data-category="fiidii-flows"
+    >
+      FII/DII Flows
+
+      <span
+        class="count"
+        id="countFiiDii"
+      >
+        0
+      </span>
+
+    </div>
+
+
+    <div
+      class="filter-chip"
+      data-category="guide"
+    >
+      Guides
+
+      <span
+        class="count"
+        id="countGuide"
+      >
+        0
+      </span>
+
+    </div>
+
+
+    <div
+      class="filter-chip"
+      data-category="earnings"
+    >
+      Earnings
+
+      <span
+        class="count"
+        id="countEarnings"
+      >
+        0
+      </span>
+
+    </div>
+
+
+    <div
+      class="filter-chip"
+      data-category="market-breadth"
+      id="marketBreadthTab"
+      style="display:none;"
+    >
+      Market Breadth
+
+      <span
+        class="count"
+        id="countMarketBreadth"
+      >
+        0
+      </span>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     SEARCH
+===================================================== -->
+
+<div class="blog-search-wrap">
+
+  <input
+    type="text"
+    class="blog-search"
+    id="blogSearch"
+    placeholder="Search articles by title, tag, or keyword…"
+    autocomplete="off"
+  >
+
+</div>
+
+
+
+<!-- =====================================================
+     ARTICLES
+===================================================== -->
+
+<div
+  class="blog-grid"
+  id="blogGrid"
+>
+
+  <div class="blog-empty">
+
+    <div class="blog-empty-icon">
+      📡
+    </div>
+
+    <h3>
+      Loading articles…
+    </h3>
+
+    <p>
+      Hang tight while we fetch the latest market insights.
+    </p>
+
+  </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+
+<footer class="site-footer">
+
+  <span>
+    MarketPulse Blog — automated analysis, human judgment still required.
+  </span>
+
+</footer>
+
+
 
 <script>
-const POSTS_PER_PAGE = 9;
+
+
+/* =========================================================
+   CONFIGURATION
+========================================================= */
+
+const CATEGORY_CONFIG = {
+
+  'daily-wrap': {
+    label: 'Daily Wrap',
+    emoji: '📈',
+    description: 'Daily summary of Nifty, Sensex, market movements and key trading developments.',
+    countId: 'countDaily'
+  },
+
+  'sector-analysis': {
+    label: 'Sector Analysis',
+    emoji: '📊',
+    description: 'Deep dives into sector performance, trends, leadership and weakness.',
+    countId: 'countSector'
+  },
+
+  'stock-spotlight': {
+    label: 'Stock Spotlight',
+    emoji: '🔍',
+    description: 'Focused analysis of individual stocks, price action and market opportunities.',
+    countId: 'countStock'
+  },
+
+  'fiidii-flows': {
+    label: 'FII/DII Flows',
+    emoji: '🏦',
+    description: 'Institutional buying and selling activity from FII and DII participants.',
+    countId: 'countFiiDii'
+  },
+
+  'guide': {
+    label: 'Guides',
+    emoji: '📚',
+    description: 'Practical guides, concepts and educational resources for market participants.',
+    countId: 'countGuide'
+  },
+
+  'earnings': {
+    label: 'Earnings',
+    emoji: '💰',
+    description: 'Company earnings, results, expectations and market reactions.',
+    countId: 'countEarnings'
+  },
+
+  'market-breadth': {
+    label: 'Market Breadth',
+    emoji: '🎯',
+    description: 'Market breadth, participation, advancing and declining stocks.',
+    countId: 'countMarketBreadth'
+  }
+
+};
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
 let allPosts = [];
+
 let filteredPosts = [];
-let currentPage = 1;
+
 let currentCategory = 'all';
+
 let currentSearch = '';
 
-/* ─── Theme ─── */
-const themeToggle = document.getElementById('themeToggle');
-const savedTheme = localStorage.getItem('marketpulse-theme');
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  themeToggle.textContent = theme === 'light' ? '🌙' : '☀️';
-}
-if (savedTheme) applyTheme(savedTheme); else applyTheme('dark');
-themeToggle.addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'light' ? 'dark' : 'light';
-  applyTheme(next);
-  localStorage.setItem('marketpulse-theme', next);
-});
 
-/* ─── Load Posts ─── */
-async function loadPosts() {
-  try {
-    const res = await fetch('./posts.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    allPosts = await res.json();
-    allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
-    updateCounts();
-    filterAndRender();
-  } catch (e) {
-    document.getElementById('blogGrid').innerHTML = `
-      <div class="blog-empty">
-        <div class="blog-empty-icon">⚠️</div>
-        <h3>Could not load articles</h3>
-        <p>Check your connection and try again.</p>
-      </div>`;
-    console.error('[Blog]', e);
-  }
+
+/* =========================================================
+   THEME
+========================================================= */
+
+const themeToggle =
+  document.getElementById('themeToggle');
+
+const savedTheme =
+  localStorage.getItem('marketpulse-theme');
+
+
+function applyTheme(theme) {
+
+  document.documentElement.setAttribute(
+    'data-theme',
+    theme
+  );
+
+  themeToggle.textContent =
+    theme === 'light'
+      ? '🌙'
+      : '☀️';
+
 }
+
+
+if (savedTheme) {
+
+  applyTheme(savedTheme);
+
+} else {
+
+  applyTheme('dark');
+
+}
+
+
+themeToggle.addEventListener(
+  'click',
+  () => {
+
+    const current =
+      document.documentElement.getAttribute(
+        'data-theme'
+      );
+
+    const next =
+      current === 'light'
+        ? 'dark'
+        : 'light';
+
+    applyTheme(next);
+
+    localStorage.setItem(
+      'marketpulse-theme',
+      next
+    );
+
+  }
+);
+
+
+
+/* =========================================================
+   LOAD POSTS
+========================================================= */
+
+async function loadPosts() {
+
+  try {
+
+    const res =
+      await fetch(
+        './posts.json',
+        {
+          cache: 'no-store'
+        }
+      );
+
+
+    if (!res.ok) {
+
+      throw new Error(
+        'HTTP ' + res.status
+      );
+
+    }
+
+
+    allPosts =
+      await res.json();
+
+
+    if (!Array.isArray(allPosts)) {
+
+      throw new Error(
+        'posts.json must contain an array'
+      );
+
+    }
+
+
+    /*
+     * Always show newest articles first.
+     */
+
+    allPosts.sort(
+      (a, b) =>
+        new Date(b.date) -
+        new Date(a.date)
+    );
+
+
+    updateCounts();
+
+    renderCategoryCards();
+
+    filterAndRender();
+
+
+  } catch (e) {
+
+    document.getElementById(
+      'blogGrid'
+    ).innerHTML = `
+
+      <div class="blog-empty">
+
+        <div class="blog-empty-icon">
+          ⚠️
+        </div>
+
+        <h3>
+          Could not load articles
+        </h3>
+
+        <p>
+          Check your connection and try again.
+        </p>
+
+      </div>
+
+    `;
+
+    console.error(
+      '[MarketPulse Blog]',
+      e
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   UPDATE COUNTS
+========================================================= */
 
 function updateCounts() {
-  const cats = ['daily-wrap','sector-analysis','stock-spotlight','fiidii-flows','guide','earnings'];
-  document.getElementById('countAll').textContent = allPosts.length;
-  cats.forEach(cat => {
-    const count = allPosts.filter(p => p.category === cat).length;
-    const map = {'daily-wrap':'Daily','sector-analysis':'Sector','stock-spotlight':'Stock','fiidii-flows':'FiiDii','guide':'Guide','earnings':'Earnings'};
-    const el = document.getElementById('count' + map[cat]);
-    if (el) el.textContent = count;
-  });
+
+  document.getElementById(
+    'countAll'
+  ).textContent =
+    allPosts.length;
+
+
+  Object.keys(
+    CATEGORY_CONFIG
+  ).forEach(
+    category => {
+
+      const count =
+        allPosts.filter(
+          post =>
+            post.category === category
+        ).length;
+
+
+      const config =
+        CATEGORY_CONFIG[category];
+
+
+      const element =
+        document.getElementById(
+          config.countId
+        );
+
+
+      if (element) {
+
+        element.textContent =
+          count;
+
+      }
+
+
+      /*
+       * Show Market Breadth tab only
+       * if that category actually exists.
+       */
+
+      if (
+        category === 'market-breadth'
+      ) {
+
+        const tab =
+          document.getElementById(
+            'marketBreadthTab'
+          );
+
+
+        if (tab) {
+
+          tab.style.display =
+            count > 0
+              ? 'inline-flex'
+              : 'none';
+
+        }
+
+      }
+
+    }
+  );
+
 }
 
-function filterAndRender() {
-  filteredPosts = allPosts.filter(p => {
-    const catMatch = currentCategory === 'all' || p.category === currentCategory;
-    const searchMatch = !currentSearch ||
-      (p.title || '').toLowerCase().includes(currentSearch) ||
-      (p.excerpt || '').toLowerCase().includes(currentSearch) ||
-      (p.tags || []).some(t => t.toLowerCase().includes(currentSearch)) ||
-      (p.category || '').toLowerCase().includes(currentSearch);
-    return catMatch && searchMatch;
-  });
-  currentPage = 1;
-  renderGrid();
-  renderPagination();
-}
 
-function getCategoryEmoji(cat) {
-  const map = {
-    'daily-wrap': '📈', 'sector-analysis': '📊', 'stock-spotlight': '🔍',
-    'fiidii-flows': '🏦', 'guide': '📚', 'earnings': '💰', 'market-breadth': '🎯'
-  };
-  return map[cat] || '📰';
-}
 
-function getCategoryLabel(cat) {
-  const map = {
-    'daily-wrap': 'Daily Wrap', 'sector-analysis': 'Sector Analysis', 'stock-spotlight': 'Stock Spotlight',
-    'fiidii-flows': 'FII/DII Flows', 'guide': 'Guide', 'earnings': 'Earnings', 'market-breadth': 'Market Breadth'
-  };
-  return map[cat] || cat;
-}
-
-function getSentimentClass(tag) {
-  const t = (tag || '').toLowerCase();
-  if (t.includes('bull') || t.includes('buy') || t.includes('up')) return 'bullish';
-  if (t.includes('bear') || t.includes('sell') || t.includes('down')) return 'bearish';
-  return '';
-}
+/* =========================================================
+   FORMAT DATE
+========================================================= */
 
 function fmtDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
-function renderGrid() {
-  const grid = document.getElementById('blogGrid');
+  const d =
+    new Date(iso);
 
-  if (filteredPosts.length === 0) {
-    grid.innerHTML = `
-      <div class="blog-empty">
-        <div class="blog-empty-icon">🔍</div>
-        <h3>No articles found</h3>
-        <p>Try a different search or category.</p>
-      </div>`;
-    return;
+
+  if (
+    Number.isNaN(
+      d.getTime()
+    )
+  ) {
+
+    return 'Unknown date';
+
   }
 
+
+  return d.toLocaleDateString(
+    'en-IN',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }
+  );
+
+}
+
+
+
+/* =========================================================
+   GET CATEGORY
+========================================================= */
+
+function getCategoryEmoji(category) {
+
+  return (
+    CATEGORY_CONFIG[category]?.emoji
+    || '📰'
+  );
+
+}
+
+
+function getCategoryLabel(category) {
+
+  return (
+    CATEGORY_CONFIG[category]?.label
+    || category
+    || 'Other'
+  );
+
+}
+
+
+
+/* =========================================================
+   CREATE CATEGORY CARDS
+========================================================= */
+
+function renderCategoryCards() {
+
+  const container =
+    document.getElementById(
+      'categoryCards'
+    );
+
+
+  const categories =
+    Object.keys(
+      CATEGORY_CONFIG
+    ).filter(
+      category =>
+        allPosts.some(
+          post =>
+            post.category === category
+        )
+    );
+
+
   /*
-   * When "All" is selected, articles are grouped into their
-   * respective category buckets.
-   *
-   * When searching, the matching results remain grouped by
-   * category, so search still works across the entire blog.
-   *
-   * When a specific category is selected, only that bucket
-   * is displayed.
+   * Do not show empty categories as
+   * giant cards.
    */
+
+  if (!categories.length) {
+
+    container.innerHTML = '';
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    categories
+      .map(
+        category => {
+
+          const config =
+            CATEGORY_CONFIG[category];
+
+
+          const posts =
+            allPosts.filter(
+              post =>
+                post.category === category
+            );
+
+
+          const latest =
+            posts.length
+              ? fmtDate(posts[0].date)
+              : 'No articles';
+
+
+          const active =
+            currentCategory === category
+              ? 'active'
+              : '';
+
+
+          return `
+
+            <div
+              class="category-card ${active}"
+              data-category="${category}"
+              role="button"
+              tabindex="0"
+              aria-label="View ${config.label}"
+            >
+
+              <div class="category-card-top">
+
+                <div class="category-card-icon">
+                  ${config.emoji}
+                </div>
+
+                <div class="category-card-arrow">
+                  →
+                </div>
+
+              </div>
+
+
+              <div class="category-card-title">
+                ${config.label}
+              </div>
+
+
+              <div class="category-card-description">
+                ${config.description}
+              </div>
+
+
+              <div class="category-card-footer">
+
+                <div class="category-card-count">
+                  ${posts.length}
+                  ${posts.length === 1 ? 'article' : 'articles'}
+                </div>
+
+                <div class="category-card-latest">
+                  Latest<br>
+                  ${latest}
+                </div>
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join('');
+
+
+  /*
+   * Card click.
+   */
+
+  document
+    .querySelectorAll(
+      '.category-card'
+    )
+    .forEach(
+      card => {
+
+        card.addEventListener(
+          'click',
+          () => {
+
+            selectCategory(
+              card.dataset.category
+            );
+
+          }
+        );
+
+
+        card.addEventListener(
+          'keydown',
+          event => {
+
+            if (
+              event.key === 'Enter' ||
+              event.key === ' '
+            ) {
+
+              event.preventDefault();
+
+              selectCategory(
+                card.dataset.category
+              );
+
+            }
+
+          }
+        );
+
+      }
+    );
+
+}
+
+
+
+/* =========================================================
+   SELECT CATEGORY
+========================================================= */
+
+function selectCategory(category) {
+
+  currentCategory =
+    category;
+
+
+  /*
+   * Update active tabs.
+   */
+
+  document
+    .querySelectorAll(
+      '.filter-chip'
+    )
+    .forEach(
+      chip => {
+
+        chip.classList.toggle(
+          'active',
+          chip.dataset.category === category
+        );
+
+      }
+    );
+
+
+  /*
+   * Update active cards.
+   */
+
+  document
+    .querySelectorAll(
+      '.category-card'
+    )
+    .forEach(
+      card => {
+
+        card.classList.toggle(
+          'active',
+          card.dataset.category === category
+        );
+
+      }
+    );
+
+
+  filterAndRender();
+
+
+  /*
+   * When a card is clicked, move the
+   * article area into view.
+   */
+
+  const articleArea =
+    document.getElementById(
+      'blogGrid'
+    );
+
+
+  if (articleArea) {
+
+    setTimeout(
+      () => {
+
+        articleArea.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+
+      },
+      50
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   FILTER POSTS
+========================================================= */
+
+function filterAndRender() {
+
+  filteredPosts =
+    allPosts.filter(
+      post => {
+
+        const categoryMatch =
+          currentCategory === 'all' ||
+          post.category === currentCategory;
+
+
+        const search =
+          currentSearch;
+
+
+        const searchMatch =
+          !search ||
+
+          (post.title || '')
+            .toLowerCase()
+            .includes(search) ||
+
+          (post.excerpt || '')
+            .toLowerCase()
+            .includes(search) ||
+
+          (post.category || '')
+            .toLowerCase()
+            .includes(search) ||
+
+          (post.tags || [])
+            .some(
+              tag =>
+                String(tag)
+                  .toLowerCase()
+                  .includes(search)
+            );
+
+
+        return (
+          categoryMatch &&
+          searchMatch
+        );
+
+      }
+    );
+
+
+  renderArticles();
+
+}
+
+
+
+/* =========================================================
+   ARTICLE ROW
+========================================================= */
+
+function createArticleRow(post) {
+
+  const articleUrl =
+    `/blog/${post.slug}/`;
+
+
+  const category =
+    getCategoryLabel(
+      post.category
+    );
+
+
+  return `
+
+    <a
+      href="${articleUrl}"
+      class="article-row"
+    >
+
+      <div class="article-row-date">
+        ${fmtDate(post.date)}
+      </div>
+
+
+      <div class="article-row-main">
+
+        <div class="article-row-title">
+          ${post.title || 'Untitled article'}
+        </div>
+
+
+        ${
+          post.excerpt
+            ? `
+              <div class="article-row-excerpt">
+                ${post.excerpt}
+              </div>
+            `
+            : ''
+        }
+
+      </div>
+
+
+      <div class="article-row-category">
+        ${category}
+      </div>
+
+
+      <div class="article-row-arrow">
+        →
+      </div>
+
+    </a>
+
+  `;
+
+}
+
+
+
+/* =========================================================
+   RENDER ARTICLES
+========================================================= */
+
+function renderArticles() {
+
+  const grid =
+    document.getElementById(
+      'blogGrid'
+    );
+
+
+  if (
+    filteredPosts.length === 0
+  ) {
+
+    grid.innerHTML = `
+
+      <div class="blog-empty">
+
+        <div class="blog-empty-icon">
+          🔍
+        </div>
+
+        <h3>
+          No articles found
+        </h3>
+
+        <p>
+          Try a different search or category.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  /*
+   * =======================================================
+   * SPECIFIC CATEGORY
+   * =======================================================
+   *
+   * Example:
+   *
+   * Daily Wrap
+   *
+   * 27 Aug 2026
+   * Nifty 50 Daily Wrap...
+   *
+   * 26 Aug 2026
+   * Nifty 50 Daily Wrap...
+   *
+   */
+
+  if (
+    currentCategory !== 'all'
+  ) {
+
+    const emoji =
+      getCategoryEmoji(
+        currentCategory
+      );
+
+
+    const label =
+      getCategoryLabel(
+        currentCategory
+      );
+
+
+    grid.innerHTML = `
+
+      <div class="article-section-header">
+
+        <div class="article-section-title-wrap">
+
+          <div class="article-section-icon">
+            ${emoji}
+          </div>
+
+          <h2 class="article-section-title">
+            ${label}
+          </h2>
+
+        </div>
+
+
+        <span class="article-section-count">
+
+          ${
+            filteredPosts.length
+          }
+
+          ${
+            filteredPosts.length === 1
+              ? 'article'
+              : 'articles'
+          }
+
+        </span>
+
+      </div>
+
+
+      <div class="article-list">
+
+        ${
+          filteredPosts
+            .map(createArticleRow)
+            .join('')
+        }
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+
+  /*
+   * =======================================================
+   * ALL ARTICLES
+   * =======================================================
+   *
+   * When All is selected, show all articles,
+   * but keep them grouped by category.
+   */
+
   const categoryOrder = [
+
     'daily-wrap',
+
     'sector-analysis',
+
     'stock-spotlight',
+
     'fiidii-flows',
+
     'guide',
+
     'earnings',
+
     'market-breadth'
+
   ];
+
 
   const groups = {};
 
-  filteredPosts.forEach(post => {
-    const category = post.category || 'other';
-    if (!groups[category]) groups[category] = [];
-    groups[category].push(post);
-  });
+
+  filteredPosts.forEach(
+    post => {
+
+      const category =
+        post.category ||
+        'other';
+
+
+      if (!groups[category]) {
+
+        groups[category] = [];
+
+      }
+
+
+      groups[category].push(
+        post
+      );
+
+    }
+  );
+
 
   const orderedCategories = [
-    ...categoryOrder.filter(cat => groups[cat]),
-    ...Object.keys(groups).filter(cat => !categoryOrder.includes(cat))
+
+    ...categoryOrder.filter(
+      category =>
+        groups[category]
+    ),
+
+    ...Object.keys(groups)
+      .filter(
+        category =>
+          !categoryOrder.includes(
+            category
+          )
+      )
+
   ];
 
-  grid.innerHTML = orderedCategories.map((category, bucketIndex) => {
-    const posts = groups[category];
-    const emoji = getCategoryEmoji(category);
-    const label = getCategoryLabel(category);
 
-    const cardsHtml = posts.map((post, i) => {
-      const isFeatured =
-        !currentSearch &&
-        currentCategory === 'all' &&
-        bucketIndex === 0 &&
-        i === 0;
+  grid.innerHTML =
+    orderedCategories
+      .map(
+        category => {
 
-      const tagsHtml = (post.tags || []).slice(0, 3).map(t =>
-        `<span class="card-tag ${getSentimentClass(t)}">${t}</span>`
-      ).join('');
+          const posts =
+            groups[category];
 
-      const readTime =
-        post.readTime ||
-        (Math.max(3, Math.ceil((post.excerpt || '').length / 500)) + ' min read');
 
-      const articleUrl = `/blog/${post.slug}/`;
+          const emoji =
+            getCategoryEmoji(
+              category
+            );
 
-      return `<article
-          class="blog-card ${isFeatured ? 'featured' : ''}"
-          onclick="window.location.href='${articleUrl}'"
-          role="link"
-          tabindex="0"
-          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='${articleUrl}';}"
-        >
-          <div class="card-image">
-            <span class="card-category-badge">${label}</span>
-            <span class="card-emoji">${emoji}</span>
-          </div>
 
-          <div class="card-body">
-            <div class="card-meta">
-              <span class="card-date">${fmtDate(post.date)}</span>
-              <span class="card-readtime">${readTime}</span>
+          const label =
+            getCategoryLabel(
+              category
+            );
+
+
+          return `
+
+            <div class="article-category-group">
+
+              <div class="article-category-group-header">
+
+                <span class="article-category-group-icon">
+                  ${emoji}
+                </span>
+
+                <span class="article-category-group-title">
+                  ${label}
+                </span>
+
+                <span class="article-category-group-count">
+                  ${posts.length}
+                  ${
+                    posts.length === 1
+                      ? 'article'
+                      : 'articles'
+                  }
+                </span>
+
+              </div>
+
+
+              <div class="article-list">
+
+                ${
+                  posts
+                    .map(createArticleRow)
+                    .join('')
+                }
+
+              </div>
+
             </div>
 
-            <a
-              href="${articleUrl}"
-              class="card-title"
-              onclick="event.stopPropagation()"
-            >${post.title}</a>
+          `;
 
-            <p class="card-excerpt">${post.excerpt || ''}</p>
+        }
+      )
+      .join('');
 
-            <div class="card-footer">
-              <div class="card-tags">${tagsHtml}</div>
-              <span class="card-arrow">→</span>
-            </div>
-          </div>
-        </article>`;
-    }).join('');
-
-    return `
-      <section class="article-bucket">
-        <div class="bucket-header">
-          <div class="bucket-title-wrap">
-            <div class="bucket-icon">${emoji}</div>
-            <h2 class="bucket-title">${label}</h2>
-          </div>
-          <span class="bucket-count">${posts.length} ${posts.length === 1 ? 'article' : 'articles'}</span>
-        </div>
-
-        <div class="bucket-grid">
-          ${cardsHtml}
-        </div>
-      </section>
-    `;
-  }).join('');
 }
 
-function renderPagination() {
-  const pagination = document.getElementById('blogPagination');
-  pagination.innerHTML = '';
-}
 
-function goPage(p) {
-  // Pagination is intentionally disabled in bucketed layout.
-  return;
-}
 
-/* ─── Filters ─── */
-document.querySelectorAll('.filter-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    currentCategory = chip.getAttribute('data-category');
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-category') === currentCategory));
-    filterAndRender();
-  });
-});
+/* =========================================================
+   FILTER TAB CLICK
+========================================================= */
 
-/* ─── Search ─── */
-document.getElementById('blogSearch').addEventListener('input', (e) => {
-  currentSearch = e.target.value.toLowerCase().trim();
-  filterAndRender();
-});
+document
+  .querySelectorAll(
+    '.filter-chip'
+  )
+  .forEach(
+    chip => {
 
-/* ─── Init ─── */
+      chip.addEventListener(
+        'click',
+        () => {
+
+          selectCategory(
+            chip.dataset.category
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+document
+  .getElementById(
+    'blogSearch'
+  )
+  .addEventListener(
+    'input',
+    event => {
+
+      currentSearch =
+        event.target.value
+          .toLowerCase()
+          .trim();
+
+
+      filterAndRender();
+
+    }
+  );
+
+
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+
 loadPosts();
+
+
 </script>
+
+
+
+<!-- =====================================================
+     STRUCTURED DATA
+===================================================== -->
 
 <script type="application/ld+json">
+
 {
   "@context": "https://schema.org",
+
   "@type": "Blog",
+
   "name": "MarketPulse Blog",
-  "description": "Indian stock market analysis, daily wraps, and trading insights",
-  "url": "https://marketpulse.vercel.app/blog/",
+
+  "description":
+    "Indian stock market analysis, daily wraps, and trading insights",
+
+  "url":
+    "https://marketpulse.vercel.app/blog/",
+
   "publisher": {
+
     "@type": "Organization",
+
     "name": "MarketPulse",
-    "logo": { "@type": "ImageObject", "url": "https://marketpulse.vercel.app/favicon-16x16.png" }
+
+    "logo": {
+
+      "@type": "ImageObject",
+
+      "url":
+        "https://marketpulse.vercel.app/favicon-16x16.png"
+
+    }
+
   }
+
 }
+
 </script>
+
 
 </body>
 </html>
