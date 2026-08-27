@@ -12,7 +12,7 @@
 >
 
 <title>
-    Happiest Minds Technologies Slips 6% Amid Unverified ITC Infotech Stake Buy Report — MarketPulse
+Happiest Minds Technologies Slips 6% Amid Unverified ITC Infotech Stake Buy Report — MarketPulse
 </title>
 
 <meta
@@ -69,46 +69,35 @@
 <style>
 
 /* ============================================================
-   MARKETPULSE VARIABLES
+   MARKETPULSE GLOBAL
    ============================================================ */
 
 :root{
 
     --bg:#0F0F1A;
 
-    --s:#1A1A2E;
+    --surface:#1A1A2E;
 
-    --sh:#222240;
+    --surface2:#202039;
 
-    --b:#2A2A4A;
+    --border:#2B2B4D;
 
-    --t:#E8E8F0;
+    --text:#EAEAF2;
 
-    --ts:#A0A0B8;
+    --muted:#777BA5;
 
-    --tm:#6B6B8A;
+    --soft:#9EA1C3;
 
-    --p:#4ADE80;
+    --purple:#3B258F;
 
-    --n:#F87171;
+    --purple2:#2E1F82;
 
-    --i:#2E1F82;
+    --green:#4ADE80;
 
-    --f:
-        Arial,
-        Helvetica,
-        sans-serif;
-
-    --m:
-        "Courier New",
-        monospace;
+    --red:#F87171;
 
 }
 
-
-/* ============================================================
-   RESET
-   ============================================================ */
 
 *{
 
@@ -128,11 +117,16 @@ body{
 
     margin:0;
 
+    padding:0;
+
     background:var(--bg);
 
-    color:var(--t);
+    color:var(--text);
 
-    font-family:var(--f);
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 
     line-height:1.7;
 
@@ -140,33 +134,38 @@ body{
 
 
 /* ============================================================
-   TOP BAR
+   TOP NAV
    ============================================================ */
 
-.tb{
+.topbar{
 
-    background:var(--i);
+    height:50px;
 
-    color:#fff;
+    background:
+        linear-gradient(
+            90deg,
+            #3B238E,
+            #342080
+        );
 
-    padding:
-        10px
-        24px;
+    display:flex;
 
-    position:sticky;
-
-    top:0;
-
-    z-index:100;
+    align-items:center;
 
 }
 
 
-.tbi{
+.topbar-inner{
 
-    max-width:1100px;
+    width:100%;
+
+    max-width:1000px;
 
     margin:0 auto;
+
+    padding:
+        0
+        0;
 
     display:flex;
 
@@ -177,44 +176,67 @@ body{
 }
 
 
-.tb a{
+.brand{
 
-    color:
-        rgba(
-            255,
-            255,
-            255,
-            .88
-        );
+    color:#fff;
 
     text-decoration:none;
 
-    font-size:13px;
+    font-size:18px;
+
+    font-weight:700;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
 
 }
 
 
-.tb a:hover{
+.brand-dot{
 
-    color:#fff;
+    width:12px;
+
+    height:12px;
+
+    background:#F5A623;
+
+    transform:rotate(45deg);
+
+    display:inline-block;
+
+}
+
+
+.blog-link{
+
+    color:#DAD7F5;
+
+    text-decoration:none;
+
+    font-size:14px;
 
 }
 
 
 /* ============================================================
-   ARTICLE WRAPPER
+   ARTICLE CONTAINER
    ============================================================ */
 
-.aw{
+.article{
 
-    max-width:1100px;
+    width:100%;
+
+    max-width:1000px;
 
     margin:0 auto;
 
     padding:
-        30px
-        24px
-        70px;
+        40px
+        0
+        80px;
 
 }
 
@@ -223,46 +245,44 @@ body{
    BREADCRUMB
    ============================================================ */
 
-.bc{
+.breadcrumb{
 
     display:flex;
 
     align-items:center;
 
-    gap:9px;
+    gap:10px;
 
-    flex-wrap:wrap;
+    color:#65698F;
 
-    color:var(--tm);
+    font-size:14px;
 
-    font-size:13px;
-
-    margin-bottom:24px;
+    margin-bottom:26px;
 
 }
 
 
-.bc a{
+.breadcrumb a{
 
-    color:#7F8FC7;
+    color:#7277A8;
 
     text-decoration:none;
 
 }
 
 
-.bc a:hover{
+.breadcrumb span{
 
-    color:#B0B8E5;
+    color:#454867;
 
 }
 
 
 /* ============================================================
-   CATEGORY BADGE
+   BADGE
    ============================================================ */
 
-.ac{
+.badge{
 
     display:inline-flex;
 
@@ -272,18 +292,18 @@ body{
 
     padding:
         7px
-        15px;
-
-    border-radius:22px;
+        14px;
 
     border:
         1px
         solid
-        #34345A;
+        #30305A;
+
+    border-radius:20px;
 
     background:#18182A;
 
-    color:#AEB2D0;
+    color:#9EA3CA;
 
     font-size:12px;
 
@@ -291,9 +311,7 @@ body{
 
     text-transform:uppercase;
 
-    letter-spacing:.02em;
-
-    margin-bottom:18px;
+    margin-bottom:20px;
 
 }
 
@@ -302,24 +320,24 @@ body{
    TITLE
    ============================================================ */
 
-.at{
-
-    max-width:1000px;
+h1{
 
     margin:
         0
         0
-        16px;
+        18px;
 
-    font-size:52px;
+    max-width:950px;
+
+    color:#F0EFF7;
+
+    font-size:44px;
 
     line-height:1.12;
 
-    letter-spacing:-.035em;
+    letter-spacing:-1.5px;
 
     font-weight:700;
-
-    color:#F0EFF7;
 
 }
 
@@ -328,30 +346,98 @@ body{
    META
    ============================================================ */
 
-.am{
+.meta{
 
     display:flex;
 
     flex-wrap:wrap;
 
-    gap:12px;
-
     align-items:center;
 
-    color:#8588A8;
+    gap:11px;
+
+    margin-bottom:36px;
+
+    color:#71769E;
 
     font-size:14px;
-
-    margin-bottom:32px;
 
 }
 
 
-.stock-meta{
+.meta .symbol{
 
-    color:#A8AFD4;
+    color:#8F95C2;
 
-    font-family:var(--m);
+    font-family:
+        "Courier New",
+        monospace;
+
+    font-weight:700;
+
+}
+
+
+.meta .dot{
+
+    color:#444763;
+
+}
+
+
+/* ============================================================
+   SUMMARY
+   ============================================================ */
+
+.summary{
+
+    margin-bottom:48px;
+
+    color:#A8A9C5;
+
+    font-size:20px;
+
+    line-height:1.7;
+
+}
+
+
+.summary strong{
+
+    color:#F0EFF7;
+
+}
+
+
+/* ============================================================
+   SECTION
+   ============================================================ */
+
+.section{
+
+    margin-top:48px;
+
+}
+
+
+.section-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin:
+        0
+        0
+        24px;
+
+    color:#F0EFF7;
+
+    font-size:29px;
+
+    line-height:1.25;
 
     font-weight:700;
 
@@ -359,243 +445,220 @@ body{
 
 
 /* ============================================================
-   ARTICLE
+   KEY NUMBERS
    ============================================================ */
 
-.ab{
-
-    font-size:18px;
-
-    color:#A8A9C4;
-
-}
-
-
-.ab p{
-
-    margin:
-        0
-        0
-        20px;
-
-}
-
-
-.ab strong{
-
-    color:#F0EFF7;
-
-}
-
-
-/* ============================================================
-   HEADINGS
-   ============================================================ */
-
-.ab h2{
-
-    margin:
-        40px
-        0
-        16px;
-
-    font-size:28px;
-
-    line-height:1.25;
-
-    color:#F0EFF7;
-
-}
-
-
-/* ============================================================
-   STOCK SNAPSHOT
-   ============================================================ */
-
-.ks{
+.key-grid{
 
     display:grid;
 
     grid-template-columns:
-        1.6fr
-        1fr
-        1fr
-        1fr;
+        repeat(
+            4,
+            1fr
+        );
 
-    margin:
-        12px
-        0
-        30px;
+    gap:14px;
 
-    background:var(--s);
+}
+
+
+.key-card{
+
+    min-height:122px;
+
+    padding:
+        20px
+        15px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #1B1B31,
+            #19192D
+        );
 
     border:
         1px
         solid
-        var(--b);
+        var(--border);
 
-    border-radius:14px;
+    border-radius:13px;
 
-    overflow:hidden;
-
-}
-
-
-.k{
-
-    padding:
-        20px
-        22px;
-
-    border-right:
-        1px
-        solid
-        var(--b);
+    text-align:center;
 
 }
 
 
-.k:last-child{
+.key-label{
 
-    border-right:none;
+    color:#72769E;
 
-}
-
-
-.kl{
-
-    color:var(--tm);
-
-    font-size:11px;
+    font-size:12px;
 
     font-weight:700;
 
     text-transform:uppercase;
 
-    letter-spacing:.05em;
-
-    margin-bottom:7px;
+    margin-bottom:8px;
 
 }
 
 
-.stock-name{
+.key-value{
 
-    color:var(--t);
+    color:#EDECF5;
 
-    font-size:18px;
+    font-family:
+        "Courier New",
+        monospace;
 
-    font-weight:700;
-
-    line-height:1.3;
-
-}
-
-
-.kv{
-
-    color:#F0EFF7;
-
-    font-family:var(--m);
-
-    font-size:22px;
-
-    font-weight:700;
+    font-size:24px;
 
     line-height:1.25;
 
-}
-
-
-.kv.positive{
-
-    color:var(--p);
+    font-weight:700;
 
 }
 
 
-.kv.negative{
+.key-value.positive{
 
-    color:var(--n);
+    color:var(--green);
 
 }
 
 
-.ksu{
+.key-value.negative{
 
-    color:var(--tm);
+    color:var(--red);
 
-    font-size:11px;
+}
 
-    margin-top:5px;
+
+.key-sub{
+
+    margin-top:7px;
+
+    color:#686C94;
+
+    font-size:12px;
 
 }
 
 
 /* ============================================================
-   DATA BOX
+   ARTICLE CONTENT
    ============================================================ */
 
-.dw{
+.content{
 
-    background:var(--s);
+    color:#A8A9C4;
+
+    font-size:18px;
+
+    line-height:1.8;
+
+}
+
+
+.content p{
+
+    margin:
+        0
+        0
+        24px;
+
+}
+
+
+.content strong{
+
+    color:#F0EFF7;
+
+}
+
+
+.content h2{
+
+    color:#F0EFF7;
+
+    font-size:28px;
+
+    margin:
+        42px
+        0
+        16px;
+
+}
+
+
+/* ============================================================
+   DATA CARD
+   ============================================================ */
+
+.data-card{
+
+    background:
+        linear-gradient(
+            145deg,
+            #1A1A2E,
+            #19192D
+        );
 
     border:
         1px
         solid
-        var(--b);
+        var(--border);
 
     border-radius:14px;
 
     padding:
-        20px;
-
-    margin:
-        28px
-        0;
+        22px
+        28px;
 
 }
 
 
-.dt{
+.data-heading{
 
-    color:var(--t);
+    margin:
+        0
+        0
+        10px;
 
-    font-size:16px;
+    color:#F0EFF7;
+
+    font-size:18px;
 
     font-weight:700;
 
-    margin-bottom:12px;
-
 }
 
 
-.data-table{
+.data-row{
 
-    width:100%;
+    display:flex;
 
-    border-collapse:collapse;
+    justify-content:space-between;
 
-}
+    align-items:center;
 
-
-.data-table td{
+    gap:20px;
 
     padding:
-        11px
-        8px;
+        15px
+        0;
 
     border-bottom:
         1px
         solid
-        var(--b);
-
-    font-size:14px;
+        #292943;
 
 }
 
 
-.data-table tr:last-child td{
+.data-row:last-child{
 
     border-bottom:none;
 
@@ -604,32 +667,38 @@ body{
 
 .data-label{
 
-    color:var(--tm);
+    color:#777BA5;
+
+    font-size:16px;
 
 }
 
 
 .data-value{
 
+    color:#AEB0CC;
+
+    font-family:
+        "Courier New",
+        monospace;
+
+    font-size:16px;
+
     text-align:right;
-
-    color:var(--ts);
-
-    font-family:var(--m);
 
 }
 
 
 .data-value.positive{
 
-    color:var(--p);
+    color:var(--green);
 
 }
 
 
 .data-value.negative{
 
-    color:var(--n);
+    color:var(--red);
 
 }
 
@@ -640,9 +709,7 @@ body{
 
 .insight{
 
-    margin:
-        30px
-        0;
+    margin-top:38px;
 
     padding:
         22px
@@ -653,64 +720,57 @@ body{
     background:
         linear-gradient(
             135deg,
-            #17133E,
+            #191442,
             #2E1F82
         );
 
 }
 
 
-.insight h3{
-
-    margin:
-        0
-        0
-        8px;
+.insight-title{
 
     color:#fff;
 
     font-size:18px;
 
+    font-weight:700;
+
+    margin-bottom:7px;
+
 }
 
 
-.insight p{
+.insight-text{
 
     margin:0;
 
-    color:
-        rgba(
-            255,
-            255,
-            255,
-            .82
-        );
+    color:#C3C4DD;
 
     font-size:15px;
+
+    line-height:1.7;
 
 }
 
 
 /* ============================================================
-   SOURCE NOTE
+   SOURCE
    ============================================================ */
 
-.scope{
+.source{
 
-    margin:
-        30px
-        0;
+    margin-top:38px;
 
     padding:
-        15px
-        18px;
+        17px
+        20px;
+
+    background:#181827;
 
     border-left:
         3px
         solid
-        var(--i);
-
-    background:var(--sh);
+        #3B2B9B;
 
     border-radius:
         0
@@ -718,20 +778,18 @@ body{
         8px
         0;
 
-    color:var(--tm);
+    color:#707499;
 
     font-size:12px;
+
+    line-height:1.7;
 
 }
 
 
-.scope strong{
+.source strong{
 
-    display:block;
-
-    color:var(--ts);
-
-    margin-bottom:4px;
+    color:#9B9FBE;
 
 }
 
@@ -740,30 +798,28 @@ body{
    CTA
    ============================================================ */
 
-.cb{
+.cta{
 
-    margin:
-        32px
-        0;
+    margin-top:42px;
 
     padding:
-        26px;
-
-    border-radius:14px;
+        28px;
 
     text-align:center;
+
+    border-radius:15px;
 
     background:
         linear-gradient(
             135deg,
-            #17133E,
-            #2E1F82
+            #1A1447,
+            #31218A
         );
 
 }
 
 
-.cb h3{
+.cta h3{
 
     margin:
         0
@@ -772,46 +828,40 @@ body{
 
     color:#fff;
 
-    font-size:19px;
+    font-size:20px;
 
 }
 
 
-.cb p{
+.cta p{
 
     margin:
         0
         0
-        17px;
+        18px;
 
-    color:
-        rgba(
-            255,
-            255,
-            255,
-            .78
-        );
+    color:#BFC1D8;
 
     font-size:14px;
 
 }
 
 
-.cb a{
+.cta a{
 
     display:inline-block;
 
     padding:
-        10px
-        22px;
-
-    border-radius:9px;
+        9px
+        20px;
 
     background:#fff;
 
-    color:var(--i);
+    color:#2E1F82;
 
     text-decoration:none;
+
+    border-radius:8px;
 
     font-size:13px;
 
@@ -824,19 +874,20 @@ body{
    FOOTER
    ============================================================ */
 
-.sf{
+.footer{
 
     border-top:
         1px
         solid
-        var(--b);
+        #24243C;
 
     padding:
-        22px;
+        25px
+        20px;
 
     text-align:center;
 
-    color:var(--tm);
+    color:#5F6386;
 
     font-size:11px;
 
@@ -847,63 +898,23 @@ body{
    TABLET
    ============================================================ */
 
-@media(max-width:800px){
+@media(max-width:1050px){
 
-    .aw{
+    .topbar-inner{
 
         padding:
+            0
+            25px;
+
+    }
+
+
+    .article{
+
+        padding:
+            35px
             25px
-            18px
-            50px;
-
-    }
-
-
-    .at{
-
-        font-size:38px;
-
-    }
-
-
-    .ks{
-
-        grid-template-columns:
-            1fr
-            1fr;
-
-    }
-
-
-    .k{
-
-        border-bottom:
-            1px
-            solid
-            var(--b);
-
-    }
-
-
-    .k:nth-child(2){
-
-        border-right:none;
-
-    }
-
-
-    .k:nth-child(3){
-
-        border-bottom:none;
-
-    }
-
-
-    .k:nth-child(4){
-
-        border-right:none;
-
-        border-bottom:none;
+            70px;
 
     }
 
@@ -914,51 +925,101 @@ body{
    MOBILE
    ============================================================ */
 
-@media(max-width:520px){
+@media(max-width:700px){
 
-    .at{
+    .article{
 
-        font-size:30px;
+        padding:
+            28px
+            18px
+            60px;
 
     }
 
 
-    .ab{
+    h1{
+
+        font-size:32px;
+
+        letter-spacing:-.8px;
+
+    }
+
+
+    .summary{
+
+        font-size:17px;
+
+    }
+
+
+    .key-grid{
+
+        grid-template-columns:
+            1fr
+            1fr;
+
+    }
+
+
+    .section-title{
+
+        font-size:25px;
+
+    }
+
+
+    .content{
 
         font-size:16px;
 
     }
 
 
-    .ab h2{
+    .data-card{
 
-        font-size:24px;
+        padding:
+            15px
+            17px;
 
     }
 
 
-    .ks{
+    .data-row{
+
+        padding:
+            13px
+            0;
+
+    }
+
+
+    .data-label,
+    .data-value{
+
+        font-size:14px;
+
+    }
+
+}
+
+
+/* ============================================================
+   SMALL MOBILE
+   ============================================================ */
+
+@media(max-width:430px){
+
+    .key-grid{
 
         grid-template-columns:1fr;
 
     }
 
 
-    .k{
+    h1{
 
-        border-right:none;
-
-        border-bottom:
-            1px
-            solid
-            var(--b);
-
-    }
-
-
-    .k:last-child{
-
-        border-bottom:none;
+        font-size:29px;
 
     }
 
@@ -976,31 +1037,16 @@ body{
      TOP BAR
      ========================================================== -->
 
-<div class="tb">
+<header class="topbar">
 
-    <div class="tbi">
+    <div class="topbar-inner">
 
         <a
+            class="brand"
             href="https://tradesutra-chi.vercel.app/"
-            style="
-                display:flex;
-                align-items:center;
-                gap:9px;
-                color:#fff;
-                font-weight:700;
-                font-size:15px;
-            "
         >
 
-            <span
-                style="
-                    width:9px;
-                    height:9px;
-                    background:#F5A623;
-                    display:inline-block;
-                    transform:rotate(45deg);
-                "
-            ></span>
+            <span class="brand-dot"></span>
 
             MarketPulse
 
@@ -1008,26 +1054,29 @@ body{
 
 
         <a
+            class="blog-link"
             href="https://tradesutra-chi.vercel.app/blog/"
         >
+
             Blog
+
         </a>
 
     </div>
 
-</div>
+</header>
 
 
 <!-- ==========================================================
      ARTICLE
      ========================================================== -->
 
-<article class="aw">
+<main class="article">
 
 
     <!-- BREADCRUMB -->
 
-    <div class="bc">
+    <div class="breadcrumb">
 
         <a href="https://tradesutra-chi.vercel.app/">
             Home
@@ -1048,18 +1097,18 @@ body{
     </div>
 
 
-    <!-- CATEGORY -->
+    <!-- BADGE -->
 
-    <div class="ac">
+    <div class="badge">
 
-        📈 HAPPSTMNDS STOCK SPOTLIGHT
+        📊 HAPPSTMNDS STOCK SPOTLIGHT
 
     </div>
 
 
     <!-- TITLE -->
 
-    <h1 class="at">
+    <h1>
 
         Happiest Minds Technologies Slips 6% Amid Unverified ITC Infotech Stake Buy Report
 
@@ -1068,130 +1117,91 @@ body{
 
     <!-- META -->
 
-    <div class="am">
-
-        <span class="stock-meta">
-
-            HAPPSTMNDS
-
-        </span>
-
-        <span>·</span>
+    <div class="meta">
 
         <span>
-
             28 Aug 2026
-
         </span>
 
-        <span>·</span>
+        <span class="dot">·</span>
 
         <span>
-
             Stock Spotlight
-
         </span>
 
-        <span>·</span>
+        <span class="dot">·</span>
 
         <span>
-
             IT
-
         </span>
 
     </div>
 
 
-    <!-- ========================================================
-         ARTICLE BODY
-         ======================================================== -->
+    <!-- SUMMARY -->
 
-    <div class="ab">
+    <div class="summary">
 
+        <strong>
+            MarketPulse Summary:
+        </strong>
 
-        <!-- SUMMARY -->
+        Happiest Minds Technologies Limited (HAPPSTMNDS) closed at ₹420.25, down 6.16%, despite strong recent momentum with 5-day gains of 9.13% and 20-day returns...
 
-        <p>
-
-            <strong>
-                MarketPulse Summary:
-            </strong>
-
-            Happiest Minds Technologies Limited (HAPPSTMNDS) closed at ₹420.25, down 6.16%, despite strong recent momentum with 5-day gains of 9.13% and 20-day returns...
-
-        </p>
+    </div>
 
 
-        <!-- ======================================================
-             STOCK SNAPSHOT
-             ====================================================== -->
+    <!-- ======================================================
+         KEY NUMBERS
+         ====================================================== -->
 
-        <h2>
-            📊 Stock Snapshot
+    <section class="section">
+
+
+        <h2 class="section-title">
+
+            📊 Key Numbers
+
         </h2>
 
 
-        <div class="ks">
-
-
-            <!-- STOCK -->
-
-            <div class="k">
-
-                <div class="kl">
-                    Stock
-                </div>
-
-                <div class="stock-name">
-
-                    HAPPSTMNDS
-
-                </div>
-
-                <div class="ksu">
-
-                    Happiest Minds Technologies Limited
-
-                </div>
-
-            </div>
+        <div class="key-grid">
 
 
             <!-- PRICE -->
 
-            <div class="k">
+            <div class="key-card">
 
-                <div class="kl">
+                <div class="key-label">
                     Price
                 </div>
 
-                <div class="kv">
+                <div class="key-value">
 
                     ₹420.25
 
                 </div>
 
-                <div class="ksu">
+                <div class="key-sub">
 
-                    Current price
+                    HAPPSTMNDS
 
                 </div>
 
             </div>
 
 
-            <!-- TODAY -->
+            <!-- DAY CHANGE -->
 
-            <div class="k">
+            <div class="key-card">
 
-                <div class="kl">
-                    Today
+                <div class="key-label">
+                    Day Change
                 </div>
 
                 <div
                     class="
-                        kv
+                        key-value
                         negative
                     "
                 >
@@ -1200,7 +1210,7 @@ body{
 
                 </div>
 
-                <div class="ksu">
+                <div class="key-sub">
 
                     ▼
 
@@ -1213,19 +1223,19 @@ body{
 
             <!-- MARKET CAP -->
 
-            <div class="k">
+            <div class="key-card">
 
-                <div class="kl">
+                <div class="key-label">
                     Market Cap
                 </div>
 
-                <div class="kv">
+                <div class="key-value">
 
                     6,791cr
 
                 </div>
 
-                <div class="ksu">
+                <div class="key-sub">
 
                     IT
 
@@ -1234,227 +1244,266 @@ body{
             </div>
 
 
+            <!-- SPOTLIGHT -->
+
+            <div class="key-card">
+
+                <div class="key-label">
+                    Spotlight
+                </div>
+
+                <div class="key-value">
+
+                    Selected
+
+                </div>
+
+                <div class="key-sub">
+
+                    HAPPSTMNDS
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+    <!-- ======================================================
+         WHAT HAPPENED
+         ====================================================== -->
+
+    <section class="section">
+
+
+        <h2 class="section-title">
+
+            📈 What happened?
+
+        </h2>
+
+
+        <div class="content">
+
+            
+<p>
+Happiest Minds Technologies Limited (HAPPSTMNDS) closed at ₹420.25, down 6.16%, despite strong recent momentum with 5-day gains of 9.13% and 20-day returns of 16.13%. Volume stood at 1.09x average. The NSE-listed company has formally informed the exchange about a Scheme of Arrangement. Unverified media reports, per The Economic Times, suggest ITC Infotech may acquire a promoter stake; no official confirmation exists. Investors should rely on NSE disclosures for verified developments.
+</p>
+
         </div>
 
 
-        <!-- ======================================================
-             WHAT HAPPENED
-             ====================================================== -->
-
-        <h2>
-            📈 What happened?
-        </h2>
+    </section>
 
 
-        
-<p>
-    Happiest Minds Technologies Limited (HAPPSTMNDS) closed at ₹420.25, down 6.16%, despite strong recent momentum with 5-day gains of 9.13% and 20-day returns of 16.13%. Volume stood at 1.09x average. The NSE-listed company has formally informed the exchange about a Scheme of Arrangement. Unverified media reports, per The Economic Times, suggest ITC Infotech may acquire a promoter stake; no official confirmation exists. Investors should rely on NSE disclosures for verified developments.
-</p>
+    <!-- ======================================================
+         RECENT PERFORMANCE
+         ====================================================== -->
+
+    <section class="section">
 
 
-        <!-- ======================================================
-             RECENT PERFORMANCE
-             ====================================================== -->
+        <h2 class="section-title">
 
-        <h2>
             📉 Recent Performance
+
         </h2>
 
 
-        <div class="dw">
+        <div class="data-card">
 
-            <div class="dt">
+
+            <div class="data-heading">
 
                 Price Performance
 
             </div>
 
 
-            <table class="data-table">
+            <div class="data-row">
 
-                <tbody>
+                <span class="data-label">
+                    5-Day Return
+                </span>
 
+                <span
+                    class="
+                        data-value
+                        
+                    "
+                >
 
-                    <tr>
+                    —
 
-                        <td class="data-label">
-                            5-Day Return
-                        </td>
+                </span>
 
-                        <td
-                            class="
-                                data-value
-                                
-                            "
-                        >
-
-                            —
-
-                        </td>
-
-                    </tr>
+            </div>
 
 
-                    <tr>
+            <div class="data-row">
 
-                        <td class="data-label">
-                            20-Day Return
-                        </td>
+                <span class="data-label">
+                    20-Day Return
+                </span>
 
-                        <td
-                            class="
-                                data-value
-                                
-                            "
-                        >
+                <span
+                    class="
+                        data-value
+                        
+                    "
+                >
 
-                            —
+                    —
 
-                        </td>
+                </span>
 
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="data-label">
-                            90-Day High
-                        </td>
-
-                        <td class="data-value">
-
-                            —
-
-                        </td>
-
-                    </tr>
+            </div>
 
 
-                    <tr>
+            <div class="data-row">
 
-                        <td class="data-label">
-                            90-Day Low
-                        </td>
+                <span class="data-label">
+                    90-Day High
+                </span>
 
-                        <td class="data-value">
+                <span class="data-value">
 
-                            —
+                    —
 
-                        </td>
+                </span>
 
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="data-label">
-                            Latest Close
-                        </td>
-
-                        <td class="data-value">
-
-                            ₹420.25
-
-                        </td>
-
-                    </tr>
+            </div>
 
 
-                </tbody>
+            <div class="data-row">
 
-            </table>
+                <span class="data-label">
+                    90-Day Low
+                </span>
+
+                <span class="data-value">
+
+                    —
+
+                </span>
+
+            </div>
+
+
+            <div class="data-row">
+
+                <span class="data-label">
+                    Latest Close
+                </span>
+
+                <span class="data-value">
+
+                    ₹420.25
+
+                </span>
+
+            </div>
+
 
         </div>
 
+    </section>
 
-        <!-- ======================================================
-             VOLUME
-             ====================================================== -->
 
-        <h2>
+    <!-- ======================================================
+         VOLUME
+         ====================================================== -->
+
+    <section class="section">
+
+
+        <h2 class="section-title">
+
             📦 Volume Analysis
+
         </h2>
 
 
-        <div class="dw">
+        <div class="data-card">
 
-            <div class="dt">
+
+            <div class="data-heading">
 
                 Trading Activity
 
             </div>
 
 
-            <table class="data-table">
+            <div class="data-row">
 
-                <tbody>
+                <span class="data-label">
+                    Latest Volume
+                </span>
 
+                <span class="data-value">
 
-                    <tr>
+                    —
 
-                        <td class="data-label">
-                            Latest Volume
-                        </td>
+                </span>
 
-                        <td class="data-value">
-
-                            —
-
-                        </td>
-
-                    </tr>
+            </div>
 
 
-                    <tr>
+            <div class="data-row">
 
-                        <td class="data-label">
-                            Average Volume
-                        </td>
+                <span class="data-label">
+                    Average Volume
+                </span>
 
-                        <td class="data-value">
+                <span class="data-value">
 
-                            —
+                    —
 
-                        </td>
+                </span>
 
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="data-label">
-                            Volume Ratio
-                        </td>
-
-                        <td class="data-value">
-
-                            —
-
-                        </td>
-
-                    </tr>
+            </div>
 
 
-                </tbody>
+            <div class="data-row">
 
-            </table>
+                <span class="data-label">
+                    Volume Ratio
+                </span>
+
+                <span class="data-value">
+
+                    —
+
+                </span>
+
+            </div>
+
 
         </div>
 
+    </section>
 
-        <!-- ======================================================
-             WHY THIS STOCK
-             ====================================================== -->
+
+    <!-- ======================================================
+         WHY THIS STOCK
+         ====================================================== -->
+
+    <section class="section">
+
 
         <div class="insight">
 
-            <h3>
+            <div class="insight-title">
 
                 🔎 Why this stock?
 
-            </h3>
+            </div>
 
-            <p>
+
+            <p class="insight-text">
 
                 Selected because of significant price movement of -6.16%, market capitalisation of approximately ₹6,791 crore, IT sector relevance.
 
@@ -1463,114 +1512,102 @@ body{
         </div>
 
 
-        <!-- ======================================================
-             WHAT TO WATCH
-             ====================================================== -->
+    </section>
 
-        <h2>
+
+    <!-- ======================================================
+         WHAT TO WATCH
+         ====================================================== -->
+
+    <section class="section">
+
+
+        <h2 class="section-title">
 
             👀 What to watch next
 
         </h2>
 
 
-        <p>
-
-            Investors should watch subsequent NSE
-            disclosures, company announcements,
-            earnings updates and further price-volume
-            behaviour before drawing conclusions from
-            the recent move.
-
-        </p>
-
-
-        <!-- ======================================================
-             SOURCE NOTE
-             ====================================================== -->
-
-        <div class="scope">
-
-            <strong>
-
-                Data &amp; Source Note
-
-            </strong>
-
-            Market data and company information are
-            processed through the MarketPulse automated
-            research workflow. Unverified media reports
-            are clearly identified and should not be
-            treated as confirmed company actions.
-
-        </div>
-
-
-        <!-- ======================================================
-             CTA
-             ====================================================== -->
-
-        <div class="cb">
-
-            <h3>
-
-                📊 Track Indian Markets
-
-            </h3>
+        <div class="content">
 
             <p>
 
-                Follow Nifty, sector performance,
-                market breadth, stock movers and
-                MarketPulse analysis.
+                Investors should monitor subsequent
+                NSE disclosures, company announcements,
+                earnings updates and further price-volume
+                behaviour before drawing conclusions from
+                the recent move.
 
             </p>
-
-            <a
-                href="https://tradesutra-chi.vercel.app/"
-            >
-
-                Open MarketPulse →
-
-            </a>
 
         </div>
 
 
-        <!-- ======================================================
-             DISCLAIMER
-             ====================================================== -->
+    </section>
 
-        <p
-            style="
-                font-size:12px;
-                color:var(--tm);
-                margin-top:28px;
-            "
-        >
 
-            <em>
+    <!-- ======================================================
+         SOURCE
+         ====================================================== -->
 
-                Data generated at
-                28 Aug 2026.
-                This article is for informational
-                purposes only and is not investment advice.
+    <div class="source">
 
-            </em>
+        <strong>
+            Data &amp; Source Note
+        </strong>
+
+        <br>
+
+        Market data and company information are processed
+        through the MarketPulse automated research workflow.
+        Unverified media reports are identified separately
+        and should not be treated as confirmed company actions.
+
+    </div>
+
+
+    <!-- ======================================================
+         CTA
+         ====================================================== -->
+
+    <div class="cta">
+
+        <h3>
+
+            📊 Track Indian Markets
+
+        </h3>
+
+
+        <p>
+
+            Follow Nifty, sector performance,
+            market breadth, stock movers and
+            MarketPulse analysis.
 
         </p>
 
 
+        <a
+            href="https://tradesutra-chi.vercel.app/"
+        >
+
+            Open MarketPulse →
+
+        </a>
+
     </div>
 
-</article>
+
+</main>
 
 
 <!-- ==========================================================
      FOOTER
      ========================================================== -->
 
-<footer class="sf">
+<footer class="footer">
 
     MarketPulse —
     automated market analysis.
