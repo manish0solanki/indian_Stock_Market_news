@@ -1,5 +1,25 @@
 [
   {
+    "slug": "coforge-stock-spotlight",
+    "title": "Coforge Limited (COFORGE) Stock Spotlight",
+    "excerpt": "Coforge Limited (NSE: COFORGE) is an IT services company specializing in digital transformation and software solutions. The company serves industries including...",
+    "category": "stock-spotlight",
+    "date": "2026-08-28T15:50:16+05:30",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "COFORGE",
+      "Coforge Limited"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-falls-1-79-percent-as-small-cap-weakness-outpaces-large-cap-resilience",
     "title": "Nifty IT Falls 1.79% as Small-Cap Weakness Outpaces Large-Cap Resilience",
     "excerpt": "Nifty IT declined 1.79% (550.65 points) to 30,221.15, with 85 of 145 stocks declining versus 58 advancing. Smaller stocks averaged -0.37% while the top 10 by market cap gained 0.07%, indicating large-cap resilience amid broader small-cap weakness.",
