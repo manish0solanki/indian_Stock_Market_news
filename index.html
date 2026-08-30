@@ -1143,7 +1143,7 @@ function renderHeatmap(data) {
     }));
   }
 
-  const allowed = ['BANK','IT','FINANCIAL SERVICES','FMCG','ENERGY','OIL & GAS','AUTO','PHARMA','METAL','INFRASTRUCTURE','INDIA CONSUMPTION','REALTY'];
+  const allowed = ['BANK','BANKING','MEDIA', 'IT','FINANCIAL SERVICES','FMCG','ENERGY','OIL & GAS','AUTO','PHARMA','METAL','INFRASTRUCTURE','INDIA CONSUMPTION','REALTY'];
 
   sectors = sectors.filter(s => {
     const raw = s.name || s.indexName || s.full_name || s.sector || s.Name || s.Sector || s.title || s.label || '';
