@@ -1,5 +1,25 @@
 [
   {
+    "slug": "adanient-ns-stock-spotlight",
+    "title": "ADANIENT (ADANIENT.NS) Stock Spotlight",
+    "excerpt": "ADANIENT (NSE: ADANIENT.NS) is featured in today's MarketPulse Stock Spotlight, covering price action, technical momentum, key drivers and risks.",
+    "category": "stock-spotlight",
+    "date": "2026-08-31",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "ADANIENT.NS",
+      "ADANIENT"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-media-drops-2-84-percent-as-large-caps-lead-broad-decline",
     "title": "Nifty Media Drops 2.84% as Large Caps Lead Broad Decline",
     "excerpt": "Nifty Media declined 2.84% (45.55 points) to 1557.35, with 32 of 44 stocks falling versus 12 advancing. The top 10 companies by market capitalization averaged -0.86%, underperforming smaller stocks which averaged 55.45%. The market-cap-weighted stock-universe change was -0.47%, while the median stock change was -0.79%, indicating large-cap-driven weakness.",
