@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -284,7 +285,18 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 /* FII/DII */
 .mi-fiidii-chart { min-height: 110px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
 .mi-fiidii-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.mi-fiidii-label { width: 40px; font-size: 10px; color: var(--text-muted); text-align: right; font-family: var(--font-mono); font-weight: 500; }
+.mi-fiidii-label {
+  width: 58px;
+  flex-shrink: 0;
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .mi-fiidii-track { flex: 1; height: 22px; background: var(--bg); border-radius: 5px; overflow: hidden; position: relative; border: 1px solid var(--border); }
 .mi-fiidii-bar { height: 100%; border-radius: 5px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: #fff; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); min-width: 40px; }
 .mi-fiidii-bar.fii.positive,
@@ -1338,7 +1350,11 @@ function renderFiiDii(data) {
 
   if (data && data.history && Array.isArray(data.history)) {
     const sliced = data.history.slice(-5);
-    labels = sliced.map((d, i) => d.date || `Day ${i+1}`);
+    labels = sliced.map((d, i) => {
+  const raw = d.date || `Day ${i+1}`;
+  const parts = String(raw).split('-');
+  return parts.length === 3 ? `${parts[0]}-${parts[1]}` : raw; // "31-Aug" instead of "31-Aug-2026"
+});
     fiiData = sliced.map(d => parseMoney(d.fii_net ?? d.fiiNet ?? 0));
     diiData = sliced.map(d => parseMoney(d.dii_net ?? d.diiNet ?? 0));
   }
