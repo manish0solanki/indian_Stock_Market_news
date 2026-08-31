@@ -1,39 +1,5 @@
 [
-  {
-    "slug": "nifty-50-daily-wrap-31-aug-2026",
-    "title": "Nifty 50 Daily Wrap — 31 Aug 2026: Gains 0.35%",
-    "excerpt": "Nifty 50 gained 0.35% to close at 24,175.65.",
-    "category": "daily-wrap",
-    "date": "2026-08-31T12:38:24+05:30",
-    "readTime": "4 min read",
-    "tags": [
-      "Nifty 50",
-      "Bank Nifty",
-      "bullish",
-      "market wrap"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "price-feed",
-      "index-feed",
-      "heatmap-data",
-      "market-breadth",
-      "fii-dii-data"
-    ]
-  },
-  {
-    "slug": "nifty-it-gains-3-51-percent-as-large-caps-lead-broad-advance",
-    "title": "Nifty IT Gains 3.51% as Large Caps Lead Broad Advance",
-    "excerpt": "Nifty IT rose 3.51% (1060.5 points) to 31281.7. Breadth was positive with 93 of 145 stocks advancing against 47 declining. Top 10 companies by market capitalization averaged 3.5% versus 1.42% for smaller stocks, with market-cap-weighted change at 3.22%. Coforge led large caps with 5.93% gain.",
-    "category": "sector-analysis",
-    "date": "2026-08-30T19:50:15.966Z",
-    "readTime": "6 min read",
-    "tags": [],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": []
-  },
+  
   {
     "slug": "nifty-it-rallies-3-18-percent-as-large-caps-lead-broad-gains",
     "title": "Nifty IT Rallies 3.18% as Large Caps Lead Broad Gains",
