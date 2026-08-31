@@ -19,44 +19,7 @@
       "google-news-rss"
     ]
   },
-  {
-    "slug": "reliance-stock-spotlight",
-    "title": "RELIANCE (RELIANCE) Stock Spotlight",
-    "excerpt": "Reliance Industries closed at ₹1287, down 7.67% on exceptionally heavy volumes at 3.5x the daily average. The sharp decline on such elevated turnover indicates aggressive instit...",
-    "category": "stock-spotlight",
-    "date": "2026-08-31",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "RELIANCE"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
-    ]
-  },
-  {
-    "slug": "adanient-stock-spotlight",
-    "title": "ADANIENT (ADANIENT) Stock Spotlight",
-    "excerpt": "ADANIENT has staged a powerful breakout rally with a 46.6% surge accompanied by exceptionally strong volume at 7.5x the daily average, indicating strong institutional participat...",
-    "category": "stock-spotlight",
-    "date": "2026-08-31",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "ADANIENT"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
-    ]
-  },
+
   {
     "slug": "nifty-media-drops-2-84-percent-as-large-caps-lead-broad-decline",
     "title": "Nifty Media Drops 2.84% as Large Caps Lead Broad Decline",
