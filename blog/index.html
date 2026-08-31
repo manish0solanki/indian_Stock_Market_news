@@ -1282,6 +1282,17 @@ body {
    CONFIGURATION
 ========================================================= */
 
+// =========================================================
+// ARTICLE URL / FOLDER STRUCTURE
+//
+// daily-wrap       -> /blog/daily-wrap/<slug>/
+// sector-analysis  -> /blog/sector-analysis/<slug>/
+// stock-spotlight  -> /blog/stock-spotlight/<slug>/
+//
+// Keep the category values in posts.json consistent with
+// CATEGORY_CONFIG above.
+// =========================================================
+
 const CATEGORY_CONFIG = {
 
   'daily-wrap': {
@@ -1958,10 +1969,54 @@ function filterAndRender() {
    ARTICLE ROW
 ========================================================= */
 
+function getArticleUrl(post) {
+
+  const slug =
+    String(post.slug || '').trim();
+
+  const category =
+    String(post.category || '').toLowerCase().trim();
+
+  if (!slug) {
+    return '/blog/';
+  }
+
+  switch (category) {
+
+    case 'daily-wrap':
+      return `/blog/daily-wrap/${slug}/`;
+
+    case 'sector-analysis':
+      return `/blog/sector-analysis/${slug}/`;
+
+    case 'stock-spotlight':
+      return `/blog/stock-spotlight/${slug}/`;
+
+    case 'fiidii-flows':
+      return `/blog/fii-dii-flows/${slug}/`;
+
+    case 'guide':
+      return `/blog/guides/${slug}/`;
+
+    case 'earnings':
+      return `/blog/earnings/${slug}/`;
+
+    case 'market-breadth':
+      return `/blog/market-breadth/${slug}/`;
+
+    default:
+      // Backward compatibility for older posts
+      // whose folders are still directly under /blog/
+      return `/blog/${slug}/`;
+  }
+
+}
+
+
 function createArticleRow(post) {
 
   const articleUrl =
-    `/blog/${post.slug}/`;
+    getArticleUrl(post);
 
 
   const category =
