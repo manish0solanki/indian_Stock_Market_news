@@ -1,5 +1,27 @@
 [
-  
+  {
+    "slug": "nifty-50-daily-wrap-31-aug-2026",
+    "title": "Nifty 50 Daily Wrap — 31 Aug 2026: Drops 0.39%",
+    "excerpt": "Nifty 50 dropped 0.39% to close at 24,080.40.",
+    "category": "daily-wrap",
+    "date": "2026-08-31T15:40:18+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
   {
     "slug": "nifty-it-rallies-3-18-percent-as-large-caps-lead-broad-gains",
     "title": "Nifty IT Rallies 3.18% as Large Caps Lead Broad Gains",
