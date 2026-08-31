@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -286,12 +287,29 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .mi-fiidii-label { width: 40px; font-size: 10px; color: var(--text-muted); text-align: right; font-family: var(--font-mono); font-weight: 500; }
 .mi-fiidii-track { flex: 1; height: 22px; background: var(--bg); border-radius: 5px; overflow: hidden; position: relative; border: 1px solid var(--border); }
 .mi-fiidii-bar { height: 100%; border-radius: 5px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: #fff; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); min-width: 40px; }
-.mi-fiidii-bar.fii { background: linear-gradient(90deg, #2563eb, #60a5fa); }
-.mi-fiidii-bar.dii { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-.mi-fiidii-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.mi-fiidii-bar.fii.positive,
+.mi-fiidii-bar.dii.positive {
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+}
+
+.mi-fiidii-bar.fii.negative,
+.mi-fiidii-bar.dii.negative {
+  background: linear-gradient(90deg, #dc2626, #f87171);
+}
+
+.mi-fiidii-bar.fii.zero,
+.mi-fiidii-bar.dii.zero {
+  background: var(--border);
+}
+.mi-fiidii-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 .mi-fiidii-card { text-align: center; padding: 10px; border-radius: var(--radius-md); }
 .mi-fiidii-card.fii { background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.2); }
 .mi-fiidii-card.dii { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2); }
+
+.mi-fiidii-card.total {
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.2);
+}
 .mi-fiidii-card .t { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 .mi-fiidii-card .v { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; margin-top: 3px; }
 
@@ -634,9 +652,21 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         <div id="fiidiiContent">
           <div class="mi-fiidii-chart" id="fiidiiChart"></div>
           <div class="mi-fiidii-summary">
-            <div class="mi-fiidii-card fii"><div class="t">FII Net</div><div class="v" style="color:#60a5fa" id="fiiNet">--</div></div>
-            <div class="mi-fiidii-card dii"><div class="t">DII Net</div><div class="v" style="color:#a78bfa" id="diiNet">--</div></div>
+            <div class="mi-fiidii-card fii">
+              <div class="t">FII Net</div>
+              <div class="v" id="fiiNet">--</div>
+            </div>
+
+          <div class="mi-fiidii-card dii">
+            <div class="t">DII Net</div>
+            <div class="v" id="diiNet">--</div>
           </div>
+
+          <div class="mi-fiidii-card total">
+            <div class="t">FII + DII</div>
+            <div class="v" id="fiidiiTotal">--</div>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -1183,10 +1213,28 @@ function renderHeatmap(data) {
   });
 
   const badge = document.getElementById('heatmapBadge');
+
   if (badge) {
-    const avgChange = sectors.reduce((sum, s) => sum + (s.change_percent ?? 0), 0) / sectors.length;
-    badge.textContent = fmtPct(avgChange);
-    badge.className = avgChange > 0 ? 'widget-badge positive' : (avgChange < 0 ? 'widget-badge negative' : 'widget-badge neutral');
+    const avgChange = sectors.reduce((sum, s) => {
+      const change =
+        s.change_percent ??
+        s.percentChange ??
+        s.change ??
+        0;
+
+      return sum + (Number(change) || 0);
+    }, 0) / sectors.length;
+
+    const roundedAvg = Number(avgChange.toFixed(2));
+
+    badge.textContent = fmtPct(roundedAvg);
+
+    badge.className =
+      roundedAvg > 0
+        ? 'widget-badge positive'
+        : roundedAvg < 0
+          ? 'widget-badge negative'
+          : 'widget-badge neutral';
   }
 }
 
@@ -1346,11 +1394,15 @@ function renderFiiDii(data) {
     const dii = diiData[i] || 0;
     const row = document.createElement('div');
     row.className = 'mi-fiidii-row';
-    row.innerHTML = `<div class="mi-fiidii-label">${label}</div><div class="mi-fiidii-track"><div class="mi-fiidii-bar fii" style="width:0%;" data-width="${(Math.abs(fii) / maxVal * 100).toFixed(1)}%">${fii !== 0 ? '₹' + fmtNum(fii, 2) : '0'}</div></div>`;
+    const fiiClass = fii > 0 ? 'positive' : fii < 0 ? 'negative' : 'zero';
+
+row.innerHTML = `<div class="mi-fiidii-label">${label}</div><div class="mi-fiidii-track"><div class="mi-fiidii-bar fii ${fiiClass}" style="width:0%;" data-width="${(Math.abs(fii) / maxVal * 100).toFixed(1)}%">${fii !== 0 ? '₹' + fmtNum(fii, 2) : '0'}</div></div>`;
     chartEl.appendChild(row);
     const row2 = document.createElement('div');
     row2.className = 'mi-fiidii-row';
-    row2.innerHTML = `<div class="mi-fiidii-label" style="opacity:0;">.</div><div class="mi-fiidii-track"><div class="mi-fiidii-bar dii" style="width:0%;" data-width="${(Math.abs(dii) / maxVal * 100).toFixed(1)}%">${dii !== 0 ? '₹' + fmtNum(dii, 2) : '0'}</div></div>`;
+    const diiClass = dii > 0 ? 'positive' : dii < 0 ? 'negative' : 'zero';
+
+row2.innerHTML = `<div class="mi-fiidii-label" style="opacity:0;">.</div><div class="mi-fiidii-track"><div class="mi-fiidii-bar dii ${diiClass}" style="width:0%;" data-width="${(Math.abs(dii) / maxVal * 100).toFixed(1)}%">${dii !== 0 ? '₹' + fmtNum(dii, 2) : '0'}</div></div>`;
     chartEl.appendChild(row2);
   });
 
@@ -1362,10 +1414,54 @@ function renderFiiDii(data) {
   const diiTotal = diiData.reduce((a, b) => a + (b || 0), 0);
 
   const fiiNetEl = document.getElementById('fiiNet');
-  const diiNetEl = document.getElementById('diiNet');
-  if (fiiNetEl) { fiiNetEl.textContent = '₹' + fmtNum(fiiTotal, 2); fiiNetEl.style.color = fiiTotal >= 0 ? '#60a5fa' : 'var(--negative)'; }
-  if (diiNetEl) { diiNetEl.textContent = '₹' + fmtNum(diiTotal, 2); diiNetEl.style.color = diiTotal >= 0 ? '#a78bfa' : 'var(--negative)'; }
+const diiNetEl = document.getElementById('diiNet');
+const fiidiiTotalEl = document.getElementById('fiidiiTotal');
 
+if (fiiNetEl) {
+  fiiNetEl.textContent = '₹' + fmtNum(fiiTotal, 2);
+  fiiNetEl.style.color = fiiTotal > 0
+    ? 'var(--positive)'
+    : fiiTotal < 0
+      ? 'var(--negative)'
+      : 'var(--neutral)';
+}
+
+if (diiNetEl) {
+  diiNetEl.textContent = '₹' + fmtNum(diiTotal, 2);
+  diiNetEl.style.color = diiTotal > 0
+    ? 'var(--positive)'
+    : diiTotal < 0
+      ? 'var(--negative)'
+      : 'var(--neutral)';
+}
+
+const fiidiiTotal = fiiTotal + diiTotal;
+
+if (fiidiiTotalEl) {
+  fiidiiTotalEl.textContent = '₹' + fmtNum(fiidiiTotal, 2);
+
+  fiidiiTotalEl.style.color =
+    fiidiiTotal > 0
+      ? 'var(--positive)'
+      : fiidiiTotal < 0
+        ? 'var(--negative)'
+        : 'var(--neutral)';
+
+  const totalCard = fiidiiTotalEl.closest('.mi-fiidii-card.total');
+
+  if (totalCard) {
+    if (fiidiiTotal > 0) {
+      totalCard.style.background = 'var(--positive-bg)';
+      totalCard.style.borderColor = 'var(--positive-light)';
+    } else if (fiidiiTotal < 0) {
+      totalCard.style.background = 'var(--negative-bg)';
+      totalCard.style.borderColor = 'var(--negative-light)';
+    } else {
+      totalCard.style.background = 'var(--neutral-bg)';
+      totalCard.style.borderColor = 'var(--neutral-light)';
+    }
+  }
+}
   const badge = document.getElementById('fiidiiBadge');
   if (badge) {
     const net = fiiTotal + diiTotal;
