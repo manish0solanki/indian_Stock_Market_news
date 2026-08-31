@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -247,18 +249,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .widget-badge.neutral { color: var(--neutral); background: var(--neutral-bg); }
 
 /* Compact Tables */
-.compact-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.compact-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
 .compact-table thead { background: var(--surface-hover); }
 .compact-table th { padding: 6px 8px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); }
+.compact-table th:nth-child(1) { width: 40%; }
+.compact-table th:nth-child(2) { width: 24%; }
+.compact-table th:nth-child(3) { width: 18%; }
+.compact-table th:nth-child(4) { width: 18%; }
 .compact-table th:nth-child(2), .compact-table th:nth-child(3), .compact-table th:nth-child(4) { text-align: right; }
 .compact-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); transition: background var(--transition); font-family: var(--font-mono); font-size: 12px; }
 .compact-table tr:hover td { background: var(--surface-hover); }
 .compact-table tr:last-child td { border-bottom: none; }
 .compact-table td:nth-child(2), .compact-table td:nth-child(3), .compact-table td:nth-child(4) { text-align: right; }
-.compact-table .idx-name { font-family: var(--font-body); font-weight: 600; font-size: 12px; }
+.compact-table .idx-name { font-family: var(--font-body); font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .compact-table .idx-up { color: var(--positive); }
 .compact-table .idx-down { color: var(--negative); }
-.compact-table .idx-trend { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; display: inline-block; }
+.compact-table .idx-trend { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; display: inline-block; white-space: nowrap; }
 .compact-table .idx-trend.up { color: var(--positive); background: var(--positive-light); }
 .compact-table .idx-trend.down { color: var(--negative); background: var(--negative-light); }
 
@@ -312,7 +318,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   background: var(--border);
 }
 .mi-fiidii-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-.mi-fiidii-card { min-width: 0; text-align: center; padding: 10px; border-radius: var(--radius-md); }
+.mi-fiidii-card { min-width: 0; text-align: center; padding: 8px 4px; border-radius: var(--radius-md); border-left: 2px solid transparent; }
+.mi-fiidii-card.fii { border-left-color: #2563EB; }
+.mi-fiidii-card.dii { border-left-color: #7C3AED; }
 .mi-fiidii-card.fii { background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.2); }
 .mi-fiidii-card.dii { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2); }
 
@@ -320,8 +328,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   background: rgba(74,222,128,0.08);
   border: 1px solid rgba(74,222,128,0.2);
 }
-.mi-fiidii-card .t { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-.mi-fiidii-card .v { font-family: var(--font-mono); font-size: clamp(0.8rem, 3.2vw, 1.1rem); font-weight: 700; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-fiidii-card .t { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; font-family: var(--font-body); }
+.mi-fiidii-card .v { font-family: var(--font-mono); font-size: clamp(0.6rem, 2.2vw, 0.92rem); font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: visible; letter-spacing: -0.02em; }
 
 /* Sector Explorer */
 .sector-select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 12px; color: var(--text); font-family: var(--font-body); width: 100%; cursor: pointer; margin-bottom: 8px; }
