@@ -20,26 +20,6 @@
     ]
   },
   {
-    "slug": "ofss-stock-spotlight",
-    "title": "ORACLE FIN SERV SOFT LTD. (OFSS) Stock Spotlight",
-    "excerpt": "PRICE ACTION: OFSS surged 2.87% on 2.33x average volume to hit its 52-week high, indicating aggressive accumulation rather than thin-air speculation. The stock has decisively br...",
-    "category": "stock-spotlight",
-    "date": "2026-08-31",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "OFSS",
-      "ORACLE FIN SERV SOFT LTD."
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
-    ]
-  },
-  {
     "slug": "nifty-media-drops-2-84-percent-as-large-caps-lead-broad-decline",
     "title": "Nifty Media Drops 2.84% as Large Caps Lead Broad Decline",
     "excerpt": "Nifty Media declined 2.84% (45.55 points) to 1557.35, with 32 of 44 stocks falling versus 12 advancing. The top 10 companies by market capitalization averaged -0.86%, underperforming smaller stocks which averaged 55.45%. The market-cap-weighted stock-universe change was -0.47%, while the median stock change was -0.79%, indicating large-cap-driven weakness.",
