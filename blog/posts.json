@@ -1,24 +1,390 @@
 [
   {
-    "slug": "fii-return-to-net-buying-after-sharp-outflow-dii-buying-extends-to-8-sessions",
-    "title": "FII Return to Net Buying After Sharp Outflow; DII Buying Extends to 8 Sessions",
-    "excerpt": "FII net buying of ₹1,143.38 Cr reversed yesterday's steep ₹7,985.88 Cr outflow, while DII inflows of ₹1,846.94 Cr sustained an eight-session buying streak. The Nifty 50 edged down 0.1% to ₹24,055.8 despite combined in...",
-    "category": "fiidii-flows",
+    "slug": "bajaj-auto-stock-spotlight",
+    "title": "Bajaj Auto Surges 1.9% on Double Average Volume, Nears 52-Week High",
+    "excerpt": "PRICE ACTION: Bajaj Auto closed at ₹12,361, just 0.87% below its 52-week high of ₹12,470, with volume running at 2.17x the daily average. The proximity to the yearly peak alongs...",
+    "category": "stock-spotlight",
     "date": "2026-09-01",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "BAJAJ-AUTO",
+      "BAJAJ AUTO LIMITED"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
+    "slug": "nifty-realty-falls-1-42-percent-as-large-caps-lead-decline",
+    "title": "Nifty Realty Falls 1.42% as Large Caps Lead Decline",
+    "excerpt": "Nifty Realty declined 1.42% (12.85 points) to 891.3. Large-cap weakness drove the fall, with the top 10 companies by market capitalization averaging -1.32% versus -0.65% for smaller stocks. Market-cap-weighted change was -1.3%, while 44 of 78 stocks declined against 33 advancing.",
+    "category": "sector-analysis",
+    "date": "2026-09-01T10:20:19.701Z",
+    "readTime": "6 min read",
+    "tags": [],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
+    "slug": "nifty-50-daily-wrap-1-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 1 Sept 2026: Drops 0.10%",
+    "excerpt": "Nifty 50 dropped 0.10% to close at 24,055.80.",
+    "category": "daily-wrap",
+    "date": "2026-09-01T15:40:18+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "mildly bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
+    "slug": "pidilitind-stock-spotlight",
+    "title": "PIDILITE INDUSTRIES LTD (PIDILITIND) Stock Spotlight",
+    "excerpt": "PRICE ACTION: PIDILITE surged 3.57% on nearly double the average volume, indicating genuine institutional accumulation rather than thin-air speculation. The stock now sits just...",
+    "category": "stock-spotlight",
+    "date": "2026-08-31",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "PIDILITIND",
+      "PIDILITE INDUSTRIES LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
+    "slug": "nifty-media-drops-2-84-percent-as-large-caps-lead-broad-decline",
+    "title": "Nifty Media Drops 2.84% as Large Caps Lead Broad Decline",
+    "excerpt": "Nifty Media declined 2.84% (45.55 points) to 1557.35, with 32 of 44 stocks falling versus 12 advancing. The top 10 companies by market capitalization averaged -0.86%, underperforming smaller stocks which averaged 55.45%. The market-cap-weighted stock-universe change was -0.47%, while the median stock change was -0.79%, indicating large-cap-driven weakness.",
+    "category": "sector-analysis",
+    "date": "2026-08-31T10:20:12.324Z",
+    "readTime": "6 min read",
+    "tags": [],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
+    "slug": "nifty-50-daily-wrap-31-aug-2026",
+    "title": "Nifty 50 Daily Wrap — 31 Aug 2026: Drops 0.39%",
+    "excerpt": "Nifty 50 dropped 0.39% to close at 24,080.40.",
+    "category": "daily-wrap",
+    "date": "2026-08-31T15:40:18+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
+    "slug": "nifty-it-rallies-3-18-percent-as-large-caps-lead-broad-gains",
+    "title": "Nifty IT Rallies 3.18% as Large Caps Lead Broad Gains",
+    "excerpt": "Nifty IT gained 3.18% (962.9 points) to 31281.7, with 96 of 145 stocks advancing against 47 declining. Large caps outperformed, with the top 10 averaging 3.5% versus 1.36% for smaller stocks; Coforge rose 5.93% and LTM 4.73%. Reports attributed the rally to Nvidia's strong results lifting AI optimism.",
+    "category": "sector-analysis",
+    "date": "2026-08-28T10:20:37.612Z",
+    "readTime": "6 min read",
+    "tags": [],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
+    "slug": "coforge-stock-spotlight",
+    "title": "Coforge Limited (COFORGE) Stock Spotlight",
+    "excerpt": "Coforge Limited (NSE: COFORGE) is an IT services company specializing in digital transformation and software solutions. The company serves industries including...",
+    "category": "stock-spotlight",
+    "date": "2026-08-28T15:50:16+05:30",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "COFORGE",
+      "Coforge Limited"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
+    "slug": "nifty-it-falls-1-79-percent-as-small-cap-weakness-outpaces-large-cap-resilience",
+    "title": "Nifty IT Falls 1.79% as Small-Cap Weakness Outpaces Large-Cap Resilience",
+    "excerpt": "Nifty IT declined 1.79% (550.65 points) to 30,221.15, with 85 of 145 stocks declining versus 58 advancing. Smaller stocks averaged -0.37% while the top 10 by market cap gained 0.07%, indicating large-cap resilience amid broader small-cap weakness.",
+    "category": "sector-analysis",
+    "date": "2026-08-27T22:19:36.391Z",
+    "readTime": "6 min read",
+    "tags": [],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
+    "slug": "happiest-minds-technologies-stock-spotlight",
+    "title": "Happiest Minds Technologies Stock Spotlight",
+    "excerpt": "Happiest Minds Technologies Limited (NSE: HAPPSTMNDS) is an IT services company focused on digital transformation, artificial intelligence, cloud, and security...",
+    "category": "stock-spotlight",
+    "date": "2026-08-28T03:49:12+05:30",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "HAPPSTMNDS",
+      "Happiest Minds Technologies Limited"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
+    "slug": "nifty-it-falls-1-79-percent-as-85-stocks-decline",
+    "title": "Nifty IT Falls 1.79% as 85 Stocks Decline",
+    "excerpt": "Nifty IT declined 1.79% (550.65 points) to 30221.15. Within the broader IT universe, 85 of 145 stocks fell while 58 advanced. The top 10 companies by market capitalization averaged 0.07%, while smaller stocks averaged -0.37%.",
+    "category": "sector-analysis",
+    "date": "2026-08-27T15:53:22.490Z",
+    "readTime": "6 min read",
+    "tags": [],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
+    "slug": "nifty-50-daily-wrap-27-aug-2026",
+    "title": "Nifty 50 Daily Wrap — 27 Aug 2026: Drops 0.48%",
+    "excerpt": "Nifty 50 dropped 0.48% to close at 24,090.85.",
+    "category": "daily-wrap",
+    "date": "2026-08-27T21:21:03+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
+    "slug": "nifty-it-slides-1-79-percent-as-large-caps-drag-sector-lower",
+    "title": "Nifty IT Slides 1.79% as Large Caps Drag Sector Lower",
+    "excerpt": "Nifty IT fell 1.79% (550.65 points) to 30,221.15, with 85 of 145 stocks declining. Large caps led the drop as the top 10 averaged 0.07% while smaller stocks fell -0.37%.",
+    "category": "sector-analysis",
+    "date": "2026-08-27T10:20:42.637Z",
+    "readTime": "6 min read",
+    "tags": [],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
+    "slug": "nifty-it-falls-1-47-percent-as-large-cap-weakness-drags-sector",
+    "title": "Nifty IT Falls 1.47% as Large-Cap Weakness Drags Sector",
+    "excerpt": "Nifty IT declined 1.47% (452.95 points) to 30,318.85, with 82 of 145 stocks falling versus 59 advancing. The top 10 companies by market capitalization averaged -1.19% while smaller stocks averaged 0.27%, indicating large-cap-driven weakness rather than broad-based selling. The market-cap-weighted stock-universe change was -1.13% and the median stock change was -0.16%.",
+    "category": "sector-analysis",
+    "date": "2026-08-26T18:03:31.269Z",
+    "readTime": "6 min read",
+    "tags": [],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": []
+  },
+  {
+    "slug": "nifty-50-daily-wrap-26-aug-2026",
+    "title": "Nifty 50 Daily Wrap — 26 Aug 2026: Drops +0.52%",
+    "excerpt": "Nifty 50 dropped +0.52% to close at 24,207.75.",
+    "category": "daily-wrap",
+    "date": "2026-08-26T21:42:24+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
+    "slug": "nifty-50-daily-wrap-25-aug-2026",
+    "title": "Nifty 50 Daily Wrap — 25 Aug 2026: Gains +0.48%",
+    "excerpt": "Nifty 50 gained +0.48% to close at 24,334.55.",
+    "category": "daily-wrap",
+    "date": "2026-08-25T18:07:31+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bullish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
+    "slug": "nifty-it-underperformance-explained",
+    "title": "Why Nifty IT Is Underperforming: A Technical & Fundamental Deep-Dive",
+    "excerpt": "Nifty IT has dropped 4.2% over the past month. We break down the sector's PE contraction, FII selling patterns, and key support levels for Infosys, TCS, and HCL Tech.",
+    "category": "sector-analysis",
+    "date": "2026-08-22T10:00:00+05:30",
+    "readTime": "6 min read",
+    "tags": [
+      "Nifty IT",
+      "Infosys",
+      "TCS",
+      "bearish",
+      "technical analysis",
+      "PE ratio"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "sector-indices",
+      "sector-stocks",
+      "fii-dii-data"
+    ]
+  },
+  {
+    "slug": "fii-net-buyers-5th-day",
+    "title": "FII Net Buyers for 5th Consecutive Day: What It Means for Nifty",
+    "excerpt": "Foreign Institutional Investors poured in ₹3,240 Cr on Friday, taking the 5-day cumulative net buying to ₹14,800 Cr. We analyze the sectoral flow and historical precedents.",
+    "category": "fiidii-flows",
+    "date": "2026-08-21T18:00:00+05:30",
     "readTime": "5 min read",
     "tags": [
       "FII",
       "DII",
       "Nifty 50",
-      "institutional buying",
+      "bullish",
       "capital flows",
-      "bullish"
+      "institutional buying"
     ],
     "author": "MarketPulse AI",
     "featured": false,
     "dataSources": [
       "fii-dii-data",
       "index-feed"
+    ]
+  },
+  {
+    "slug": "how-to-read-market-breadth",
+    "title": "How to Read Market Breadth Like a Pro: A Complete Guide",
+    "excerpt": "Market breadth tells you what the average stock is doing, not just the index heavyweights. Learn to interpret advance-decline ratios, new highs vs lows, and the McClellan Oscillator.",
+    "category": "guide",
+    "date": "2026-08-20T09:00:00+05:30",
+    "readTime": "8 min read",
+    "tags": [
+      "market breadth",
+      "advance-decline",
+      "trading guide",
+      "education",
+      "technical analysis"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "market-breadth"
+    ]
+  },
+  {
+    "slug": "tcs-q1-fy27-earnings-analysis",
+    "title": "TCS Q1 FY27: Revenue Beats, Margin Pressure — Should You Buy, Hold, or Sell?",
+    "excerpt": "TCS reported 3.8% QoQ revenue growth but EBIT margins contracted 80 bps. We analyze the earnings call highlights, management guidance, and fair value estimate.",
+    "category": "stock-spotlight",
+    "date": "2026-08-19T16:00:00+05:30",
+    "readTime": "7 min read",
+    "tags": [
+      "TCS",
+      "IT sector",
+      "earnings",
+      "neutral",
+      "Q1 FY27",
+      "margin pressure"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-detail",
+      "sector-stocks"
+    ]
+  },
+  {
+    "slug": "reliance-infosys-hdfc-earnings-week",
+    "title": "Q1 Results This Week: Reliance, Infosys, HDFC Bank — What to Expect",
+    "excerpt": "Three heavyweights report earnings this week. We preview consensus estimates, key metrics to watch, and how their results could move the Nifty 50 and Bank Nifty.",
+    "category": "earnings",
+    "date": "2026-08-18T08:00:00+05:30",
+    "readTime": "5 min read",
+    "tags": [
+      "earnings calendar",
+      "Reliance",
+      "Infosys",
+      "HDFC Bank",
+      "Nifty 50",
+      "preview"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "index-feed",
+      "stock-search"
     ]
   }
 ]
