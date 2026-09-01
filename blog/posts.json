@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-1-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 1 Sept 2026: Drops 0.10%",
+    "excerpt": "Nifty 50 dropped 0.10% to close at 24,055.80.",
+    "category": "daily-wrap",
+    "date": "2026-09-01T15:40:18+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "mildly bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "pidilitind-stock-spotlight",
     "title": "PIDILITE INDUSTRIES LTD (PIDILITIND) Stock Spotlight",
     "excerpt": "PRICE ACTION: PIDILITE surged 3.57% on nearly double the average volume, indicating genuine institutional accumulation rather than thin-air speculation. The stock now sits just...",
