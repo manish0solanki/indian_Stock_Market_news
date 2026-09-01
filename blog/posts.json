@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-return-to-net-buying-after-sharp-outflow-dii-buying-extends-to-8-sessions",
+    "title": "FII Return to Net Buying After Sharp Outflow; DII Buying Extends to 8 Sessions",
+    "excerpt": "FII net buying of ₹1,143.38 Cr reversed yesterday's steep ₹7,985.88 Cr outflow, while DII inflows of ₹1,846.94 Cr sustained an eight-session buying streak. The Nifty 50 edged do...",
+    "category": "fiidii-flows",
+    "date": "2026-09-01",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "bajaj-auto-stock-spotlight",
     "title": "Bajaj Auto Surges 1.9% on Double Average Volume, Nears 52-Week High",
     "excerpt": "PRICE ACTION: Bajaj Auto closed at ₹12,361, just 0.87% below its 52-week high of ₹12,470, with volume running at 2.17x the daily average. The proximity to the yearly peak alongs...",
