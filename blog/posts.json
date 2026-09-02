@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-return-to-net-buying-as-dii-streak-extends-to-8-sessions-despite-nifty-decline",
+    "title": "FII Return to Net Buying as DII Streak Extends to 8 Sessions Despite Nifty Decline",
+    "excerpt": "FII net buying of ₹1,143.38 Cr marked a sharp reversal from yesterday's ₹7,985.88 Cr outflow, while DII net buying of ₹1,846.94 Cr extended an eight-session streak. Combined ins...",
+    "category": "fiidii-flows",
+    "date": "2026-09-01",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "coalindia-stock-spotlight",
     "title": "Coal India Surges 4% on 4.3x Volume: Rebound From 52-Week Low Gains Traction",
     "excerpt": "PRICE ACTION: Coal India rallied sharply with its highest relative volume in recent sessions, suggesting genuine buying interest rather than thin-market drift. The stock remains...",
