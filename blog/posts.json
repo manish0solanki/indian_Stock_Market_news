@@ -1,5 +1,25 @@
 [
-  
+  {
+    "slug": "fii-net-buying-surges-to-9-session-high-as-nifty-slips-below-24000",
+    "title": "FII Net Buying Surges to 9-Session High as Nifty Slips Below 24,000",
+    "excerpt": "FII net buying jumped to ₹6,688.37 Cr, the highest in available data, while DII buying extended to a 9-session streak at ₹2,812.98 Cr. The Nifty 50 fell 0.59% to ₹23,914.45 desp...",
+    "category": "fiidii-flows",
+    "date": "2026-09-02",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
   {
     "slug": "coalindia-stock-spotlight",
     "title": "Coal India Surges 4% on 4.3x Volume: Rebound From 52-Week Low Gains Traction",
