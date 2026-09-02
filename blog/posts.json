@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-3-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 3 Sept 2026: Drops 0.59%",
+    "excerpt": "Nifty 50 dropped 0.59% to close at 23,914.45.",
+    "category": "daily-wrap",
+    "date": "2026-09-03T01:10:14+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-net-buying-surges-to-9-session-high-as-nifty-slips-below-24000",
     "title": "FII Net Buying Surges to 9-Session High as Nifty Slips Below 24,000",
     "excerpt": "FII net buying jumped to ₹6,688.37 Cr, the highest in available data, while DII buying extended to a 9-session streak at ₹2,812.98 Cr. The Nifty 50 fell 0.59% to ₹23,914.45 desp...",
