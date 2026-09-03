@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-return-to-selling-as-dii-buying-extends-to-10-straight-sessions",
+    "title": "FII Return to Selling as DII Buying Extends to 10 Straight Sessions",
+    "excerpt": "FIIs flipped to net selling of ₹2,345.87 Cr on 3 Sept after strong buying the previous session, while DIIs continued their 10-session buying streak with ₹4,977.46 Cr in net purc...",
+    "category": "fiidii-flows",
+    "date": "2026-09-03",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "grasim-stock-spotlight",
     "title": "Grasim Edges Up on Nearly 2x Volume While Trading 3% Below 52-Week High",
     "excerpt": "PRICE ACTION: Grasim posted a modest 0.46% gain but attracted unusually strong participation with volume running 87% above average, suggesting accumulation rather than indiffere...",
