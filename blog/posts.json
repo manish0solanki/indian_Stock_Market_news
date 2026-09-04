@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-4-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 4 Sept 2026: Gains 0.10%",
+    "excerpt": "Nifty 50 gained 0.10% to close at 23,897.70.",
+    "category": "daily-wrap",
+    "date": "2026-09-04T16:26:18+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "mildly bullish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-return-to-selling-as-dii-buying-extends-to-10-straight-sessions",
     "title": "FII Return to Selling as DII Buying Extends to 10 Straight Sessions",
     "excerpt": "FIIs flipped to net selling of ₹2,345.87 Cr on 3 Sept after strong buying the previous session, while DIIs continued their 10-session buying streak with ₹4,977.46 Cr in net purc...",
