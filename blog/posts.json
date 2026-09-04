@@ -1,5 +1,25 @@
 [
   {
+    "slug": "igl-stock-spotlight",
+    "title": "IGL Surges 5.8% on 3.5x Volume, Reclaims 20- and 50-Day Moving Averages",
+    "excerpt": "PRICE ACTION: IGL posted its strongest single-day gain in recent sessions with volume nearly 3.5 times the daily average, indicating genuine buying interest rather than thin-mar...",
+    "category": "stock-spotlight",
+    "date": "2026-09-04",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "IGL",
+      "INDRAPRASTHA GAS LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-falls-1-31-percent-as-large-caps-underperform-smaller-stocks",
     "title": "Nifty IT Falls 1.31% as Large Caps Underperform Smaller Stocks",
     "excerpt": "Nifty IT declined 1.31% (407.8 points) to 30,695.1. Weakness was large-cap driven: the top 10 companies by market capitalization averaged -0.54%, while smaller stocks averaged 0.37%. The market-cap-weighted stock-universe change was -0.44%, even as 74 of 145 stocks advanced versus 67 declined and the median stock change was 0.03%.",
