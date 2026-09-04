@@ -1,5 +1,26 @@
 [
   {
+    "slug": "dii-buying-hits-11-session-high-as-fii-selling-deepens",
+    "title": "DII Buying Hits 11-Session High as FII Selling Deepens",
+    "excerpt": "FIIs net sold ₹3,111.94 Cr while DIIs net bought ₹8,930.12 Cr, the strongest single-session DII inflow in the available 11-session data. Nifty 50 edged up 0.1% to ₹23,897.7 desp...",
+    "category": "fiidii-flows",
+    "date": "2026-09-04",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "igl-stock-spotlight",
     "title": "IGL Surges 5.8% on 3.5x Volume, Reclaims 20- and 50-Day Moving Averages",
     "excerpt": "PRICE ACTION: IGL posted its strongest single-day gain in recent sessions with volume nearly 3.5 times the daily average, indicating genuine buying interest rather than thin-mar...",
