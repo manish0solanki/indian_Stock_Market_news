@@ -1,5 +1,25 @@
 [
   {
+    "slug": "gail-stock-spotlight",
+    "title": "GAIL Rises 1.5% on 39% Above-Average Volume, Nears 52-Week High With Bullish MA Alignment",
+    "excerpt": "PRICE ACTION: GAIL's advance on elevated turnover indicates genuine buying interest rather than thin-market drift. The stock sits just 5.8% below its 52-week peak, suggesting ac...",
+    "category": "stock-spotlight",
+    "date": "2026-09-07",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "GAIL",
+      "GAIL (INDIA) LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-media-drops-2-86-percent-as-large-caps-underperform",
     "title": "Nifty Media Drops 2.86% as Large Caps Underperform",
     "excerpt": "Nifty Media declined 2.86% (44.8 points) to 1520.65, with 28 of 44 stocks declining against 15 advancing. The top 10 companies by market capitalization averaged -0.87%, while smaller stocks averaged 55.64%, indicating large-cap-driven weakness. The market-cap-weighted stock-universe change was -0.16%.",
