@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fiis-return-to-net-buying-after-one-day-outflow-as-diis-extend-12-session-streak",
+    "title": "FIIs Return to Net Buying After One-Day Outflow as DIIs Extend 12-Session Streak",
+    "excerpt": "Both FIIs and DIIs were net buyers today with a combined ₹846.89 Cr, even as the Nifty 50 slipped 0.5% to ₹23779.15. DIIs extended their buying streak to 12 consecutive sessions.",
+    "category": "fiidii-flows",
+    "date": "2026-09-07",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "gail-stock-spotlight",
     "title": "GAIL Rises 1.5% on 39% Above-Average Volume, Nears 52-Week High With Bullish MA Alignment",
     "excerpt": "PRICE ACTION: GAIL's advance on elevated turnover indicates genuine buying interest rather than thin-market drift. The stock sits just 5.8% below its 52-week peak, suggesting ac...",
