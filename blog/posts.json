@@ -1,5 +1,25 @@
 [
   {
+    "slug": "hal-stock-spotlight",
+    "title": "HAL Surges 3.6% on 2.8x Volume, Within Striking Distance of 52-Week High",
+    "excerpt": "PRICE ACTION: Hindustan Aeronautics rallied sharply with volume nearly triple its average, indicating genuine institutional participation rather than thin-market drift. The stoc...",
+    "category": "stock-spotlight",
+    "date": "2026-09-08",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "HAL",
+      "HINDUSTAN AERONAUTICS LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-falls-2-64-percent-as-sector-decline-extends-to-fifth-session",
     "title": "Nifty IT Falls 2.64% as Sector Decline Extends to Fifth Session",
     "excerpt": "Nifty IT dropped 811.75 points, or 2.64%, to 29,883.45. In the broader IT universe, 92 of 145 stocks declined while 51 advanced. Top 10 companies by market capitalization averaged -0.31%, smaller stocks averaged -0.1%, and the market-cap-weighted change was -0.43%.",
