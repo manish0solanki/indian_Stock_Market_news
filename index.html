@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -235,11 +236,96 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stock-search-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
 /* Main Dashboard Layout: 30/70 split */
-.dashboard { max-width: 1400px; margin: 0 auto; padding: 0 24px 40px; display: flex; gap: 20px; align-items: flex-start; }
-.left-col { width: 30%; min-width: 300px; max-width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
-.right-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+/* =========================================================
+   MAIN DASHBOARD - INDEPENDENT COLUMN SCROLLING
+   ========================================================= */
 
-/* Widget Cards */
+.dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px 12px;
+
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+
+  /*
+   * The dashboard itself occupies the remaining viewport.
+   * 150px accounts for the topbar, ticker, search/controls
+   * and surrounding spacing.
+   */
+  height: calc(100dvh - 150px);
+
+  /*
+   * Prevent the dashboard itself from becoming the scrollbar.
+   */
+  overflow: hidden;
+}
+
+/* LEFT SIDE */
+
+.left-col {
+  width: 30%;
+  min-width: 300px;
+  max-width: 380px;
+  flex-shrink: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  /*
+   * Independent vertical scrolling.
+   */
+  height: 100%;
+  min-height: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /*
+   * Important: prevents scroll from leaking to the body.
+   */
+  overscroll-behavior: contain;
+
+  /*
+   * Smooth scrolling.
+   */
+  scroll-behavior: smooth;
+
+  /*
+   * Give the scrollbar some breathing room.
+   */
+  padding-right: 4px;
+}
+
+
+/* RIGHT SIDE / NEWS */
+
+.right-col {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  /*
+   * The right column itself does NOT scroll.
+   * Only the news feed (#feed) scrolls.
+   */
+  height: 100%;
+  min-height: 0;
+
+  overflow: hidden;
+
+  /*
+   * Prevent scroll from escaping the dashboard.
+   */
+  overscroll-behavior: contain;
+}
+
+/* =========================================================    NEWS FEED - ONLY THIS AREA SCROLLS    ========================================================= */  #feed {   /*    * Take all remaining vertical space underneath:    * - Sentiment filter chips    * - Global Headlines    */   flex: 1;   min-height: 0;    /*    * This is the ONLY vertical scrollbar in the right column.    */   overflow-y: auto;   overflow-x: hidden;    /*    * Do not pass the scroll to the main page when    * the news feed reaches its top or bottom.    */   overscroll-behavior: contain;    /*    * Space for scrollbar.    */   padding-right: 4px; }   /* News feed scrollbar */ #feed::-webkit-scrollbar {   width: 6px; }  #feed::-webkit-scrollbar-track {   background: transparent; }  #feed::-webkit-scrollbar-thumb {   background: var(--border);   border-radius: 6px; }  #feed::-webkit-scrollbar-thumb:hover {   background: var(--text-muted); }   /* Widget Cards */
 .widget-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; box-shadow: var(--shadow-sm); }
 .widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .widget-title { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
@@ -474,10 +560,47 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .dashboard { flex-direction: column; }
-  .left-col { width: 100%; max-width: 100%; }
-  .right-col { width: 100%; }
-  .stock-metrics-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /*
+   * Tablet/mobile:
+   * Return to normal page scrolling.
+   */
+  .dashboard {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+    align-items: stretch;
+  }
+
+  .left-col {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .right-col {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  /*
+   * Disable the desktop news-feed scrollbar on
+   * smaller screens.
+   */
+  #feed {
+    height: auto;
+    flex: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .stock-metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 @media (max-width: 768px) {
   .controls-bar { padding: 12px 16px; }
