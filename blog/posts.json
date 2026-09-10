@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-extends-to-third-session-as-dii-buying-streak-reaches-15-days",
+    "title": "FII Selling Extends to Third Session as DII Buying Streak Reaches 15 Days",
+    "excerpt": "FII net selling of ₹438.24 Cr continued for a third straight session, while DIIs bought ₹1025.85 Cr, extending a 15-session buying streak. The Nifty 50 edged up 0.2% to ₹23477.8...",
+    "category": "fiidii-flows",
+    "date": "2026-09-10",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "pnb-stock-spotlight",
     "title": "PNB Rises 1.1% on 56% Above-Average Volume as Moving Averages Stack Bullishly",
     "excerpt": "PRICE ACTION: PNB's 1.07% advance came with volume at 1.56x its average, indicating genuine participation rather than thin-market drift. The stock sits 13.5% below its 52-week h...",
