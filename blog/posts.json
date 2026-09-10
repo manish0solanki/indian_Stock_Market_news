@@ -1,5 +1,25 @@
 [
   {
+    "slug": "pnb-stock-spotlight",
+    "title": "PNB Rises 1.1% on 56% Above-Average Volume as Moving Averages Stack Bullishly",
+    "excerpt": "PRICE ACTION: PNB's 1.07% advance came with volume at 1.56x its average, indicating genuine participation rather than thin-market drift. The stock sits 13.5% below its 52-week h...",
+    "category": "stock-spotlight",
+    "date": "2026-09-10",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "PNB",
+      "PUNJAB NATIONAL BANK"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-drops-3-32-percent-as-93-of-145-stocks-decline",
     "title": "Nifty IT Drops 3.32% as 93 of 145 Stocks Decline",
     "excerpt": "Nifty IT fell 3.32%, or 992.6 points, to 28,890.9. In the broader IT universe, 93 of 145 stocks declined while 49 advanced. The top 10 companies by market capitalization averaged -0.08%, compared with -0.45% for smaller stocks, while the market-cap-weighted stock-universe change was -0.27% and the median stock change was -0.59%.",
