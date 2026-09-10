@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-11-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 11 Sept 2026: Gains 0.20%",
+    "excerpt": "Nifty 50 gained 0.20% to close at 23,477.80.",
+    "category": "daily-wrap",
+    "date": "2026-09-11T03:01:57+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "mildly bullish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "dii-buying-extends-to-14-sessions-as-fii-selling-persists-nifty-flat",
     "title": "DII Buying Extends to 14 Sessions as FII Selling Persists; Nifty Flat",
     "excerpt": "DII net buying of ₹1,509.04 Cr offset FII net selling of ₹582.99 Cr, yielding combined institutional inflows of ₹926.05 Cr. The Nifty 50 edged up 6.4 points to ₹23,437.9, showin...",
