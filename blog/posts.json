@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-intensifies-to-9309-cr-as-dii-buying-extends-16-session-streak",
+    "title": "FII Selling Intensifies to ₹930.9 Cr as DII Buying Extends 16-Session Streak",
+    "excerpt": "FIIs sold ₹930.9 Cr today, more than doubling their outflow from the previous session, while DIIs bought ₹1968.17 Cr extending a 16-day buying streak. The Nifty 50 slipped 0.34%...",
+    "category": "fiidii-flows",
+    "date": "2026-09-11",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "paytm-stock-spotlight",
     "title": "Paytm Surges 3.9% on 2.3x Volume, Within Striking Distance of 52-Week High",
     "excerpt": "PRICE ACTION: Paytm closed at ₹1807.5, a 3.94% gain on volume more than double its average, indicating genuine institutional participation rather than thin-air speculation. The...",
