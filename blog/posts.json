@@ -1,5 +1,25 @@
 [
   {
+    "slug": "paytm-stock-spotlight",
+    "title": "Paytm Surges 3.9% on 2.3x Volume, Within Striking Distance of 52-Week High",
+    "excerpt": "PRICE ACTION: Paytm closed at ₹1807.5, a 3.94% gain on volume more than double its average, indicating genuine institutional participation rather than thin-air speculation. The...",
+    "category": "stock-spotlight",
+    "date": "2026-09-11",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "PAYTM",
+      "ONE 97 COMMUNICATIONS LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-realty-falls-2-7-percent-as-large-caps-lead-broad-decline",
     "title": "Nifty Realty Falls 2.7% as Large Caps Lead Broad Decline",
     "excerpt": "Nifty Realty declined 2.7% (23.55 points) to 848.5, with 54 of 78 stocks falling against 22 advancing. Weakness was large-cap-driven: the top 10 companies by market capitalization averaged -2.75%, versus -0.93% for smaller stocks. Godrej Properties dropped 6.62% and Lodha Developers fell 4%.",
@@ -162,26 +182,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "paytm-stock-spotlight",
-    "title": "Paytm Surges 4.9% on 2.2x Volume, Within Striking Distance of 52-Week High",
-    "excerpt": "PRICE ACTION: Paytm rallied nearly 5% with volume more than doubling its average, indicating genuine buying interest rather than thin-market drift. The stock is now just 0.4% be...",
-    "category": "stock-spotlight",
-    "date": "2026-09-09",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "PAYTM",
-      "ONE 97 COMMUNICATIONS LTD"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
