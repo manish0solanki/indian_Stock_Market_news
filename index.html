@@ -159,6 +159,79 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   margin: 0;
 }
 
+/* Authentication */
+.auth-button {
+  height: 34px;
+  min-width: 58px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.auth-button:hover { background: rgba(255,255,255,0.25); transform: translateY(-1px); }
+.account-wrap { position: relative; display: none; }
+.account-wrap.visible { display: block; }
+.account-button {
+  height: 34px;
+  padding: 0 9px 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  gap: 7px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.account-avatar { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #F5A623; color: #1B134F; font-size: 11px; font-weight: 700; }
+.account-label { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 230px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 8px; display: none; z-index: 300; }
+.account-menu.open { display: block; }
+.account-email { padding: 8px 9px 10px; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 11px; overflow-wrap: anywhere; }
+.account-menu button { width: 100%; margin-top: 7px; padding: 9px; border: 0; border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font: 600 12px var(--font-body); cursor: pointer; text-align: left; }
+.account-menu button:hover { background: var(--surface-hover); }
+.auth-tabs { display: flex; gap: 4px; padding: 14px 20px 0; }
+.auth-tab { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-secondary); font: 600 12px var(--font-body); cursor: pointer; }
+.auth-tab.active { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+.auth-status { min-height: 17px; font-size: 11px; line-height: 1.4; color: var(--text-muted); padding: 0 20px 12px; }
+.auth-status.error { color: var(--negative); }
+.auth-status.success { color: var(--positive); }
+.auth-submit { width: 100%; padding: 10px; border: 0; border-radius: var(--radius-sm); background: var(--indigo); color: #fff; font: 600 13px var(--font-body); cursor: pointer; }
+.auth-submit:hover { background: var(--indigo-dark); }
+.auth-submit:disabled { opacity: .55; cursor: not-allowed; }
+.auth-forgot { display: block; margin: 10px 0 0; border: 0; background: none; color: var(--indigo-light); font: 500 11px var(--font-body); cursor: pointer; padding: 0; }
+[data-theme="light"] .auth-forgot { color: var(--indigo); }
+@media (max-width: 480px) { .auth-button { padding: 0 9px; } .account-label { display: none; } }
+
 /* Settings Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(15,15,26,0.7); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.25s ease; }
 .modal-overlay.open { display: flex; opacity: 1; }
@@ -325,7 +398,41 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   overscroll-behavior: contain;
 }
 
-/* =========================================================    NEWS FEED - ONLY THIS AREA SCROLLS    ========================================================= */  #feed {   /*    * Take all remaining vertical space underneath:    * - Sentiment filter chips    * - Global Headlines    */   flex: 1;   min-height: 0;    /*    * This is the ONLY vertical scrollbar in the right column.    */   overflow-y: auto;   overflow-x: hidden;    /*    * Do not pass the scroll to the main page when    * the news feed reaches its top or bottom.    */   overscroll-behavior: contain;    /*    * Space for scrollbar.    */   padding-right: 4px; }   /* News feed scrollbar */ #feed::-webkit-scrollbar {   width: 6px; }  #feed::-webkit-scrollbar-track {   background: transparent; }  #feed::-webkit-scrollbar-thumb {   background: var(--border);   border-radius: 6px; }  #feed::-webkit-scrollbar-thumb:hover {   background: var(--text-muted); }   /* Widget Cards */
+/* =========================================================
+   NEWS FEED - ONLY THIS AREA SCROLLS
+   ========================================================= */
+#feed {
+  /* Take all remaining vertical space underneath:
+     - Sentiment filter chips
+     - Global Headlines
+  */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+/* News feed scrollbar */
+#feed::-webkit-scrollbar {
+  width: 6px;
+}
+
+#feed::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#feed::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+}
+
+#feed::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Widget Cards */
 .widget-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; box-shadow: var(--shadow-sm); }
 .widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .widget-title { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
@@ -621,9 +728,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   .stock-price { font-size: 20px; }
 }
 </style>
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
+  <base target="_blank">
 </head>
 <body>
 
@@ -632,17 +737,26 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       <span class="topbar-brand"><span class="diamond"></span>MarketPulse</span>
   <div class="topbar-right">
     <a class="blog-nav" href="/blog/" target="_self" title="MarketPulse Blog">
-       <img src="/blogger_Yellow.png" alt="Blog" class="blog-icon"> 
-       
+      <img src="/blogger_Yellow.png" alt="Blog" class="blog-icon">
     </a>
-
-  <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints">⚙️</button>
-  <button class="theme-toggle" id="themeToggle" title="Toggle light mode">☀️</button>
-        <span class="topbar-status">
-  <span class="pulse-dot"></span>
-  <span id="lastUpdated">connecting…</span>
-  <span id="cacheStatus" style="margin-left:10px;font-size:10px;opacity:0.85;font-family:var(--font-mono);font-weight:600;"></span>
-</span>
+    <button class="auth-button" id="authButton" type="button">Login</button>
+    <div class="account-wrap" id="accountWrap">
+      <button class="account-button" id="accountButton" type="button" aria-expanded="false">
+        <span class="account-avatar" id="accountAvatar">M</span>
+        <span class="account-label" id="accountLabel">Account</span>
+      </button>
+      <div class="account-menu" id="accountMenu">
+        <div class="account-email" id="accountEmail">—</div>
+        <button id="logoutButton" type="button">Log out</button>
+      </div>
+    </div>
+    <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints" type="button">⚙️</button>
+    <button class="theme-toggle" id="themeToggle" title="Toggle light mode" type="button">☀️</button>
+    <span class="topbar-status">
+      <span class="pulse-dot"></span>
+      <span id="lastUpdated">connecting…</span>
+      <span id="cacheStatus" style="margin-left:10px;font-size:10px;opacity:0.85;font-family:var(--font-mono);font-weight:600;"></span>
+    </span>
       </div>
     </div>
   </div>
@@ -918,6 +1032,34 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 
   <footer class="site-footer"><span>MarketPulse — automated news, human judgment still required.</span></footer>
 
+  <!-- Authentication Modal -->
+  <div class="modal-overlay" id="authModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-header">
+        <h3 id="authTitle">Welcome to MarketPulse</h3>
+        <button class="modal-close" id="authClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" type="button">Login</button>
+        <button class="auth-tab" id="signupTab" type="button">Sign Up</button>
+      </div>
+      <div class="modal-body">
+        <form class="auth-form active" id="loginForm">
+          <div class="modal-field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="email" required></div>
+          <div class="modal-field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+          <button class="auth-submit" id="loginSubmit" type="submit">Login</button>
+          <button class="auth-forgot" id="forgotPassword" type="button">Forgot password?</button>
+        </form>
+        <form class="auth-form" id="signupForm">
+          <div class="modal-field"><label for="signupEmail">Email</label><input id="signupEmail" type="email" autocomplete="email" required></div>
+          <div class="modal-field"><label for="signupPassword">Password</label><input id="signupPassword" type="password" autocomplete="new-password" minlength="6" required><span class="hint">Use at least 6 characters.</span></div>
+          <button class="auth-submit" id="signupSubmit" type="submit">Create account</button>
+        </form>
+      </div>
+      <div class="auth-status" id="authStatus" aria-live="polite"></div>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal">
@@ -944,7 +1086,102 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+
+// ═══════════════════════════════════════════════════════════════
+//  SUPABASE AUTH
+// ═══════════════════════════════════════════════════════════════
+
+const SUPABASE_URL = "https://fzazdrzlemmkqngvpzxj.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+/* ─── Authentication UI ─── */
+const authModal = document.getElementById('authModal');
+const authButton = document.getElementById('authButton');
+const authClose = document.getElementById('authClose');
+const accountWrap = document.getElementById('accountWrap');
+const accountButton = document.getElementById('accountButton');
+const accountMenu = document.getElementById('accountMenu');
+const accountEmail = document.getElementById('accountEmail');
+const accountLabel = document.getElementById('accountLabel');
+const accountAvatar = document.getElementById('accountAvatar');
+const logoutButton = document.getElementById('logoutButton');
+const loginTab = document.getElementById('loginTab');
+const signupTab = document.getElementById('signupTab');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const authStatus = document.getElementById('authStatus');
+
+function setAuthStatus(message = '', type = '') { authStatus.textContent = message; authStatus.className = 'auth-status' + (type ? ' ' + type : ''); }
+function setAuthMode(mode) {
+  const signup = mode === 'signup';
+  loginTab.classList.toggle('active', !signup); signupTab.classList.toggle('active', signup);
+  loginForm.classList.toggle('active', !signup); signupForm.classList.toggle('active', signup);
+  document.getElementById('authTitle').textContent = signup ? 'Create your MarketPulse account' : 'Welcome to MarketPulse';
+}
+function openAuthModal(mode = 'login') {
+  authModal.classList.add('open'); authModal.setAttribute('aria-hidden', 'false'); setAuthMode(mode); setAuthStatus('');
+  setTimeout(() => document.getElementById(mode === 'signup' ? 'signupEmail' : 'loginEmail')?.focus(), 50);
+}
+function closeAuthModal() { authModal.classList.remove('open'); authModal.setAttribute('aria-hidden', 'true'); }
+function updateAccountUI(user) {
+  const loggedIn = !!user;
+  authButton.style.display = loggedIn ? 'none' : 'inline-flex';
+  accountWrap.classList.toggle('visible', loggedIn);
+  if (!loggedIn) return;
+  const email = user.email || 'Account';
+  accountEmail.textContent = email; accountLabel.textContent = email.split('@')[0] || 'Account'; accountAvatar.textContent = (email[0] || 'A').toUpperCase();
+}
+
+authButton.addEventListener('click', () => openAuthModal('login'));
+authClose.addEventListener('click', closeAuthModal);
+loginTab.addEventListener('click', () => setAuthMode('login'));
+signupTab.addEventListener('click', () => setAuthMode('signup'));
+authModal.addEventListener('click', e => { if (e.target === authModal) closeAuthModal(); });
+accountButton.addEventListener('click', e => { e.stopPropagation(); const open = accountMenu.classList.toggle('open'); accountButton.setAttribute('aria-expanded', String(open)); });
+
+document.addEventListener('click', e => { if (!accountWrap.contains(e.target)) { accountMenu.classList.remove('open'); accountButton.setAttribute('aria-expanded', 'false'); } });
+
+loginForm.addEventListener('submit', async e => {
+  e.preventDefault(); const submit = document.getElementById('loginSubmit');
+  const email = document.getElementById('loginEmail').value.trim(); const password = document.getElementById('loginPassword').value;
+  submit.disabled = true; submit.textContent = 'Logging in…'; setAuthStatus('');
+  try { const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) throw error; setAuthStatus('Login successful.', 'success'); loginForm.reset(); setTimeout(closeAuthModal, 500); }
+  catch (error) { setAuthStatus(error.message || 'Could not log in.', 'error'); }
+  finally { submit.disabled = false; submit.textContent = 'Login'; }
+});
+
+signupForm.addEventListener('submit', async e => {
+  e.preventDefault(); const submit = document.getElementById('signupSubmit');
+  const email = document.getElementById('signupEmail').value.trim(); const password = document.getElementById('signupPassword').value;
+  submit.disabled = true; submit.textContent = 'Creating…'; setAuthStatus('');
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({ email, password }); if (error) throw error; signupForm.reset();
+    if (data.session) { setAuthStatus('Account created successfully.', 'success'); setTimeout(closeAuthModal, 700); }
+    else { setAuthMode('login'); setAuthStatus('Account created. Check your email to confirm your account, then log in.', 'success'); }
+  } catch (error) { setAuthStatus(error.message || 'Could not create your account.', 'error'); }
+  finally { submit.disabled = false; submit.textContent = 'Create account'; }
+});
+
+document.getElementById('forgotPassword').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!email) { setAuthStatus('Enter your email first.', 'error'); document.getElementById('loginEmail').focus(); return; }
+  setAuthStatus('Sending reset email…');
+  try { const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname }); if (error) throw error; setAuthStatus('Password reset email sent. Check your inbox.', 'success'); }
+  catch (error) { setAuthStatus(error.message || 'Could not send reset email.', 'error'); }
+});
+
+logoutButton.addEventListener('click', async () => { logoutButton.disabled = true; const { error } = await supabaseClient.auth.signOut(); logoutButton.disabled = false; if (error) console.error('[Auth] Logout failed:', error); accountMenu.classList.remove('open'); });
+
+(async () => { const { data } = await supabaseClient.auth.getSession(); updateAccountUI(data?.session?.user || null); supabaseClient.auth.onAuthStateChange((_event, session) => updateAccountUI(session?.user || null)); })();
 
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG
