@@ -224,6 +224,26 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 }
 [data-theme="light"] .admin-menu-button { color: var(--indigo) !important; }
 .admin-panel-body { padding: 18px 20px 20px; }
+#adminModal .modal { max-width: 900px; }
+.admin-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+.admin-stat { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; }
+.admin-stat .v { font:700 20px var(--font-mono); color:var(--text); }
+.admin-stat .l { margin-top:3px; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; }
+.admin-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; }
+.admin-toolbar-title { font-size:12px; font-weight:700; color:var(--text-secondary); }
+.admin-refresh { border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:var(--radius-sm); padding:7px 10px; font:600 11px var(--font-body); cursor:pointer; }
+.admin-refresh:hover { background:var(--surface-hover); }
+.admin-users-wrap { overflow:auto; border:1px solid var(--border); border-radius:var(--radius-md); }
+.admin-users { width:100%; border-collapse:collapse; min-width:520px; }
+.admin-users th { padding:9px 10px; text-align:left; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; background:var(--bg); border-bottom:1px solid var(--border); }
+.admin-users td { padding:10px; font-size:11px; color:var(--text); border-bottom:1px solid var(--border); }
+.admin-users tr:last-child td { border-bottom:none; }
+.admin-role-badge { display:inline-block; padding:3px 7px; border-radius:20px; background:var(--bg); border:1px solid var(--border); font:600 10px var(--font-mono); }
+.admin-role-badge.admin { background:var(--positive-bg); color:var(--positive); border-color:transparent; }
+.admin-empty { padding:18px; text-align:center; color:var(--text-muted); font-size:12px; }
+.admin-error { padding:10px 12px; margin-bottom:10px; border-radius:var(--radius-sm); background:var(--negative-bg); color:var(--negative); font-size:11px; display:none; }
+.admin-note { margin-top:10px; color:var(--text-muted); font-size:10px; line-height:1.5; }
+@media (max-width: 640px) { #adminModal .modal { max-width:calc(100vw - 24px); } .admin-stats { grid-template-columns:1fr; } }
 .admin-status-card {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1086,11 +1106,23 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         <button class="modal-close" id="adminClose" type="button" aria-label="Close">×</button>
       </div>
       <div class="admin-panel-body">
-        <div class="admin-status-card">
-          <div class="admin-row"><span class="admin-label">Account</span><span class="admin-value" id="adminEmail">—</span></div>
-          <div class="admin-row"><span class="admin-label">Role</span><span class="admin-value" id="adminRole">—</span></div>
-          <div class="admin-row"><span class="admin-label">Access</span><span class="admin-value">Full admin</span></div>
+        <div class="admin-error" id="adminError"></div>
+        <div class="admin-stats">
+          <div class="admin-stat"><div class="v" id="adminTotalUsers">—</div><div class="l">Total profiles</div></div>
+          <div class="admin-stat"><div class="v" id="adminTotalAdmins">—</div><div class="l">Admins</div></div>
+          <div class="admin-stat"><div class="v" id="adminMyRole">admin</div><div class="l">Your role</div></div>
         </div>
+        <div class="admin-toolbar">
+          <span class="admin-toolbar-title">Registered profiles</span>
+          <button class="admin-refresh" id="adminRefreshButton" type="button">↻ Refresh</button>
+        </div>
+        <div class="admin-users-wrap">
+          <table class="admin-users">
+            <thead><tr><th>User ID</th><th>Role</th></tr></thead>
+            <tbody id="adminUsersBody"><tr><td colspan="2" class="admin-empty">Loading users…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="admin-note">This first admin dashboard reads from the Supabase <code>profiles</code> table. User email addresses are intentionally not shown here because Supabase Auth emails are not exposed to other users through the browser client.</div>
       </div>
     </div>
   </div>
@@ -1151,8 +1183,12 @@ const accountAvatar = document.getElementById('accountAvatar');
 const adminPanelButton = document.getElementById('adminPanelButton');
 const adminModal = document.getElementById('adminModal');
 const adminClose = document.getElementById('adminClose');
-const adminEmail = document.getElementById('adminEmail');
-const adminRole = document.getElementById('adminRole');
+const adminError = document.getElementById('adminError');
+const adminTotalUsers = document.getElementById('adminTotalUsers');
+const adminTotalAdmins = document.getElementById('adminTotalAdmins');
+const adminMyRole = document.getElementById('adminMyRole');
+const adminUsersBody = document.getElementById('adminUsersBody');
+const adminRefreshButton = document.getElementById('adminRefreshButton');
 const logoutButton = document.getElementById('logoutButton');
 const loginTab = document.getElementById('loginTab');
 const signupTab = document.getElementById('signupTab');
@@ -1175,14 +1211,86 @@ function openAuthModal(mode = 'login') {
   setTimeout(() => document.getElementById(mode === 'signup' ? 'signupEmail' : 'loginEmail')?.focus(), 50);
 }
 function closeAuthModal() { authModal.classList.remove('open'); authModal.setAttribute('aria-hidden', 'true'); }
-function openAdminModal() {
+async function loadAdminUsers() {
   if (!isAdmin || !currentUser) return;
-  adminEmail.textContent = currentUser.email || '—';
-  adminRole.textContent = 'admin';
-  adminModal.classList.add('open');
-  adminModal.setAttribute('aria-hidden', 'false');
-  accountMenu.classList.remove('open');
-  accountButton.setAttribute('aria-expanded', 'false');
+  adminError.style.display = 'none';
+  adminError.textContent = '';
+  adminTotalUsers.textContent = '…';
+  adminTotalAdmins.textContent = '…';
+  adminUsersBody.innerHTML = '<tr><td colspan="2" class="admin-empty">Loading users…</td></tr>';
+  adminRefreshButton.disabled = true;
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('id, role')
+      .order('role', { ascending: true });
+    if (error) throw error;
+
+    const rows = Array.isArray(data) ? data : [];
+    const admins = rows.filter(row => String(row.role || '').toLowerCase() === 'admin').length;
+    adminTotalUsers.textContent = String(rows.length);
+    adminTotalAdmins.textContent = String(admins);
+    adminMyRole.textContent = 'admin';
+
+    if (!rows.length) {
+      adminUsersBody.innerHTML = '<tr><td colspan="2" class="admin-empty">No profiles found.</td></tr>';
+      return;
+    }
+
+    adminUsersBody.innerHTML = rows.map(row => {
+      const id = String(row.id || '—');
+      const role = String(row.role || 'user');
+      const cls = role.toLowerCase() === 'admin' ? ' admin' : '';
+      return `<tr><td><code>${id}</code></td><td><span class="admin-role-badge${cls}">${role}</span></td></tr>`;
+    }).join('');
+  } catch (error) {
+    console.error('[Admin] Could not load profiles:', error);
+    adminTotalUsers.textContent = '—';
+    adminTotalAdmins.textContent = '—';
+    adminUsersBody.innerHTML = '<tr><td colspan="2" class="admin-empty">Could not load profiles.</td></tr>';
+    adminError.textContent = error.message || 'Could not load profiles. Check the Supabase RLS policy.';
+    adminError.style.display = 'block';
+  } finally {
+    adminRefreshButton.disabled = false;
+  }
+}
+
+async function openAdminModal() {
+  if (!currentUser) {
+    console.warn('[Admin] No authenticated user found.');
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data?.role !== 'admin') {
+      console.warn('[Admin] Current user is not an admin.');
+      return;
+    }
+
+    isAdmin = true;
+
+    // Open the Admin Panel
+    adminModal.classList.add('open');
+    adminModal.setAttribute('aria-hidden', 'false');
+
+    // Close account dropdown
+    accountMenu.classList.remove('open');
+    accountButton.setAttribute('aria-expanded', 'false');
+
+    // Load dashboard data
+    loadAdminUsers();
+
+  } catch (error) {
+    console.error('[Admin] Could not verify admin access:', error);
+  }
 }
 function closeAdminModal() { adminModal.classList.remove('open'); adminModal.setAttribute('aria-hidden', 'true'); }
 function updateAccountUI(user) {
@@ -1235,6 +1343,7 @@ authModal.addEventListener('click', e => { if (e.target === authModal) closeAuth
 adminClose.addEventListener('click', closeAdminModal);
 adminModal.addEventListener('click', e => { if (e.target === adminModal) closeAdminModal(); });
 adminPanelButton.addEventListener('click', openAdminModal);
+adminRefreshButton.addEventListener('click', loadAdminUsers);
 accountButton.addEventListener('click', e => { e.stopPropagation(); const open = accountMenu.classList.toggle('open'); accountButton.setAttribute('aria-expanded', String(open)); });
 
 document.addEventListener('click', e => { if (!accountWrap.contains(e.target)) { accountMenu.classList.remove('open'); accountButton.setAttribute('aria-expanded', 'false'); } });
