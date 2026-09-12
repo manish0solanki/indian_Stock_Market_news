@@ -1011,52 +1011,164 @@ let sectorSearchQuery = '';
 
 /* ─── API Fetch Wrapper (Cache Status + No Browser Cache) ─── */
 const originalFetch = window.fetch;
+
 window.fetch = async function(...args) {
-  const reqUrl = typeof args[0] === 'string' ? args[0] : (args[0].url || '');
-  const isWorker = reqUrl.includes('marketpulse-cache.manish0solanki20078.workers.dev');
-  
-  // Inject cache: 'no-store' for all Worker requests so browser never caches
+
+  const reqUrl =
+    typeof args[0] === 'string'
+      ? args[0]
+      : (args[0]?.url || '');
+
+  const isWorker =
+    reqUrl.includes(
+      'marketpulse-cache.manish0solanki20078.workers.dev'
+    );
+
+
+  // Prevent browser from caching Worker responses
   if (isWorker && typeof args[0] === 'string') {
+
     const opts = args[1] || {};
+
     if (!opts.cache) {
-      args[1] = { ...opts, cache: 'no-store' };
+
+      args[1] = {
+        ...opts,
+        cache: 'no-store'
+      };
+
     }
+
   }
-  
-  if (isWorker) {
-    try {
-      const res = await originalFetch.apply(this, args);
-      const status = res.headers.get('X-Cache-Status');
-      console.log('[CacheStatus]', reqUrl.split('/').pop(), '→', status); // debug
-      updateCacheStatus(status || 'UNKNOWN');
-      return res;
-    } catch (err) {
-      updateCacheStatus('ERROR');
-      throw err;
-    }
+
+
+  // Non-Worker request
+  if (!isWorker) {
+    return originalFetch.apply(this, args);
   }
-  return originalFetch.apply(this, args);
+
+
+  try {
+
+    const res =
+      await originalFetch.apply(this, args);
+
+
+    /*
+     * Current MarketPulse Worker header:
+     *
+     * X-MarketPulse-Cache
+     *
+     * Possible values:
+     * HIT
+     * HIT-PREV
+     * MISS
+     * STALE
+     * BYPASS
+     */
+
+    const status =
+      res.headers.get('X-MarketPulse-Cache');
+
+
+    console.log(
+      '[MarketPulse Cache]',
+      reqUrl.split('/').pop(),
+      '→',
+      status
+    );
+
+
+    updateCacheStatus(
+      status || 'UNKNOWN'
+    );
+
+
+    return res;
+
+
+  } catch (err) {
+
+    /*
+     * Only show Error when the Worker
+     * request itself could not be reached.
+     */
+
+    updateCacheStatus('ERROR');
+
+
+    console.error(
+      '[MarketPulse Worker Error]',
+      reqUrl,
+      err
+    );
+
+
+    throw err;
+
+  }
+
 };
 
+
 function updateCacheStatus(status) {
-  const el = document.getElementById('cacheStatus');
+
+  const el =
+    document.getElementById('cacheStatus');
+
   if (!el) return;
-  
+
+
   const map = {
-    'HIT':     { t: '● Cached',     c: '#4ADE80' },
-    'MISS':    { t: '● Live',       c: '#4ADE80' },
-    'STALE':   { t: '● Refreshing', c: '#F5A623' },
-    'BYPASS':  { t: '● Direct',     c: '#F5A623' },
-    'ERROR':   { t: '● Error',      c: '#F87171' }
+
+    'HIT': {
+      t: '● Cached',
+      c: '#4ADE80'
+    },
+
+    'HIT-PREV': {
+      t: '● Cached',
+      c: '#4ADE80'
+    },
+
+    'MISS': {
+      t: '● Live',
+      c: '#4ADE80'
+    },
+
+    'STALE': {
+      t: '● Refreshing',
+      c: '#F5A623'
+    },
+
+    'BYPASS': {
+      t: '● Direct',
+      c: '#F5A623'
+    },
+
+    'ERROR': {
+      t: '● Error',
+      c: '#F87171'
+    }
+
   };
-  
+
+
   const s = map[status];
-  if (!s) return; // Don't update if status is null/unknown
-  
+
+
+  // Ignore unknown/null status
+  if (!s) return;
+
+
   el.textContent = s.t;
+
   el.style.color = s.c;
+
   el.style.opacity = '0.85';
+
   el.style.fontWeight = '600';
+
 }
 
 /* ─── Settings Modal ─── */
