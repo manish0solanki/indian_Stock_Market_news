@@ -217,6 +217,23 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .account-email { padding: 8px 9px 10px; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 11px; overflow-wrap: anywhere; }
 .account-menu button { width: 100%; margin-top: 7px; padding: 9px; border: 0; border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font: 600 12px var(--font-body); cursor: pointer; text-align: left; }
 .account-menu button:hover { background: var(--surface-hover); }
+.admin-menu-button {
+  border: 1px solid rgba(245,166,35,0.28) !important;
+  color: var(--indigo-light) !important;
+  font-weight: 700 !important;
+}
+[data-theme="light"] .admin-menu-button { color: var(--indigo) !important; }
+.admin-panel-body { padding: 18px 20px 20px; }
+.admin-status-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.admin-status-card .admin-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 12px; }
+.admin-status-card .admin-row + .admin-row { border-top: 1px solid var(--border); }
+.admin-label { color: var(--text-muted); }
+.admin-value { font-family: var(--font-mono); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 .auth-tabs { display: flex; gap: 4px; padding: 14px 20px 0; }
 .auth-tab { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-secondary); font: 600 12px var(--font-body); cursor: pointer; }
 .auth-tab.active { background: var(--indigo); border-color: var(--indigo); color: #fff; }
@@ -747,6 +764,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       </button>
       <div class="account-menu" id="accountMenu">
         <div class="account-email" id="accountEmail">—</div>
+        <button class="admin-menu-button" id="adminPanelButton" type="button" style="display:none;">🛡️ Admin Panel</button>
         <button id="logoutButton" type="button">Log out</button>
       </div>
     </div>
@@ -1045,7 +1063,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       </div>
       <div class="modal-body">
         <form class="auth-form active" id="loginForm">
-          <div class="modal-field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="email" required></div>
+          <div class="modal-field"><label for="loginEmail">Email or username</label><input id="loginEmail" type="text" autocomplete="username" placeholder="Email or admin" required></div>
           <div class="modal-field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
           <button class="auth-submit" id="loginSubmit" type="submit">Login</button>
           <button class="auth-forgot" id="forgotPassword" type="button">Forgot password?</button>
@@ -1057,6 +1075,23 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         </form>
       </div>
       <div class="auth-status" id="authStatus" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- Admin Modal -->
+  <div class="modal-overlay" id="adminModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+      <div class="modal-header">
+        <h3 id="adminTitle">Admin Panel</h3>
+        <button class="modal-close" id="adminClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="admin-panel-body">
+        <div class="admin-status-card">
+          <div class="admin-row"><span class="admin-label">Account</span><span class="admin-value" id="adminEmail">—</span></div>
+          <div class="admin-row"><span class="admin-label">Role</span><span class="admin-value" id="adminRole">—</span></div>
+          <div class="admin-row"><span class="admin-label">Access</span><span class="admin-value">Full admin</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1113,12 +1148,20 @@ const accountMenu = document.getElementById('accountMenu');
 const accountEmail = document.getElementById('accountEmail');
 const accountLabel = document.getElementById('accountLabel');
 const accountAvatar = document.getElementById('accountAvatar');
+const adminPanelButton = document.getElementById('adminPanelButton');
+const adminModal = document.getElementById('adminModal');
+const adminClose = document.getElementById('adminClose');
+const adminEmail = document.getElementById('adminEmail');
+const adminRole = document.getElementById('adminRole');
 const logoutButton = document.getElementById('logoutButton');
 const loginTab = document.getElementById('loginTab');
 const signupTab = document.getElementById('signupTab');
 const loginForm = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
 const authStatus = document.getElementById('authStatus');
+
+let currentUser = null;
+let isAdmin = false;
 
 function setAuthStatus(message = '', type = '') { authStatus.textContent = message; authStatus.className = 'auth-status' + (type ? ' ' + type : ''); }
 function setAuthMode(mode) {
@@ -1132,13 +1175,56 @@ function openAuthModal(mode = 'login') {
   setTimeout(() => document.getElementById(mode === 'signup' ? 'signupEmail' : 'loginEmail')?.focus(), 50);
 }
 function closeAuthModal() { authModal.classList.remove('open'); authModal.setAttribute('aria-hidden', 'true'); }
+function openAdminModal() {
+  if (!isAdmin || !currentUser) return;
+  adminEmail.textContent = currentUser.email || '—';
+  adminRole.textContent = 'admin';
+  adminModal.classList.add('open');
+  adminModal.setAttribute('aria-hidden', 'false');
+  accountMenu.classList.remove('open');
+  accountButton.setAttribute('aria-expanded', 'false');
+}
+function closeAdminModal() { adminModal.classList.remove('open'); adminModal.setAttribute('aria-hidden', 'true'); }
 function updateAccountUI(user) {
   const loggedIn = !!user;
   authButton.style.display = loggedIn ? 'none' : 'inline-flex';
   accountWrap.classList.toggle('visible', loggedIn);
-  if (!loggedIn) return;
+  adminPanelButton.style.display = loggedIn && isAdmin ? 'block' : 'none';
+  if (!loggedIn) {
+    currentUser = null;
+    isAdmin = false;
+    adminPanelButton.style.display = 'none';
+    return;
+  }
   const email = user.email || 'Account';
   accountEmail.textContent = email; accountLabel.textContent = email.split('@')[0] || 'Account'; accountAvatar.textContent = (email[0] || 'A').toUpperCase();
+}
+
+async function loadUserRole(user) {
+  currentUser = user || null;
+  isAdmin = false;
+  if (!user) {
+    updateAccountUI(null);
+    return;
+  }
+
+  updateAccountUI(user);
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    isAdmin = data?.role === 'admin';
+  } catch (error) {
+    console.error('[Auth] Could not load user role:', error);
+    isAdmin = false;
+  }
+
+  updateAccountUI(user);
 }
 
 authButton.addEventListener('click', () => openAuthModal('login'));
@@ -1146,13 +1232,26 @@ authClose.addEventListener('click', closeAuthModal);
 loginTab.addEventListener('click', () => setAuthMode('login'));
 signupTab.addEventListener('click', () => setAuthMode('signup'));
 authModal.addEventListener('click', e => { if (e.target === authModal) closeAuthModal(); });
+adminClose.addEventListener('click', closeAdminModal);
+adminModal.addEventListener('click', e => { if (e.target === adminModal) closeAdminModal(); });
+adminPanelButton.addEventListener('click', openAdminModal);
 accountButton.addEventListener('click', e => { e.stopPropagation(); const open = accountMenu.classList.toggle('open'); accountButton.setAttribute('aria-expanded', String(open)); });
 
 document.addEventListener('click', e => { if (!accountWrap.contains(e.target)) { accountMenu.classList.remove('open'); accountButton.setAttribute('aria-expanded', 'false'); } });
 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeAuthModal();
+    closeAdminModal();
+    accountMenu.classList.remove('open');
+    accountButton.setAttribute('aria-expanded', 'false');
+  }
+});
+
 loginForm.addEventListener('submit', async e => {
   e.preventDefault(); const submit = document.getElementById('loginSubmit');
-  const email = document.getElementById('loginEmail').value.trim(); const password = document.getElementById('loginPassword').value;
+  const loginValue = document.getElementById('loginEmail').value.trim(); const password = document.getElementById('loginPassword').value;
+  const email = loginValue.toLowerCase() === 'admin' ? 'admin@tradesutra.com' : loginValue;
   submit.disabled = true; submit.textContent = 'Logging in…'; setAuthStatus('');
   try { const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) throw error; setAuthStatus('Login successful.', 'success'); loginForm.reset(); setTimeout(closeAuthModal, 500); }
   catch (error) { setAuthStatus(error.message || 'Could not log in.', 'error'); }
@@ -1164,7 +1263,7 @@ signupForm.addEventListener('submit', async e => {
   const email = document.getElementById('signupEmail').value.trim(); const password = document.getElementById('signupPassword').value;
   submit.disabled = true; submit.textContent = 'Creating…'; setAuthStatus('');
   try {
-    const { data, error } = await supabaseClient.auth.signUp({ email, password }); if (error) throw error; signupForm.reset();
+    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + '/' } }); if (error) throw error; signupForm.reset();
     if (data.session) { setAuthStatus('Account created successfully.', 'success'); setTimeout(closeAuthModal, 700); }
     else { setAuthMode('login'); setAuthStatus('Account created. Check your email to confirm your account, then log in.', 'success'); }
   } catch (error) { setAuthStatus(error.message || 'Could not create your account.', 'error'); }
@@ -1173,15 +1272,20 @@ signupForm.addEventListener('submit', async e => {
 
 document.getElementById('forgotPassword').addEventListener('click', async () => {
   const email = document.getElementById('loginEmail').value.trim();
-  if (!email) { setAuthStatus('Enter your email first.', 'error'); document.getElementById('loginEmail').focus(); return; }
+  const resetEmail = email.toLowerCase() === 'admin' ? 'admin@tradesutra.com' : email;
+  if (!resetEmail) { setAuthStatus('Enter your email first.', 'error'); document.getElementById('loginEmail').focus(); return; }
   setAuthStatus('Sending reset email…');
-  try { const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname }); if (error) throw error; setAuthStatus('Password reset email sent. Check your inbox.', 'success'); }
+  try { const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail, { redirectTo: window.location.origin + window.location.pathname }); if (error) throw error; setAuthStatus('Password reset email sent. Check your inbox.', 'success'); }
   catch (error) { setAuthStatus(error.message || 'Could not send reset email.', 'error'); }
 });
 
 logoutButton.addEventListener('click', async () => { logoutButton.disabled = true; const { error } = await supabaseClient.auth.signOut(); logoutButton.disabled = false; if (error) console.error('[Auth] Logout failed:', error); accountMenu.classList.remove('open'); });
 
-(async () => { const { data } = await supabaseClient.auth.getSession(); updateAccountUI(data?.session?.user || null); supabaseClient.auth.onAuthStateChange((_event, session) => updateAccountUI(session?.user || null)); })();
+(async () => {
+  const { data } = await supabaseClient.auth.getSession();
+  await loadUserRole(data?.session?.user || null);
+  supabaseClient.auth.onAuthStateChange((_event, session) => { loadUserRole(session?.user || null); });
+})();
 
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG
