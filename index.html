@@ -2612,63 +2612,130 @@ async function checkStockAlerts() {
  */
 // Android/Chrome notifications are more reliable through a Service Worker.
 // Register it once so price alerts can be displayed in the Android notification panel.
+/*
+ * ANDROID / CHROME PRICE ALERT NOTIFICATIONS
+ *
+ * The in-page MarketPulse popup and the Android notification are separate.
+ * The Android notification is sent through a Service Worker because this is
+ * the most reliable Web Notification path on Android Chrome.
+ */
 let marketPulseNotificationRegistration = null;
 
-if ('serviceWorker' in navigator) {
-  marketPulseNotificationRegistration = navigator.serviceWorker
-    .register('/marketpulse-sw.js', { scope: '/' })
-    .then(registration => {
-      console.log('[Alerts] Notification service worker ready');
-      return registration;
-    })
-    .catch(error => {
-      console.warn('[Alerts] Notification service worker registration failed:', error);
-      return null;
-    });
-}
-
-function showMarketPulseSystemNotification(title, body, tag) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return;
+async function initMarketPulseNotificationServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[Alerts] Service Workers are not supported');
+    return null;
   }
 
-  const show = async () => {
-    try {
-      const registration = marketPulseNotificationRegistration
-        ? await marketPulseNotificationRegistration
-        : null;
-
-      if (registration && typeof registration.showNotification === 'function') {
-        await registration.showNotification(title, {
-          body,
-          tag,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
-          vibrate: [200, 100, 200],
-          renotify: true,
-          data: { url: window.location.href }
-        });
-        console.log('[Alerts] Android notification shown via service worker');
-        return;
+  try {
+    const registration = await navigator.serviceWorker.register(
+      '/marketpulse-sw.js',
+      {
+        scope: '/',
+        updateViaCache: 'none'
       }
+    );
+
+    marketPulseNotificationRegistration = registration;
+
+    console.log('[Alerts] Notification service worker registered');
+
+    try {
+      await registration.update();
     } catch (error) {
-      console.warn('[Alerts] Service-worker notification failed:', error);
+      console.warn('[Alerts] Service worker update check failed:', error);
     }
 
-    // Fallback for browsers that do not expose Service Worker notifications.
+    return registration;
+  } catch (error) {
+    console.warn(
+      '[Alerts] Notification service worker registration failed:',
+      error
+    );
+    marketPulseNotificationRegistration = null;
+    return null;
+  }
+}
+
+const marketPulseNotificationReady =
+  initMarketPulseNotificationServiceWorker();
+
+async function showMarketPulseSystemNotification(title, body, tag) {
+  if (!('Notification' in window)) {
+    console.warn('[Alerts] Notification API is not supported');
+    return false;
+  }
+
+  console.log('[Alerts] Notification permission:', Notification.permission);
+
+  if (Notification.permission !== 'granted') {
+    console.warn(
+      '[Alerts] Android notification skipped because permission is:',
+      Notification.permission
+    );
+    return false;
+  }
+
+  try {
+    /*
+     * Use the exact registration for marketpulse-sw.js.
+     * Do not depend on navigator.serviceWorker.ready because another
+     * service worker such as /sw.js may also exist on this website.
+     */
+    const registration =
+      marketPulseNotificationRegistration ||
+      await marketPulseNotificationReady;
+
+    if (
+      !registration ||
+      typeof registration.showNotification !== 'function'
+    ) {
+      throw new Error('Notification service worker is not available');
+    }
+
+    await registration.showNotification(title, {
+      body: body,
+      tag: tag || 'marketpulse-price-alert',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      vibrate: [250, 100, 250],
+      renotify: true,
+      silent: false,
+      requireInteraction: false,
+      timestamp: Date.now(),
+      data: {
+        url: window.location.href,
+        source: 'marketpulse-price-alert'
+      }
+    });
+
+    console.log('[Alerts] Android notification displayed successfully');
+    return true;
+
+  } catch (error) {
+    console.error(
+      '[Alerts] Android notification failed:',
+      error
+    );
+
     try {
       new Notification(title, {
-        body,
-        tag,
+        body: body,
+        tag: tag || 'marketpulse-price-alert',
         icon: '/favicon.ico'
       });
-      console.log('[Alerts] Browser notification shown via Notification API');
-    } catch (error) {
-      console.warn('[Alerts] Browser notification failed:', error);
-    }
-  };
 
-  show();
+      console.log('[Alerts] Browser Notification API fallback displayed');
+      return true;
+
+    } catch (fallbackError) {
+      console.error(
+        '[Alerts] Browser notification fallback failed:',
+        fallbackError
+      );
+      return false;
+    }
+  }
 }
 
 function showPriceAlertNotification(row) {
@@ -3293,8 +3360,20 @@ profileUploadButton.addEventListener('click', () => profileAvatarFile.click());
 watchlistButton.addEventListener('click', openWatchlistModal);
 alertButton.addEventListener('click', async () => {
   if ('Notification' in window && Notification.permission === 'default') {
-    try { await Notification.requestPermission(); } catch (e) {}
+    try {
+      const permission = await Notification.requestPermission();
+      console.log('[Alerts] Notification permission result:', permission);
+    } catch (e) {
+      console.warn('[Alerts] Notification permission request failed:', e);
+    }
   }
+
+  try {
+    await marketPulseNotificationReady;
+  } catch (e) {
+    console.warn('[Alerts] Notification worker was not ready:', e);
+  }
+
   openAlertModal();
 });
 alertClose.addEventListener('click', closeAlertModal);
