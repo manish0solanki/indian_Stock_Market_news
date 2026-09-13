@@ -2612,130 +2612,63 @@ async function checkStockAlerts() {
  */
 // Android/Chrome notifications are more reliable through a Service Worker.
 // Register it once so price alerts can be displayed in the Android notification panel.
-/*
- * ANDROID / CHROME PRICE ALERT NOTIFICATIONS
- *
- * The in-page MarketPulse popup and the Android notification are separate.
- * The Android notification is sent through a Service Worker because this is
- * the most reliable Web Notification path on Android Chrome.
- */
 let marketPulseNotificationRegistration = null;
 
-async function initMarketPulseNotificationServiceWorker() {
-  if (!('serviceWorker' in navigator)) {
-    console.warn('[Alerts] Service Workers are not supported');
-    return null;
-  }
-
-  try {
-    const registration = await navigator.serviceWorker.register(
-      '/marketpulse-sw.js',
-      {
-        scope: '/',
-        updateViaCache: 'none'
-      }
-    );
-
-    marketPulseNotificationRegistration = registration;
-
-    console.log('[Alerts] Notification service worker registered');
-
-    try {
-      await registration.update();
-    } catch (error) {
-      console.warn('[Alerts] Service worker update check failed:', error);
-    }
-
-    return registration;
-  } catch (error) {
-    console.warn(
-      '[Alerts] Notification service worker registration failed:',
-      error
-    );
-    marketPulseNotificationRegistration = null;
-    return null;
-  }
+if ('serviceWorker' in navigator) {
+  marketPulseNotificationRegistration = navigator.serviceWorker
+    .register('/marketpulse-sw.js', { scope: '/' })
+    .then(registration => {
+      console.log('[Alerts] Notification service worker ready');
+      return registration;
+    })
+    .catch(error => {
+      console.warn('[Alerts] Notification service worker registration failed:', error);
+      return null;
+    });
 }
 
-const marketPulseNotificationReady =
-  initMarketPulseNotificationServiceWorker();
-
-async function showMarketPulseSystemNotification(title, body, tag) {
-  if (!('Notification' in window)) {
-    console.warn('[Alerts] Notification API is not supported');
-    return false;
+function showMarketPulseSystemNotification(title, body, tag) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
   }
 
-  console.log('[Alerts] Notification permission:', Notification.permission);
+  const show = async () => {
+    try {
+      const registration = marketPulseNotificationRegistration
+        ? await marketPulseNotificationRegistration
+        : null;
 
-  if (Notification.permission !== 'granted') {
-    console.warn(
-      '[Alerts] Android notification skipped because permission is:',
-      Notification.permission
-    );
-    return false;
-  }
-
-  try {
-    /*
-     * Use the exact registration for marketpulse-sw.js.
-     * Do not depend on navigator.serviceWorker.ready because another
-     * service worker such as /sw.js may also exist on this website.
-     */
-    const registration =
-      marketPulseNotificationRegistration ||
-      await marketPulseNotificationReady;
-
-    if (
-      !registration ||
-      typeof registration.showNotification !== 'function'
-    ) {
-      throw new Error('Notification service worker is not available');
+      if (registration && typeof registration.showNotification === 'function') {
+        await registration.showNotification(title, {
+          body,
+          tag,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          vibrate: [200, 100, 200],
+          renotify: true,
+          data: { url: window.location.href }
+        });
+        console.log('[Alerts] Android notification shown via service worker');
+        return;
+      }
+    } catch (error) {
+      console.warn('[Alerts] Service-worker notification failed:', error);
     }
 
-    await registration.showNotification(title, {
-      body: body,
-      tag: tag || 'marketpulse-price-alert',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      vibrate: [250, 100, 250],
-      renotify: true,
-      silent: false,
-      requireInteraction: false,
-      timestamp: Date.now(),
-      data: {
-        url: window.location.href,
-        source: 'marketpulse-price-alert'
-      }
-    });
-
-    console.log('[Alerts] Android notification displayed successfully');
-    return true;
-
-  } catch (error) {
-    console.error(
-      '[Alerts] Android notification failed:',
-      error
-    );
-
+    // Fallback for browsers that do not expose Service Worker notifications.
     try {
       new Notification(title, {
-        body: body,
-        tag: tag || 'marketpulse-price-alert',
+        body,
+        tag,
         icon: '/favicon.ico'
       });
-
-      console.log('[Alerts] Browser Notification API fallback displayed');
-      return true;
-
-    } catch (fallbackError) {
-      console.error(
-        '[Alerts] Browser notification fallback failed:',
-        fallbackError
-      );
-      return false;
+      console.log('[Alerts] Browser notification shown via Notification API');
+    } catch (error) {
+      console.warn('[Alerts] Browser notification failed:', error);
     }
-  }
+  };
+
+  show();
 }
 
 function showPriceAlertNotification(row) {
@@ -3360,20 +3293,8 @@ profileUploadButton.addEventListener('click', () => profileAvatarFile.click());
 watchlistButton.addEventListener('click', openWatchlistModal);
 alertButton.addEventListener('click', async () => {
   if ('Notification' in window && Notification.permission === 'default') {
-    try {
-      const permission = await Notification.requestPermission();
-      console.log('[Alerts] Notification permission result:', permission);
-    } catch (e) {
-      console.warn('[Alerts] Notification permission request failed:', e);
-    }
+    try { await Notification.requestPermission(); } catch (e) {}
   }
-
-  try {
-    await marketPulseNotificationReady;
-  } catch (e) {
-    console.warn('[Alerts] Notification worker was not ready:', e);
-  }
-
   openAlertModal();
 });
 alertClose.addEventListener('click', closeAlertModal);
@@ -3806,23 +3727,235 @@ function fmtPct(n) {
   return sign + num.toFixed(2) + '%';
 }
 
-/* ─── Market Close Logic ─── */
-function getMarketClose() { const now = new Date(); const close = new Date(now); close.setHours(15,30,0,0); return close; }
-function isAfterMarketClose() { return new Date() > getMarketClose(); }
-function isWithinTradingWindow(isoDate) {
-  const itemDate = new Date(isoDate);
-  const now = new Date();
-  const marketClose = getMarketClose();
-  if (now < marketClose) {
-    // Before 3:30 PM → show news from yesterday 3:30 PM onwards (current session)
-    const cutoff = new Date(marketClose.getTime() - 24*60*60*1000);
-    return itemDate >= cutoff;
-  } else {
-    // After 3:30 PM → show news from today 3:30 PM onwards (next session preview)
-    return itemDate >= marketClose;
-  }
+/* ─── Market Session News Logic ───
+   MarketPulse news is shown by Indian-market session, not by a
+   simple rolling 24-hour window.
+
+   Rules:
+   • Before 3:30 PM on a trading day:
+       previous trading-day 3:30 PM → today 3:30 PM
+   • From 3:30 PM onward:
+       today 3:30 PM → next trading-day 3:30 PM
+   • Friday 3:30 PM → Monday 3:30 PM is one continuous session.
+   • Saturday/Sunday continue showing Friday 3:30 PM → Monday 3:30 PM.
+
+   Times are calculated explicitly in Asia/Kolkata so the behavior
+   does not change if the visitor's device/browser is in another timezone.
+   Weekend handling is built in; exchange holidays can be added later
+   if a holiday calendar is connected.
+*/
+
+const MARKET_TIME_ZONE = 'Asia/Kolkata';
+const MARKET_CLOSE_HOUR = 15;
+const MARKET_CLOSE_MINUTE = 30;
+
+function getIndiaParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: MARKET_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(date);
+
+  const get = (type) => parts.find(p => p.type === type)?.value || '';
+
+  return {
+    year: Number(get('year')),
+    month: Number(get('month')),
+    day: Number(get('day')),
+    weekday: get('weekday'),
+    hour: Number(get('hour')),
+    minute: Number(get('minute')),
+    second: Number(get('second'))
+  };
 }
-function isOldNews(isoDate) { return !isWithinTradingWindow(isoDate); }
+
+function indiaDateAtMarketClose(year, month, day) {
+  // 15:30 IST = 10:00 UTC.
+  return new Date(Date.UTC(year, month - 1, day, 10, 0, 0));
+}
+
+function addIndiaDays(year, month, day, days) {
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + days);
+
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate()
+  };
+}
+
+function getIndiaWeekday(year, month, day) {
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return d.getUTCDay(); // 0 Sunday, 1 Monday, ... 6 Saturday
+}
+
+function getPreviousTradingDay(year, month, day) {
+  let result = addIndiaDays(year, month, day, -1);
+  let weekday = getIndiaWeekday(result.year, result.month, result.day);
+
+  // Saturday/Sunday → previous Friday.
+  if (weekday === 6) {
+    result = addIndiaDays(result.year, result.month, result.day, -1);
+  } else if (weekday === 0) {
+    result = addIndiaDays(result.year, result.month, result.day, -2);
+  }
+
+  return result;
+}
+
+function getNextTradingDay(year, month, day) {
+  let result = addIndiaDays(year, month, day, 1);
+  let weekday = getIndiaWeekday(result.year, result.month, result.day);
+
+  // Friday → Monday.
+  if (weekday === 6) {
+    result = addIndiaDays(result.year, result.month, result.day, 2);
+  } else if (weekday === 0) {
+    result = addIndiaDays(result.year, result.month, result.day, 1);
+  }
+
+  return result;
+}
+
+function getCurrentMarketSession() {
+  const now = new Date();
+  const india = getIndiaParts(now);
+
+  const weekday = getIndiaWeekday(india.year, india.month, india.day);
+  const minutesNow = india.hour * 60 + india.minute;
+  const closeMinutes = MARKET_CLOSE_HOUR * 60 + MARKET_CLOSE_MINUTE;
+
+  const todayClose = indiaDateAtMarketClose(
+    india.year,
+    india.month,
+    india.day
+  );
+
+  let sessionStart;
+  let sessionEnd;
+
+  // Weekend:
+  // Friday 3:30 PM → Monday 3:30 PM.
+  if (weekday === 6 || weekday === 0) {
+    let friday;
+
+    if (weekday === 6) {
+      friday = addIndiaDays(india.year, india.month, india.day, -1);
+    } else {
+      friday = addIndiaDays(india.year, india.month, india.day, -2);
+    }
+
+    const monday = addIndiaDays(
+      friday.year,
+      friday.month,
+      friday.day,
+      3
+    );
+
+    sessionStart = indiaDateAtMarketClose(
+      friday.year,
+      friday.month,
+      friday.day
+    );
+
+    sessionEnd = indiaDateAtMarketClose(
+      monday.year,
+      monday.month,
+      monday.day
+    );
+
+    return {
+      start: sessionStart,
+      end: sessionEnd,
+      isAfterClose: true
+    };
+  }
+
+  // Trading day before 3:30 PM:
+  // previous trading-day 3:30 PM → today 3:30 PM.
+  if (minutesNow < closeMinutes) {
+    const previous = getPreviousTradingDay(
+      india.year,
+      india.month,
+      india.day
+    );
+
+    sessionStart = indiaDateAtMarketClose(
+      previous.year,
+      previous.month,
+      previous.day
+    );
+
+    sessionEnd = todayClose;
+
+    return {
+      start: sessionStart,
+      end: sessionEnd,
+      isAfterClose: false
+    };
+  }
+
+  // Trading day from 3:30 PM onward:
+  // today 3:30 PM → next trading-day 3:30 PM.
+  const next = getNextTradingDay(
+    india.year,
+    india.month,
+    india.day
+  );
+
+  sessionStart = todayClose;
+
+  sessionEnd = indiaDateAtMarketClose(
+    next.year,
+    next.month,
+    next.day
+  );
+
+  return {
+    start: sessionStart,
+    end: sessionEnd,
+    isAfterClose: true
+  };
+}
+
+function getMarketClose() {
+  const india = getIndiaParts(new Date());
+
+  return indiaDateAtMarketClose(
+    india.year,
+    india.month,
+    india.day
+  );
+}
+
+function isAfterMarketClose() {
+  return getCurrentMarketSession().isAfterClose;
+}
+
+function isWithinTradingWindow(isoDate) {
+  if (!isoDate) return false;
+
+  const itemDate = new Date(isoDate);
+
+  if (Number.isNaN(itemDate.getTime())) {
+    return false;
+  }
+
+  const session = getCurrentMarketSession();
+
+  return itemDate >= session.start && itemDate < session.end;
+}
+
+function isOldNews(isoDate) {
+  return !isWithinTradingWindow(isoDate);
+}
 
 /* ─── Market Snapshot ─── */
 function renderSnapshot(items) {
