@@ -903,7 +903,20 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .news-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
 .news-company-wrap { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-.news-company { font-weight: 700; font-size: 14px; line-height: 1.3; }
+.news-company {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.news-company:hover {
+  color: var(--indigo-light);
+  text-decoration: underline;
+}
+[data-theme="light"] .news-company:hover {
+  color: var(--indigo);
+}
 .news-symbol { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); background: var(--bg); padding: 1px 6px; border-radius: 4px; font-weight: 500; }
 .news-price { font-family: var(--font-mono); font-size: 10px; color: var(--positive); background: var(--positive-bg); padding: 1px 6px; border-radius: 4px; font-weight: 600; margin-left: 2px; }
 .news-change { font-family: var(--font-mono); font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-left: 2px; }
@@ -3732,11 +3745,63 @@ function renderNews() {
       ? `<button class="news-group-toggle" onclick="event.stopPropagation();toggleNewsGroup(this)">+ ${group.length - 2} more update${group.length - 2 > 1 ? 's' : ''}</button>`
       : '';
 
-    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.03}s"><div class="news-card-top"><div class="news-company-wrap"><span class="news-company">${latest.company_name || 'Unknown'}</span>${latest.symbol ? `<span class="news-symbol">${latest.symbol}</span>` : ''}${latest.symbol && fnoSymbols.has(latest.symbol.toUpperCase()) ? '<span class="fno-badge">F&O</span>' : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(latest.created_at)}</span></div><div class="news-entries">${entriesHtml}</div>${toggleHtml}</div>`;
+    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.03}s"><div class="news-card-top"><div class="news-company-wrap">${latest.symbol ? `<span class="news-company news-company-clickable" data-symbol="${latest.symbol}">${latest.company_name || 'Unknown'}</span>` : `<span class="news-company">${latest.company_name || 'Unknown'}</span>`}${latest.symbol ? `<span class="news-symbol">${latest.symbol}</span>` : ''}${latest.symbol && fnoSymbols.has(latest.symbol.toUpperCase()) ? '<span class="fno-badge">F&O</span>' : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(latest.created_at)}</span></div><div class="news-entries">${entriesHtml}</div>${toggleHtml}</div>`;
   });
 
   feedEl.innerHTML = html;
 }
+
+/* ─── News Company → Stock Detail ─── */
+async function openStockDetailFromNews(symbol, companyName) {
+  const cleanSymbol = String(symbol || '').trim().toUpperCase();
+  if (!cleanSymbol) return;
+
+  if (searchInput) {
+    searchInput.value = companyName || cleanSymbol;
+    updateClearBtn();
+  }
+
+  if (typeof dropdown !== 'undefined' && dropdown) {
+    dropdown.classList.remove('open');
+  }
+
+  sdHint.textContent = 'Fetching…';
+  stockDetailCard.style.display = 'none';
+
+  try {
+    const res = await fetch(
+      STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol)
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    const data = await res.json();
+    renderStockDetail(data);
+    sdHint.textContent = '';
+
+    requestAnimationFrame(() => {
+      stockDetailCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+    });
+  } catch (e) {
+    sdHint.textContent = 'Cached data shown';
+    console.error('[News Stock Detail]', e);
+  }
+}
+
+feedEl.addEventListener('click', (event) => {
+  const companyEl = event.target.closest('.news-company-clickable');
+  if (!companyEl || !feedEl.contains(companyEl)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  openStockDetailFromNews(
+    companyEl.dataset.symbol,
+    companyEl.textContent.trim()
+  );
+});
 
 function toggleNewsGroup(btn) {
   const card = btn.closest('.news-card');
