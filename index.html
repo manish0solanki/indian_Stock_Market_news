@@ -549,6 +549,176 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   PRICE ALERT POPUP
+   ═══════════════════════════════════════════════════════════════ */
+#mpPriceAlertPopup {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 20px;
+  z-index: 99999;
+  display: none;
+  width: auto;
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.35);
+  overflow: hidden;
+  transform: translateY(24px);
+  opacity: 0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+
+#mpPriceAlertPopup.open {
+  display: block;
+  transform: translateY(0);
+  opacity: 1;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 15px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+#mpPriceAlertPopup .mp-alert-popup-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+#mpPriceAlertPopup .mp-alert-popup-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--positive-bg);
+  color: var(--positive);
+  font-size: 15px;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-close {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-body {
+  padding: 13px 15px 15px;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-company {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-symbol {
+  margin-top: 2px;
+  font: 600 10px var(--font-mono);
+  color: var(--text-muted);
+}
+
+#mpPriceAlertPopup .mp-alert-popup-prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-price {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+#mpPriceAlertPopup .mp-alert-popup-price-label {
+  display: block;
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 3px;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-price-value {
+  font: 700 13px var(--font-mono);
+  color: var(--text);
+}
+
+#mpPriceAlertPopup .mp-alert-popup-condition {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--positive);
+}
+
+#mpPriceAlertPopup .mp-alert-popup-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-view {
+  flex: 1;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--indigo);
+  color: #fff;
+  font: 700 11px var(--font-body);
+  cursor: pointer;
+}
+
+#mpPriceAlertPopup .mp-alert-popup-dismiss {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: 600 11px var(--font-body);
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  #mpPriceAlertPopup {
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+    border-radius: 15px;
+  }
+
+  #mpPriceAlertPopup .mp-alert-popup-head {
+    padding: 12px 13px 9px;
+  }
+
+  #mpPriceAlertPopup .mp-alert-popup-body {
+    padding: 12px 13px 14px;
+  }
+
+  #mpPriceAlertPopup .mp-alert-popup-company {
+    font-size: 12px;
+  }
+}
+
 /* Mobile alert search: give the stock/company field the full modal width.
    This prevents company names from being squeezed into a narrow column. */
 @media (max-width: 480px) {
@@ -1904,6 +2074,7 @@ let selectedStockSymbol = '';
 let selectedStockName = '';
 let alertSearchDebounce = null;
 let alertCheckBusy = false;
+let alertRealtimeChannel = null;
 
 let currentUser = null;
 let currentProfile = null;
@@ -2422,6 +2593,187 @@ async function checkStockAlerts() {
   }
 }
 
+/*
+ * LIVE WEBSITE ALERTS
+ *
+ * n8n is responsible for checking prices and sending Telegram.
+ * After Telegram is sent, n8n sets triggered_at in Supabase.
+ *
+ * The website listens for that database update and shows:
+ *   1. an in-page notification, and
+ *   2. a browser/system notification when permission is granted.
+ *
+ * The previous code only requested Notification permission; it never
+ * actually created a Notification, which is why Telegram worked but
+ * the phone received nothing from the website.
+ */
+function showPriceAlertNotification(row) {
+  if (!row) return;
+
+  const symbol = String(row.symbol || '').trim().toUpperCase();
+  const company = String(row.company_name || symbol || 'Price Alert').trim();
+  const target = Number(row.target_price);
+  const condition = String(row.condition || 'above').toLowerCase();
+
+  const targetText = Number.isFinite(target)
+    ? '₹' + target.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    : 'your target';
+
+  const title = '🔔 MarketPulse Price Alert';
+  const currentPrice = Number(row.current_price);
+  const body = Number.isFinite(currentPrice)
+    ? `${company} (${symbol}) — Current ₹${currentPrice.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})} — ${condition} ${targetText}.`
+    : `${company} (${symbol}) is ${condition} ${targetText}.`;
+
+  // In-page popup — works even when browser notification permission
+  // is unavailable.
+  let popup = document.getElementById('mpPriceAlertPopup');
+
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'mpPriceAlertPopup';
+    popup.setAttribute('role', 'alert');
+    popup.setAttribute('aria-live', 'assertive');
+
+    popup.innerHTML = `
+      <div class="mp-alert-popup-head">
+        <div class="mp-alert-popup-title">
+          <span class="mp-alert-popup-icon">🔔</span>
+          <span>MarketPulse Price Alert</span>
+        </div>
+        <button type="button" class="mp-alert-popup-close" aria-label="Close">×</button>
+      </div>
+      <div class="mp-alert-popup-body">
+        <div class="mp-alert-popup-company"></div>
+        <div class="mp-alert-popup-symbol"></div>
+        <div class="mp-alert-popup-prices">
+          <div class="mp-alert-popup-price">
+            <span class="mp-alert-popup-price-label">Current Price</span>
+            <span class="mp-alert-popup-price-value mp-current"></span>
+          </div>
+          <div class="mp-alert-popup-price">
+            <span class="mp-alert-popup-price-label">Target Price</span>
+            <span class="mp-alert-popup-price-value mp-target"></span>
+          </div>
+        </div>
+        <div class="mp-alert-popup-condition"></div>
+        <div class="mp-alert-popup-actions">
+          <button type="button" class="mp-alert-popup-view">View Alert</button>
+          <button type="button" class="mp-alert-popup-dismiss">Dismiss</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    popup.querySelector('.mp-alert-popup-close').addEventListener('click', () => {
+      popup.classList.remove('open');
+    });
+
+    popup.querySelector('.mp-alert-popup-dismiss').addEventListener('click', () => {
+      popup.classList.remove('open');
+    });
+
+    popup.querySelector('.mp-alert-popup-view').addEventListener('click', () => {
+      popup.classList.remove('open');
+      if (alertModal) {
+        alertModal.classList.add('open');
+        alertModal.setAttribute('aria-hidden', 'false');
+        loadAlerts();
+      }
+    });
+  }
+
+  popup.querySelector('.mp-alert-popup-company').textContent = company;
+  popup.querySelector('.mp-alert-popup-symbol').textContent = symbol;
+  popup.querySelector('.mp-alert-popup-prices .mp-current').textContent =
+    Number.isFinite(Number(row.current_price))
+      ? '₹' + Number(row.current_price).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})
+      : 'Triggered';
+
+  popup.querySelector('.mp-alert-popup-prices .mp-target').textContent = targetText;
+  popup.querySelector('.mp-alert-popup-condition').textContent =
+    `${condition === 'above' ? '▲ Above' : '▼ Below'} — Your price alert has been triggered.`;
+
+  requestAnimationFrame(() => popup.classList.add('open'));
+
+  clearTimeout(window.__mpPriceAlertPopupTimer);
+  window.__mpPriceAlertPopupTimer = setTimeout(() => {
+    popup.classList.remove('open');
+  }, 15000);
+
+  // Browser/system notification.
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body,
+        tag: `marketpulse-alert-${row.id || symbol}`,
+        icon: '/favicon.ico'
+      });
+    } catch (error) {
+      console.warn('[Alerts] Browser notification failed:', error);
+    }
+  }
+
+  // Refresh the alert table if it is currently open.
+  if (alertModal && alertModal.classList.contains('open')) {
+    loadAlerts();
+  }
+}
+
+async function setupAlertRealtime(user) {
+  if (alertRealtimeChannel) {
+    try {
+      await supabaseClient.removeChannel(alertRealtimeChannel);
+    } catch (error) {
+      console.warn('[Alerts] Could not remove old realtime channel:', error);
+    }
+    alertRealtimeChannel = null;
+  }
+
+  if (!user) return;
+
+  // Ask once when the user is logged in. The alert modal also asks when
+  // opened, so this does not break existing behavior.
+  if ('Notification' in window && Notification.permission === 'default') {
+    try {
+      await Notification.requestPermission();
+    } catch (error) {
+      console.warn('[Alerts] Notification permission request failed:', error);
+    }
+  }
+
+  alertRealtimeChannel = supabaseClient
+    .channel(`marketpulse-alerts-${user.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'stock_alerts',
+        filter: `user_id=eq.${user.id}`
+      },
+      payload => {
+        const oldRow = payload.old || {};
+        const newRow = payload.new || {};
+
+        // Only notify when n8n actually marks an alert as triggered.
+        const wasTriggered = !!oldRow.triggered_at;
+        const isTriggered = !!newRow.triggered_at;
+
+        if (!wasTriggered && isTriggered) {
+          showPriceAlertNotification(newRow);
+        }
+      }
+    )
+    .subscribe(status => {
+      console.log('[Alerts] Realtime status:', status);
+    });
+}
+
 function profileInitials(name, email) {
   const value = String(name || '').trim();
   if (value) {
@@ -2755,6 +3107,9 @@ function updateAccountUI(user) {
 async function loadUserRole(user) {
   currentUser = user || null;
   isAdmin = false;
+
+  await setupAlertRealtime(currentUser);
+
   if (!user) {
     updateAccountUI(null);
     return;
