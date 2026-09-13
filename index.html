@@ -2610,6 +2610,67 @@ async function checkStockAlerts() {
  * actually created a Notification, which is why Telegram worked but
  * the phone received nothing from the website.
  */
+// Android/Chrome notifications are more reliable through a Service Worker.
+// Register it once so price alerts can be displayed in the Android notification panel.
+let marketPulseNotificationRegistration = null;
+
+if ('serviceWorker' in navigator) {
+  marketPulseNotificationRegistration = navigator.serviceWorker
+    .register('/marketpulse-sw.js', { scope: '/' })
+    .then(registration => {
+      console.log('[Alerts] Notification service worker ready');
+      return registration;
+    })
+    .catch(error => {
+      console.warn('[Alerts] Notification service worker registration failed:', error);
+      return null;
+    });
+}
+
+function showMarketPulseSystemNotification(title, body, tag) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+
+  const show = async () => {
+    try {
+      const registration = marketPulseNotificationRegistration
+        ? await marketPulseNotificationRegistration
+        : null;
+
+      if (registration && typeof registration.showNotification === 'function') {
+        await registration.showNotification(title, {
+          body,
+          tag,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          vibrate: [200, 100, 200],
+          renotify: true,
+          data: { url: window.location.href }
+        });
+        console.log('[Alerts] Android notification shown via service worker');
+        return;
+      }
+    } catch (error) {
+      console.warn('[Alerts] Service-worker notification failed:', error);
+    }
+
+    // Fallback for browsers that do not expose Service Worker notifications.
+    try {
+      new Notification(title, {
+        body,
+        tag,
+        icon: '/favicon.ico'
+      });
+      console.log('[Alerts] Browser notification shown via Notification API');
+    } catch (error) {
+      console.warn('[Alerts] Browser notification failed:', error);
+    }
+  };
+
+  show();
+}
+
 function showPriceAlertNotification(row) {
   if (!row) return;
 
@@ -2708,18 +2769,12 @@ function showPriceAlertNotification(row) {
     popup.classList.remove('open');
   }, 15000);
 
-  // Browser/system notification.
-  if ('Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification(title, {
-        body,
-        tag: `marketpulse-alert-${row.id || symbol}`,
-        icon: '/favicon.ico'
-      });
-    } catch (error) {
-      console.warn('[Alerts] Browser notification failed:', error);
-    }
-  }
+  // Android/Chrome system notification.
+  showMarketPulseSystemNotification(
+    title,
+    body,
+    `marketpulse-alert-${row.id || symbol}`
+  );
 
   // Refresh the alert table if it is currently open.
   if (alertModal && alertModal.classList.contains('open')) {
