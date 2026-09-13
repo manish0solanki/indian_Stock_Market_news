@@ -217,6 +217,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .account-email { padding: 8px 9px 10px; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 11px; overflow-wrap: anywhere; }
 .account-menu button { width: 100%; margin-top: 7px; padding: 9px; border: 0; border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font: 600 12px var(--font-body); cursor: pointer; text-align: left; }
 .account-menu button:hover { background: var(--surface-hover); }
+.profile-menu-button {
+  border: 1px solid var(--border) !important;
+}
 .admin-menu-button {
   border: 1px solid rgba(245,166,35,0.28) !important;
   color: var(--indigo-light) !important;
@@ -268,6 +271,271 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .auth-forgot { display: block; margin: 10px 0 0; border: 0; background: none; color: var(--indigo-light); font: 500 11px var(--font-body); cursor: pointer; padding: 0; }
 [data-theme="light"] .auth-forgot { color: var(--indigo); }
 @media (max-width: 480px) { .auth-button { padding: 0 9px; } .account-label { display: none; } }
+
+/* Profile Modal */
+#profileModal .modal { max-width: 460px; }
+.profile-body { padding: 18px 20px 8px; }
+.profile-avatar-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 16px; }
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5A623;
+  color: #1B134F;
+  font-size: 24px;
+  font-weight: 700;
+  overflow: hidden;
+}
+ .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-upload-row { display: flex; align-items: center; gap: 10px; }
+.profile-upload-button { flex: 0 0 auto; padding: 9px 12px; }
+.profile-upload-name { min-width: 0; flex: 1; font-size: 10px; line-height: 1.35; color: var(--text-muted); overflow-wrap: anywhere; }
+.profile-upload-button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 480px) { .profile-upload-row { align-items: stretch; flex-direction: column; } .profile-upload-button { width: 100%; } }
+.profile-avatar-hint { font-size: 10px; color: var(--text-muted); text-align: center; }
+.profile-readonly { background: var(--surface-hover) !important; color: var(--text-secondary) !important; }
+.profile-account-card { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.profile-info { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 10px; }
+.profile-info .label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.profile-info .value { margin-top: 3px; font-size: 12px; color: var(--text); font-family: var(--font-mono); overflow-wrap: anywhere; }
+.profile-status { min-height: 17px; font-size: 11px; line-height: 1.4; color: var(--text-muted); padding: 0 20px 8px; }
+.profile-status.success { color: var(--positive); }
+.profile-status.error { color: var(--negative); }
+@media (max-width: 480px) { .profile-account-card { grid-template-columns: 1fr; } }
+
+/* Watchlist */
+.watchlist-menu-button {
+  border: 1px solid var(--border) !important;
+}
+.watchlist-modal .modal { max-width: 720px; }
+.watchlist-body { padding: 14px 18px 18px; }
+.watchlist-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.watchlist-count {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.watchlist-refresh {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font: 600 11px var(--font-body);
+  cursor: pointer;
+}
+.watchlist-refresh:hover { background: var(--surface-hover); }
+.watchlist-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.watchlist-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+.watchlist-table th {
+  padding: 9px 10px;
+  text-align: left;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.watchlist-table td {
+  padding: 10px;
+  font-size: 11px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.watchlist-table tr:last-child td { border-bottom: none; }
+.watchlist-symbol {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.watchlist-company {
+  font-weight: 600;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.watchlist-price,
+.watchlist-change {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.watchlist-change.up { color: var(--positive); }
+.watchlist-change.down { color: var(--negative); }
+.watchlist-open,
+.watchlist-remove,
+.watchlist-alert {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font: 600 10px var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.watchlist-alert { color: var(--indigo-light); }
+.watchlist-alert:hover { background: rgba(46,31,130,0.10); }
+[data-theme="light"] .watchlist-alert { color: var(--indigo); }
+.watchlist-open:hover { background: var(--surface-hover); }
+.watchlist-remove { color: var(--negative); }
+.watchlist-remove:hover { background: var(--negative-bg); }
+.watchlist-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.watchlist-error {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--negative-bg);
+  color: var(--negative);
+  font-size: 11px;
+  display: none;
+}
+.watchlist-add {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  font: 600 11px var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+}
+.watchlist-add:hover { background: var(--surface-hover); transform: translateY(-1px); }
+.watchlist-add.active {
+  background: var(--neutral-bg);
+  border-color: var(--neutral);
+  color: var(--neutral);
+}
+.stock-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .watchlist-modal .modal { max-width: calc(100vw - 24px); }
+  .watchlist-company { max-width: 150px; }
+}
+
+/* Stock Alerts */
+.alert-menu-button {
+  border: 1px solid var(--border) !important;
+}
+.alert-add {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  font: 600 11px var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.alert-add:hover { background: var(--surface-hover); transform: translateY(-1px); }
+.alert-add.active { color: var(--negative); border-color: var(--negative); background: var(--negative-bg); }
+.alert-modal .modal { max-width: 760px; }
+.alert-body { padding: 14px 18px 18px; }
+.alert-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; }
+.alert-count { font-size:11px; color:var(--text-muted); }
+.alert-refresh { border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:var(--radius-sm); padding:7px 10px; font:600 11px var(--font-body); cursor:pointer; }
+.alert-wrap { overflow:auto; border:1px solid var(--border); border-radius:var(--radius-md); }
+.alert-table { width:100%; border-collapse:collapse; min-width:650px; }
+.alert-table th { padding:9px 10px; text-align:left; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; background:var(--bg); border-bottom:1px solid var(--border); }
+.alert-table td { padding:10px; font-size:11px; color:var(--text); border-bottom:1px solid var(--border); }
+.alert-table tr:last-child td { border-bottom:none; }
+.alert-symbol { font-family:var(--font-mono); font-weight:700; }
+.alert-company { font-size:10px; color:var(--text-muted); margin-top:2px; max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.alert-target, .alert-current { font-family:var(--font-mono); }
+.alert-condition.above { color:var(--positive); font-weight:700; }
+.alert-condition.below { color:var(--negative); font-weight:700; }
+.alert-active { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; }
+.alert-dot { width:6px; height:6px; border-radius:50%; background:var(--positive); }
+.alert-active.off .alert-dot { background:var(--text-muted); }
+.alert-action { border:1px solid var(--border); background:var(--bg); color:var(--text); border-radius:var(--radius-sm); padding:6px 8px; font:600 10px var(--font-body); cursor:pointer; margin-left:4px; }
+.alert-action.delete { color:var(--negative); }
+.alert-empty { padding:28px 16px; text-align:center; color:var(--text-muted); font-size:12px; }
+.alert-error { padding:10px 12px; margin-bottom:10px; border-radius:var(--radius-sm); background:var(--negative-bg); color:var(--negative); font-size:11px; display:none; }
+.alert-form { display:grid; grid-template-columns:1fr 120px 150px auto; gap:8px; align-items:start; margin-bottom:12px; }
+.alert-form .modal-field { gap:5px; }
+.alert-form label { font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; }
+.alert-form input, .alert-form select { width:100%; box-sizing:border-box; height:36px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:0 9px; color:var(--text); font:12px var(--font-body); }
+.alert-form button { height:36px; }
+.alert-submit-wrap { padding-top:18px; }
+.alert-selected-price { margin-top:3px; font-size:10px; color:var(--text); font-family:var(--font-mono); font-weight:600; min-height:13px; }
+.alert-selected-price.up { color:var(--positive); }
+.alert-selected-price.down { color:var(--negative); }
+.alert-stock-name { font-size:11px; color:var(--text-muted); margin-bottom:7px; }
+.alert-symbol-wrap { position:relative; }
+.alert-search-dropdown {
+  position:absolute;
+  top:calc(100% + 5px);
+  left:0;
+  right:0;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-lg);
+  z-index:410;
+  max-height:240px;
+  overflow-y:auto;
+  display:none;
+}
+.alert-search-dropdown.open { display:block; }
+.alert-search-item {
+  padding:9px 10px;
+  cursor:pointer;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+}
+.alert-search-item:last-child { border-bottom:none; }
+.alert-search-item:hover { background:var(--surface-hover); }
+.alert-search-item .dd-name {
+  min-width:0;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.alert-search-item .dd-symbol {
+  flex-shrink:0;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--text-muted);
+  background:var(--bg);
+  padding:2px 6px;
+  border-radius:4px;
+}
+.alert-search-empty { padding:12px; font-size:11px; color:var(--text-muted); text-align:center; }
+.alert-selected-name { margin-top:4px; font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (max-width: 680px) { .alert-form { grid-template-columns:1fr 1fr; } .alert-form .alert-submit-wrap { grid-column:1 / -1; } .alert-form button { width:100%; } .alert-modal .modal { max-width:calc(100vw - 24px); } }
+@media (max-width: 680px) { .alert-form { grid-template-columns:1fr 1fr; } .alert-form .alert-submit-wrap { grid-column:1 / -1; } .alert-form button { width:100%; } .alert-modal .modal { max-width:calc(100vw - 24px); } }
 
 /* Settings Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(15,15,26,0.7); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.25s ease; }
@@ -784,6 +1052,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
       </button>
       <div class="account-menu" id="accountMenu">
         <div class="account-email" id="accountEmail">—</div>
+        <button class="profile-menu-button" id="profileButton" type="button">👤 My Profile</button>
+        <button class="watchlist-menu-button" id="watchlistButton" type="button">⭐ My Watchlist</button>
+        <button class="alert-menu-button" id="alertButton" type="button">🔔 My Alerts</button>
         <button class="admin-menu-button" id="adminPanelButton" type="button" style="display:none;">🛡️ Admin Panel</button>
         <button id="logoutButton" type="button">Log out</button>
       </div>
@@ -826,7 +1097,11 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     <div class="stock-detail-inner">
       <div class="stock-detail-header">
         <div>
-          <div class="stock-name" id="sdName">—</div>
+          <div class="stock-detail-title-row">
+            <div class="stock-name" id="sdName">—</div>
+            <button class="watchlist-add" id="stockWatchlistButton" type="button" style="display:none;">☆ Add to Watchlist</button>
+            <button class="alert-add" id="stockAlertButton" type="button" style="display:none;">🔔 Set Alert</button>
+          </div>
           <div style="margin-top:3px;">
             <span class="stock-symbol-tag" id="sdSymbol">—</span>
             <span class="stock-sector" id="sdSector">—</span>
@@ -1098,6 +1373,58 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     </div>
   </div>
 
+  <!-- Profile Modal -->
+  <div class="modal-overlay" id="profileModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+      <div class="modal-header">
+        <h3 id="profileTitle">My Profile</h3>
+        <button class="modal-close" id="profileClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="profile-body">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar" id="profileAvatar">M</div>
+          <div class="profile-avatar-hint">Your profile information</div>
+        </div>
+        <div class="modal-field">
+          <label for="profileName">Full Name</label>
+          <input id="profileName" type="text" maxlength="100" autocomplete="name" placeholder="Enter your full name">
+        </div>
+        <div class="modal-field">
+          <label for="profileEmail">Email</label>
+          <input id="profileEmail" class="profile-readonly" type="email" readonly>
+        </div>
+        <div class="modal-field">
+          <label>Profile Picture</label>
+          <div class="profile-upload-row">
+            <input id="profileAvatarFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+            <button class="btn-secondary profile-upload-button" id="profileUploadButton" type="button">Upload Picture</button>
+            <span class="profile-upload-name" id="profileUploadName">PNG, JPG or WEBP · max 2 MB</span>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label for="profileAvatarUrl">Or use an image URL</label>
+          <input id="profileAvatarUrl" type="url" maxlength="500" placeholder="https://example.com/photo.jpg">
+          <span class="hint">Use a direct image link. Google Search result links usually won't work.</span>
+        </div>
+        <div class="profile-account-card">
+          <div class="profile-info">
+            <div class="label">Account Type</div>
+            <div class="value" id="profileRole">User</div>
+          </div>
+          <div class="profile-info">
+            <div class="label">Joined</div>
+            <div class="value" id="profileJoined">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="profile-status" id="profileStatus" aria-live="polite"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="profileCancel" type="button">Cancel</button>
+        <button class="btn-primary" id="profileSave" type="button">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Admin Modal -->
   <div class="modal-overlay" id="adminModal" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
@@ -1123,6 +1450,84 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
           </table>
         </div>
         <div class="admin-note">This first admin dashboard reads from the Supabase <code>profiles</code> table. User email addresses are intentionally not shown here because Supabase Auth emails are not exposed to other users through the browser client.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watchlist Modal -->
+  <div class="modal-overlay watchlist-modal" id="watchlistModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="watchlistTitle">
+      <div class="modal-header">
+        <h3 id="watchlistTitle">My Watchlist</h3>
+        <button class="modal-close" id="watchlistClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="watchlist-body">
+        <div class="watchlist-toolbar">
+          <span class="watchlist-count" id="watchlistCount">Loading…</span>
+          <button class="watchlist-refresh" id="watchlistRefresh" type="button">↻ Refresh</button>
+        </div>
+        <div class="watchlist-error" id="watchlistError"></div>
+        <div class="watchlist-wrap">
+          <table class="watchlist-table">
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th style="text-align:right;">Price</th>
+                <th style="text-align:right;">Chg%</th>
+                <th style="text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="watchlistBody">
+              <tr><td colspan="4" class="watchlist-empty">Loading watchlist…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Alerts Modal -->
+  <div class="modal-overlay alert-modal" id="alertModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="alertTitle">
+      <div class="modal-header">
+        <h3 id="alertTitle">My Price Alerts</h3>
+        <button class="modal-close" id="alertClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="alert-body">
+        <div class="alert-stock-name" id="alertStockName">Create an alert from a stock detail card.</div>
+        <div class="alert-form">
+          <div class="modal-field">
+            <label for="alertSymbol">Stock / Company</label>
+            <div class="alert-symbol-wrap">
+              <input id="alertSymbol" type="text" placeholder="Search company or symbol…" maxlength="80" autocomplete="off">
+              <div class="alert-search-dropdown" id="alertSearchDropdown"></div>
+            </div>
+            <div class="alert-selected-name" id="alertSelectedName"></div>
+            <div class="alert-selected-price" id="alertSelectedPrice"></div>
+          </div>
+          <div class="modal-field">
+            <label for="alertCondition">Condition</label>
+            <select id="alertCondition"><option value="above">Above</option><option value="below">Below</option></select>
+          </div>
+          <div class="modal-field">
+            <label for="alertTarget">Target price</label>
+            <input id="alertTarget" type="number" min="0.01" step="0.01" placeholder="2000">
+          </div>
+          <div class="alert-submit-wrap">
+            <button class="btn-primary" id="alertSave" type="button">Create Alert</button>
+          </div>
+        </div>
+        <div class="alert-error" id="alertError"></div>
+        <div class="alert-toolbar">
+          <span class="alert-count" id="alertCount">Loading…</span>
+          <button class="alert-refresh" id="alertRefresh" type="button">↻ Refresh</button>
+        </div>
+        <div class="alert-wrap">
+          <table class="alert-table">
+            <thead><tr><th>Stock</th><th>Condition</th><th>Target</th><th>Current</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="alertBody"><tr><td colspan="6" class="alert-empty">Loading alerts…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -1195,8 +1600,54 @@ const signupTab = document.getElementById('signupTab');
 const loginForm = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
 const authStatus = document.getElementById('authStatus');
+const profileButton = document.getElementById('profileButton');
+const profileModal = document.getElementById('profileModal');
+const profileClose = document.getElementById('profileClose');
+const profileCancel = document.getElementById('profileCancel');
+const profileName = document.getElementById('profileName');
+const profileEmail = document.getElementById('profileEmail');
+const profileAvatarUrl = document.getElementById('profileAvatarUrl');
+const profileAvatarFile = document.getElementById('profileAvatarFile');
+const profileUploadButton = document.getElementById('profileUploadButton');
+const profileUploadName = document.getElementById('profileUploadName');
+const profileAvatar = document.getElementById('profileAvatar');
+const profileRole = document.getElementById('profileRole');
+const profileJoined = document.getElementById('profileJoined');
+const profileStatus = document.getElementById('profileStatus');
+const profileSave = document.getElementById('profileSave');
+const watchlistButton = document.getElementById('watchlistButton');
+const watchlistModal = document.getElementById('watchlistModal');
+const watchlistClose = document.getElementById('watchlistClose');
+const watchlistRefresh = document.getElementById('watchlistRefresh');
+const watchlistBody = document.getElementById('watchlistBody');
+const watchlistCount = document.getElementById('watchlistCount');
+const watchlistError = document.getElementById('watchlistError');
+const stockWatchlistButton = document.getElementById('stockWatchlistButton');
+const alertButton = document.getElementById('alertButton');
+const alertModal = document.getElementById('alertModal');
+const alertClose = document.getElementById('alertClose');
+const alertRefresh = document.getElementById('alertRefresh');
+const alertBody = document.getElementById('alertBody');
+const alertCount = document.getElementById('alertCount');
+const alertError = document.getElementById('alertError');
+const alertSymbol = document.getElementById('alertSymbol');
+const alertSearchDropdown = document.getElementById('alertSearchDropdown');
+const alertSelectedName = document.getElementById('alertSelectedName');
+const alertSelectedPrice = document.getElementById('alertSelectedPrice');
+const alertCondition = document.getElementById('alertCondition');
+const alertTarget = document.getElementById('alertTarget');
+const alertSave = document.getElementById('alertSave');
+const alertStockName = document.getElementById('alertStockName');
+const stockAlertButton = document.getElementById('stockAlertButton');
+
+let watchlistSymbols = new Set();
+let selectedStockSymbol = '';
+let selectedStockName = '';
+let alertSearchDebounce = null;
+let alertCheckBusy = false;
 
 let currentUser = null;
+let currentProfile = null;
 let isAdmin = false;
 
 function setAuthStatus(message = '', type = '') { authStatus.textContent = message; authStatus.className = 'auth-status' + (type ? ' ' + type : ''); }
@@ -1211,6 +1662,719 @@ function openAuthModal(mode = 'login') {
   setTimeout(() => document.getElementById(mode === 'signup' ? 'signupEmail' : 'loginEmail')?.focus(), 50);
 }
 function closeAuthModal() { authModal.classList.remove('open'); authModal.setAttribute('aria-hidden', 'true'); }
+
+function setProfileStatus(message = '', type = '') {
+  profileStatus.textContent = message;
+  profileStatus.className = 'profile-status' + (type ? ' ' + type : '');
+}
+
+
+function setWatchlistError(message = '') {
+  watchlistError.textContent = message;
+  watchlistError.style.display = message ? 'block' : 'none';
+}
+
+function updateStockWatchlistButton() {
+  if (!stockWatchlistButton) return;
+  const symbol = String(selectedStockSymbol || '').trim().toUpperCase();
+  if (!currentUser || !symbol) {
+    stockWatchlistButton.style.display = 'none';
+    return;
+  }
+  stockWatchlistButton.style.display = 'inline-flex';
+  const active = watchlistSymbols.has(symbol);
+  stockWatchlistButton.classList.toggle('active', active);
+  stockWatchlistButton.textContent = active ? '★ In Watchlist' : '☆ Add to Watchlist';
+  stockWatchlistButton.title = active ? 'Remove from watchlist' : 'Add to watchlist';
+}
+
+async function loadWatchlistSymbols() {
+  if (!currentUser) {
+    watchlistSymbols = new Set();
+    updateStockWatchlistButton();
+    return;
+  }
+  try {
+    const { data, error } = await supabaseClient
+      .from('watchlist')
+      .select('symbol')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    watchlistSymbols = new Set(
+      (Array.isArray(data) ? data : [])
+        .map(row => String(row.symbol || '').trim().toUpperCase())
+        .filter(Boolean)
+    );
+    updateStockWatchlistButton();
+  } catch (error) {
+    console.error('[Watchlist] Could not load symbols:', error);
+    watchlistSymbols = new Set();
+    updateStockWatchlistButton();
+  }
+}
+
+async function toggleWatchlist(symbol) {
+  if (!currentUser) {
+    openAuthModal('login');
+    return false;
+  }
+  const cleanSymbol = String(symbol || '').trim().toUpperCase();
+  if (!cleanSymbol) return false;
+  const isSaved = watchlistSymbols.has(cleanSymbol);
+  if (stockWatchlistButton) stockWatchlistButton.disabled = true;
+  try {
+    if (isSaved) {
+      const { error } = await supabaseClient
+        .from('watchlist')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('symbol', cleanSymbol);
+      if (error) throw error;
+      watchlistSymbols.delete(cleanSymbol);
+    } else {
+      const { error } = await supabaseClient
+        .from('watchlist')
+        .insert({ user_id: currentUser.id, symbol: cleanSymbol });
+      if (error) throw error;
+      watchlistSymbols.add(cleanSymbol);
+    }
+    updateStockWatchlistButton();
+    return true;
+  } catch (error) {
+    console.error('[Watchlist] Could not update watchlist:', error);
+    return false;
+  } finally {
+    if (stockWatchlistButton) stockWatchlistButton.disabled = false;
+  }
+}
+
+function openWatchlistModal() {
+  if (!currentUser) {
+    openAuthModal('login');
+    return;
+  }
+  watchlistModal.classList.add('open');
+  watchlistModal.setAttribute('aria-hidden', 'false');
+  accountMenu.classList.remove('open');
+  accountButton.setAttribute('aria-expanded', 'false');
+  loadWatchlist();
+}
+
+function closeWatchlistModal() {
+  watchlistModal.classList.remove('open');
+  watchlistModal.setAttribute('aria-hidden', 'true');
+  setWatchlistError('');
+}
+
+async function loadWatchlist() {
+  if (!currentUser) return;
+  setWatchlistError('');
+  watchlistCount.textContent = 'Loading…';
+  watchlistBody.innerHTML = '<tr><td colspan="4" class="watchlist-empty">Loading watchlist…</td></tr>';
+  watchlistRefresh.disabled = true;
+  try {
+    const { data, error } = await supabaseClient
+      .from('watchlist')
+      .select('symbol, created_at')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
+    const rows = Array.isArray(data) ? data : [];
+    watchlistCount.textContent = `${rows.length} stock${rows.length === 1 ? '' : 's'}`;
+    watchlistSymbols = new Set(
+      rows.map(row => String(row.symbol || '').trim().toUpperCase()).filter(Boolean)
+    );
+    updateStockWatchlistButton();
+
+    if (!rows.length) {
+      watchlistBody.innerHTML = '<tr><td colspan="4" class="watchlist-empty">Your watchlist is empty.<br>Add stocks from the stock detail card.</td></tr>';
+      return;
+    }
+
+    const details = await Promise.all(rows.map(async row => {
+      const symbol = String(row.symbol || '').trim().toUpperCase();
+      try {
+        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(symbol));
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return { symbol, stock: await res.json() };
+      } catch (error) {
+        console.error('[Watchlist] Could not load', symbol, error);
+        return { symbol, stock: null };
+      }
+    }));
+
+    watchlistBody.innerHTML = details.map(({ symbol, stock }) => {
+      const company = stock?.company_name || stock?.name || symbol;
+      const price = Number(stock?.price);
+      const change = Number(stock?.change_percent);
+      const priceText = Number.isFinite(price)
+        ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : '—';
+      const changeText = stock ? fmtPct(stock.change_percent) : '—';
+      const changeClass = Number.isFinite(change) ? (change >= 0 ? 'up' : 'down') : '';
+      const safeCompany = String(company).replace(/"/g, '&quot;');
+
+      return `
+        <tr data-watch-symbol="${symbol}">
+          <td>
+            <div class="watchlist-symbol">${symbol}</div>
+            <div class="watchlist-company" title="${safeCompany}">${company}</div>
+          </td>
+          <td class="watchlist-price">${priceText}</td>
+          <td class="watchlist-change ${changeClass}">${changeText}</td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button class="watchlist-open" type="button" data-watch-open="${symbol}">Open</button>
+            <button class="watchlist-remove" type="button" data-watch-remove="${symbol}">Remove</button>
+            <button class="watchlist-alert" type="button" data-watch-alert="${symbol}" data-watch-company="${safeCompany}">Alert</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    watchlistBody.querySelectorAll('[data-watch-open]').forEach(button => {
+      button.addEventListener('click', () => {
+        const symbol = button.getAttribute('data-watch-open');
+        closeWatchlistModal();
+        searchInput.value = symbol;
+        doSearch();
+      });
+    });
+
+    watchlistBody.querySelectorAll('[data-watch-alert]').forEach(button => {
+      button.addEventListener('click', () => {
+        const symbol = button.getAttribute('data-watch-alert') || '';
+        const company = button.getAttribute('data-watch-company') || '';
+        openAlertModal(symbol, company);
+      });
+    });
+
+    watchlistBody.querySelectorAll('[data-watch-remove]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const symbol = button.getAttribute('data-watch-remove');
+        button.disabled = true;
+        const { error } = await supabaseClient
+          .from('watchlist')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('symbol', symbol);
+        if (error) {
+          console.error('[Watchlist] Could not remove:', error);
+          button.disabled = false;
+          setWatchlistError(error.message || 'Could not remove this stock.');
+          return;
+        }
+        watchlistSymbols.delete(symbol);
+        updateStockWatchlistButton();
+        await loadWatchlist();
+      });
+    });
+  } catch (error) {
+    console.error('[Watchlist] Could not load watchlist:', error);
+    watchlistCount.textContent = 'Unable to load';
+    watchlistBody.innerHTML = '<tr><td colspan="4" class="watchlist-empty">Could not load your watchlist.</td></tr>';
+    setWatchlistError(error.message || 'Could not load your watchlist.');
+  } finally {
+    watchlistRefresh.disabled = false;
+  }
+}
+
+function setAlertError(message = '') {
+  alertError.textContent = message;
+  alertError.style.display = message ? 'block' : 'none';
+}
+
+function updateStockAlertButton() {
+  if (!stockAlertButton) return;
+  const symbol = String(selectedStockSymbol || '').trim().toUpperCase();
+  if (!currentUser || !symbol) {
+    stockAlertButton.style.display = 'none';
+    return;
+  }
+  stockAlertButton.style.display = 'inline-flex';
+}
+
+function openAlertModal(symbol = selectedStockSymbol, companyName = selectedStockName) {
+  if (!currentUser) {
+    openAuthModal('login');
+    return;
+  }
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+  const cleanSymbol = String(symbol || '').trim().toUpperCase();
+  alertModal.classList.add('open');
+  alertModal.setAttribute('aria-hidden', 'false');
+  accountMenu.classList.remove('open');
+  accountButton.setAttribute('aria-expanded', 'false');
+  alertSymbol.value = cleanSymbol;
+  alertSelectedName.textContent = companyName ? companyName : '';
+  alertSelectedPrice.textContent = cleanSymbol ? 'Loading current price…' : '';
+  alertSelectedPrice.className = 'alert-selected-price';
+  alertStockName.textContent = companyName ? `${companyName} · ${cleanSymbol}` : (cleanSymbol ? `Create an alert for ${cleanSymbol}` : 'Search for a company or stock symbol.');
+  alertTarget.value = '';
+  alertCondition.value = 'above';
+  setAlertError('');
+  if (alertSearchDropdown) {
+    alertSearchDropdown.innerHTML = '';
+    alertSearchDropdown.classList.remove('open');
+  }
+  if (cleanSymbol) loadAlertStockPrice(cleanSymbol);
+  loadAlerts();
+  setTimeout(() => alertSymbol.focus(), 50);
+}
+
+function closeAlertModal() {
+  alertModal.classList.remove('open');
+  alertModal.setAttribute('aria-hidden', 'true');
+  setAlertError('');
+}
+
+async function loadAlertStockPrice(symbol) {
+  const cleanSymbol = String(symbol || '').trim().toUpperCase();
+  if (!cleanSymbol || !alertSelectedPrice) return;
+
+  alertSelectedPrice.textContent = 'Loading current price…';
+  alertSelectedPrice.className = 'alert-selected-price';
+
+  try {
+    const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const stock = await res.json();
+    const price = Number(stock?.price);
+
+    if (!Number.isFinite(price)) {
+      alertSelectedPrice.textContent = 'Current price: —';
+      return;
+    }
+
+    const change = Number(stock?.change_percent);
+    const direction = Number.isFinite(change) ? (change >= 0 ? 'up' : 'down') : '';
+    const changeText = Number.isFinite(change) ? ` (${fmtPct(change)})` : '';
+    alertSelectedPrice.textContent = `Current price: ₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${changeText}`;
+    alertSelectedPrice.className = 'alert-selected-price ' + direction;
+  } catch (error) {
+    console.error('[Alerts] Could not load current price:', error);
+    alertSelectedPrice.textContent = 'Current price unavailable';
+    alertSelectedPrice.className = 'alert-selected-price';
+  }
+}
+
+async function searchAlertStocks(query) {
+  if (!alertSearchDropdown) return;
+  const q = String(query || '').trim();
+
+  if (q.length < 2) {
+    alertSearchDropdown.innerHTML = '';
+    alertSearchDropdown.classList.remove('open');
+    if (!q) alertSelectedName.textContent = '';
+    return;
+  }
+
+  alertSearchDropdown.innerHTML = '<div class="alert-search-empty">Searching…</div>';
+  alertSearchDropdown.classList.add('open');
+
+  try {
+    const res = await fetch(STOCK_SEARCH_URL() + '?q=' + encodeURIComponent(q));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    let stocks = [];
+    if (Array.isArray(data)) stocks = data;
+    else if (data.items && Array.isArray(data.items)) stocks = data.items;
+    else if (typeof data === 'object' && data !== null && (data.symbol || data.company_name)) stocks = [data];
+
+    if (!stocks.length) {
+      alertSearchDropdown.innerHTML = '<div class="alert-search-empty">No matches</div>';
+      return;
+    }
+
+    alertSearchDropdown.innerHTML = '';
+    stocks.slice(0, 10).forEach(stock => {
+      const symbol = String(stock.symbol || '').trim().toUpperCase();
+      const company = String(stock.company_name || stock.name || symbol).trim();
+      if (!symbol) return;
+
+      const div = document.createElement('div');
+      div.className = 'alert-search-item';
+      const isFnoSearch = fnoSymbols.has(symbol);
+      div.innerHTML = `<span class="dd-name">${company}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${symbol}</span>`;
+
+      div.addEventListener('click', () => {
+        alertSymbol.value = symbol;
+        alertSelectedName.textContent = company;
+        alertStockName.textContent = `${company} · ${symbol}`;
+        alertSearchDropdown.classList.remove('open');
+        loadAlertStockPrice(symbol);
+      });
+
+      alertSearchDropdown.appendChild(div);
+    });
+
+    if (!alertSearchDropdown.children.length) {
+      alertSearchDropdown.innerHTML = '<div class="alert-search-empty">No matches</div>';
+    }
+  } catch (error) {
+    console.error('[Alerts] Stock search failed:', error);
+    alertSearchDropdown.innerHTML = '<div class="alert-search-empty">Search unavailable</div>';
+  }
+}
+
+async function createAlert() {
+  if (!currentUser) return;
+  const symbol = String(alertSymbol.value || '').trim().toUpperCase();
+  const companyName = String(alertSelectedName?.textContent || '').trim() || (symbol === selectedStockSymbol ? selectedStockName : '');
+  const condition = alertCondition.value === 'below' ? 'below' : 'above';
+  const target = Number(alertTarget.value);
+  if (!symbol) { setAlertError('Enter a stock symbol.'); return; }
+  if (!Number.isFinite(target) || target <= 0) { setAlertError('Enter a valid target price.'); return; }
+
+  alertSave.disabled = true;
+  alertSave.textContent = 'Creating…';
+  setAlertError('');
+  try {
+    const { error } = await supabaseClient.from('stock_alerts').insert({
+      user_id: currentUser.id,
+      symbol,
+      company_name: companyName || null,
+      target_price: target,
+      condition,
+      is_active: true
+    });
+    if (error) throw error;
+    alertTarget.value = '';
+    await loadAlerts();
+  } catch (error) {
+    console.error('[Alerts] Could not create alert:', error);
+    setAlertError(error.message || 'Could not create alert.');
+  } finally {
+    alertSave.disabled = false;
+    alertSave.textContent = 'Create Alert';
+  }
+}
+
+async function loadAlerts() {
+  if (!currentUser) return;
+  setAlertError('');
+  alertCount.textContent = 'Loading…';
+  alertBody.innerHTML = '<tr><td colspan="6" class="alert-empty">Loading alerts…</td></tr>';
+  alertRefresh.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.from('stock_alerts')
+      .select('id, symbol, company_name, target_price, condition, is_active, triggered_at, created_at')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    const activeCount = rows.filter(r => r.is_active).length;
+    alertCount.textContent = `${rows.length} alert${rows.length === 1 ? '' : 's'} · ${activeCount} active`;
+    if (!rows.length) {
+      alertBody.innerHTML = '<tr><td colspan="6" class="alert-empty">No price alerts yet.<br>Create one above or from a stock detail card.</td></tr>';
+      return;
+    }
+    const details = await Promise.all(rows.map(async row => {
+      const symbol = String(row.symbol || '').trim().toUpperCase();
+      let stock = null;
+      try {
+        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(symbol));
+        if (res.ok) stock = await res.json();
+      } catch (e) { console.error('[Alerts] Price fetch failed', symbol, e); }
+      return { row, stock };
+    }));
+    alertBody.innerHTML = details.map(({ row, stock }) => {
+      const symbol = String(row.symbol || '').toUpperCase();
+      const company = row.company_name || stock?.company_name || '';
+      const current = Number(stock?.price);
+      const target = Number(row.target_price);
+      const currentText = Number.isFinite(current) ? '₹' + current.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+      const targetText = Number.isFinite(target) ? '₹' + target.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+      const triggered = !!row.triggered_at;
+      const status = triggered ? 'Triggered' : (row.is_active ? 'Active' : 'Paused');
+      const statusClass = row.is_active && !triggered ? '' : ' off';
+      return `<tr data-alert-id="${row.id}">
+        <td><div class="alert-symbol">${symbol}</div><div class="alert-company" title="${String(company).replace(/"/g,'&quot;')}">${company}</div></td>
+        <td class="alert-condition ${row.condition}">${row.condition === 'above' ? '▲ Above' : '▼ Below'}</td>
+        <td class="alert-target">${targetText}</td>
+        <td class="alert-current">${currentText}</td>
+        <td><span class="alert-active${statusClass}"><span class="alert-dot"></span>${status}</span></td>
+        <td style="text-align:right;white-space:nowrap;"><button class="alert-action" data-alert-toggle="${row.id}" data-alert-active="${row.is_active}">${row.is_active ? 'Pause' : 'Enable'}</button><button class="alert-action delete" data-alert-delete="${row.id}">Delete</button></td>
+      </tr>`;
+    }).join('');
+
+    alertBody.querySelectorAll('[data-alert-toggle]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const id = button.getAttribute('data-alert-toggle');
+        const active = button.getAttribute('data-alert-active') === 'true';
+        button.disabled = true;
+        const { error } = await supabaseClient.from('stock_alerts').update({ is_active: !active }).eq('id', id).eq('user_id', currentUser.id);
+        if (error) { setAlertError(error.message || 'Could not update alert.'); button.disabled = false; return; }
+        await loadAlerts();
+      });
+    });
+    alertBody.querySelectorAll('[data-alert-delete]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const id = button.getAttribute('data-alert-delete');
+        button.disabled = true;
+        const { error } = await supabaseClient.from('stock_alerts').delete().eq('id', id).eq('user_id', currentUser.id);
+        if (error) { setAlertError(error.message || 'Could not delete alert.'); button.disabled = false; return; }
+        await loadAlerts();
+      });
+    });
+  } catch (error) {
+    console.error('[Alerts] Could not load alerts:', error);
+    alertCount.textContent = 'Unable to load';
+    alertBody.innerHTML = '<tr><td colspan="6" class="alert-empty">Could not load your alerts.</td></tr>';
+    setAlertError(error.message || 'Could not load your alerts.');
+  } finally {
+    alertRefresh.disabled = false;
+  }
+}
+
+async function checkStockAlerts() {
+  if (!currentUser || alertCheckBusy) return;
+  alertCheckBusy = true;
+  try {
+    const { data, error } = await supabaseClient.from('stock_alerts')
+      .select('id, symbol, target_price, condition, company_name')
+      .eq('user_id', currentUser.id).eq('is_active', true).is('triggered_at', null);
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    for (const row of rows) {
+      try {
+        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(row.symbol));
+        if (!res.ok) continue;
+        const stock = await res.json();
+        const price = Number(stock?.price);
+        const target = Number(row.target_price);
+        if (!Number.isFinite(price) || !Number.isFinite(target)) continue;
+        const hit = row.condition === 'above' ? price >= target : price <= target;
+        if (!hit) continue;
+        const { error: updateError } = await supabaseClient.from('stock_alerts').update({ triggered_at: new Date().toISOString(), is_active: false }).eq('id', row.id).eq('user_id', currentUser.id);
+        if (updateError) { console.error('[Alerts] Could not trigger alert:', updateError); continue; }
+        const message = `${row.symbol} reached ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})} (${row.condition} ₹${target.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}).`;
+        if ('Notification' in window) {
+          if (Notification.permission === 'granted') new Notification('MarketPulse Price Alert', { body: message });
+        }
+        console.log('[Alerts]', message);
+        if (alertModal.classList.contains('open')) loadAlerts();
+      } catch (e) { console.error('[Alerts] Check failed for', row.symbol, e); }
+    }
+  } catch (error) {
+    console.error('[Alerts] Could not check alerts:', error);
+  } finally {
+    alertCheckBusy = false;
+  }
+}
+
+function profileInitials(name, email) {
+  const value = String(name || '').trim();
+  if (value) {
+    const parts = value.split(/\s+/).filter(Boolean);
+    if (parts.length > 1) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return value.slice(0, 2).toUpperCase();
+  }
+  return String(email || 'A').slice(0, 1).toUpperCase();
+}
+
+function renderProfileAvatar(name, email, avatarUrl) {
+  const initials = profileInitials(name, email);
+  const url = String(avatarUrl || '').trim();
+  profileAvatar.textContent = '';
+
+  if (!url) {
+    profileAvatar.textContent = initials;
+    return;
+  }
+
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = 'Profile picture';
+  img.addEventListener('error', () => {
+    profileAvatar.textContent = initials;
+  }, { once: true });
+  profileAvatar.appendChild(img);
+}
+
+async function loadUserProfile() {
+  if (!currentUser) {
+    currentProfile = null;
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('full_name, avatar_url, created_at, role')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    currentProfile = data || {};
+    const name = String(currentProfile.full_name || '').trim();
+    const email = currentUser.email || '';
+    const avatarUrl = String(currentProfile.avatar_url || '').trim();
+
+    profileName.value = name;
+    profileEmail.value = email;
+    profileAvatarUrl.value = avatarUrl;
+    profileRole.textContent = String(currentProfile.role || (isAdmin ? 'admin' : 'user'))
+      .replace(/^./, c => c.toUpperCase());
+
+    if (currentProfile.created_at) {
+      const date = new Date(currentProfile.created_at);
+      profileJoined.textContent = Number.isNaN(date.getTime())
+        ? '—'
+        : date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    } else {
+      profileJoined.textContent = '—';
+    }
+
+    renderProfileAvatar(name, email, avatarUrl);
+    updateAccountUI(currentUser);
+  } catch (error) {
+    console.error('[Profile] Could not load profile:', error);
+  }
+}
+
+function openProfileModal() {
+  if (!currentUser) return;
+  setProfileStatus('');
+  profileModal.classList.add('open');
+  profileModal.setAttribute('aria-hidden', 'false');
+  accountMenu.classList.remove('open');
+  accountButton.setAttribute('aria-expanded', 'false');
+  profileAvatarFile.value = '';
+  profileUploadName.textContent = 'PNG, JPG or WEBP · max 2 MB';
+  loadUserProfile();
+  setTimeout(() => profileName.focus(), 50);
+}
+
+async function uploadProfilePicture() {
+  if (!currentUser) return;
+
+  const file = profileAvatarFile.files?.[0];
+  if (!file) {
+    profileAvatarFile.click();
+    return;
+  }
+
+  const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+  if (!allowedTypes.has(file.type)) {
+    setProfileStatus('Please choose a PNG, JPG or WEBP image.', 'error');
+    profileAvatarFile.value = '';
+    profileUploadName.textContent = 'PNG, JPG or WEBP · max 2 MB';
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    setProfileStatus('Image must be 2 MB or smaller.', 'error');
+    profileAvatarFile.value = '';
+    profileUploadName.textContent = 'PNG, JPG or WEBP · max 2 MB';
+    return;
+  }
+
+  const extension = file.type === 'image/png'
+    ? 'png'
+    : file.type === 'image/webp'
+      ? 'webp'
+      : 'jpg';
+  const storagePath = `${currentUser.id}/avatar.${extension}`;
+
+  profileUploadButton.disabled = true;
+  profileUploadName.textContent = file.name;
+  setProfileStatus('Uploading picture…');
+
+  try {
+    const { error: uploadError } = await supabaseClient.storage
+      .from('avatars')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        contentType: file.type,
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: publicData } = supabaseClient.storage
+      .from('avatars')
+      .getPublicUrl(storagePath);
+
+    const publicUrl = publicData?.publicUrl;
+    if (!publicUrl) throw new Error('Could not create the profile picture URL.');
+
+    profileAvatarUrl.value = `${publicUrl}?v=${Date.now()}`;
+    renderProfileAvatar(profileName.value.trim(), currentUser.email, profileAvatarUrl.value);
+    setProfileStatus('Picture uploaded. Click Save Profile to keep it.', 'success');
+  } catch (error) {
+    console.error('[Profile] Could not upload picture:', error);
+    setProfileStatus(error.message || 'Could not upload the picture.', 'error');
+    profileAvatarFile.value = '';
+    profileUploadName.textContent = 'PNG, JPG or WEBP · max 2 MB';
+  } finally {
+    profileUploadButton.disabled = false;
+  }
+}
+
+function closeProfileModal() {
+  profileModal.classList.remove('open');
+  profileModal.setAttribute('aria-hidden', 'true');
+  setProfileStatus('');
+}
+
+async function saveProfile() {
+  if (!currentUser) return;
+
+  const fullName = profileName.value.trim();
+  const avatarUrl = profileAvatarUrl.value.trim();
+
+  if (fullName.length > 100) {
+    setProfileStatus('Full name must be 100 characters or fewer.', 'error');
+    return;
+  }
+
+  if (avatarUrl) {
+    try {
+      new URL(avatarUrl);
+    } catch {
+      setProfileStatus('Please enter a valid profile picture URL.', 'error');
+      return;
+    }
+  }
+
+  profileSave.disabled = true;
+  profileSave.textContent = 'Saving…';
+  setProfileStatus('Saving profile…');
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .update({
+        full_name: fullName || null,
+        avatar_url: avatarUrl || null
+      })
+      .eq('id', currentUser.id)
+      .select('full_name, avatar_url, created_at, role')
+      .single();
+
+    if (error) throw error;
+
+    currentProfile = data;
+    renderProfileAvatar(fullName, currentUser.email, avatarUrl);
+    updateAccountUI(currentUser);
+
+    setProfileStatus('Profile saved successfully.', 'success');
+    setTimeout(closeProfileModal, 700);
+  } catch (error) {
+    console.error('[Profile] Could not save profile:', error);
+    setProfileStatus(error.message || 'Could not save your profile.', 'error');
+  } finally {
+    profileSave.disabled = false;
+    profileSave.textContent = 'Save Profile';
+  }
+}
+
 async function loadAdminUsers() {
   if (!isAdmin || !currentUser) return;
   adminError.style.display = 'none';
@@ -1300,12 +2464,37 @@ function updateAccountUI(user) {
   adminPanelButton.style.display = loggedIn && isAdmin ? 'block' : 'none';
   if (!loggedIn) {
     currentUser = null;
+    currentProfile = null;
     isAdmin = false;
     adminPanelButton.style.display = 'none';
+    accountAvatar.textContent = 'M';
+    accountLabel.textContent = 'Account';
     return;
   }
+
   const email = user.email || 'Account';
-  accountEmail.textContent = email; accountLabel.textContent = email.split('@')[0] || 'Account'; accountAvatar.textContent = (email[0] || 'A').toUpperCase();
+  const name = String(currentProfile?.full_name || '').trim();
+  const avatarUrl = String(currentProfile?.avatar_url || '').trim();
+
+  accountEmail.textContent = email;
+  accountLabel.textContent = name || email.split('@')[0] || 'Account';
+
+  if (avatarUrl) {
+    accountAvatar.textContent = '';
+    const img = document.createElement('img');
+    img.src = avatarUrl;
+    img.alt = '';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '50%';
+    img.addEventListener('error', () => {
+      accountAvatar.textContent = profileInitials(name, email);
+    }, { once: true });
+    accountAvatar.appendChild(img);
+  } else {
+    accountAvatar.textContent = profileInitials(name, email);
+  }
 }
 
 async function loadUserRole(user) {
@@ -1333,6 +2522,9 @@ async function loadUserRole(user) {
   }
 
   updateAccountUI(user);
+  await loadUserProfile();
+  await loadWatchlistSymbols();
+  updateAccountUI(user);
 }
 
 authButton.addEventListener('click', () => openAuthModal('login'));
@@ -1344,6 +2536,49 @@ adminClose.addEventListener('click', closeAdminModal);
 adminModal.addEventListener('click', e => { if (e.target === adminModal) closeAdminModal(); });
 adminPanelButton.addEventListener('click', openAdminModal);
 adminRefreshButton.addEventListener('click', loadAdminUsers);
+profileButton.addEventListener('click', openProfileModal);
+profileClose.addEventListener('click', closeProfileModal);
+profileCancel.addEventListener('click', closeProfileModal);
+profileSave.addEventListener('click', saveProfile);
+profileUploadButton.addEventListener('click', () => profileAvatarFile.click());
+watchlistButton.addEventListener('click', openWatchlistModal);
+alertButton.addEventListener('click', () => openAlertModal());
+alertClose.addEventListener('click', closeAlertModal);
+alertRefresh.addEventListener('click', loadAlerts);
+alertSymbol.addEventListener('input', () => {
+  clearTimeout(alertSearchDebounce);
+  alertSelectedName.textContent = '';
+  if (alertSelectedPrice) {
+    alertSelectedPrice.textContent = '';
+    alertSelectedPrice.className = 'alert-selected-price';
+  }
+  const q = alertSymbol.value.trim();
+  alertSearchDebounce = setTimeout(() => searchAlertStocks(q), 300);
+});
+alertSymbol.addEventListener('focus', () => {
+  const q = alertSymbol.value.trim();
+  if (q.length >= 2) {
+    clearTimeout(alertSearchDebounce);
+    alertSearchDebounce = setTimeout(() => searchAlertStocks(q), 150);
+  }
+});
+document.addEventListener('click', e => {
+  if (alertSearchDropdown && !alertSearchDropdown.contains(e.target) && e.target !== alertSymbol) {
+    alertSearchDropdown.classList.remove('open');
+  }
+});
+alertSave.addEventListener('click', createAlert);
+stockAlertButton.addEventListener('click', () => openAlertModal(selectedStockSymbol, selectedStockName));
+alertModal.addEventListener('click', e => { if (e.target === alertModal) closeAlertModal(); });
+watchlistClose.addEventListener('click', closeWatchlistModal);
+watchlistRefresh.addEventListener('click', loadWatchlist);
+stockWatchlistButton.addEventListener('click', async () => {
+  if (!selectedStockSymbol) return;
+  await toggleWatchlist(selectedStockSymbol);
+});
+watchlistModal.addEventListener('click', e => { if (e.target === watchlistModal) closeWatchlistModal(); });
+profileAvatarFile.addEventListener('change', uploadProfilePicture);
+profileModal.addEventListener('click', e => { if (e.target === profileModal) closeProfileModal(); });
 accountButton.addEventListener('click', e => { e.stopPropagation(); const open = accountMenu.classList.toggle('open'); accountButton.setAttribute('aria-expanded', String(open)); });
 
 document.addEventListener('click', e => { if (!accountWrap.contains(e.target)) { accountMenu.classList.remove('open'); accountButton.setAttribute('aria-expanded', 'false'); } });
@@ -1351,6 +2586,9 @@ document.addEventListener('click', e => { if (!accountWrap.contains(e.target)) {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeAuthModal();
+    closeProfileModal();
+    closeWatchlistModal();
+    closeAlertModal();
     closeAdminModal();
     accountMenu.classList.remove('open');
     accountButton.setAttribute('aria-expanded', 'false');
@@ -1388,7 +2626,18 @@ document.getElementById('forgotPassword').addEventListener('click', async () => 
   catch (error) { setAuthStatus(error.message || 'Could not send reset email.', 'error'); }
 });
 
-logoutButton.addEventListener('click', async () => { logoutButton.disabled = true; const { error } = await supabaseClient.auth.signOut(); logoutButton.disabled = false; if (error) console.error('[Auth] Logout failed:', error); accountMenu.classList.remove('open'); });
+logoutButton.addEventListener('click', async () => {
+  logoutButton.disabled = true;
+  const { error } = await supabaseClient.auth.signOut();
+  logoutButton.disabled = false;
+  if (error) console.error('[Auth] Logout failed:', error);
+  watchlistSymbols = new Set();
+  selectedStockSymbol = '';
+  updateStockWatchlistButton();
+  closeWatchlistModal();
+  closeAlertModal();
+  accountMenu.classList.remove('open');
+});
 
 (async () => {
   const { data } = await supabaseClient.auth.getSession();
@@ -2623,11 +3872,18 @@ const sdHint = document.getElementById('sdHint');
 
 function renderStockDetail(stock) {
   if (!stock) {
+    selectedStockSymbol = '';
     stockDetailCard.style.display = 'none';
+    updateStockWatchlistButton();
     return;
   }
+  selectedStockSymbol = String(stock.symbol || '').trim().toUpperCase();
   sdName.textContent = stock.company_name || stock.name || '—';
   sdSymbol.textContent = stock.symbol || '—';
+  selectedStockSymbol = String(stock.symbol || '').trim().toUpperCase();
+  selectedStockName = String(stock.company_name || stock.name || '').trim();
+  updateStockWatchlistButton();
+  updateStockAlertButton();
   const isFnoDetail = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
   sdSector.innerHTML = (stock.sector || '—') + (isFnoDetail ? ' <span class="fno-badge">F&O</span>' : '');
 
@@ -2642,6 +3898,7 @@ function renderStockDetail(stock) {
   sdPrice.textContent = !isNaN(price) ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
   sdChange.textContent = fmtPct(changePct);
   sdChange.className = 'stock-change ' + (isUp ? 'up' : 'down');
+  updateStockWatchlistButton();
 
   const metrics = [
     { label: 'Open', value: fmtNum(stock.open, 2) },
@@ -2672,7 +3929,9 @@ function renderStockDetail(stock) {
 async function searchStock(query) {
   const dropdown = document.getElementById('searchDropdown');
   if (!query || query.length < 2) {
+    selectedStockSymbol = '';
     stockDetailCard.style.display = 'none';
+    updateStockWatchlistButton();
     sdHint.textContent = '';
     if (dropdown) dropdown.classList.remove('open');
     return;
@@ -2948,6 +4207,7 @@ async function init() {
 }
 
 init();
+setTimeout(checkStockAlerts, 5000);
 setInterval(loadNews, REFRESH_MS * 2);
 setInterval(loadPrices, REFRESH_MS);
 setInterval(loadIndices, REFRESH_MS);
@@ -2957,6 +4217,7 @@ setInterval(loadBreadth, REFRESH_MS * 5);
 setInterval(loadFiiDii, REFRESH_MS * 12);
 setInterval(loadHeatmap, REFRESH_MS * 2);
 setInterval(loadGlobalIndices, REFRESH_MS);
+setInterval(checkStockAlerts, 60000);
 
 // Close dropdown on outside click
 document.addEventListener('click', (e) => {
