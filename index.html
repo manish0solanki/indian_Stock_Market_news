@@ -2075,6 +2075,9 @@ let selectedStockName = '';
 let alertSearchDebounce = null;
 let alertCheckBusy = false;
 let alertRealtimeChannel = null;
+let alertPollingTimer = null;
+let alertKnownTriggeredIds = new Set();
+let alertPollingInitialized = false;
 
 let currentUser = null;
 let currentProfile = null;
@@ -2725,6 +2728,7 @@ function showPriceAlertNotification(row) {
 }
 
 async function setupAlertRealtime(user) {
+  // Always clean up the previous listeners/timer when auth changes.
   if (alertRealtimeChannel) {
     try {
       await supabaseClient.removeChannel(alertRealtimeChannel);
@@ -2734,10 +2738,21 @@ async function setupAlertRealtime(user) {
     alertRealtimeChannel = null;
   }
 
+  if (alertPollingTimer) {
+    clearInterval(alertPollingTimer);
+    alertPollingTimer = null;
+  }
+
+  alertKnownTriggeredIds = new Set();
+  alertPollingInitialized = false;
+
   if (!user) return;
 
-  // Ask once when the user is logged in. The alert modal also asks when
-  // opened, so this does not break existing behavior.
+  /*
+   * Browser/system notification permission is requested from the alert
+   * button as well (a user gesture). Requesting it here is only a best
+   * effort and is intentionally not required for the in-page popup.
+   */
   if ('Notification' in window && Notification.permission === 'default') {
     try {
       await Notification.requestPermission();
@@ -2746,6 +2761,11 @@ async function setupAlertRealtime(user) {
     }
   }
 
+  /*
+   * PRIMARY: Supabase Realtime.
+   *
+   * When n8n sets triggered_at, this receives the UPDATE immediately.
+   */
   alertRealtimeChannel = supabaseClient
     .channel(`marketpulse-alerts-${user.id}`)
     .on(
@@ -2760,7 +2780,6 @@ async function setupAlertRealtime(user) {
         const oldRow = payload.old || {};
         const newRow = payload.new || {};
 
-        // Only notify when n8n actually marks an alert as triggered.
         const wasTriggered = !!oldRow.triggered_at;
         const isTriggered = !!newRow.triggered_at;
 
@@ -2772,7 +2791,72 @@ async function setupAlertRealtime(user) {
     .subscribe(status => {
       console.log('[Alerts] Realtime status:', status);
     });
+
+  /*
+   * FALLBACK: Supabase polling.
+   *
+   * This makes the website popup reliable even if Supabase Realtime is
+   * not enabled for stock_alerts. It checks every 10 seconds.
+   *
+   * Important: the first poll only establishes the baseline, so an old
+   * already-triggered alert does not create a false notification.
+   */
+  const pollTriggeredAlerts = async () => {
+    if (!currentUser) return;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('stock_alerts')
+        .select('id, symbol, company_name, target_price, condition, is_active, triggered_at, created_at')
+        .eq('user_id', currentUser.id)
+        .not('triggered_at', 'is', null)
+        .order('triggered_at', { ascending: false });
+
+      if (error) {
+        console.warn('[Alerts] Trigger polling failed:', error.message);
+        return;
+      }
+
+      const rows = Array.isArray(data) ? data : [];
+
+      if (!alertPollingInitialized) {
+        rows.forEach(row => {
+          if (row.id != null) alertKnownTriggeredIds.add(String(row.id));
+        });
+        alertPollingInitialized = true;
+        console.log('[Alerts] Trigger polling initialized:', alertKnownTriggeredIds.size);
+        return;
+      }
+
+      for (const row of rows) {
+        const id = String(row.id || '');
+        if (!id || alertKnownTriggeredIds.has(id)) continue;
+
+        alertKnownTriggeredIds.add(id);
+        showPriceAlertNotification(row);
+      }
+    } catch (error) {
+      console.warn('[Alerts] Trigger polling error:', error);
+    }
+  };
+
+  // Establish the baseline immediately, then check every 10 seconds.
+  await pollTriggeredAlerts();
+  alertPollingTimer = setInterval(pollTriggeredAlerts, 10000);
 }
+
+// Console test: type mpTestPriceAlert() to verify the popup visually.
+// This does not touch Supabase or create an alert.
+window.mpTestPriceAlert = function () {
+  showPriceAlertNotification({
+    id: 'local-test',
+    symbol: 'TMPV',
+    company_name: 'Tata Motors Passenger Vehicles Limited',
+    target_price: 300,
+    current_price: 302,
+    condition: 'above'
+  });
+};
 
 function profileInitials(name, email) {
   const value = String(name || '').trim();
@@ -3152,7 +3236,12 @@ profileCancel.addEventListener('click', closeProfileModal);
 profileSave.addEventListener('click', saveProfile);
 profileUploadButton.addEventListener('click', () => profileAvatarFile.click());
 watchlistButton.addEventListener('click', openWatchlistModal);
-alertButton.addEventListener('click', () => openAlertModal());
+alertButton.addEventListener('click', async () => {
+  if ('Notification' in window && Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (e) {}
+  }
+  openAlertModal();
+});
 alertClose.addEventListener('click', closeAlertModal);
 alertRefresh.addEventListener('click', loadAlerts);
 alertSymbol.addEventListener('input', () => {
