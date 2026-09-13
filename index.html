@@ -613,6 +613,26 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 [data-theme="light"] .metric.promoters .metric-value { color: var(--indigo); }
 .stock-search-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
+
+/* Stock History Chart */
+.stock-chart-wrap { margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
+.stock-chart-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.stock-chart-title { font-size:12px; font-weight:700; }
+.stock-chart-source { font-size:10px; color:var(--text-muted); margin-top:2px; }
+.stock-chart-ranges { display:flex; gap:5px; flex-wrap:wrap; }
+.stock-chart-range { border:1px solid var(--border); background:var(--bg); color:var(--text-secondary); border-radius:var(--radius-sm); padding:5px 9px; font:600 10px var(--font-body); cursor:pointer; }
+.stock-chart-range:hover { background:var(--surface-hover); color:var(--text); }
+.stock-chart-range.active { background:var(--indigo); border-color:var(--indigo); color:#fff; }
+.stock-chart-canvas { position:relative; width:100%; height:300px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; }
+.stock-chart-svg { width:100%; height:100%; display:block; }
+.stock-chart-loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:11px; z-index:2; }
+.stock-chart-tooltip { position:absolute; pointer-events:none; display:none; padding:7px 9px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); box-shadow:var(--shadow-md); font:10px var(--font-mono); color:var(--text); white-space:nowrap; z-index:3; }
+.stock-chart-tooltip .date { color:var(--text-muted); margin-bottom:3px; }
+.stock-chart-tooltip .up { color:var(--positive); }
+.stock-chart-tooltip .down { color:var(--negative); }
+.stock-chart-legend { display:flex; justify-content:space-between; gap:10px; margin-top:7px; font-size:9px; color:var(--text-muted); }
+@media (max-width:640px) { .stock-chart-canvas { height:240px; } .stock-chart-head { align-items:flex-start; flex-direction:column; } .stock-chart-ranges { width:100%; } .stock-chart-range { flex:1; } }
+
 /* Main Dashboard Layout: 30/70 split */
 /* =========================================================
    MAIN DASHBOARD - INDEPENDENT COLUMN SCROLLING
@@ -1126,6 +1146,30 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         </div>
       </div>
       <div class="stock-metrics-grid" id="sdMetrics"></div>
+
+      <div class="stock-chart-wrap" id="stockChartWrap" style="display:none;">
+        <div class="stock-chart-head">
+          <div>
+            <div class="stock-chart-title">Price History</div>
+            <div class="stock-chart-source">NSE daily EOD data</div>
+          </div>
+          <div class="stock-chart-ranges" id="stockChartRanges">
+            <button class="stock-chart-range" data-range="1D" type="button">1D</button>
+            <button class="stock-chart-range" data-range="1W" type="button">1W</button>
+            <button class="stock-chart-range active" data-range="1M" type="button">1M</button>
+            <button class="stock-chart-range" data-range="3M" type="button">3M</button>
+          </div>
+        </div>
+        <div class="stock-chart-canvas" id="stockChartCanvas">
+          <div class="stock-chart-loading" id="stockChartLoading">Loading history…</div>
+          <svg class="stock-chart-svg" id="stockChartSvg" viewBox="0 0 1000 300" preserveAspectRatio="none" aria-label="Stock price history"></svg>
+          <div class="stock-chart-tooltip" id="stockChartTooltip"></div>
+        </div>
+        <div class="stock-chart-legend">
+          <span id="stockChartRangeLabel">Last 1 month</span>
+          <span id="stockChartCount">—</span>
+        </div>
+      </div>
       <div class="stock-search-hint" id="sdHint"></div>
     </div>
   </div>
@@ -2692,6 +2736,7 @@ const GLOBAL_URL   = () => API_BASE + "/global-news";
 const CONTACT_URL  = () => API_BASE + "/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
+const STOCK_HISTORY_URL = () => API_BASE + "/stock-history";
 const SECTOR_INDICES_URL = () => API_BASE + "/sector-indices";
 const SECTOR_LIST_URL    = () => API_BASE + "/sector-list";
 const SECTOR_STOCKS_URL  = () => API_BASE + "/sector-stocks";
@@ -2716,6 +2761,11 @@ let currentSectorName = '';
 let sectorSort = { col: null, dir: 'asc' };
 let sectorFilter = 'all';
 let sectorSearchQuery = '';
+let stockChartRange = '1M';
+let stockChartRequestId = 0;
+let stockChartData = [];
+let stockChartLoadedSymbol = '';
+let stockChartVisibleData = [];
 
 /* ─── API Fetch Wrapper (Cache Status + No Browser Cache) ─── */
 const originalFetch = window.fetch;
@@ -3985,13 +4035,188 @@ function renderStockDetail(stock) {
   ).join('');
 
   stockDetailCard.style.display = 'block';
+
+  // Reset the history master dataset whenever a new stock is selected.
+  stockChartData = [];
+  stockChartLoadedSymbol = '';
+  stockChartVisibleData = [];
+
+  // Load the default 1-month price history whenever a stock is selected.
+  loadStockHistory(selectedStockSymbol, '1M');
 }
+
+
+
+/* ─── Stock History Chart ─── */
+const stockChartWrap = document.getElementById('stockChartWrap');
+const stockChartSvg = document.getElementById('stockChartSvg');
+const stockChartCanvas = document.getElementById('stockChartCanvas');
+const stockChartLoading = document.getElementById('stockChartLoading');
+const stockChartTooltip = document.getElementById('stockChartTooltip');
+const stockChartCount = document.getElementById('stockChartCount');
+const stockChartRangeLabel = document.getElementById('stockChartRangeLabel');
+const stockChartRanges = document.getElementById('stockChartRanges');
+
+const stockChartRangeNames = {
+  '1D': 'Last trading day', '1W': 'Last 1 week', '1M': 'Last 1 month',
+  '3M': 'Last 3 months'
+};
+
+function renderStockHistoryChart(data) {
+  if (!stockChartSvg || !stockChartCanvas) return;
+  stockChartVisibleData = Array.isArray(data) ? data : [];
+  stockChartSvg.innerHTML = '';
+
+  if (!stockChartVisibleData.length) {
+    stockChartLoading.style.display = 'flex';
+    stockChartLoading.textContent = 'No historical data available';
+    stockChartCount.textContent = '0 sessions';
+    return;
+  }
+
+  stockChartLoading.style.display = 'none';
+  stockChartCount.textContent = `${stockChartVisibleData.length} session${stockChartVisibleData.length === 1 ? '' : 's'}`;
+  stockChartRangeLabel.textContent = stockChartRangeNames[stockChartRange] || stockChartRange;
+
+  const W=1000, H=300, pad={left:58,right:18,top:18,bottom:34};
+  const plotW=W-pad.left-pad.right, plotH=H-pad.top-pad.bottom;
+  const values=stockChartVisibleData.flatMap(d=>[Number(d.high),Number(d.low)]).filter(Number.isFinite);
+  if (!values.length) return;
+  let min=Math.min(...values), max=Math.max(...values), spread=max-min;
+  const extra=spread>0 ? spread*0.08 : Math.max(max*0.02,1);
+  min-=extra; max+=extra;
+  const x=i=>stockChartVisibleData.length===1 ? pad.left+plotW/2 : pad.left+(i/(stockChartVisibleData.length-1))*plotW;
+  const y=price=>pad.top+((max-price)/(max-min))*plotH;
+  const ns='http://www.w3.org/2000/svg';
+  const add=(tag,attrs,text)=>{const el=document.createElementNS(ns,tag); Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v)); if(text!==undefined) el.textContent=text; stockChartSvg.appendChild(el); return el;};
+
+  for(let g=0;g<=4;g++){
+    const gy=pad.top+(g/4)*plotH, price=max-(g/4)*(max-min);
+    add('line',{x1:pad.left,y1:gy,x2:W-pad.right,y2:gy,stroke:'var(--border)','stroke-width':'1','stroke-dasharray':'3 5',opacity:'0.8'});
+    add('text',{x:pad.left-8,y:gy+4,fill:'var(--text-muted)','font-size':'10','font-family':'var(--font-mono)','text-anchor':'end'},`₹${price.toLocaleString('en-IN',{maximumFractionDigits:2})}`);
+  }
+
+  const step=Math.max(1,Math.ceil(stockChartVisibleData.length/6));
+  const lastVisibleIndex=stockChartVisibleData.length-1;
+  stockChartVisibleData.forEach((d,i)=>{
+    if(i%step!==0 && i!==lastVisibleIndex) return;
+    const label=new Date(d.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    add('text',{x:x(i),y:H-10,fill:'var(--text-muted)','font-size':'10','font-family':'var(--font-mono)','text-anchor':i===0?'start':(i===lastVisibleIndex?'end':'middle')},label);
+  });
+
+  const candleWidth=Math.max(2,Math.min(16,(plotW/Math.max(stockChartVisibleData.length,1))*0.58));
+  stockChartVisibleData.forEach((d,i)=>{
+    const cx=x(i), open=Number(d.open), close=Number(d.close), high=Number(d.high), low=Number(d.low);
+    if(![open,close,high,low].every(Number.isFinite)) return;
+    const openY=y(open), closeY=y(close), highY=y(high), lowY=y(low), up=close>=open, stroke=up?'var(--positive)':'var(--negative)';
+    const group=document.createElementNS(ns,'g'); group.setAttribute('class','stock-candle'); group.setAttribute('data-index',i); group.style.cursor='crosshair';
+    const wick=document.createElementNS(ns,'line'); wick.setAttribute('x1',cx); wick.setAttribute('x2',cx); wick.setAttribute('y1',highY); wick.setAttribute('y2',lowY); wick.setAttribute('stroke',stroke); wick.setAttribute('stroke-width','1.2'); group.appendChild(wick);
+    const body=document.createElementNS(ns,'rect'); body.setAttribute('x',cx-candleWidth/2); body.setAttribute('y',Math.min(openY,closeY)); body.setAttribute('width',candleWidth); body.setAttribute('height',Math.max(1.5,Math.abs(closeY-openY))); body.setAttribute('fill',stroke); body.setAttribute('rx','1'); group.appendChild(body);
+    group.addEventListener('mouseenter',()=>showStockChartTooltip(i)); group.addEventListener('mouseleave',hideStockChartTooltip); group.addEventListener('touchstart',()=>showStockChartTooltip(i),{passive:true});
+    stockChartSvg.appendChild(group);
+  });
+}
+
+function showStockChartTooltip(index){
+  const d=stockChartVisibleData[index]; if(!d||!stockChartTooltip||!stockChartCanvas) return;
+  const date=new Date(d.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}), up=Number(d.close)>=Number(d.open);
+  stockChartTooltip.innerHTML=`<div class="date">${date}</div><div>O ₹${Number(d.open).toLocaleString('en-IN',{minimumFractionDigits:2})} · H ₹${Number(d.high).toLocaleString('en-IN',{minimumFractionDigits:2})}</div><div>L ₹${Number(d.low).toLocaleString('en-IN',{minimumFractionDigits:2})} · <span class="${up?'up':'down'}">C ₹${Number(d.close).toLocaleString('en-IN',{minimumFractionDigits:2})}</span></div>`;
+  stockChartTooltip.style.display='block';
+  const width=stockChartCanvas.clientWidth, ratio=stockChartVisibleData.length===1?0.5:index/(stockChartVisibleData.length-1);
+  stockChartTooltip.style.left=Math.min(Math.max(8,ratio*width-85),Math.max(8,width-180))+'px'; stockChartTooltip.style.top='10px';
+}
+function hideStockChartTooltip(){ if(stockChartTooltip) stockChartTooltip.style.display='none'; }
+
+function getStockHistorySlice(data, range) {
+  const rows = Array.isArray(data) ? data.slice() : [];
+  rows.sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')));
+  if (!rows.length) return [];
+
+  // Use calendar cut-offs, not a fixed number of sessions. This keeps the
+  // visible first/last dates correct for 1W/1M/3M/6M/1Y even around holidays.
+  const lastDate = new Date(String(rows[rows.length - 1].date) + 'T00:00:00');
+  const days = {
+    '1D': 1,
+    '1W': 7,
+    '1M': 31,
+    '3M': 92,
+  }[range];
+
+  if (!days || range === '1Y') return rows;
+
+  const cutoff = new Date(lastDate);
+  cutoff.setDate(cutoff.getDate() - (days - 1));
+
+  return rows.filter(row => {
+    const d = new Date(String(row.date) + 'T00:00:00');
+    return Number.isFinite(d.getTime()) && d >= cutoff && d <= lastDate;
+  });
+}
+
+async function loadStockHistory(symbol, range=stockChartRange){
+  const cleanSymbol=String(symbol||'').trim().toUpperCase();
+  if(!cleanSymbol||!stockChartWrap) return;
+
+  const requestId=++stockChartRequestId;
+  stockChartRange=range;
+  stockChartWrap.style.display='block';
+  stockChartLoading.style.display='flex';
+  stockChartLoading.textContent='Loading history…';
+  hideStockChartTooltip();
+  stockChartSvg.innerHTML='';
+
+  if(stockChartRanges) stockChartRanges.querySelectorAll('.stock-chart-range').forEach(btn=>
+    btn.classList.toggle('active',btn.dataset.range===range)
+  );
+
+  try{
+    // Keep one full 1-year dataset in memory and slice it locally for each
+    // button. This avoids replacing the master dataset with a shorter range.
+    // The backend only needs to provide the full 1Y history once per stock.
+    if (!stockChartData.length || stockChartLoadedSymbol !== cleanSymbol) {
+      const res=await fetch(
+        STOCK_HISTORY_URL() +
+        '?symbol=' + encodeURIComponent(cleanSymbol) +
+        '&range=1Y&force=true'
+      );
+
+      if(!res.ok) throw new Error('HTTP '+res.status);
+
+      const json=await res.json();
+      if(requestId!==stockChartRequestId || selectedStockSymbol!==cleanSymbol) return;
+
+      stockChartData=Array.isArray(json?.data) ? json.data : [];
+      stockChartData.sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')));
+      stockChartLoadedSymbol = cleanSymbol;
+    }
+
+    if(requestId!==stockChartRequestId || selectedStockSymbol!==cleanSymbol) return;
+
+    stockChartVisibleData=getStockHistorySlice(stockChartData, range);
+    renderStockHistoryChart(stockChartVisibleData);
+
+  }catch(e){
+    if(requestId!==stockChartRequestId) return;
+    stockChartLoading.style.display='flex';
+    stockChartLoading.textContent='Historical data unavailable';
+    stockChartVisibleData = [];
+    stockChartCount.textContent='—';
+    console.error('[Stock History]',e);
+  }
+}
+
+if(stockChartRanges) stockChartRanges.addEventListener('click',event=>{
+  const btn=event.target.closest('.stock-chart-range');
+  if(!btn || !selectedStockSymbol) return;
+  loadStockHistory(selectedStockSymbol, btn.dataset.range);
+});
 
 async function searchStock(query) {
   const dropdown = document.getElementById('searchDropdown');
   if (!query || query.length < 2) {
     selectedStockSymbol = '';
     stockDetailCard.style.display = 'none';
+    if (stockChartWrap) stockChartWrap.style.display = 'none';
     updateStockWatchlistButton();
     sdHint.textContent = '';
     if (dropdown) dropdown.classList.remove('open');
@@ -4072,6 +4297,7 @@ function doSearch() {
   const q = currentSearch.trim();
   if (q.length < 2) {
     stockDetailCard.style.display = 'none';
+    if (stockChartWrap) stockChartWrap.style.display = 'none';
     sdHint.textContent = '';
     return;
   }
