@@ -2144,37 +2144,33 @@ async function loadAlerts() {
   }
 }
 
+/*
+ * Background alert processing is handled by n8n.
+ *
+ * IMPORTANT:
+ * The browser must NEVER set triggered_at or is_active=false.
+ * Otherwise an alert can be marked Triggered while the site is open,
+ * before the 5-minute n8n workflow gets a chance to send Telegram.
+ *
+ * Supabase is the source of truth for alert status.
+ * n8n will:
+ *   1. read active alerts
+ *   2. check the current price
+ *   3. send Telegram when the condition is met
+ *   4. only then mark the alert triggered/inactive
+ */
 async function checkStockAlerts() {
   if (!currentUser || alertCheckBusy) return;
+
+  // This function is intentionally read-only.
+  // Refresh the UI from Supabase, but never trigger/update an alert here.
   alertCheckBusy = true;
   try {
-    const { data, error } = await supabaseClient.from('stock_alerts')
-      .select('id, symbol, target_price, condition, company_name')
-      .eq('user_id', currentUser.id).eq('is_active', true).is('triggered_at', null);
-    if (error) throw error;
-    const rows = Array.isArray(data) ? data : [];
-    for (const row of rows) {
-      try {
-        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(row.symbol));
-        if (!res.ok) continue;
-        const stock = await res.json();
-        const price = Number(stock?.price);
-        const target = Number(row.target_price);
-        if (!Number.isFinite(price) || !Number.isFinite(target)) continue;
-        const hit = row.condition === 'above' ? price >= target : price <= target;
-        if (!hit) continue;
-        const { error: updateError } = await supabaseClient.from('stock_alerts').update({ triggered_at: new Date().toISOString(), is_active: false }).eq('id', row.id).eq('user_id', currentUser.id);
-        if (updateError) { console.error('[Alerts] Could not trigger alert:', updateError); continue; }
-        const message = `${row.symbol} reached ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})} (${row.condition} ₹${target.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}).`;
-        if ('Notification' in window) {
-          if (Notification.permission === 'granted') new Notification('MarketPulse Price Alert', { body: message });
-        }
-        console.log('[Alerts]', message);
-        if (alertModal.classList.contains('open')) loadAlerts();
-      } catch (e) { console.error('[Alerts] Check failed for', row.symbol, e); }
+    if (alertModal && alertModal.classList.contains('open')) {
+      await loadAlerts();
     }
   } catch (error) {
-    console.error('[Alerts] Could not check alerts:', error);
+    console.error('[Alerts] Could not refresh alerts:', error);
   } finally {
     alertCheckBusy = false;
   }
@@ -4272,7 +4268,6 @@ async function init() {
 }
 
 init();
-setTimeout(checkStockAlerts, 5000);
 setInterval(loadNews, REFRESH_MS * 2);
 setInterval(loadPrices, REFRESH_MS);
 setInterval(loadIndices, REFRESH_MS);
@@ -4282,7 +4277,6 @@ setInterval(loadBreadth, REFRESH_MS * 5);
 setInterval(loadFiiDii, REFRESH_MS * 12);
 setInterval(loadHeatmap, REFRESH_MS * 2);
 setInterval(loadGlobalIndices, REFRESH_MS);
-setInterval(checkStockAlerts, 60000);
 
 // Close dropdown on outside click
 document.addEventListener('click', (e) => {
