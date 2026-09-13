@@ -534,8 +534,110 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 }
 .alert-search-empty { padding:12px; font-size:11px; color:var(--text-muted); text-align:center; }
 .alert-selected-name { margin-top:4px; font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-@media (max-width: 680px) { .alert-form { grid-template-columns:1fr 1fr; } .alert-form .alert-submit-wrap { grid-column:1 / -1; } .alert-form button { width:100%; } .alert-modal .modal { max-width:calc(100vw - 24px); } }
-@media (max-width: 680px) { .alert-form { grid-template-columns:1fr 1fr; } .alert-form .alert-submit-wrap { grid-column:1 / -1; } .alert-form button { width:100%; } .alert-modal .modal { max-width:calc(100vw - 24px); } }
+@media (max-width: 680px) {
+  .alert-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .alert-form .alert-submit-wrap {
+    grid-column: 1 / -1;
+  }
+  .alert-form button {
+    width: 100%;
+  }
+  .alert-modal .modal {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+/* Mobile alert search: give the stock/company field the full modal width.
+   This prevents company names from being squeezed into a narrow column. */
+@media (max-width: 480px) {
+  .alert-form {
+    grid-template-columns: 1fr;
+  }
+
+  .alert-form .modal-field {
+    min-width: 0;
+  }
+
+  .alert-form .alert-submit-wrap {
+    grid-column: 1;
+  }
+
+  .alert-search-dropdown {
+    width: 100%;
+    max-width: none;
+  }
+
+  .alert-search-item {
+    gap: 10px;
+  }
+
+  .alert-search-item .dd-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .alert-search-item .dd-symbol {
+    flex: 0 0 auto;
+  }
+}
+@media (max-width: 680px) {
+  .alert-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .alert-form .alert-submit-wrap {
+    grid-column: 1 / -1;
+  }
+  .alert-form button {
+    width: 100%;
+  }
+  .alert-modal .modal {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+/* Mobile alert search: give the stock/company field the full modal width.
+   This prevents company names from being squeezed into a narrow column. */
+@media (max-width: 480px) {
+  .alert-form {
+    grid-template-columns: 1fr;
+  }
+
+  .alert-form .modal-field {
+    min-width: 0;
+  }
+
+  .alert-form .alert-submit-wrap {
+    grid-column: 1;
+  }
+
+  .alert-search-dropdown {
+    width: 100%;
+    max-width: none;
+  }
+
+  .alert-search-item {
+    gap: 10px;
+  }
+
+  .alert-search-item .dd-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .alert-search-item .dd-symbol {
+    flex: 0 0 auto;
+  }
+}
 
 /* Settings Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(15,15,26,0.7); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.25s ease; }
