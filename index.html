@@ -886,6 +886,155 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stock-search-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
 
+/* =========================================================
+   STOCK FUNDAMENTALS
+   ========================================================= */
+
+.stock-fundamentals-wrap {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.stock-fundamentals-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.stock-fundamentals-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stock-fundamentals-source {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.stock-fundamentals-period {
+  font: 600 10px var(--font-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.fundamentals-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.fundamental-metric {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  min-width: 0;
+}
+
+.fundamental-metric-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fundamental-metric-value {
+  margin-top: 4px;
+  font: 600 13px var(--font-mono);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fundamentals-quarterly-wrap {
+  margin-top: 14px;
+}
+
+.fundamentals-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.fundamentals-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.fundamentals-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+  font-size: 11px;
+}
+
+.fundamentals-table th {
+  padding: 8px 9px;
+  background: var(--surface-hover);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fundamentals-table th:first-child {
+  text-align: left;
+}
+
+.fundamentals-table td {
+  padding: 8px 9px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fundamentals-table td:first-child {
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+.fundamentals-table tr:last-child td {
+  border-bottom: none;
+}
+
+.fundamentals-table tr:hover td {
+  background: var(--surface-hover);
+}
+
+.fundamentals-loading {
+  text-align: center !important;
+  color: var(--text-muted);
+  font-family: var(--font-body) !important;
+  padding: 14px !important;
+}
+
+@media (max-width: 640px) {
+  .fundamentals-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stock-fundamentals-head {
+    align-items: flex-start;
+  }
+
+  .fundamentals-table {
+    min-width: 600px;
+  }
+}
+
 /* Stock History Chart */
 .stock-chart-wrap { margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
 .stock-chart-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
@@ -1518,6 +1667,49 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         </div>
       </div>
       <div class="stock-metrics-grid" id="sdMetrics"></div>
+
+      <!-- Fundamentals -->
+      <div class="stock-fundamentals-wrap" id="stockFundamentalsWrap" style="display:none;">
+
+        <div class="stock-fundamentals-head">
+          <div>
+            <div class="stock-fundamentals-title">Fundamentals</div>
+            <div class="stock-fundamentals-source">
+              NSE consolidated financial results
+            </div>
+          </div>
+
+          <div class="stock-fundamentals-period" id="fundamentalsPeriod">—</div>
+        </div>
+
+        <div class="fundamentals-metrics-grid" id="fundamentalsMetrics"></div>
+
+        <div class="fundamentals-quarterly-wrap">
+          <div class="fundamentals-section-title">Quarterly Results</div>
+
+          <div class="fundamentals-table-wrap">
+            <table class="fundamentals-table">
+              <thead>
+                <tr>
+                  <th>Quarter</th>
+                  <th>Revenue</th>
+                  <th>Net Profit</th>
+                  <th>EPS</th>
+                  <th>Net Margin</th>
+                </tr>
+              </thead>
+              <tbody id="fundamentalsQuarterlyBody">
+                <tr>
+                  <td colspan="5" class="fundamentals-loading">
+                    Loading fundamentals…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
 
       <div class="stock-chart-wrap" id="stockChartWrap" style="display:none;">
         <div class="stock-chart-head">
@@ -3438,6 +3630,7 @@ const CONTACT_URL  = () => API_BASE + "/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 const STOCK_HISTORY_URL = () => API_BASE + "/stock-history";
+const FUNDAMENTALS_URL = () => API_BASE + "/fundamentals";
 const SECTOR_INDICES_URL = () => API_BASE + "/sector-indices";
 const SECTOR_LIST_URL    = () => API_BASE + "/sector-list";
 const SECTOR_STOCKS_URL  = () => API_BASE + "/sector-stocks";
@@ -4894,6 +5087,379 @@ const sdChange = document.getElementById('sdChange');
 const sdMetrics = document.getElementById('sdMetrics');
 const sdHint = document.getElementById('sdHint');
 
+const stockFundamentalsWrap =
+  document.getElementById('stockFundamentalsWrap');
+
+const fundamentalsPeriod =
+  document.getElementById('fundamentalsPeriod');
+
+const fundamentalsMetrics =
+  document.getElementById('fundamentalsMetrics');
+
+const fundamentalsQuarterlyBody =
+  document.getElementById('fundamentalsQuarterlyBody');
+
+let fundamentalsRequestId = 0;
+
+/* ─── Stock Fundamentals ─── */
+
+function formatFundamentalCr(value) {
+  const n = Number(value);
+
+  if (!Number.isFinite(n)) {
+    return '—';
+  }
+
+  return '₹' + n.toLocaleString('en-IN', {
+    maximumFractionDigits: 0
+  }) + ' Cr';
+}
+
+function formatFundamentalNumber(value, decimals = 2) {
+  const n = Number(value);
+
+  if (!Number.isFinite(n)) {
+    return '—';
+  }
+
+  return n.toLocaleString('en-IN', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+function formatFundamentalDate(value) {
+  if (!value) return '—';
+
+  const text =
+    String(value)
+      .trim()
+      .toUpperCase();
+
+  const match =
+    text.match(
+      /^(\d{1,2})-([A-Z]{3})-(\d{4})$/
+    );
+
+  if (!match) {
+    return text;
+  }
+
+  return `${match[1]} ${match[2]} ${match[3]}`;
+}
+
+function renderFundamentals(data) {
+  if (!stockFundamentalsWrap) {
+    return;
+  }
+
+  const latest =
+    data?.latest || null;
+
+  const quarterly =
+    Array.isArray(data?.quarterly)
+      ? data.quarterly
+      : [];
+
+  if (!latest || !quarterly.length) {
+    stockFundamentalsWrap.style.display = 'none';
+    return;
+  }
+
+  const financials =
+    latest.financials || {};
+
+  const eps =
+    latest.eps || {};
+
+  const ratios =
+    latest.ratios || {};
+
+  const balanceSheet =
+    latest.balance_sheet || {};
+
+  const derived =
+    latest.derived || {};
+
+  fundamentalsPeriod.textContent =
+    formatFundamentalDate(
+      latest.period_end
+    );
+
+  const metrics = [
+    {
+      label: 'Revenue',
+      value:
+        formatFundamentalCr(
+          financials.revenue
+        )
+    },
+    {
+      label: 'Net Profit',
+      value:
+        formatFundamentalCr(
+          financials.net_profit
+        )
+    },
+    {
+      label: 'EPS',
+      value:
+        Number.isFinite(Number(eps.basic))
+          ? '₹' +
+            formatFundamentalNumber(
+              eps.basic,
+              2
+            )
+          : '—'
+    },
+    {
+      label: 'Net Margin',
+      value:
+        Number.isFinite(
+          Number(
+            derived.net_margin_percent
+          )
+        )
+          ? formatFundamentalNumber(
+              derived.net_margin_percent,
+              2
+            ) + '%'
+          : '—'
+    },
+    {
+      label: 'Profit Before Tax',
+      value:
+        formatFundamentalCr(
+          financials.profit_before_tax
+        )
+    },
+    {
+      label: 'Net Worth',
+      value:
+        formatFundamentalCr(
+          balanceSheet.net_worth
+        )
+    },
+    {
+      label: 'Debt / Equity',
+      value:
+        formatFundamentalNumber(
+          ratios.debt_equity,
+          3
+        )
+    },
+    {
+      label: 'Current Ratio',
+      value:
+        formatFundamentalNumber(
+          ratios.current_ratio,
+          2
+        )
+    }
+  ];
+
+  fundamentalsMetrics.innerHTML =
+    metrics.map(metric => `
+      <div class="fundamental-metric">
+        <div class="fundamental-metric-label">
+          ${metric.label}
+        </div>
+        <div class="fundamental-metric-value">
+          ${metric.value}
+        </div>
+      </div>
+    `).join('');
+
+  fundamentalsQuarterlyBody.innerHTML =
+    quarterly.map((quarter, index) => {
+      const f = quarter.financials || {};
+      const e = quarter.eps || {};
+      const d = quarter.derived || {};
+
+      const period =
+        formatFundamentalDate(
+          quarter.period_end
+        );
+
+      const margin =
+        Number.isFinite(
+          Number(
+            d.net_margin_percent
+          )
+        )
+          ? formatFundamentalNumber(
+              d.net_margin_percent,
+              2
+            ) + '%'
+          : '—';
+
+      return `
+        <tr>
+          <td>
+            ${period}
+            ${index === 0
+              ? '<span style="color:var(--positive);font-size:9px;margin-left:4px;">LATEST</span>'
+              : ''}
+          </td>
+          <td>
+            ${formatFundamentalCr(
+              f.revenue
+            )}
+          </td>
+          <td>
+            ${formatFundamentalCr(
+              f.net_profit
+            )}
+          </td>
+          <td>
+            ${
+              Number.isFinite(
+                Number(e.basic)
+              )
+                ? '₹' +
+                  formatFundamentalNumber(
+                    e.basic,
+                    2
+                  )
+                : '—'
+            }
+          </td>
+          <td>
+            ${margin}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  stockFundamentalsWrap.style.display =
+    'block';
+}
+
+async function loadStockFundamentals(symbol) {
+  const cleanSymbol =
+    String(symbol || '')
+      .trim()
+      .toUpperCase();
+
+  if (
+    !cleanSymbol ||
+    !stockFundamentalsWrap
+  ) {
+    return;
+  }
+
+  const requestId =
+    ++fundamentalsRequestId;
+
+  stockFundamentalsWrap.style.display =
+    'block';
+
+  fundamentalsPeriod.textContent =
+    'Loading…';
+
+  fundamentalsMetrics.innerHTML =
+    `
+      <div class="fundamental-metric">
+        <div class="fundamental-metric-label">
+          Status
+        </div>
+        <div class="fundamental-metric-value">
+          Loading…
+        </div>
+      </div>
+    `;
+
+  fundamentalsQuarterlyBody.innerHTML =
+    `
+      <tr>
+        <td colspan="5" class="fundamentals-loading">
+          Loading fundamentals…
+        </td>
+      </tr>
+    `;
+
+  try {
+    const res =
+      await fetch(
+        FUNDAMENTALS_URL() +
+        '?symbol=' +
+        encodeURIComponent(
+          cleanSymbol
+        )
+      );
+
+    if (!res.ok) {
+      throw new Error(
+        'HTTP ' + res.status
+      );
+    }
+
+    const data =
+      await res.json();
+
+    if (
+      requestId !==
+      fundamentalsRequestId
+    ) {
+      return;
+    }
+
+    if (
+      !data ||
+      !data.latest ||
+      !Array.isArray(
+        data.quarterly
+      )
+    ) {
+      throw new Error(
+        'Invalid fundamentals response'
+      );
+    }
+
+    renderFundamentals(data);
+
+  } catch (error) {
+    if (
+      requestId !==
+      fundamentalsRequestId
+    ) {
+      return;
+    }
+
+    stockFundamentalsWrap.style.display =
+      'block';
+
+    fundamentalsPeriod.textContent =
+      'Unavailable';
+
+    fundamentalsMetrics.innerHTML =
+      `
+        <div class="fundamental-metric">
+          <div class="fundamental-metric-label">
+            Fundamentals
+          </div>
+          <div class="fundamental-metric-value">
+            Not available
+          </div>
+        </div>
+      `;
+
+    fundamentalsQuarterlyBody.innerHTML =
+      `
+        <tr>
+          <td colspan="5" class="fundamentals-loading">
+            Fundamentals are not available for this stock yet.
+          </td>
+        </tr>
+      `;
+
+    console.error(
+      '[Fundamentals]',
+      error
+    );
+  }
+}
+
 function renderStockDetail(stock) {
   if (!stock) {
     selectedStockSymbol = '';
@@ -4956,6 +5522,9 @@ function renderStockDetail(stock) {
 
   // Load the default 1-month price history whenever a stock is selected.
   loadStockHistory(selectedStockSymbol, '1M');
+
+  // Load fundamentals independently from Cloudflare KV.
+  loadStockFundamentals(selectedStockSymbol);
 }
 
 
