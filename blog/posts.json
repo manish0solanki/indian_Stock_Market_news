@@ -1,5 +1,25 @@
 [
   {
+    "slug": "hcltech-stock-spotlight",
+    "title": "HCL Tech Surges 3.95% on Double Average Volume But Remains Below Key Moving Averages",
+    "excerpt": "PRICE ACTION: HCL Technologies rallied nearly 4% with volume doubling its average, indicating genuine buying interest rather than thin-market noise. However, the stock still tra...",
+    "category": "stock-spotlight",
+    "date": "2026-09-15",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "HCLTECH",
+      "HCL TECHNOLOGIES LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-realty-drops-4-04-percent-as-large-cap-weakness-drives-broad-sector-decline",
     "title": "Nifty Realty Drops 4.04% as Large-Cap Weakness Drives Broad Sector Decline",
     "excerpt": "Nifty Realty declined 4.04% (34.25 points) to 814.25, with 62 of 78 stocks falling and only 14 advancing. Large caps led the decline: the top 10 by market capitalization averaged -3.8% versus -1.65% for smaller stocks, while the market-cap-weighted change was -3.68%. Godrej Properties fell 5.07% and Prestige Estates dropped 5.41%.",
