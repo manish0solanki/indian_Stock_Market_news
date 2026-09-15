@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-15-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 15 Sept 2026: Drops 1.19%",
+    "excerpt": "Nifty 50 dropped 1.19% to close at 23,118.60.",
+    "category": "daily-wrap",
+    "date": "2026-09-15T16:33:56+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "hcltech-stock-spotlight",
     "title": "HCL Tech Surges 3.95% on Double Average Volume But Remains Below Key Moving Averages",
     "excerpt": "PRICE ACTION: HCL Technologies rallied nearly 4% with volume doubling its average, indicating genuine buying interest rather than thin-market noise. However, the stock still tra...",
