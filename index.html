@@ -1187,25 +1187,105 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .widget-badge.negative { color: var(--negative); background: var(--negative-bg); }
 .widget-badge.neutral { color: var(--neutral); background: var(--neutral-bg); }
 
-/* Compact Tables */
-.compact-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-.compact-table thead { background: var(--surface-hover); }
-.compact-table th { padding: 6px 8px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); }
-.compact-table th:nth-child(1) { width: 40%; }
-.compact-table th:nth-child(2) { width: 24%; }
-.compact-table th:nth-child(3) { width: 18%; }
-.compact-table th:nth-child(4) { width: 18%; }
-.compact-table th:nth-child(2), .compact-table th:nth-child(3), .compact-table th:nth-child(4) { text-align: right; }
-.compact-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); transition: background var(--transition); font-family: var(--font-mono); font-size: 12px; }
-.compact-table tr:hover td { background: var(--surface-hover); }
-.compact-table tr:last-child td { border-bottom: none; }
-.compact-table td:nth-child(2), .compact-table td:nth-child(3), .compact-table td:nth-child(4) { text-align: right; }
-.compact-table .idx-name { font-family: var(--font-body); font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.compact-table .idx-up { color: var(--positive); }
-.compact-table .idx-down { color: var(--negative); }
-.compact-table .idx-trend { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; display: inline-block; white-space: nowrap; }
-.compact-table .idx-trend.up { color: var(--positive); background: var(--positive-light); }
-.compact-table .idx-trend.down { color: var(--negative); background: var(--negative-light); }
+/* Compact Tables — Market Snapshot */
+.compact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+.compact-table thead {
+  background: var(--surface-hover);
+}
+
+.compact-table th {
+  padding: 6px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Better proportions for the narrow Market Snapshot card */
+.compact-table th:nth-child(1) { width: 36%; }
+.compact-table th:nth-child(2) { width: 27%; }
+.compact-table th:nth-child(3) { width: 21%; }
+.compact-table th:nth-child(4) { width: 16%; }
+
+.compact-table th:nth-child(2),
+.compact-table th:nth-child(3),
+.compact-table th:nth-child(4) {
+  text-align: right;
+}
+
+.compact-table td {
+  padding: 6px 6px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.compact-table tr:hover td {
+  background: var(--surface-hover);
+}
+
+.compact-table tr:last-child td {
+  border-bottom: none;
+}
+
+.compact-table td:nth-child(2),
+.compact-table td:nth-child(3),
+.compact-table td:nth-child(4) {
+  text-align: right;
+}
+
+.compact-table .idx-name {
+  display: block;
+  width: 100%;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-table .idx-up {
+  color: var(--positive);
+}
+
+.compact-table .idx-down {
+  color: var(--negative);
+}
+
+.compact-table .idx-trend {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 4px;
+  border-radius: 8px;
+  display: inline-block;
+  white-space: nowrap;
+  min-width: 48px;
+  text-align: center;
+}
+
+.compact-table .idx-trend.up {
+  color: var(--positive);
+  background: var(--positive-light);
+}
+
+.compact-table .idx-trend.down {
+  color: var(--negative);
+  background: var(--negative-light);
+}
 
 /* Heatmap */
 .heatmap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
