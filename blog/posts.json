@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-intensifies-to-9309-cr-as-dii-buying-extends-16-session-streak",
+    "title": "FII Selling Intensifies to ₹930.9 Cr as DII Buying Extends 16-Session Streak",
+    "excerpt": "FIIs sold ₹930.9 Cr while DIIs bought ₹1968.17 Cr on 11 Sept, with combined institutional net at ₹1037.27 Cr. The Nifty 50 fell 279.5 points to ₹23118.6 despite positive combine...",
+    "category": "fiidii-flows",
+    "date": "2026-09-11",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "nifty-50-daily-wrap-15-sept-2026",
     "title": "Nifty 50 Daily Wrap — 15 Sept 2026: Drops 1.19%",
     "excerpt": "Nifty 50 dropped 1.19% to close at 23,118.60.",
@@ -85,27 +106,6 @@
     "author": "MarketPulse AI",
     "featured": false,
     "dataSources": []
-  },
-  {
-    "slug": "fii-selling-intensifies-to-9309-cr-as-dii-buying-extends-16-session-streak",
-    "title": "FII Selling Intensifies to ₹930.9 Cr as DII Buying Extends 16-Session Streak",
-    "excerpt": "FIIs sold ₹930.9 Cr today, more than doubling their outflow from the previous session, while DIIs bought ₹1968.17 Cr extending a 16-day buying streak. The Nifty 50 slipped 0.34%...",
-    "category": "fiidii-flows",
-    "date": "2026-09-11",
-    "readTime": "5 min read",
-    "tags": [
-      "FII",
-      "DII",
-      "Nifty 50",
-      "Institutional Buying",
-      "Indian Stock Market"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "nse-fii-dii-data",
-      "nifty-50-index-data"
-    ]
   },
   {
     "slug": "paytm-stock-spotlight",
