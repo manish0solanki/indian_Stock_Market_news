@@ -1,5 +1,25 @@
 [
   {
+    "slug": "dabur-stock-spotlight",
+    "title": "Dabur Jumps 3.2% on 4x Volume, Climbs Back Above 20-Day Moving Average",
+    "excerpt": "PRICE ACTION: Dabur India surged 3.15% to ₹387.85, its strongest single-day advance in recent sessions, accompanied by volume at four times the daily average. The stock remains...",
+    "category": "stock-spotlight",
+    "date": "2026-09-15",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "DABUR",
+      "DABUR INDIA LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-rises-2-61-percent-as-large-cap-gains-outpace-broad-stock-weakness",
     "title": "Nifty IT Rises 2.61% as Large-Cap Gains Outpace Broad Stock Weakness",
     "excerpt": "Nifty IT gained 2.61% (754.25 points) to 29,675.75, even as 84 of 145 stocks declined versus 58 advancing. The move was led by larger companies: the top 10 by market capitalization averaged 1.86%, while smaller stocks averaged -0.17%. Market-cap-weighted stock-universe change was 2.43%, compared with a median stock change of -0.39%.",
