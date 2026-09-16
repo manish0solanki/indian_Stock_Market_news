@@ -1,5 +1,25 @@
 [
   {
+    "slug": "paytm-stock-spotlight",
+    "title": "Paytm Surges 3.5% on 3.6x Volume as Price Nears 52-Week High",
+    "excerpt": "PRICE ACTION: Paytm rallied 3.47% to ₹1,790 on volume nearly four times its daily average, indicating strong institutional and retail participation. The stock now sits just 3.5%...",
+    "category": "stock-spotlight",
+    "date": "2026-09-16",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "PAYTM",
+      "ONE 97 COMMUNICATIONS LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-fmcg-gains-1-63-percent-led-by-large-cap-stocks",
     "title": "Nifty FMCG Gains 1.63% Led by Large-Cap Stocks",
     "excerpt": "Nifty FMCG rose 1.63% (729.05 points) to 45,559, driven by large-cap strength as the top 10 companies averaged 1.17% gains while smaller stocks averaged -0.43%. Despite the index advance, 50 of 97 stocks declined with a median change of -0.12%, indicating large-cap-driven rather than broad-based strength.",
@@ -141,26 +161,6 @@
     "author": "MarketPulse AI",
     "featured": false,
     "dataSources": []
-  },
-  {
-    "slug": "paytm-stock-spotlight",
-    "title": "Paytm Surges 3.9% on 2.3x Volume, Within Striking Distance of 52-Week High",
-    "excerpt": "PRICE ACTION: Paytm closed at ₹1807.5, a 3.94% gain on volume more than double its average, indicating genuine institutional participation rather than thin-air speculation. The...",
-    "category": "stock-spotlight",
-    "date": "2026-09-11",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "PAYTM",
-      "ONE 97 COMMUNICATIONS LTD"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
-    ]
   },
   {
     "slug": "nifty-realty-falls-2-7-percent-as-large-caps-lead-broad-decline",
