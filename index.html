@@ -2990,6 +2990,86 @@ body {
   }
 }
 
+
+
+/* =========================================================
+   MARKETPULSE — DESKTOP HEADER ALIGNMENT v4
+   Align frozen tabs/search with the same content frame as
+   the dashboard, while preserving independent scrolling.
+   ========================================================= */
+
+@media (min-width: 901px) {
+  :root {
+    --mp-content-edge: max(24px, calc((100vw - 1390px) / 2));
+  }
+
+  /*
+    Dashboard/content frame on the reference desktop is about
+    1390px wide. The navigation/search row now uses exactly the
+    same visual left/right edges instead of touching the browser
+    edges.
+  */
+
+  .page-nav {
+    left: var(--mp-content-edge) !important;
+    width: calc(50% - var(--mp-content-edge)) !important;
+    padding-left: 0 !important;
+    padding-right: 12px !important;
+    justify-content: flex-start !important;
+  }
+
+  .controls-bar {
+    left: 50% !important;
+    right: var(--mp-content-edge) !important;
+    width: auto !important;
+    padding-left: 12px !important;
+    padding-right: 0 !important;
+    justify-content: flex-end !important;
+  }
+
+  /*
+    Keep the search field from becoming too wide on large
+    monitors. It remains visually balanced with the tabs.
+  */
+  .controls-bar .search-wrap {
+    flex: 1 1 auto !important;
+    max-width: 620px !important;
+    min-width: 280px !important;
+  }
+
+  /*
+    The dashboard stays in its original two independently
+    scrolling columns.
+  */
+  .dashboard {
+    max-width: 1400px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /*
+    Keep stock/detail and other main sections on the same
+    centered visual frame.
+  */
+  .stock-detail-card,
+  .mp-page {
+    max-width: 1400px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+/* Medium desktop / landscape tablet: use comfortable 24px edges. */
+@media (min-width: 901px) and (max-width: 1438px) {
+  .page-nav {
+    padding-left: 0 !important;
+  }
+
+  .controls-bar {
+    padding-right: 0 !important;
+  }
+}
+
 </style>
   <base target="_blank">
 </head>
