@@ -5361,7 +5361,7 @@ const HEATMAP_URL    = () => API_BASE + "/heatmap-data";
 const BREADTH_URL    = () => API_BASE + "/market-breadth";
 const FIIDII_URL     = () => API_BASE + "/fii-dii-data";
 const GLOBAL_INDICES_URL = () => API_BASE + "/global-indices";
-const REFRESH_MS   = 30000;
+const REFRESH_MS   = 30000; // General market-data refresh: 30 seconds
 
 let allNewsItems = [];
 let currentFilter = 'all';
@@ -8151,7 +8151,7 @@ async function init() {
 }
 
 init();
-setInterval(loadNews, REFRESH_MS * 2);
+setInterval(loadNews, 300000); // News refresh: every 5 minutes
 setInterval(loadPrices, REFRESH_MS);
 setInterval(loadIndices, REFRESH_MS);
 setInterval(loadGlobalHeadlines, REFRESH_MS * 5);
