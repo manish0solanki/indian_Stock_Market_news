@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T17:19:20.917Z",
+  "generated_at": "2026-09-17T17:42:45.521Z",
   "source": {
     "crude": "Snapdata / EIA",
     "fx": "Snapdata / ECB cross-rates",
@@ -89,7 +89,7 @@
   },
   "marketpulse": {
     "version": "1.0",
-    "generated_at": "2026-09-17T17:19:20.917Z",
+    "generated_at": "2026-09-17T17:42:45.521Z",
     "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
     "crude_regime": "HIGH_PRESSURE",
     "india_crude_pressure": "HIGH"
@@ -103,6 +103,7 @@
       "score": 18.6,
       "sensitivity": 1,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "POSITIVE",
       "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
     },
@@ -114,6 +115,7 @@
       "score": 17.67,
       "sensitivity": 0.95,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "POSITIVE",
       "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
     },
@@ -125,6 +127,7 @@
       "score": 15.81,
       "sensitivity": 0.85,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "POSITIVE",
       "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
     },
@@ -136,6 +139,7 @@
       "score": 12.09,
       "sensitivity": 0.65,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "POSITIVE",
       "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
     }
@@ -149,6 +153,7 @@
       "score": -17.67,
       "sensitivity": -0.95,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for aviation exposure."
     },
@@ -160,6 +165,7 @@
       "score": -16.74,
       "sensitivity": -0.9,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for paints exposure."
     },
@@ -171,6 +177,7 @@
       "score": -16.74,
       "sensitivity": -0.9,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for omcs exposure."
     },
@@ -182,6 +189,7 @@
       "score": -15.81,
       "sensitivity": -0.85,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for paints exposure."
     },
@@ -193,6 +201,7 @@
       "score": -15.81,
       "sensitivity": -0.85,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for omcs exposure."
     },
@@ -204,6 +213,7 @@
       "score": -15.81,
       "sensitivity": -0.85,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for omcs exposure."
     },
@@ -215,6 +225,7 @@
       "score": -14.88,
       "sensitivity": -0.8,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for paints exposure."
     },
@@ -226,6 +237,7 @@
       "score": -14.88,
       "sensitivity": -0.8,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for paints exposure."
     },
@@ -237,6 +249,7 @@
       "score": -14.88,
       "sensitivity": -0.8,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for omcs exposure."
     },
@@ -248,6 +261,7 @@
       "score": -13.95,
       "sensitivity": -0.75,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for paints exposure."
     },
@@ -259,6 +273,7 @@
       "score": -13.02,
       "sensitivity": -0.7,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for paints exposure."
     },
@@ -270,6 +285,7 @@
       "score": -7.8,
       "sensitivity": -0.65,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for tyres exposure."
     },
@@ -281,6 +297,7 @@
       "score": -7.8,
       "sensitivity": -0.65,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for tyres exposure."
     },
@@ -292,6 +309,7 @@
       "score": -7.2,
       "sensitivity": -0.6,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for tyres exposure."
     },
@@ -303,6 +321,7 @@
       "score": -7.2,
       "sensitivity": -0.6,
       "confidence": "HIGH",
+      "classification_method": "EXACT_SYMBOL",
       "direction": "NEGATIVE",
       "reason": "Higher crude prices may increase cost pressure for tyres exposure."
     }
@@ -310,15 +329,329 @@
   "stock_impact": {
     "enabled": true,
     "model": "sector impact × automatic NSE crude sensitivity",
-    "methodology": "The NSE_LIST universe is scanned automatically. Because the current NSE sheet has blank Sector/Industry fields, high-confidence symbol rules and company-name industry keywords are used. Impact is a reference score, not an expected stock return or trading recommendation.",
+    "methodology": "The NSE_LIST universe is scanned automatically. HIGH-confidence stocks use explicit symbol mappings. MEDIUM-confidence stocks use populated sector/industry fields when available, otherwise company-name keywords. MEDIUM-confidence candidates are published only when absolute impact reaches the publication threshold. Impact is a reference score, not an expected stock return or trading recommendation.",
     "universe_scanned": 2395,
     "classified_stocks": 121,
     "positive_candidates": 4,
-    "negative_candidates": 117,
+    "negative_candidates": 29,
     "published_positive": 4,
     "published_pressure": 15,
     "published": 19,
-    "classification_source": "NSE_LIST symbol + company name + sector/industry when available",
-    "generated_at": "2026-09-17T17:19:24.644Z"
+    "publication_threshold_absolute_impact": 7,
+    "high_confidence_classified": 33,
+    "medium_confidence_classified": 88,
+    "classification_source": "NSE_LIST symbol + sector/industry + company name",
+    "classification_methods": {
+      "COMPANY_NAME_KEYWORD": 88,
+      "EXACT_SYMBOL": 33
+    },
+    "category_counts": {
+      "shipping": 7,
+      "chemicals": 47,
+      "logistics": 15,
+      "plastics": 5,
+      "cement": 13,
+      "tyres": 7,
+      "auto": 11,
+      "paints": 6,
+      "omcs": 4,
+      "energy": 4,
+      "adhesives": 1,
+      "aviation": 1
+    },
+    "qa": {
+      "duplicate_symbols_skipped": 0,
+      "missing_symbols": 0,
+      "unmatched_stocks": 2274,
+      "medium_review_candidates": 88,
+      "review_candidates": [
+        {
+          "symbol": "ACI",
+          "name": "Archean Chemical Industries Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemical",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "ACUTAAS",
+          "name": "Acutaas Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "ALKYLAMINE",
+          "name": "Alkyl Amines Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "BHAGCHEM",
+          "name": "Bhagiradha Chemicals & Industries Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "BIOFILCHEM",
+          "name": "Biofil Chemicals & Pharmaceuticals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "BODALCHEM",
+          "name": "Bodal Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "CHAMBLFERT",
+          "name": "Chambal Fertilizers & Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "CHEMBONDCH",
+          "name": "Chembond Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "CHEMCON",
+          "name": "Chemcon Speciality Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "DIAMINESQ",
+          "name": "Diamines & Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "DMCC",
+          "name": "DMCC SPECIALITY CHEMICALS LIMITED",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "DSFCL",
+          "name": "DCM Shriram Fine Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "FACT",
+          "name": "Fertilizers and Chemicals Travancore Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "FCL",
+          "name": "Fineotex Chemical Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemical",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "GNFC",
+          "name": "Gujarat Narmada Valley Fertilizers and Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "GSFC",
+          "name": "Gujarat State Fertilizers & Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "GUJALKALI",
+          "name": "Gujarat Alkalies and Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "HINDCON",
+          "name": "Hindcon Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "HSCL",
+          "name": "Himadri Speciality Chemical Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemical",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "INDOBORAX",
+          "name": "Indo Borax & Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "IOLCP",
+          "name": "IOL Chemicals and Pharmaceuticals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "ISHANCH",
+          "name": "Ishan Dyes and Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "JGCHEM",
+          "name": "J.G.Chemicals Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "KANORICHEM",
+          "name": "Kanoria Chemicals & Industries Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        },
+        {
+          "symbol": "KHAICHEM",
+          "name": "Khaitan Chemicals & Fertilizers Limited",
+          "sector": "chemicals",
+          "impact": -5.56,
+          "sensitivity": -0.55,
+          "confidence": "MEDIUM",
+          "classification_method": "COMPANY_NAME_KEYWORD",
+          "matched_keyword": "chemicals",
+          "review_reason": "MEDIUM-confidence match below publication threshold |impact| >= 7"
+        }
+      ],
+      "status": "PASS",
+      "errors": [],
+      "warnings": [
+        "25 lower-impact MEDIUM-confidence classifications were kept for QA review and not published."
+      ],
+      "published_unique_symbols": 19,
+      "published_duplicate_symbols": 0,
+      "published_high_confidence": 19,
+      "published_medium_confidence": 0,
+      "generated_at": "2026-09-17T17:42:49.613Z"
+    },
+    "generated_at": "2026-09-17T17:42:49.519Z"
   }
 }
