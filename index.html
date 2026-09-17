@@ -4,7 +4,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<m
+.stock-quote-meta {
+  display: block;
+  margin-top: 5px;
+  font-size: 9px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+.stock-quote-meta.fresh { color: var(--positive); }
+eta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2E1F82">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +29,7 @@
 /* Voice Search */
 .voice-btn {
   position: absolute;
-  right: 38px;
+  right: 92px;
   top: 0;
   bottom: 0;
   margin: auto 0;
@@ -843,26 +853,248 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .ticker-change.down { color: #F87171; }
 .ticker-loading { padding: 0 20px; color: rgba(255,255,255,0.5); font-family: var(--font-mono); font-size: 12px; }
 
-/* Search Bar */
-.controls-bar { max-width: 1400px; margin: 0 auto; padding: 16px 24px 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.search-wrap { position: relative; flex: 1; min-width: 220px; max-width: 500px; }
-.search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-.search-input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0 36px 0 36px; font-size: 13px; color: var(--text); font-family: var(--font-body); transition: border-color var(--transition), box-shadow var(--transition); height: 38px; line-height: 38px; box-sizing: border-box; }
-.search-input:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(46,31,130,0.08); }
+/* Search Bar — modern command-style stock search */
+.controls-bar {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 14px 24px 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.search-wrap {
+  position: relative;
+  flex: 1 1 680px;
+  min-width: 260px;
+  max-width: 760px;
+}
+.search-wrap > svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 3;
+}
+.search-input {
+  width: 100%;
+  height: 46px;
+  background: linear-gradient(180deg, var(--surface-hover), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 150px 0 46px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 500;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  box-sizing: border-box;
+}
+.search-input:hover {
+  border-color: rgba(140,130,255,.35);
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--indigo-light);
+  box-shadow: 0 0 0 3px rgba(76,61,181,.14), 0 8px 28px rgba(0,0,0,.18);
+  background: var(--surface);
+}
 .search-input::placeholder { color: var(--text-muted); }
-.search-dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 50; max-height: 260px; overflow-y: auto; display: none; }
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 45px rgba(0,0,0,.42);
+  z-index: 500;
+  max-height: 390px;
+  overflow-y: auto;
+  display: none;
+  padding: 6px;
+}
 .search-dropdown.open { display: block; }
-.search-dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background var(--transition); }
-.search-dropdown-item:last-child { border-bottom: none; }
-.search-dropdown-item:hover { background: var(--surface-hover); }
-.search-dropdown-item .dd-name { font-size: 13px; font-weight: 600; color: var(--text); }
-.search-dropdown-item .dd-symbol { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); background: var(--bg); padding: 2px 7px; border-radius: 4px; }
-.search-dropdown-empty { padding: 14px; font-size: 13px; color: var(--text-muted); text-align: center; }
-.search-btn { background: var(--indigo); color: #fff; border: none; border-radius: var(--radius-md); padding: 0 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background var(--transition), transform var(--transition); white-space: nowrap; height: 38px; line-height: 38px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; }
-.search-btn:hover { background: var(--indigo-dark); transform: translateY(-1px); }
-.search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.08); border: none; color: var(--text-muted); font-size: 18px; line-height: 1; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; transition: background var(--transition), color var(--transition); padding: 0; z-index: 10; }
+.search-dropdown-item {
+  min-height: 64px;
+  padding: 10px 11px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: 38px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+}
+.search-dropdown-item:hover,
+.search-dropdown-item.active {
+  background: var(--surface-hover);
+  border-color: var(--border);
+}
+.search-result-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-light));
+  color: #fff;
+  font: 700 11px var(--font-mono);
+  letter-spacing: -.04em;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.search-result-main { min-width: 0; }
+.search-result-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.search-result-name .dd-name {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-result-sub {
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+.search-result-sector {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-result-symbol {
+  flex-shrink: 0;
+  font: 700 10px var(--font-mono);
+  color: var(--text-secondary);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 4px 7px;
+  border-radius: 6px;
+}
+.search-result-quote {
+  min-width: 78px;
+  text-align: right;
+}
+.search-result-price {
+  display: block;
+  font: 700 12px var(--font-mono);
+  color: var(--text);
+}
+.search-result-change {
+  display: block;
+  margin-top: 3px;
+  font: 600 9px var(--font-mono);
+}
+.search-result-change.up { color: var(--positive); }
+.search-result-change.down { color: var(--negative); }
+.search-dropdown-empty {
+  padding: 18px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.search-dropdown-loading {
+  padding: 15px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.search-dropdown-loading::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--indigo-light);
+  border-radius: 50%;
+  animation: searchSpin .7s linear infinite;
+}
+@keyframes searchSpin { to { transform: rotate(360deg); } }
+.search-shortcut {
+  position: absolute;
+  right: 108px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.045);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: 600 9px var(--font-mono);
+  pointer-events: none;
+  z-index: 3;
+}
+.search-btn {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  height: 32px;
+  min-width: 76px;
+  background: var(--indigo);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  white-space: nowrap;
+  z-index: 4;
+}
+.search-btn:hover { background: var(--indigo-light); transform: translateY(-1px); }
+.search-clear {
+  position: absolute;
+  right: 184px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.07);
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+  padding: 0;
+  z-index: 10;
+}
 .search-clear:hover { background: var(--border); color: var(--text); }
 .search-clear.visible { display: inline-flex; }
+
+@media (max-width: 640px) {
+  .controls-bar { padding: 12px 14px 8px; }
+  .search-wrap { flex-basis: 100%; max-width: none; }
+  .search-input { padding-right: 110px; }
+  .search-shortcut { display:none; }
+  .search-clear { right: 82px; }
+  .search-btn { min-width: 68px; }
+  .search-dropdown-item { grid-template-columns: 34px minmax(0,1fr) auto; }
+  .search-result-logo { width: 32px; height: 32px; }
+  .search-result-quote { min-width: 66px; }
+}
 
 /* Stock Detail Card */
 .stock-detail-card { max-width: 1400px; margin: 0 auto 12px; padding: 0 24px; display: none; }
@@ -2196,9 +2428,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   <!-- Search -->
   <div class="controls-bar">
     <div class="search-wrap">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-      <input type="text" id="searchInput" class="search-input" placeholder="Search company, symbol, or keyword…" autocomplete="off">
-      <button class="search-clear" id="searchClear" title="Clear search">×</button>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search stocks, companies or symbols…" autocomplete="off" spellcheck="false" aria-label="Search stocks">
+      <span class="search-shortcut" aria-hidden="true">/</span>
+      <button class="search-clear" id="searchClear" title="Clear search" aria-label="Clear search">×</button>
       <button class="voice-btn" id="voiceBtn" title="Voice search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
@@ -2206,9 +2439,9 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         </svg>
       </button>
       <div class="voice-hint" id="voiceHint"></div>
-      <div class="search-dropdown" id="searchDropdown"></div>
+      <div class="search-dropdown" id="searchDropdown" role="listbox"></div>
+      <button class="search-btn" id="searchBtn" type="button">Search</button>
     </div>
-    <button class="search-btn" id="searchBtn">Search</button>
   </div>
 
   <!-- Main page navigation -->
@@ -2237,6 +2470,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
         <div class="stock-price-block">
           <span class="stock-price" id="sdPrice">—</span>
           <span class="stock-change" id="sdChange">—</span>
+          <span class="stock-quote-meta" id="sdQuoteMeta">Waiting for quote…</span>
         </div>
       </div>
       <div class="stock-metrics-grid" id="sdMetrics"></div>
@@ -5725,7 +5959,8 @@ async function openStockDetailFromNews(symbol, companyName) {
 
   try {
     const res = await fetch(
-      STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol)
+      mpCacheBustUrl(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol)),
+      { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, max-age=0', 'Pragma': 'no-cache' } }
     );
     if (!res.ok) throw new Error('HTTP ' + res.status);
 
@@ -5838,7 +6073,7 @@ function renderPrices(items) {
 
 async function loadPrices() {
   try {
-    const res = await fetch(PRICES_URL());
+    const res = await fetchFreshJson(PRICES_URL());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     let items;
@@ -6263,7 +6498,60 @@ async function loadStockFundamentals(symbol) {
   }
 }
 
+function mpCacheBustUrl(url) {
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + '_mp_ts=' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+async function fetchFreshJson(url) {
+  const res = await fetch(mpCacheBustUrl(url), {
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, max-age=0',
+      'Pragma': 'no-cache'
+    }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+function getLiveQuote(symbol) {
+  const key = String(symbol || '').trim().toUpperCase();
+  if (!key) return null;
+  return priceMap[key] || priceMap[String(symbol || '').trim()] || null;
+}
+
+function mergeLiveQuote(stock) {
+  if (!stock) return stock;
+  const symbol = String(stock.symbol || '').trim().toUpperCase();
+  const live = getLiveQuote(symbol);
+  if (!live) return stock;
+
+  const merged = { ...stock };
+  const copyIfFinite = (target, ...values) => {
+    for (const value of values) {
+      if (value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value))) {
+        merged[target] = Number(value);
+        return;
+      }
+    }
+  };
+
+  copyIfFinite('price', live.price);
+  copyIfFinite('change_percent', live.change_percent);
+  copyIfFinite('change', live.change);
+  copyIfFinite('open', live.open);
+  copyIfFinite('high', live.high);
+  copyIfFinite('low', live.low);
+  copyIfFinite('previous_close', live.previous_close, live.prev_close);
+
+  merged._quote_source = 'price-feed';
+  merged._quote_fetched_at = Date.now();
+  return merged;
+}
+
 function renderStockDetail(stock) {
+  stock = mergeLiveQuote(stock);
   if (!stock) {
     selectedStockSymbol = '';
     stockDetailCard.style.display = 'none';
@@ -6291,6 +6579,15 @@ function renderStockDetail(stock) {
   sdPrice.textContent = !isNaN(price) ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
   sdChange.textContent = fmtPct(changePct);
   sdChange.className = 'stock-change ' + (isUp ? 'up' : 'down');
+  const quoteMeta = document.getElementById('sdQuoteMeta');
+  if (quoteMeta) {
+    const fetchedAt = stock._quote_fetched_at || Date.now();
+    const timeText = new Date(fetchedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    quoteMeta.textContent = stock._quote_source === 'price-feed'
+      ? `Latest quote • ${timeText}`
+      : `Quote data • ${timeText}`;
+    quoteMeta.className = 'stock-quote-meta ' + (stock._quote_source === 'price-feed' ? 'fresh' : '');
+  }
   updateStockWatchlistButton();
 
   const metrics = [
@@ -6496,6 +6793,149 @@ if(stockChartRanges) stockChartRanges.addEventListener('click',event=>{
   loadStockHistory(selectedStockSymbol, btn.dataset.range);
 });
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+
+function stockSearchScore(stock, query) {
+  const q = String(query || '').trim().toLowerCase();
+  const symbol = String(stock?.symbol || '').trim().toLowerCase();
+  const name = String(stock?.company_name || stock?.name || '').trim().toLowerCase();
+  if (!q) return 0;
+  if (symbol === q) return 1000;
+  if (name === q) return 950;
+  if (symbol.startsWith(q)) return 900;
+  if (name.startsWith(q)) return 850;
+  if (symbol.includes(q)) return 700;
+  if (name.includes(q)) return 650;
+  return 100;
+}
+
+function formatSearchQuote(stock) {
+  const symbol = String(stock?.symbol || '').trim().toUpperCase();
+  const live = getLiveQuote(symbol);
+  const source = live || stock;
+  const price = Number(source?.price);
+  const changePct = Number(source?.change_percent);
+  const change = Number(source?.change);
+  if (!Number.isFinite(price)) {
+    return { price: '—', change: '', cls: '' };
+  }
+  let changeText = '';
+  let cls = '';
+  if (Number.isFinite(changePct)) {
+    changeText = `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`;
+    cls = changePct >= 0 ? 'up' : 'down';
+  } else if (Number.isFinite(change)) {
+    changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)}`;
+    cls = change >= 0 ? 'up' : 'down';
+  }
+  return {
+    price: '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    change: changeText,
+    cls
+  };
+}
+
+let searchActiveIndex = -1;
+
+function renderSearchResults(stocks, query) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (!dropdown) return;
+
+  dropdown.innerHTML = '';
+
+  if (!stocks.length) {
+    dropdown.innerHTML = '<div class="search-dropdown-empty">No stocks found. Try a symbol or company name.</div>';
+    dropdown.classList.add('open');
+    searchActiveIndex = -1;
+    return;
+  }
+
+  stocks.slice(0, 8).forEach((stock, index) => {
+    const symbol = String(stock?.symbol || '').trim().toUpperCase();
+    const company = String(stock?.company_name || stock?.name || symbol).trim();
+    if (!symbol) return;
+
+    const quote = formatSearchQuote(stock);
+    const sector = String(stock?.sector || stock?.industry || '').trim();
+    const isFno = fnoSymbols.has(symbol);
+    const initials = symbol.slice(0, 3);
+
+    const div = document.createElement('div');
+    div.className = 'search-dropdown-item';
+    div.setAttribute('role', 'option');
+    div.dataset.index = String(index);
+    div.dataset.symbol = symbol;
+    div.innerHTML = `
+      <span class="search-result-logo">${escapeHtml(initials)}</span>
+      <span class="search-result-main">
+        <span class="search-result-name">
+          <span class="dd-name">${escapeHtml(company)}</span>
+          ${isFno ? '<span class="fno-badge">F&O</span>' : ''}
+        </span>
+        <span class="search-result-sub">
+          <span class="search-result-symbol">${escapeHtml(symbol)}</span>
+          ${sector ? `<span class="search-result-sector">${escapeHtml(sector)}</span>` : '<span class="search-result-sector">NSE</span>'}
+        </span>
+      </span>
+      <span class="search-result-quote">
+        <span class="search-result-price">${escapeHtml(quote.price)}</span>
+        ${quote.change ? `<span class="search-result-change ${quote.cls}">${escapeHtml(quote.change)}</span>` : ''}
+      </span>
+    `;
+
+    div.addEventListener('mouseenter', () => setSearchActiveIndex(index));
+    div.addEventListener('click', () => selectSearchStock(stock));
+    dropdown.appendChild(div);
+  });
+
+  dropdown.classList.add('open');
+  searchActiveIndex = -1;
+}
+
+function setSearchActiveIndex(index) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (!dropdown) return;
+  const items = Array.from(dropdown.querySelectorAll('.search-dropdown-item'));
+  if (!items.length) return;
+
+  searchActiveIndex = Math.max(-1, Math.min(index, items.length - 1));
+  items.forEach((item, i) => {
+    item.classList.toggle('active', i === searchActiveIndex);
+  });
+
+  if (searchActiveIndex >= 0) {
+    items[searchActiveIndex].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+async function selectSearchStock(stock) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+
+  const symbol = String(stock?.symbol || '').trim().toUpperCase();
+  if (!symbol) return;
+
+  searchInput.value = stock.company_name || stock.name || symbol;
+  updateClearBtn();
+  sdHint.textContent = 'Loading latest quote…';
+  stockDetailCard.style.display = 'none';
+
+  try {
+    const data = await fetchFreshJson(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(symbol));
+    renderStockDetail(mergeLiveQuote(data));
+    sdHint.textContent = '';
+  } catch (e) {
+    const fallback = mergeLiveQuote(stock);
+    renderStockDetail(fallback);
+    sdHint.textContent = getLiveQuote(symbol) ? 'Latest price from price feed' : 'Cached quote shown';
+    console.error('[Stock Detail]', e);
+  }
+}
+
 async function searchStock(query) {
   const dropdown = document.getElementById('searchDropdown');
   if (!query || query.length < 2) {
@@ -6505,54 +6945,37 @@ async function searchStock(query) {
     updateStockWatchlistButton();
     sdHint.textContent = '';
     if (dropdown) dropdown.classList.remove('open');
+    searchActiveIndex = -1;
     return;
   }
-  sdHint.textContent = 'Searching…';
+
+  if (dropdown) {
+    dropdown.innerHTML = '<div class="search-dropdown-loading">Searching MarketPulse…</div>';
+    dropdown.classList.add('open');
+  }
+  sdHint.textContent = '';
+
   try {
-    const res = await fetch(STOCK_SEARCH_URL() + '?q=' + encodeURIComponent(query));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    const data = await fetchFreshJson(STOCK_SEARCH_URL() + '?q=' + encodeURIComponent(query));
     let stocks = [];
     if (Array.isArray(data)) stocks = data;
     else if (data.items && Array.isArray(data.items)) stocks = data.items;
     else if (typeof data === 'object' && data !== null && (data.symbol || data.company_name)) stocks = [data];
 
-    if (!dropdown) return;
-    dropdown.innerHTML = '';
-    if (stocks.length === 0) {
-      dropdown.innerHTML = '<div class="search-dropdown-empty">No matches</div>';
-      dropdown.classList.add('open');
-      stockDetailCard.style.display = 'none';
-      sdHint.textContent = '';
-      return;
-    }
+    stocks = stocks
+      .filter(s => s && (s.symbol || s.company_name || s.name))
+      .sort((a, b) => stockSearchScore(b, query) - stockSearchScore(a, query));
 
-    stocks.forEach(stock => {
-      const div = document.createElement('div');
-      div.className = 'search-dropdown-item';
-      const isFnoSearch = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
-      div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
-      div.addEventListener('click', () => {
-        dropdown.classList.remove('open');
-        searchInput.value = stock.company_name || stock.symbol || '';
-        sdHint.textContent = 'Fetching…';
-        stockDetailCard.style.display = 'none';
-        fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(stock.symbol))
-          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-          .then(data => { renderStockDetail(data); sdHint.textContent = ''; })
-          .catch(e => { sdHint.textContent = 'Cached data shown'; renderStockDetail(stock); console.error('[Stock Detail]', e); });
-      });
-      dropdown.appendChild(div);
-    });
-    dropdown.classList.add('open');
-    sdHint.textContent = `${stocks.length} result${stocks.length > 1 ? 's' : ''}`;
+    renderSearchResults(stocks, query);
   } catch (e) {
-    stockDetailCard.style.display = 'none';
-    sdHint.textContent = 'Search unavailable';
-    if (dropdown) dropdown.classList.remove('open');
+    if (dropdown) {
+      dropdown.innerHTML = '<div class="search-dropdown-empty">Search unavailable. Please try again.</div>';
+      dropdown.classList.add('open');
+    }
     console.error('[Stock Search]', e);
   }
 }
+
 
 /* ─── Search Input ─── */
 const searchInput = document.getElementById('searchInput');
@@ -6584,14 +7007,56 @@ function doSearch() {
     stockDetailCard.style.display = 'none';
     if (stockChartWrap) stockChartWrap.style.display = 'none';
     sdHint.textContent = '';
+    const dd = document.getElementById('searchDropdown');
+    if (dd) dd.classList.remove('open');
     return;
   }
-  stockSearchDebounce = setTimeout(() => searchStock(q), 400);
+  stockSearchDebounce = setTimeout(() => searchStock(q), 250);
 }
 
 searchInput.addEventListener('input', doSearch);
-searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+searchInput.addEventListener('keydown', (e) => {
+  const dropdown = document.getElementById('searchDropdown');
+  const items = dropdown ? dropdown.querySelectorAll('.search-dropdown-item') : [];
+
+  if (e.key === 'ArrowDown' && items.length) {
+    e.preventDefault();
+    setSearchActiveIndex(searchActiveIndex + 1);
+    return;
+  }
+  if (e.key === 'ArrowUp' && items.length) {
+    e.preventDefault();
+    setSearchActiveIndex(searchActiveIndex - 1);
+    return;
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (searchActiveIndex >= 0 && items[searchActiveIndex]) {
+      items[searchActiveIndex].click();
+    } else {
+      doSearch();
+    }
+  }
+  if (e.key === 'Escape' && dropdown) {
+    dropdown.classList.remove('open');
+    searchActiveIndex = -1;
+  }
+});
 searchBtn.addEventListener('click', doSearch);
+
+document.addEventListener('keydown', (e) => {
+  const target = e.target;
+  const isTyping = target && (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable
+  );
+  if (e.key === '/' && !isTyping) {
+    e.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  }
+});
 
 
 /* ─── Voice Search ─── */
