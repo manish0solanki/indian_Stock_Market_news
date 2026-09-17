@@ -1,5 +1,25 @@
 [
   {
+    "slug": "hdfclife-stock-spotlight",
+    "title": "HDFC Life Jumps 5% on Nearly 3x Volume, Reclaims 20- and 50-Day Moving Averages",
+    "excerpt": "PRICE ACTION: HDFC Life surged 5.05% to close at ₹557, its strongest single-session move in recent trading, with volume nearly tripling the average. The sharp rebound comes afte...",
+    "category": "stock-spotlight",
+    "date": "2026-09-17",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "HDFCLIFE",
+      "HDFC LIFE INS CO LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-pharma-gains-1-49-percent-as-large-caps-lead-broad-sector-advance",
     "title": "Nifty Pharma Gains 1.49% as Large Caps Lead Broad Sector Advance",
     "excerpt": "Nifty Pharma gained 1.49% (390.85 points) to 26579.25, with 99 of 130 stocks advancing against 30 declining. Large caps outperformed, with the top 10 by market capitalization averaging 2.09% versus 1% for smaller stocks. The market-cap-weighted change was 1.33%, while the median stock rose 1.02%.",
