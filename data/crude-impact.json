@@ -1,7 +1,65 @@
 {
+  "generated_at": "2026-09-17T14:43:34.800Z",
+  "source": {
+    "crude": "Snapdata / EIA",
+    "fx": "Snapdata / ECB cross-rates",
+    "crude_endpoint": "https://snapdata.dev/api/v1/crude/world/series/30d.json",
+    "fx_endpoint": "https://snapdata.dev/api/v1/fx/world/series/30d.json"
+  },
+  "data_quality": {
+    "crude_latest_date": "2026-09-15",
+    "fx_latest_date": "2026-09-16",
+    "crude_status": "provisional",
+    "fx_status": "provisional"
+  },
+  "crude": {
+    "brent": {
+      "price": 130.8,
+      "date": "2026-09-15",
+      "change_1d": 7.88,
+      "change_5d": 23.26,
+      "change_1m": 42.13
+    },
+    "wti": {
+      "price": 107.02,
+      "date": "2026-09-15",
+      "change_1d": 4.49,
+      "change_5d": 13.6,
+      "change_1m": 29.3
+    },
+    "average_5d_change": 18.43,
+    "regime": "HIGH_PRESSURE"
+  },
+  "usdinr": {
+    "rate": 95.9643,
+    "date": "2026-09-16",
+    "change_1d": 0,
+    "change_5d": 0.9,
+    "change_1m": 0.37
+  },
+  "sector_impact": {
+    "energy": {
+      "score": 18.7,
+      "label": "POSITIVE"
+    },
+    "paints": {
+      "score": -18.7,
+      "label": "NEGATIVE"
+    },
+    "aviation": {
+      "score": -18.7,
+      "label": "NEGATIVE"
+    },
+    "omcs": {
+      "score": -18.7,
+      "label": "NEGATIVE"
+    }
+  },
   "marketpulse": {
     "version": "1.0",
-    "status": "WAITING_FOR_FIRST_N8N_UPDATE",
-    "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices."
+    "generated_at": "2026-09-17T14:43:34.800Z",
+    "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
+    "crude_regime": "HIGH_PRESSURE",
+    "india_crude_pressure": "HIGH"
   }
 }
