@@ -6943,8 +6943,10 @@ function renderCrudeList(id, items, positive) {
   }
 
   el.innerHTML = items.slice(0, 10).map(item => {
-    const score = Number(item?.score || 0);
-    const cls = score >= 0 ? 'mp-up' : 'mp-down';
+    // Stock-level JSON uses `impact`, not `score`.
+    const impact = Number(item?.impact);
+    const safeImpact = Number.isFinite(impact) ? impact : 0;
+    const cls = safeImpact > 0 ? 'mp-up' : safeImpact < 0 ? 'mp-down' : 'mp-neutral';
     const badge = positive ? 'Positive' : 'Pressure';
 
     return `
@@ -6953,7 +6955,7 @@ function renderCrudeList(id, items, positive) {
           <div class="impact-symbol">${escapeHtml(item?.symbol || '—')}</div>
           <div class="impact-company">${escapeHtml(item?.name || '')}</div>
         </div>
-        <div class="impact-score ${cls}">${score > 0 ? '+' : ''}${score}</div>
+        <div class="impact-score ${cls}">${safeImpact > 0 ? '+' : ''}${safeImpact.toFixed(2)}</div>
         <div class="impact-badge ${positive ? 'positive' : 'negative'}">${badge}</div>
       </div>
     `;
