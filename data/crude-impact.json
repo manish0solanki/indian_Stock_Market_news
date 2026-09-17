@@ -1,0 +1,7 @@
+{
+  "marketpulse": {
+    "version": "1.0",
+    "status": "WAITING_FOR_FIRST_N8N_UPDATE",
+    "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices."
+  }
+}
