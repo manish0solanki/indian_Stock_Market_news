@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T17:16:21.097Z",
+  "generated_at": "2026-09-17T17:19:20.917Z",
   "source": {
     "crude": "Snapdata / EIA",
     "fx": "Snapdata / ECB cross-rates",
@@ -89,9 +89,236 @@
   },
   "marketpulse": {
     "version": "1.0",
-    "generated_at": "2026-09-17T17:16:21.097Z",
+    "generated_at": "2026-09-17T17:19:20.917Z",
     "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
     "crude_regime": "HIGH_PRESSURE",
     "india_crude_pressure": "HIGH"
+  },
+  "beneficiaries": [
+    {
+      "symbol": "ONGC",
+      "name": "Oil & Natural Gas Corporation Limited",
+      "sector": "energy",
+      "impact": 18.6,
+      "score": 18.6,
+      "sensitivity": 1,
+      "confidence": "HIGH",
+      "direction": "POSITIVE",
+      "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
+    },
+    {
+      "symbol": "OIL",
+      "name": "Oil India Limited",
+      "sector": "energy",
+      "impact": 17.67,
+      "score": 17.67,
+      "sensitivity": 0.95,
+      "confidence": "HIGH",
+      "direction": "POSITIVE",
+      "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
+    },
+    {
+      "symbol": "HINDOILEXP",
+      "name": "Hindustan Oil Exploration Company Limited",
+      "sector": "energy",
+      "impact": 15.81,
+      "score": 15.81,
+      "sensitivity": 0.85,
+      "confidence": "HIGH",
+      "direction": "POSITIVE",
+      "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
+    },
+    {
+      "symbol": "RELIANCE",
+      "name": "Reliance Industries Limited",
+      "sector": "energy",
+      "impact": 12.09,
+      "score": 12.09,
+      "sensitivity": 0.65,
+      "confidence": "HIGH",
+      "direction": "POSITIVE",
+      "reason": "Higher crude prices may support economics for upstream oil and gas exposure."
+    }
+  ],
+  "pressure": [
+    {
+      "symbol": "INDIGO",
+      "name": "InterGlobe Aviation Limited",
+      "sector": "aviation",
+      "impact": -17.67,
+      "score": -17.67,
+      "sensitivity": -0.95,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for aviation exposure."
+    },
+    {
+      "symbol": "ASIANPAINT",
+      "name": "Asian Paints Limited",
+      "sector": "paints",
+      "impact": -16.74,
+      "score": -16.74,
+      "sensitivity": -0.9,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for paints exposure."
+    },
+    {
+      "symbol": "IOC",
+      "name": "Indian Oil Corporation Limited",
+      "sector": "omcs",
+      "impact": -16.74,
+      "score": -16.74,
+      "sensitivity": -0.9,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for omcs exposure."
+    },
+    {
+      "symbol": "BERGEPAINT",
+      "name": "Berger Paints (I) Limited",
+      "sector": "paints",
+      "impact": -15.81,
+      "score": -15.81,
+      "sensitivity": -0.85,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for paints exposure."
+    },
+    {
+      "symbol": "BPCL",
+      "name": "Bharat Petroleum Corporation Limited",
+      "sector": "omcs",
+      "impact": -15.81,
+      "score": -15.81,
+      "sensitivity": -0.85,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for omcs exposure."
+    },
+    {
+      "symbol": "HINDPETRO",
+      "name": "Hindustan Petroleum Corporation Limited",
+      "sector": "omcs",
+      "impact": -15.81,
+      "score": -15.81,
+      "sensitivity": -0.85,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for omcs exposure."
+    },
+    {
+      "symbol": "INDIGOPNTS",
+      "name": "Indigo Paints Limited",
+      "sector": "paints",
+      "impact": -14.88,
+      "score": -14.88,
+      "sensitivity": -0.8,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for paints exposure."
+    },
+    {
+      "symbol": "KANSAINER",
+      "name": "Kansai Nerolac Paints Limited",
+      "sector": "paints",
+      "impact": -14.88,
+      "score": -14.88,
+      "sensitivity": -0.8,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for paints exposure."
+    },
+    {
+      "symbol": "MRPL",
+      "name": "Mangalore Refinery and Petrochemicals Limited",
+      "sector": "omcs",
+      "impact": -14.88,
+      "score": -14.88,
+      "sensitivity": -0.8,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for omcs exposure."
+    },
+    {
+      "symbol": "SHALPAINTS",
+      "name": "Shalimar Paints Limited",
+      "sector": "paints",
+      "impact": -13.95,
+      "score": -13.95,
+      "sensitivity": -0.75,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for paints exposure."
+    },
+    {
+      "symbol": "SIRCA",
+      "name": "Sirca Paints India Limited",
+      "sector": "paints",
+      "impact": -13.02,
+      "score": -13.02,
+      "sensitivity": -0.7,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for paints exposure."
+    },
+    {
+      "symbol": "APOLLOTYRE",
+      "name": "Apollo Tyres Limited",
+      "sector": "tyres",
+      "impact": -7.8,
+      "score": -7.8,
+      "sensitivity": -0.65,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for tyres exposure."
+    },
+    {
+      "symbol": "MRF",
+      "name": "MRF Limited",
+      "sector": "tyres",
+      "impact": -7.8,
+      "score": -7.8,
+      "sensitivity": -0.65,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for tyres exposure."
+    },
+    {
+      "symbol": "BALKRISIND",
+      "name": "Balkrishna Industries Limited",
+      "sector": "tyres",
+      "impact": -7.2,
+      "score": -7.2,
+      "sensitivity": -0.6,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for tyres exposure."
+    },
+    {
+      "symbol": "JKTYRE",
+      "name": "JK Tyre & Industries Limited",
+      "sector": "tyres",
+      "impact": -7.2,
+      "score": -7.2,
+      "sensitivity": -0.6,
+      "confidence": "HIGH",
+      "direction": "NEGATIVE",
+      "reason": "Higher crude prices may increase cost pressure for tyres exposure."
+    }
+  ],
+  "stock_impact": {
+    "enabled": true,
+    "model": "sector impact × automatic NSE crude sensitivity",
+    "methodology": "The NSE_LIST universe is scanned automatically. Because the current NSE sheet has blank Sector/Industry fields, high-confidence symbol rules and company-name industry keywords are used. Impact is a reference score, not an expected stock return or trading recommendation.",
+    "universe_scanned": 2395,
+    "classified_stocks": 121,
+    "positive_candidates": 4,
+    "negative_candidates": 117,
+    "published_positive": 4,
+    "published_pressure": 15,
+    "published": 19,
+    "classification_source": "NSE_LIST symbol + company name + sector/industry when available",
+    "generated_at": "2026-09-17T17:19:24.644Z"
   }
 }
