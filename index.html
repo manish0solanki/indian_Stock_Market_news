@@ -886,6 +886,16 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .stock-search-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
 
+@media (max-width: 900px) {
+  .crude-momentum-row { grid-template-columns:repeat(3,1fr); }
+  .crude-source-grid { grid-template-columns:repeat(3,1fr); }
+}
+@media (max-width: 640px) {
+  .crude-momentum-row { grid-template-columns:repeat(2,1fr); }
+  .crude-source-grid { grid-template-columns:repeat(2,1fr); }
+  .sector-impact-grid { grid-template-columns:1fr; }
+}
+
 /* =========================================================
    STOCK FUNDAMENTALS
    ========================================================= */
@@ -1666,6 +1676,481 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   .stock-name { font-size: 16px; }
   .stock-price { font-size: 20px; }
 }
+
+/* =========================================================
+   MARKETPULSE PAGE NAVIGATION + STICKY SEARCH
+   ========================================================= */
+
+/* Keep the search controls visible while the user scrolls.
+   The ticker occupies the area immediately above it. */
+.controls-bar {
+  position: sticky;
+  top: 88px;
+  z-index: 90;
+  background: var(--bg);
+  border-bottom: 1px solid transparent;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  transition: background .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+[data-theme="light"] .controls-bar {
+  box-shadow: 0 4px 14px rgba(20,20,50,0.07);
+}
+
+/* Search itself stays above everything inside the sticky bar. */
+.controls-bar .search-wrap,
+.controls-bar .search-btn {
+  position: relative;
+  z-index: 92;
+}
+
+/* Main page navigation */
+.page-nav {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px 10px;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.page-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.page-nav-link {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 8px 13px;
+  font: 600 11px var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .18s ease;
+}
+
+.page-nav-link:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.page-nav-link.active {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(46,31,130,.22);
+}
+
+/* Page views */
+.mp-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px 32px;
+}
+
+.mp-page.hidden {
+  display: none !important;
+}
+
+.mp-page-header {
+  padding: 12px 0 16px;
+}
+
+.mp-page-kicker {
+  font: 700 10px var(--font-mono);
+  color: var(--indigo-light);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 5px;
+}
+
+.mp-page-title {
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+  font-weight: 800;
+}
+
+.mp-page-subtitle {
+  margin-top: 6px;
+  max-width: 760px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.mp-page-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mp-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.mp-panel.span-3 { grid-column: span 3; }
+.mp-panel.span-4 { grid-column: span 4; }
+.mp-panel.span-5 { grid-column: span 5; }
+.mp-panel.span-6 { grid-column: span 6; }
+.mp-panel.span-7 { grid-column: span 7; }
+.mp-panel.span-8 { grid-column: span 8; }
+.mp-panel.span-9 { grid-column: span 9; }
+.mp-panel.span-12 { grid-column: span 12; }
+
+.mp-panel-title {
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mp-panel-note {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.mp-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mp-stat {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px;
+}
+
+.mp-stat-label {
+  color: var(--text-muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 700;
+}
+
+.mp-stat-value {
+  margin-top: 5px;
+  font: 700 17px var(--font-mono);
+}
+
+.mp-stat-change {
+  margin-top: 3px;
+  font: 600 10px var(--font-mono);
+}
+
+.mp-up { color: var(--positive); }
+.mp-down { color: var(--negative); }
+.mp-neutral { color: var(--neutral); }
+
+.crude-regime {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: var(--neutral-bg);
+  border: 1px solid rgba(245,166,35,.22);
+}
+
+.crude-regime strong {
+  display: block;
+  font-size: 14px;
+}
+
+.crude-regime span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.crude-stat-sub { margin-top: 4px; font-size: 9px; color: var(--text-muted); font-family: var(--font-mono); }
+.crude-momentum-row { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:8px; }
+.crude-momentum-card { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-md); padding:9px 10px; min-width:0; }
+.crude-momentum-card span { display:block; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+.crude-momentum-card strong { display:block; margin-top:4px; font:700 12px var(--font-mono); }
+.sector-impact-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+.sector-impact-card { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-md); padding:11px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.sector-impact-name { font-size:11px; font-weight:700; text-transform:capitalize; }
+.sector-impact-score { font:700 12px var(--font-mono); margin-top:3px; }
+.sector-impact-label { font-size:9px; font-weight:800; padding:4px 7px; border-radius:999px; background:var(--surface); border:1px solid var(--border); white-space:nowrap; }
+.sector-impact-label.positive { color:var(--positive); border-color:rgba(74,222,128,.3); background:var(--positive-bg); }
+.sector-impact-label.negative { color:var(--negative); border-color:rgba(248,113,113,.3); background:var(--negative-bg); }
+.sector-impact-label.neutral { color:var(--neutral); border-color:rgba(245,166,35,.3); background:var(--neutral-bg); }
+.crude-pressure-line { margin-top:9px; display:flex; align-items:center; justify-content:space-between; padding:9px 11px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg); font-size:10px; color:var(--text-muted); }
+.crude-pressure-line strong { font:800 11px var(--font-mono); color:var(--text); }
+.crude-source-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.crude-source-grid > div { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-md); padding:9px 10px; min-width:0; }
+.crude-source-grid span { display:block; font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+.crude-source-grid strong { display:block; margin-top:4px; font-size:10px; font-family:var(--font-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.crude-score {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 4px solid var(--neutral);
+  font: 800 15px var(--font-mono);
+  flex-shrink: 0;
+}
+
+.impact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.impact-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 70px 72px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+.impact-name {
+  min-width: 0;
+}
+
+.impact-symbol {
+  font: 700 11px var(--font-mono);
+}
+
+.impact-company {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.impact-score {
+  text-align: right;
+  font: 800 12px var(--font-mono);
+}
+
+.impact-badge {
+  justify-self: end;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font: 700 9px var(--font-body);
+  text-transform: uppercase;
+}
+
+.impact-badge.positive {
+  color: var(--positive);
+  background: var(--positive-bg);
+}
+
+.impact-badge.negative {
+  color: var(--negative);
+  background: var(--negative-bg);
+}
+
+.impact-badge.neutral {
+  color: var(--neutral);
+  background: var(--neutral-bg);
+}
+
+.mp-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.mp-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.mp-table th {
+  padding: 9px 10px;
+  background: var(--bg);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.mp-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+
+.mp-table tr:last-child td {
+  border-bottom: none;
+}
+
+.mp-table td.mono {
+  font-family: var(--font-mono);
+}
+
+.mp-factor {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.mp-factor-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.mp-factor strong {
+  display: block;
+  font-size: 11px;
+}
+
+.mp-factor span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.mp-empty-state {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.mp-page-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.mp-page-button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font: 600 10px var(--font-body);
+  cursor: pointer;
+}
+
+.mp-page-button:hover {
+  background: var(--surface-hover);
+}
+
+@media (max-width: 1024px) {
+  .controls-bar {
+    top: 88px;
+  }
+
+  .mp-panel.span-3,
+  .mp-panel.span-4,
+  .mp-panel.span-5,
+  .mp-panel.span-6,
+  .mp-panel.span-7,
+  .mp-panel.span-8,
+  .mp-panel.span-9 {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 768px) {
+  .controls-bar {
+    top: 88px;
+    padding-left: 16px;
+    padding-right: 16px;
+    background: var(--bg);
+  }
+
+  .page-nav {
+    padding: 0 16px 9px;
+  }
+
+  .mp-page {
+    padding: 0 16px 28px;
+  }
+
+  .mp-page-title {
+    font-size: 21px;
+  }
+
+  .mp-panel.span-3,
+  .mp-panel.span-4,
+  .mp-panel.span-5,
+  .mp-panel.span-6,
+  .mp-panel.span-7,
+  .mp-panel.span-8,
+  .mp-panel.span-9,
+  .mp-panel.span-12 {
+    grid-column: span 12;
+  }
+
+  .mp-stat-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .controls-bar {
+    top: 88px;
+    gap: 7px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+
+  .search-wrap {
+    min-width: 0;
+  }
+
+  .search-btn {
+    padding: 0 12px;
+  }
+
+  .page-nav-link {
+    padding: 7px 11px;
+  }
+
+  .impact-row {
+    grid-template-columns: minmax(0,1fr) 58px;
+  }
+
+  .impact-badge {
+    display: none;
+  }
+}
+
 </style>
   <base target="_blank">
 </head>
@@ -1725,6 +2210,14 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     </div>
     <button class="search-btn" id="searchBtn">Search</button>
   </div>
+
+  <!-- Main page navigation -->
+  <nav class="page-nav" id="pageNav" aria-label="MarketPulse pages">
+    <button class="page-nav-link active" data-page="home" type="button">⌂ Home</button>
+    <button class="page-nav-link" data-page="crude" type="button">🛢 Crude Impact</button>
+    <button class="page-nav-link" data-page="sectors" type="button">▦ Sectors</button>
+    <button class="page-nav-link" data-page="global" type="button">🌐 Global Market</button>
+  </nav>
 
   <!-- Stock Detail Card -->
   <div class="stock-detail-card" id="stockDetailCard">
@@ -1818,8 +2311,238 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     </div>
   </div>
 
+
+  <!-- =========================================================
+       MARKETPULSE PAGES
+       These are lightweight front-end pages for now.
+       Their live values can later be connected to n8n JSON.
+       ========================================================= -->
+
+  <!-- CRUDE IMPACT PAGE -->
+  <section class="mp-page hidden" id="page-crude" data-page-view="crude">
+    <div class="mp-page-header">
+      <div class="mp-page-kicker">Macro → Equities</div>
+      <h1 class="mp-page-title">Crude Impact</h1>
+      <p class="mp-page-subtitle">
+        MarketPulse converts crude and USD/INR movements into a transparent India-focused pressure view.
+        Data is generated by the n8n pipeline and published to the MarketPulse GitHub data feed.
+      </p>
+    </div>
+
+    <div class="mp-page-grid">
+      <div class="mp-panel span-12">
+        <div class="mp-panel-title">
+          <span>Crude & Currency Snapshot</span>
+          <span class="widget-badge positive" id="crudeDataStatus">LIVE FEED</span>
+        </div>
+        <div class="mp-stat-row crude-stat-row">
+          <div class="mp-stat">
+            <div class="mp-stat-label">Brent Crude</div>
+            <div class="mp-stat-value" id="crudeBrent">—</div>
+            <div class="mp-stat-change" id="crudeBrentChange">Waiting for data</div>
+            <div class="crude-stat-sub" id="crudeBrentDate">—</div>
+          </div>
+          <div class="mp-stat">
+            <div class="mp-stat-label">WTI Crude</div>
+            <div class="mp-stat-value" id="crudeWti">—</div>
+            <div class="mp-stat-change" id="crudeWtiChange">Waiting for data</div>
+            <div class="crude-stat-sub" id="crudeWtiDate">—</div>
+          </div>
+          <div class="mp-stat">
+            <div class="mp-stat-label">USD / INR</div>
+            <div class="mp-stat-value" id="crudeUsdinr">—</div>
+            <div class="mp-stat-change" id="crudeUsdinrChange">Waiting for data</div>
+            <div class="crude-stat-sub" id="crudeUsdinrDate">—</div>
+          </div>
+        </div>
+        <div class="crude-momentum-row">
+          <div class="crude-momentum-card"><span>Brent 5D</span><strong id="crudeBrent5d">—</strong></div>
+          <div class="crude-momentum-card"><span>Brent 1M</span><strong id="crudeBrent1m">—</strong></div>
+          <div class="crude-momentum-card"><span>WTI 5D</span><strong id="crudeWti5d">—</strong></div>
+          <div class="crude-momentum-card"><span>WTI 1M</span><strong id="crudeWti1m">—</strong></div>
+          <div class="crude-momentum-card"><span>Avg 5D Crude</span><strong id="crudeAverage5d">—</strong></div>
+        </div>
+      </div>
+
+      <div class="mp-panel span-5">
+        <div class="mp-panel-title">
+          <span>India Crude Pressure</span>
+          <span class="widget-badge neutral">MODEL</span>
+        </div>
+        <div class="crude-regime" id="crudeRegimeBox">
+          <div>
+            <strong id="crudeRegimeName">DATA PENDING</strong>
+            <span id="crudeRegimeDescription">Waiting for the n8n crude-impact feed.</span>
+          </div>
+          <div class="crude-score" id="crudeRegimeScore">—</div>
+        </div>
+        <div class="crude-pressure-line">
+          <span>India pressure</span>
+          <strong id="indiaCrudePressure">—</strong>
+        </div>
+        <div class="mp-panel-note" style="margin-top:10px;">
+          This is a reference model, not a trading recommendation. It combines crude momentum and USD/INR pressure.
+        </div>
+      </div>
+
+      <div class="mp-panel span-7">
+        <div class="mp-panel-title">
+          <span>Sector Impact</span>
+          <span class="widget-badge neutral">MACRO MODEL</span>
+        </div>
+        <div class="sector-impact-grid" id="crudeSectorImpact">
+          <div class="mp-empty-state">Loading sector impact…</div>
+        </div>
+      </div>
+
+      <div class="mp-panel span-6">
+        <div class="mp-panel-title">
+          <span>Potential Positive Exposure</span>
+          <span class="widget-badge positive">POSITIVE</span>
+        </div>
+        <div class="impact-list" id="crudePositiveList">
+          <div class="mp-empty-state">Loading crude-impact data…</div>
+        </div>
+      </div>
+
+      <div class="mp-panel span-6">
+        <div class="mp-panel-title">
+          <span>Potential Cost Pressure</span>
+          <span class="widget-badge negative">NEGATIVE</span>
+        </div>
+        <div class="impact-list" id="crudeNegativeList">
+          <div class="mp-empty-state">Loading crude-impact data…</div>
+        </div>
+      </div>
+
+      <div class="mp-panel span-12">
+        <div class="mp-panel-title">
+          <span>Data Quality & Sources</span>
+          <span class="widget-badge neutral">REFERENCE DATA</span>
+        </div>
+        <div class="crude-source-grid">
+          <div><span>Crude source</span><strong id="crudeSourceName">—</strong></div>
+          <div><span>FX source</span><strong id="fxSourceName">—</strong></div>
+          <div><span>Crude latest date</span><strong id="crudeLatestDate">—</strong></div>
+          <div><span>FX latest date</span><strong id="fxLatestDate">—</strong></div>
+          <div><span>Generated</span><strong id="crudeGeneratedAt">—</strong></div>
+        </div>
+        <div class="mp-panel-note" style="margin-top:10px;">
+          MarketPulse displays reference snapshots. Crude and FX values are not live dealing prices.
+        </div>
+      </div>
+
+      <div class="mp-panel span-12">
+        <div class="mp-panel-title">
+          <span>Crude Impact Framework</span>
+        </div>
+        <div class="mp-table-wrap">
+          <table class="mp-table">
+            <thead>
+              <tr>
+                <th>Factor</th>
+                <th>Weight</th>
+                <th>What it measures</th>
+                <th>Interpretation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Brent 1D</td><td class="mono">20%</td><td>Immediate crude move</td><td>Short-term shock</td></tr>
+              <tr><td>Brent 5D</td><td class="mono">20%</td><td>Recent crude momentum</td><td>Persistence</td></tr>
+              <tr><td>Brent 1M</td><td class="mono">15%</td><td>Monthly trend</td><td>Regime</td></tr>
+              <tr><td>USD/INR</td><td class="mono">10%</td><td>Imported-cost pressure</td><td>Domestic impact</td></tr>
+              <tr><td>India crude pressure</td><td class="mono">15%</td><td>India-specific cost pressure</td><td>Local exposure</td></tr>
+              <tr><td>Sector sensitivity</td><td class="mono">20%</td><td>Business exposure to crude</td><td>Sector impact</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTORS PAGE -->
+  <section class="mp-page hidden" id="page-sectors" data-page-view="sectors">
+    <div class="mp-page-header">
+      <div class="mp-page-kicker">Market Structure</div>
+      <h1 class="mp-page-title">Sector Dashboard</h1>
+      <p class="mp-page-subtitle">
+        A dedicated sector view is now separated from the home dashboard. The existing sector data can be wired into this page without changing the underlying feed.
+      </p>
+    </div>
+
+    <div class="mp-page-grid">
+      <div class="mp-panel span-12">
+        <div class="mp-panel-title">
+          <span>Sector Performance</span>
+          <span class="widget-badge positive">LIVE DATA</span>
+        </div>
+        <div class="mp-table-wrap">
+          <table class="mp-table">
+            <thead>
+              <tr><th>Sector</th><th>Index</th><th>Price</th><th>Change</th><th>Trend</th></tr>
+            </thead>
+            <tbody id="pageSectorBody">
+              <tr><td colspan="5" class="mp-empty-state">Loading sector data from the existing MarketPulse feed…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mp-panel span-4">
+        <div class="mp-panel-title"><span>Crude-sensitive</span></div>
+        <p class="mp-panel-note">Airlines, paints, tyres, chemicals and other petroleum-linked users can face higher input costs when crude rises sharply.</p>
+      </div>
+
+      <div class="mp-panel span-4">
+        <div class="mp-panel-title"><span>Defensive watch</span></div>
+        <p class="mp-panel-note">Use the existing sector breadth and price data to identify areas showing relative strength rather than assuming a macro theme will persist.</p>
+      </div>
+
+      <div class="mp-panel span-4">
+        <div class="mp-panel-title"><span>Confirmation</span></div>
+        <p class="mp-panel-note">Sector movement should be checked against price trend and volume before treating it as a usable market signal.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- GLOBAL MARKET PAGE -->
+  <section class="mp-page hidden" id="page-global" data-page-view="global">
+    <div class="mp-page-header">
+      <div class="mp-page-kicker">Global Context</div>
+      <h1 class="mp-page-title">Global Market</h1>
+      <p class="mp-page-subtitle">
+        Global indices and headlines that can influence the Indian market before and during the trading session.
+      </p>
+    </div>
+
+    <div class="mp-page-grid">
+      <div class="mp-panel span-8">
+        <div class="mp-panel-title">
+          <span>Global Indices</span>
+          <span class="widget-badge positive">LIVE</span>
+        </div>
+        <div class="mp-table-wrap">
+          <table class="mp-table">
+            <thead>
+              <tr><th>Index</th><th>Price</th><th>Change</th><th>Direction</th></tr>
+            </thead>
+            <tbody id="pageGlobalBody">
+              <tr><td colspan="4" class="mp-empty-state">Loading global market data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mp-panel span-4">
+        <div class="mp-panel-title"><span>Global Headlines</span></div>
+        <div id="pageGlobalHeadlines" class="mp-empty-state">Open this page after global news loads to see the latest headlines.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Existing home dashboard remains the default page -->
   <!-- MAIN DASHBOARD: 30/70 SPLIT -->
-  <div class="dashboard">
+  <div class="dashboard" id="homeDashboard" data-page-view="home">
 
     <!-- LEFT COLUMN: All Data Widgets (30%) -->
     <div class="left-col">
@@ -2030,7 +2753,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   </div>
 
   <!-- Contact -->
-  <section class="contact" id="contact">
+  <section class="contact" id="contact" data-home-only="true">
     <div class="contact-inner">
       <h2>Send a note</h2>
       <p class="contact-sub">Spotted something off, or have a stock you want tracked? Say so here.</p>
@@ -2044,7 +2767,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
     </div>
   </section>
 
-  <footer class="site-footer"><span>MarketPulse — automated news, human judgment still required.</span></footer>
+  <footer class="site-footer" id="homeFooter" data-home-only="true"><span>MarketPulse — automated news, human judgment still required.</span></footer>
 
   <!-- Authentication Modal -->
   <div class="modal-overlay" id="authModal" aria-hidden="true">
@@ -5962,6 +6685,340 @@ function showVoiceHint(msg, isError) {
   voiceHint.classList.add('show');
   if (isError) {
     setTimeout(() => { voiceHint.classList.remove('show'); voiceHint.classList.remove('error'); }, 2500);
+  }
+}
+
+
+/* ─── Page Router ─── */
+(function initMarketPulsePages() {
+  const nav = document.getElementById('pageNav');
+  if (!nav) return;
+
+  const links = Array.from(nav.querySelectorAll('[data-page]'));
+  const views = Array.from(document.querySelectorAll('[data-page-view]'));
+  const homeOnly = Array.from(document.querySelectorAll('[data-home-only="true"]'));
+
+  function setPage(page, pushHash = true) {
+    const allowed = ['home', 'crude', 'sectors', 'global'];
+    if (!allowed.includes(page)) page = 'home';
+
+    links.forEach(link => {
+      link.classList.toggle('active', link.dataset.page === page);
+    });
+
+    views.forEach(view => {
+      const viewPage = view.dataset.pageView;
+      if (view.id === 'homeDashboard') {
+        view.classList.toggle('hidden', page !== 'home');
+      } else {
+        view.classList.toggle('hidden', viewPage !== page);
+      }
+    });
+
+    homeOnly.forEach(el => {
+      el.style.display = page === 'home' ? '' : 'none';
+    });
+
+    if (pushHash && history.replaceState) {
+      history.replaceState(null, '', '#' + page);
+    }
+
+    if (page === 'sectors') {
+      renderPageSectors();
+    }
+
+    if (page === 'global') {
+      renderPageGlobal();
+    }
+
+    if (page === 'crude') {
+      loadCrudeImpactPage();
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  links.forEach(link => {
+    link.addEventListener('click', () => setPage(link.dataset.page));
+  });
+
+  window.addEventListener('hashchange', () => {
+    setPage((location.hash || '#home').slice(1), false);
+  });
+
+  setPage((location.hash || '#home').slice(1), false);
+
+  /* Expose only the small page hooks needed by the rest of the app. */
+  window.MarketPulsePages = { setPage };
+})();
+
+/* ─── Crude Impact Page Data ─── */
+let crudeImpactLoaded = false;
+
+async function loadCrudeImpactPage(force = false) {
+  if (crudeImpactLoaded && !force) return;
+
+  const urls = [
+    `/data/crude-impact.json?v=${Date.now()}`,
+    `/crude-impact.json?v=${Date.now()}`,
+    `crude-impact.json?v=${Date.now()}`
+  ];
+
+  const status = document.getElementById('crudeDataStatus');
+  if (status) {
+    status.textContent = 'LOADING';
+    status.className = 'widget-badge neutral';
+  }
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      renderCrudeImpactPage(data);
+      crudeImpactLoaded = true;
+      if (status) {
+        status.textContent = 'LIVE FEED';
+        status.className = 'widget-badge positive';
+      }
+      return;
+    } catch (e) {
+      console.error('[Crude Impact]', e);
+    }
+  }
+
+  if (status) {
+    status.textContent = 'UNAVAILABLE';
+    status.className = 'widget-badge negative';
+  }
+}
+
+function renderCrudeImpactPage(data) {
+  const crude = data?.crude || data?.market || {};
+  const brent = crude.brent || {};
+  const wti = crude.wti || {};
+  const usdinr = data?.usdinr || crude.usdinr || {};
+  const source = data?.source || {};
+  const quality = data?.data_quality || {};
+  const marketpulse = data?.marketpulse || {};
+  const regimeName = crude.regime || marketpulse.crude_regime || data?.regime?.name || 'DATA PENDING';
+  const pressure = marketpulse.india_crude_pressure || data?.india_crude_pressure || '—';
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value ?? '—';
+  };
+
+  const numberValue = value => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const formatPrice = (obj, prefix = '') => {
+    const n = numberValue(obj?.price ?? obj?.rate);
+    if (n === null) return '—';
+    return prefix + n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  };
+
+  const formatPct = value => {
+    const n = numberValue(value);
+    if (n === null) return '—';
+    return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+  };
+
+  const formatChange = (obj) => {
+    const n = numberValue(obj?.change_1d ?? obj?.change1d);
+    if (n === null) return '—';
+    return `${n >= 0 ? '▲' : '▼'} ${Math.abs(n).toFixed(2)}% 1D`;
+  };
+
+  const formatDate = value => value ? String(value).slice(0, 10) : '—';
+  const formatDateTime = value => {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
+  setText('crudeBrent', formatPrice(brent, '$'));
+  setText('crudeWti', formatPrice(wti, '$'));
+  setText('crudeUsdinr', formatPrice(usdinr, '₹'));
+
+  setText('crudeBrentChange', formatChange(brent));
+  setText('crudeWtiChange', formatChange(wti));
+  setText('crudeUsdinrChange', formatChange(usdinr));
+
+  setText('crudeBrentDate', `Latest: ${formatDate(brent.date || quality.crude_latest_date)}`);
+  setText('crudeWtiDate', `Latest: ${formatDate(wti.date || quality.crude_latest_date)}`);
+  setText('crudeUsdinrDate', `Latest: ${formatDate(usdinr.date || quality.fx_latest_date)}`);
+
+  setText('crudeBrent5d', formatPct(brent.change_5d));
+  setText('crudeBrent1m', formatPct(brent.change_1m));
+  setText('crudeWti5d', formatPct(wti.change_5d));
+  setText('crudeWti1m', formatPct(wti.change_1m));
+  setText('crudeAverage5d', formatPct(crude.average_5d_change));
+
+  ['crudeBrentChange','crudeWtiChange','crudeUsdinrChange'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const text = el.textContent;
+    el.classList.toggle('mp-up', text.includes('▲'));
+    el.classList.toggle('mp-down', text.includes('▼'));
+  });
+
+  setText('crudeRegimeName', regimeName);
+  setText('crudeRegimeDescription', regimeDescription(regimeName, pressure));
+  setText('crudeRegimeScore', regimeScore(regimeName, crude.average_5d_change));
+  setText('indiaCrudePressure', pressure);
+
+  const regimeBox = document.getElementById('crudeRegimeBox');
+  if (regimeBox) {
+    regimeBox.style.background = pressure === 'HIGH' ? 'var(--negative-bg)' : pressure === 'LOW' ? 'var(--positive-bg)' : 'var(--neutral-bg)';
+    regimeBox.style.borderColor = pressure === 'HIGH' ? 'rgba(248,113,113,.25)' : pressure === 'LOW' ? 'rgba(74,222,128,.25)' : 'rgba(245,166,35,.22)';
+  }
+
+  renderCrudeSectorImpact(data.sector_impact || {});
+
+  const positive = Array.isArray(data.beneficiaries) ? data.beneficiaries : [];
+  const negative = Array.isArray(data.pressure) ? data.pressure : [];
+  renderCrudeList('crudePositiveList', positive, true);
+  renderCrudeList('crudeNegativeList', negative, false);
+
+  setText('crudeSourceName', source.crude || '—');
+  setText('fxSourceName', source.fx || '—');
+  setText('crudeLatestDate', `${formatDate(quality.crude_latest_date)} (${quality.crude_status || '—'})`);
+  setText('fxLatestDate', `${formatDate(quality.fx_latest_date)} (${quality.fx_status || '—'})`);
+  setText('crudeGeneratedAt', formatDateTime(data.generated_at || marketpulse.generated_at));
+}
+
+function regimeDescription(regime, pressure) {
+  const r = String(regime || '').toUpperCase();
+  if (r === 'HIGH_PRESSURE' || pressure === 'HIGH') return 'Crude momentum is elevated and the India import-cost pressure is high.';
+  if (r === 'LOW_PRESSURE' || pressure === 'LOW') return 'Crude conditions are relatively softer for India import-cost exposure.';
+  return 'Crude and currency conditions are currently in a mixed or neutral reference regime.';
+}
+
+function regimeScore(regime, average5d) {
+  const r = String(regime || '').toUpperCase();
+  if (r === 'HIGH_PRESSURE') return 'HIGH';
+  if (r === 'LOW_PRESSURE') return 'LOW';
+  const n = Number(average5d);
+  return Number.isFinite(n) ? `${n >= 0 ? '+' : ''}${n.toFixed(1)}` : '—';
+}
+
+function renderCrudeSectorImpact(sectors) {
+  const el = document.getElementById('crudeSectorImpact');
+  if (!el) return;
+  const entries = Object.entries(sectors || {});
+  if (!entries.length) {
+    el.innerHTML = '<div class="mp-empty-state">No sector impact data available.</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(([name, item]) => {
+    const score = Number(item?.score);
+    const safeScore = Number.isFinite(score) ? score : 0;
+    const label = String(item?.label || 'NEUTRAL').toUpperCase();
+    const cls = label.includes('POSITIVE') ? 'positive' : label.includes('NEGATIVE') ? 'negative' : 'neutral';
+    return `
+      <div class="sector-impact-card">
+        <div>
+          <div class="sector-impact-name">${escapeHtml(name)}</div>
+          <div class="sector-impact-score ${cls === 'positive' ? 'mp-up' : cls === 'negative' ? 'mp-down' : 'mp-neutral'}">${safeScore > 0 ? '+' : ''}${safeScore.toFixed(1)}</div>
+        </div>
+        <div class="sector-impact-label ${cls}">${escapeHtml(label)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCrudeList(id, items, positive) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  if (!items.length) {
+    el.innerHTML = '<div class="mp-empty-state">No stock-level impact data published yet.</div>';
+    return;
+  }
+
+  el.innerHTML = items.slice(0, 10).map(item => {
+    const score = Number(item?.score || 0);
+    const cls = score >= 0 ? 'mp-up' : 'mp-down';
+    const badge = positive ? 'Positive' : 'Pressure';
+
+    return `
+      <div class="impact-row">
+        <div class="impact-name">
+          <div class="impact-symbol">${escapeHtml(item?.symbol || '—')}</div>
+          <div class="impact-company">${escapeHtml(item?.name || '')}</div>
+        </div>
+        <div class="impact-score ${cls}">${score > 0 ? '+' : ''}${score}</div>
+        <div class="impact-badge ${positive ? 'positive' : 'negative'}">${badge}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/* ─── Sector / Global Page Adapters ─── */
+function renderPageSectors() {
+  const source = document.getElementById('sectorIndicesBody');
+  const target = document.getElementById('pageSectorBody');
+  if (!source || !target) return;
+
+  const rows = Array.from(source.querySelectorAll('tr'));
+  if (!rows.length) return;
+
+  const html = rows.map(row => {
+    const cells = Array.from(row.querySelectorAll('td'));
+    if (cells.length < 4) return '';
+    return `
+      <tr>
+        <td>${cells[0].innerHTML}</td>
+        <td class="mono">${cells[1].innerHTML}</td>
+        <td class="mono">${cells[2].innerHTML}</td>
+        <td class="mono">${cells[3].innerHTML}</td>
+        <td>Live</td>
+      </tr>
+    `;
+  }).filter(Boolean).join('');
+
+  if (html) target.innerHTML = html;
+}
+
+function renderPageGlobal() {
+  const source = document.getElementById('globalIndicesBody');
+  const target = document.getElementById('pageGlobalBody');
+  if (source && target) {
+    const rows = Array.from(source.querySelectorAll('tr'));
+    const html = rows.map(row => {
+      const cells = Array.from(row.querySelectorAll('td'));
+      if (cells.length < 3) return '';
+      return `
+        <tr>
+          <td>${cells[0].innerHTML}</td>
+          <td class="mono">${cells[1].innerHTML}</td>
+          <td class="mono">${cells[2].innerHTML}</td>
+          <td>Live</td>
+        </tr>
+      `;
+    }).filter(Boolean).join('');
+    if (html) target.innerHTML = html;
+  }
+
+  const sourceNews = document.getElementById('globalHeadlines');
+  const targetNews = document.getElementById('pageGlobalHeadlines');
+  if (sourceNews && targetNews) {
+    targetNews.innerHTML = sourceNews.innerHTML;
   }
 }
 
