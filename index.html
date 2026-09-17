@@ -2352,6 +2352,831 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   }
 }
 
+
+/* =========================================================
+   MARKETPULSE HEADER LAYOUT v3
+   Tabs LEFT • Search RIGHT • compact frozen row
+   ========================================================= */
+.topbar {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  z-index: 1000;
+}
+
+.ticker-wrap {
+  position: fixed !important;
+  top: 52px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.page-nav {
+  position: fixed !important;
+  top: 88px;
+  left: 0;
+  right: 0;
+  height: 62px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 997;
+  pointer-events: auto;
+}
+
+.page-nav-link {
+  margin: 0;
+}
+
+.controls-bar {
+  position: fixed !important;
+  top: 88px;
+  left: 0;
+  right: 0;
+  height: 62px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: transparent;
+  z-index: 998;
+  pointer-events: none;
+}
+
+.controls-bar .search-wrap,
+.controls-bar .search-btn {
+  pointer-events: auto;
+}
+
+.controls-bar .search-wrap {
+  flex: 0 1 620px;
+  width: 620px;
+  max-width: min(620px, 58vw);
+}
+
+.controls-bar .search-btn {
+  flex: 0 0 auto;
+}
+
+.mp-page {
+  padding-top: 164px;
+}
+
+/* Keep the home dashboard below the frozen header.
+   Give the dashboard enough height that the contact/footer are
+   genuinely below the main dashboard rather than sitting over it. */
+#homeDashboard {
+  padding-top: 164px;
+  height: calc(100dvh - 70px);
+  min-height: 720px;
+}
+
+/* The dashboard columns can continue to have their own internal scroll. */
+#homeDashboard .left-col,
+#homeDashboard .right-col {
+  height: 100%;
+}
+
+/* Contact/footer stay in normal document flow and never overlay the dashboard. */
+.contact,
+.site-footer {
+  position: relative !important;
+  z-index: 1;
+  clear: both;
+}
+
+@media (max-width: 1024px) {
+  .page-nav {
+    padding-left: 16px;
+    padding-right: 16px;
+    height: 58px;
+  }
+
+  .controls-bar {
+    height: 58px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .controls-bar .search-wrap {
+    width: 520px;
+    max-width: 52vw;
+  }
+
+  .mp-page {
+    padding-top: 158px;
+  }
+
+  #homeDashboard {
+    padding-top: 158px;
+    height: auto;
+    min-height: 900px;
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar { height: 52px; }
+  .ticker-wrap { top: 52px; height: 30px; }
+
+  .page-nav {
+    top: 82px;
+    height: 58px;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
+
+  .controls-bar {
+    top: 82px;
+    height: 58px;
+    padding: 0 12px;
+  }
+
+  .controls-bar .search-wrap {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+  }
+
+  .controls-bar .search-btn {
+    display: none;
+  }
+
+  .mp-page {
+    padding-top: 148px;
+  }
+
+  #homeDashboard {
+    padding-top: 148px;
+    min-height: 1000px;
+  }
+}
+
+
+
+/* =========================================================
+   MARKETPULSE — FULL RESPONSIVE LAYOUT v1
+   Desktop / Laptop / Tablet / Phone
+   ========================================================= */
+
+/* Prevent horizontal page overflow on every device. */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+/* Tables remain usable on small screens by scrolling inside their
+   own containers rather than pushing the whole page wider. */
+.compact-table,
+.sector-table,
+.fundamentals-table,
+.watchlist-table,
+.alert-table,
+.mp-table {
+  width: 100%;
+}
+
+.compact-table-wrap,
+.sector-table-wrap,
+.fundamentals-table-wrap,
+.watchlist-wrap,
+.alert-wrap,
+.mp-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* =========================================================
+   LAPTOP / SMALL DESKTOP
+   ========================================================= */
+@media (max-width: 1100px) {
+  .topbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .topbar-inner,
+  .controls-bar,
+  .page-nav,
+  .dashboard,
+  .stock-detail-card,
+  .mp-page {
+    max-width: 100%;
+  }
+
+  .dashboard {
+    gap: 14px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .left-col {
+    width: 32%;
+    min-width: 260px;
+  }
+
+  .right-col {
+    min-width: 0;
+  }
+
+  .stock-detail-card {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .mp-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+@media (max-width: 900px) {
+  /* Header */
+  .topbar {
+    padding: 9px 14px;
+    height: 52px;
+  }
+
+  .topbar-inner {
+    min-width: 0;
+  }
+
+  .topbar-right {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .topbar-status {
+    gap: 5px;
+    font-size: 9px;
+  }
+
+  .account-label {
+    max-width: 75px;
+  }
+
+  .blog-nav,
+  .settings-toggle,
+  .theme-toggle,
+  .auth-button,
+  .account-button {
+    flex-shrink: 0;
+  }
+
+  /* Fixed header remains fixed, but gets less horizontal padding. */
+  .controls-bar {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .page-nav {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  /* Main dashboard becomes a normal scrolling page.
+     This prevents the footer/contact section from competing with
+     a fixed-height dashboard. */
+  .dashboard {
+    height: auto !important;
+    min-height: 0;
+    overflow: visible !important;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 18px;
+  }
+
+  .left-col,
+  .right-col {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: auto !important;
+    min-height: 0;
+    overflow: visible !important;
+    flex: none;
+  }
+
+  .left-col {
+    padding-right: 0;
+  }
+
+  .right-col {
+    overflow: visible !important;
+  }
+
+  #feed {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .news-card {
+    width: 100%;
+  }
+
+  /* Stock detail */
+  .stock-detail-card {
+    width: 100%;
+  }
+
+  .stock-metrics-grid,
+  .fundamentals-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Generic MarketPulse grids */
+  .mp-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-panel.span-8,
+  .mp-panel.span-4 {
+    grid-column: span 12;
+  }
+
+  /* Common 3/4-column widgets */
+  .admin-stats,
+  .profile-account-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Contact/footer always remain after content. */
+  .contact,
+  .site-footer {
+    position: relative !important;
+    clear: both;
+  }
+
+  .contact {
+    padding: 32px 18px;
+  }
+
+  .site-footer {
+    padding: 18px 14px;
+  }
+}
+
+/* =========================================================
+   PHONE
+   ========================================================= */
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+
+  /* Top bar */
+  .topbar {
+    height: 50px;
+    padding: 8px 10px;
+  }
+
+  .topbar-brand {
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .topbar-brand .diamond {
+    width: 8px;
+    height: 8px;
+  }
+
+  .topbar-right {
+    gap: 4px;
+  }
+
+  .topbar-status {
+    display: none;
+  }
+
+  .blog-nav,
+  .settings-toggle,
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .account-button {
+    height: 32px;
+    padding-right: 5px;
+    padding-left: 4px;
+    gap: 4px;
+  }
+
+  .account-avatar {
+    width: 23px;
+    height: 23px;
+  }
+
+  .account-label {
+    display: none;
+  }
+
+  /* Ticker */
+  .ticker-wrap {
+    top: 50px !important;
+    height: 28px;
+  }
+
+  .ticker-track {
+    min-width: max-content;
+  }
+
+  .ticker-item {
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 9px;
+  }
+
+  /* Search gets its own compact row on phones. */
+  .controls-bar {
+    top: 78px !important;
+    height: 56px;
+    padding: 7px 10px;
+    gap: 7px;
+    justify-content: stretch;
+    background: var(--bg);
+  }
+
+  .controls-bar .search-wrap {
+    max-width: none;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .controls-bar .search-input {
+    height: 42px;
+    padding-left: 38px;
+    padding-right: 70px;
+    font-size: 13px;
+  }
+
+  .controls-bar .search-btn {
+    height: 42px;
+    min-width: 72px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+
+  .controls-bar .search-dropdown {
+    top: calc(100% + 5px);
+    max-height: min(300px, 48vh);
+    border-radius: 10px;
+  }
+
+  .controls-bar .search-dropdown-item {
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  /* Tabs get their own horizontally scrollable row. */
+  .page-nav {
+    top: 134px !important;
+    height: 45px;
+    padding: 5px 10px 8px;
+    gap: 5px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-nav-link {
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .mp-page,
+  #homeDashboard {
+    padding-top: 179px !important;
+  }
+
+  /* Dashboard */
+  .dashboard {
+    padding: 0 10px 16px;
+    gap: 10px;
+  }
+
+  .widget-card,
+  .mp-panel {
+    padding: 11px;
+    border-radius: 12px;
+  }
+
+  .widget-header {
+    gap: 6px;
+  }
+
+  .widget-title {
+    font-size: 12px;
+  }
+
+  .widget-badge {
+    font-size: 9px;
+  }
+
+  /* Tables */
+  .compact-table {
+    min-width: 420px;
+  }
+
+  .compact-table th,
+  .compact-table td {
+    padding: 7px 6px;
+    font-size: 10px;
+  }
+
+  /* Heatmap */
+  .heatmap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .heatmap-tile {
+    min-width: 0;
+  }
+
+  /* News */
+  .news-filter-bar {
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+
+  .news-card {
+    padding: 11px 12px;
+    margin-bottom: 7px;
+  }
+
+  .news-card-top {
+    gap: 6px;
+  }
+
+  .news-company {
+    min-width: 0;
+  }
+
+  .news-company,
+  .news-summary {
+    overflow-wrap: anywhere;
+  }
+
+  /* Stock detail */
+  .stock-detail-card {
+    padding: 0 10px;
+    margin-bottom: 10px;
+  }
+
+  .stock-detail-header {
+    gap: 12px;
+  }
+
+  .stock-detail-title-row {
+    gap: 6px;
+  }
+
+  .stock-name {
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .stock-price-block {
+    width: 100%;
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .stock-price {
+    font-size: 25px;
+  }
+
+  .stock-metrics-grid,
+  .fundamentals-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .metric,
+  .fundamental-metric {
+    min-width: 0;
+    padding: 9px;
+  }
+
+  .metric-value,
+  .fundamental-metric-value {
+    overflow-wrap: anywhere;
+    font-size: 12px;
+  }
+
+  .fundamentals-table {
+    min-width: 620px;
+  }
+
+  .stock-chart-wrap {
+    overflow: hidden;
+  }
+
+  .stock-chart-canvas {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* Crude Impact */
+  .impact-list {
+    width: 100%;
+  }
+
+  .impact-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+  }
+
+  .impact-name,
+  .impact-company {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .impact-score {
+    white-space: nowrap;
+  }
+
+  /* Global / generic tables */
+  .mp-table {
+    min-width: 560px;
+  }
+
+  .mp-page-header {
+    padding-top: 6px;
+    margin-bottom: 12px;
+  }
+
+  .mp-page-title {
+    font-size: 24px;
+    line-height: 1.15;
+  }
+
+  .mp-page-subtitle {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+
+  .admin-stats,
+  .profile-account-card {
+    grid-template-columns: 1fr;
+  }
+
+  .watchlist-body,
+  .alert-body,
+  .admin-panel-body,
+  .profile-body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Contact/footer */
+  .contact {
+    padding: 28px 14px;
+  }
+
+  .contact-inner {
+    max-width: 100%;
+  }
+
+  .contact-form {
+    width: 100%;
+  }
+
+  .contact-form input,
+  .contact-form textarea,
+  .contact-form button {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .site-footer {
+    font-size: 10px;
+    line-height: 1.5;
+    padding: 16px 12px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+@media (max-width: 380px) {
+  .topbar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .topbar-brand {
+    font-size: 13px;
+  }
+
+  .blog-nav,
+  .settings-toggle,
+  .theme-toggle {
+    width: 30px;
+    height: 30px;
+  }
+
+  .controls-bar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .controls-bar .search-btn {
+    min-width: 65px;
+    padding: 0 8px;
+  }
+
+  .controls-bar .search-input {
+    font-size: 12px;
+  }
+
+  .page-nav {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .dashboard {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .stock-metrics-grid,
+  .fundamentals-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stock-name {
+    font-size: 18px;
+  }
+}
+
+/* Respect devices that have a display cutout / home indicator. */
+@supports (padding: max(0px)) {
+  @media (max-width: 600px) {
+    .topbar {
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
+    }
+
+    .site-footer {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+  }
+}
+
 </style>
   <base target="_blank">
 </head>
