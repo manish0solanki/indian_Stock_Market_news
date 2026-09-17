@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-17-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 17 Sept 2026: Gains 0.23%",
+    "excerpt": "Nifty 50 gained 0.23% to close at 23,270.60.",
+    "category": "daily-wrap",
+    "date": "2026-09-17T18:07:48+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bullish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-selling-intensifies-to-5-day-streak-as-dii-buying-extends-to-17-sessions",
     "title": "FII Selling Intensifies to 5-Day Streak as DII Buying Extends to 17 Sessions",
     "excerpt": "FIIs sold ₹2,977.86 Cr while DIIs bought ₹2,686.05 Cr, leaving combined institutional flows slightly negative at ₹-291.81 Cr. The Nifty 50 rose 0.43% to ₹23,217.6 despite net in...",
