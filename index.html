@@ -2910,16 +2910,53 @@ body {
   .news-card,
   .mp-panel {
     max-width: 100% !important;
+    min-width: 0 !important;
   }
 
+  .left-col,
+  .right-col,
+  .widget-card,
+  .widget-header {
+    min-width: 0 !important;
+  }
+
+  /* Mobile fix: keep snapshot/sector/global tables inside their cards.
+     The old 430px minimum forced horizontal overflow on phones. */
   .compact-table {
-    min-width: 430px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .compact-table th,
+  .compact-table td {
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .compact-table th {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    font-size: 8.5px !important;
+  }
+
+  .compact-table td {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    font-size: 10px !important;
+  }
+
+  .compact-table .idx-name {
+    min-width: 0 !important;
+    font-size: 10px !important;
   }
 
   .compact-table-wrap,
   .mp-table-wrap {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     overflow-x: auto !important;
   }
 
