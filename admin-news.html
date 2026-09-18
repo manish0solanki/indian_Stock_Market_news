@@ -23,8 +23,8 @@
     <h1>MarketPulse Admin</h1>
     <p>Sign in with your existing MarketPulse account. Only profiles with <b>role = admin</b> can manage News.</p>
     <div id="loginNotice" class="notice"></div>
-    <label>Email</label>
-    <input id="email" type="email" autocomplete="email">
+    <label>Email or username</label>
+    <input id="email" type="text" autocomplete="username" placeholder="Email or admin">
     <label>Password</label>
     <input id="password" type="password" autocomplete="current-password">
     <button class="btn primary" id="loginBtn">Sign in</button>
@@ -118,7 +118,7 @@ window.toggleVisible=async id=>{const x=all.find(a=>Number(a.id)===Number(id));i
 window.deleteNews=async id=>{const x=all.find(a=>Number(a.id)===Number(id));if(!x)return;if(!confirm("Delete this news article permanently? This cannot be undone."))return;const {error}=await sb.from("news").delete().eq("id",x.id);if(error){msg(error.message,"error");return}msg("Article deleted.");await load()}
 function closeEdit(){current=null;$("editBg").classList.remove("open")}
 async function start(){const {data}=await sb.auth.getSession();user=data.session?.user||null;if(user&&await checkAdmin()){ $("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await load()}}
-$("loginBtn").onclick=async()=>{const email=$("email").value.trim(),password=$("password").value;if(!email||!password)return loginMsg("Enter email and password.");$("loginBtn").disabled=true;const {data,error}=await sb.auth.signInWithPassword({email,password});if(error){loginMsg(error.message);$("loginBtn").disabled=false;return}user=data.user;if(await checkAdmin()){$("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await load()}$("loginBtn").disabled=false}
+$("loginBtn").onclick=async()=>{const loginValue=$("email").value.trim(),password=$("password").value;const email=loginValue.toLowerCase()==="admin"?"admin@tradesutra.com":loginValue;if(!email||!password)return loginMsg("Enter email and password.");$("loginBtn").disabled=true;const {data,error}=await sb.auth.signInWithPassword({email,password});if(error){loginMsg(error.message);$("loginBtn").disabled=false;return}user=data.user;if(await checkAdmin()){$("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await load()}$("loginBtn").disabled=false}
 $("logoutBtn").onclick=async()=>{await sb.auth.signOut();location.reload()}
 $("backBtn").onclick=()=>location.href="/"
 $("refresh").onclick=load
