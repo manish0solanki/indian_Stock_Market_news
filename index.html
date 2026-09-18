@@ -1622,6 +1622,45 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } .pulse-dot { animation: none; } .news-card { animation: none; } }
 
 /* Responsive */
+/* ─── Crude Opportunities Feed ─── */
+.crude-opportunities-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.crude-opportunity-summary{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.crude-opportunity-summary span{padding:4px 7px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--text-muted);font:700 9px var(--font-mono)}
+.crude-opportunity-summary .short{color:var(--negative);border-color:rgba(248,113,113,.28);background:var(--negative-bg)}
+.crude-opportunity-summary .long,.crude-opportunity-summary .triggered{color:var(--positive);border-color:rgba(74,222,128,.28);background:var(--positive-bg)}
+.crude-opportunities-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.crude-opportunity-card{border:1px solid var(--border);background:var(--bg);border-radius:var(--radius-md);padding:12px;min-width:0}
+.crude-opportunity-card.triggered{border-color:rgba(74,222,128,.32)}
+.crude-opportunity-card.ready-watch{border-color:rgba(245,166,35,.24)}
+.crude-opportunity-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.crude-opportunity-stock{min-width:0}
+.crude-opportunity-symbol{font:800 14px var(--font-mono)}
+.crude-opportunity-name{margin-top:3px;color:var(--text-muted);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crude-opportunity-badges{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
+.crude-opportunity-badge{padding:4px 7px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:8px;font-weight:800;white-space:nowrap}
+.crude-opportunity-badge.short{color:var(--negative);border-color:rgba(248,113,113,.28);background:var(--negative-bg)}
+.crude-opportunity-badge.long{color:var(--positive);border-color:rgba(74,222,128,.28);background:var(--positive-bg)}
+.crude-opportunity-badge.ready{color:var(--neutral);border-color:rgba(245,166,35,.28);background:var(--neutral-bg)}
+.crude-opportunity-badge.triggered{color:var(--positive);border-color:rgba(74,222,128,.28);background:var(--positive-bg)}
+.crude-opportunity-price-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+.crude-opportunity-metric{padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);min-width:0}
+.crude-opportunity-metric span{display:block;color:var(--text-muted);font-size:8px;text-transform:uppercase;letter-spacing:.04em}
+.crude-opportunity-metric strong{display:block;margin-top:3px;font:700 11px var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crude-opportunity-trigger{margin-top:9px;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)}
+.crude-opportunity-trigger-title{display:flex;justify-content:space-between;gap:8px;color:var(--text-muted);font-size:8px;text-transform:uppercase;letter-spacing:.05em;font-weight:800}
+.crude-opportunity-trigger-value{margin-top:4px;font:800 14px var(--font-mono)}
+.crude-opportunity-trigger-distance{margin-top:3px;color:var(--text-muted);font:600 9px var(--font-mono)}
+.crude-opportunity-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
+.crude-opportunity-level{padding:7px 8px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);min-width:0}
+.crude-opportunity-level span{display:block;color:var(--text-muted);font-size:8px}
+.crude-opportunity-level strong{display:block;margin-top:3px;font:700 10px var(--font-mono)}
+.crude-opportunity-meta{display:flex;flex-wrap:wrap;gap:7px 12px;margin-top:9px;color:var(--text-muted);font-size:8px}
+.crude-opportunity-meta strong{color:var(--text);font-family:var(--font-mono)}
+.crude-opportunity-reason{margin-top:8px;color:var(--text-secondary);font-size:9px;line-height:1.45}
+.crude-opportunities-footer{margin-top:10px;color:var(--text-muted);font-size:9px;line-height:1.5}
+@media (max-width:680px){.crude-opportunities-list{grid-template-columns:1fr}.crude-opportunities-head{flex-direction:column}.crude-opportunity-summary{justify-content:flex-start}}
+@media (max-width:430px){.crude-opportunity-card{padding:10px}.crude-opportunity-price-row,.crude-opportunity-levels{gap:5px}.crude-opportunity-metric,.crude-opportunity-level{padding:7px 6px}.crude-opportunity-metric strong{font-size:10px}.crude-opportunity-trigger-value{font-size:13px}}
+
 @media (max-width: 1024px) {
 
   /*
@@ -3368,6 +3407,26 @@ body {
         </div>
         <div class="impact-list" id="crudeNegativeList">
           <div class="mp-empty-state">Loading crude-impact data…</div>
+        </div>
+      </div>
+
+      <div class="mp-panel span-12">
+        <div class="mp-panel-title crude-opportunities-head">
+          <div>
+            <span>Crude Opportunities</span>
+            <div class="mp-panel-note" style="margin-top:4px;">
+              Validated technical setups from the crude-impact scanner. Trigger confirmation is still required before an opportunity becomes triggered.
+            </div>
+          </div>
+          <div class="crude-opportunity-summary" id="crudeOpportunitySummary">
+            <span>0 SETUPS</span>
+          </div>
+        </div>
+        <div class="crude-opportunities-list" id="crudeOpportunitiesList">
+          <div class="mp-empty-state">Loading opportunity feed…</div>
+        </div>
+        <div class="crude-opportunities-footer" id="crudeOpportunitiesFooter">
+          Feed status: waiting for data.
         </div>
       </div>
 
@@ -7953,6 +8012,8 @@ function renderCrudeImpactPage(data) {
 
   renderCrudeSectorImpact(data.sector_impact || {});
 
+  loadCrudeOpportunities();
+
   const positive = Array.isArray(data.beneficiaries) ? data.beneficiaries : [];
   const negative = Array.isArray(data.pressure) ? data.pressure : [];
   renderCrudeList('crudePositiveList', positive, true);
@@ -7963,6 +8024,142 @@ function renderCrudeImpactPage(data) {
   setText('crudeLatestDate', `${formatDate(quality.crude_latest_date)} (${quality.crude_status || '—'})`);
   setText('fxLatestDate', `${formatDate(quality.fx_latest_date)} (${quality.fx_status || '—'})`);
   setText('crudeGeneratedAt', formatDateTime(data.generated_at || marketpulse.generated_at));
+}
+
+let crudeOpportunitiesLoaded = false;
+
+async function loadCrudeOpportunities(force = false) {
+  if (crudeOpportunitiesLoaded && !force) return;
+  const list = document.getElementById('crudeOpportunitiesList');
+  const footer = document.getElementById('crudeOpportunitiesFooter');
+  if (list && !crudeOpportunitiesLoaded) list.innerHTML = '<div class="mp-empty-state">Loading opportunity feed…</div>';
+
+  const urls = [
+    `/data/crude-opportunities.json?v=${Date.now()}`,
+    `/crude-opportunities.json?v=${Date.now()}`,
+    `crude-opportunities.json?v=${Date.now()}`
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const data = await res.json();
+      renderCrudeOpportunities(data);
+      crudeOpportunitiesLoaded = true;
+      if (footer) footer.textContent =
+        `Feed updated: ${formatOpportunityDateTime(data?.generated_at)} · ${Number(data?.feed?.candidate_count || 0)} candidates scanned.`;
+      return;
+    } catch (e) {
+      console.error('[Crude Opportunities]', e);
+    }
+  }
+
+  if (list) list.innerHTML = '<div class="mp-empty-state">Opportunity feed is currently unavailable.</div>';
+  if (footer) footer.textContent = 'Feed status: unavailable. The crude-impact page is still available.';
+}
+
+function formatOpportunityDateTime(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' });
+}
+
+function formatOpportunityPrice(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits:2 });
+}
+
+function formatOpportunitySigned(value, decimals = 2) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}`;
+}
+
+function renderCrudeOpportunities(data) {
+  const list = document.getElementById('crudeOpportunitiesList');
+  const summary = document.getElementById('crudeOpportunitySummary');
+  if (!list) return;
+
+  const opportunities = Array.isArray(data?.opportunities) ? data.opportunities : [];
+
+  if (!opportunities.length) {
+    list.innerHTML = '<div class="mp-empty-state">No validated crude opportunities are currently published.</div>';
+    if (summary) summary.innerHTML = '<span>0 SETUPS</span>';
+    return;
+  }
+
+  const triggered = opportunities.filter(x => x?.status === 'TRIGGERED').length;
+  const longs = opportunities.filter(x => x?.direction === 'LONG').length;
+  const shorts = opportunities.filter(x => x?.direction === 'SHORT').length;
+
+  if (summary) summary.innerHTML = `
+    <span>${opportunities.length} SETUPS</span>
+    <span class="triggered">${triggered} TRIGGERED</span>
+    <span class="long">${longs} LONG</span>
+    <span class="short">${shorts} SHORT</span>`;
+
+  list.innerHTML = opportunities.map(item => {
+    const direction = String(item?.direction || 'NEUTRAL').toUpperCase();
+    const status = String(item?.status || 'READY_WATCH').toUpperCase();
+    const isLong = direction === 'LONG';
+    const isTriggered = status === 'TRIGGERED';
+    const distance = Number(item?.trigger_distance_percent);
+    const distanceText = Number.isFinite(distance) ? `${distance.toFixed(2)}% away` : 'Distance unavailable';
+    const score = Number(item?.final_score);
+    const newsText = item?.news_confirmation === 'NO_RELEVANT_NEWS'
+      ? 'No relevant news'
+      : String(item?.news_confirmation || 'Pending');
+
+    return `
+      <article class="crude-opportunity-card ${isTriggered ? 'triggered' : 'ready-watch'}">
+        <div class="crude-opportunity-top">
+          <div class="crude-opportunity-stock">
+            <div class="crude-opportunity-symbol">${escapeHtml(item?.symbol || '—')}</div>
+            <div class="crude-opportunity-name">${escapeHtml(item?.name || '')}</div>
+          </div>
+          <div class="crude-opportunity-badges">
+            <span class="crude-opportunity-badge ${isLong ? 'long' : 'short'}">${escapeHtml(direction)}</span>
+            <span class="crude-opportunity-badge ${isTriggered ? 'triggered' : 'ready'}">${isTriggered ? 'TRIGGERED' : 'READY WATCH'}</span>
+          </div>
+        </div>
+
+        <div class="crude-opportunity-price-row">
+          <div class="crude-opportunity-metric"><span>Current</span><strong>${formatOpportunityPrice(item?.current_price)}</strong></div>
+          <div class="crude-opportunity-metric"><span>ATR 14</span><strong>${formatOpportunityPrice(item?.atr14)}</strong></div>
+          <div class="crude-opportunity-metric"><span>ATR %</span><strong>${Number.isFinite(Number(item?.atr_percent)) ? Number(item.atr_percent).toFixed(2)+'%' : '—'}</strong></div>
+        </div>
+
+        <div class="crude-opportunity-trigger">
+          <div class="crude-opportunity-trigger-title">
+            <span>${escapeHtml(item?.trigger_type || 'TRIGGER')}</span>
+            <span>${escapeHtml(item?.trigger_state || 'WAIT_FOR_TRIGGER')}</span>
+          </div>
+          <div class="crude-opportunity-trigger-value">${formatOpportunityPrice(item?.trigger_price)}</div>
+          <div class="crude-opportunity-trigger-distance">${escapeHtml(distanceText)}</div>
+        </div>
+
+        <div class="crude-opportunity-levels">
+          <div class="crude-opportunity-level"><span>Stop Loss</span><strong>${formatOpportunityPrice(item?.stop_loss)}</strong></div>
+          <div class="crude-opportunity-level"><span>Target 1</span><strong>${formatOpportunityPrice(item?.target_1)}</strong></div>
+          <div class="crude-opportunity-level"><span>Target 2</span><strong>${formatOpportunityPrice(item?.target_2)}</strong></div>
+        </div>
+
+        <div class="crude-opportunity-meta">
+          <span>R:R <strong>1:${Number.isFinite(Number(item?.risk_reward_target_2)) ? Number(item.risk_reward_target_2).toFixed(0) : '—'}</strong></span>
+          <span>Crude <strong>${formatOpportunitySigned(item?.crude_impact)}</strong></span>
+          <span>Score <strong>${formatOpportunitySigned(score,0)}</strong></span>
+          <span>Volume <strong>${escapeHtml(item?.volume_confirmation || '—')}</strong></span>
+          <span>News <strong>${escapeHtml(newsText)}</strong></span>
+        </div>
+
+        <div class="crude-opportunity-reason">
+          ${escapeHtml(item?.status_reason || 'Waiting for trigger confirmation.')}
+        </div>
+      </article>`;
+  }).join('');
 }
 
 function regimeDescription(regime, pressure) {
@@ -8189,6 +8386,12 @@ async function init() {
 
 init();
 setInterval(loadNews, 300000); // News refresh: every 5 minutes
+setInterval(() => {
+  const crudePage = document.getElementById('page-crude');
+  if (crudePage && !crudePage.classList.contains('hidden')) {
+    loadCrudeOpportunities(true);
+  }
+}, 300000);
 setInterval(loadPrices, REFRESH_MS);
 setInterval(loadIndices, REFRESH_MS);
 setInterval(loadGlobalHeadlines, REFRESH_MS * 5);
