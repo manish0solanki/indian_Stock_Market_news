@@ -5116,38 +5116,19 @@ async function loadAdminUsers() {
 }
 
 async function openAdminModal() {
-  if (!currentUser) {
-    console.warn('[Admin] No authenticated user found.');
-    return;
-  }
-
+  if (!currentUser) return;
   try {
     const { data, error } = await supabaseClient
       .from('profiles')
       .select('role')
       .eq('id', currentUser.id)
       .maybeSingle();
-
     if (error) throw error;
-
-    if (data?.role !== 'admin') {
-      console.warn('[Admin] Current user is not an admin.');
-      return;
-    }
-
+    if (data?.role !== 'admin') return;
     isAdmin = true;
-
-    // Open the Admin Panel
-    adminModal.classList.add('open');
-    adminModal.setAttribute('aria-hidden', 'false');
-
-    // Close account dropdown
     accountMenu.classList.remove('open');
     accountButton.setAttribute('aria-expanded', 'false');
-
-    // Load dashboard data
-    loadAdminUsers();
-
+    window.location.href = '/admin-news.html';
   } catch (error) {
     console.error('[Admin] Could not verify admin access:', error);
   }
@@ -5353,34 +5334,27 @@ logoutButton.addEventListener('click', async () => {
 //  CONFIG
 // ═══════════════════════════════════════════════════════════════
 const DEFAULT_API_BASE = "https://marketpulse-cache.manish0solanki20078.workers.dev";
-const DEFAULT_NEWS_KEY = "a4fac4b78f404e5ab4ab09156144834d";
 
 let API_BASE = DEFAULT_API_BASE;
-let NEWSAPI_KEY = DEFAULT_NEWS_KEY;
 
 async function initConfig() {
-  let config = { apiBase: DEFAULT_API_BASE, newsKey: DEFAULT_NEWS_KEY, source: 'default' };
+  let config = { apiBase: DEFAULT_API_BASE, source: 'default' };
   try {
     const res = await fetch('config.json', { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
       if (json.apiBase) { config.apiBase = json.apiBase; config.source = 'config.json'; }
-      if (json.newsApiKey) { config.newsKey = json.newsApiKey; }
     }
   } catch (e) { /* ignore */ }
   const lsBase = localStorage.getItem('mp_api_base');
-  const lsKey = localStorage.getItem('mp_news_key');
   if (lsBase) { config.apiBase = lsBase; config.source = 'localStorage'; }
-  if (lsKey) config.newsKey = lsKey;
   API_BASE = config.apiBase;
   NEWSAPI_KEY = config.newsKey;
   const elBase = document.getElementById('settingApiBase');
   const elKey = document.getElementById('settingNewsKey');
   if (elBase) elBase.value = config.apiBase;
-  if (elKey) elKey.value = config.newsKey;
 }
 
-const NEWS_URL     = () => API_BASE + "/news-feed";
 const PRICES_URL   = () => API_BASE + "/price-feed";
 const INDICES_URL  = () => API_BASE + "/index-feed";
 const GLOBAL_URL   = () => API_BASE + "/global-news";
@@ -6731,13 +6705,14 @@ function toggleNewsGroup(btn) {
 
 async function loadNews() {
   try {
-    const res = await fetch(NEWS_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (Array.isArray(data)) allNewsItems = data;
-    else if (data.items && Array.isArray(data.items)) allNewsItems = data.items;
-    else if (typeof data === 'object' && data !== null) allNewsItems = [data];
-    else allNewsItems = [];
+    const { data, error } = await supabaseClient
+      .from('news')
+      .select('*')
+      .eq('is_visible', true)
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    allNewsItems = Array.isArray(data) ? data : [];
     updateStats(allNewsItems);
     renderNews();
     lastUpdatedEl.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -6745,7 +6720,8 @@ async function loadNews() {
     oldNewsToggle.classList.toggle('hidden', !isAfterMarketClose());
   } catch (e) {
     lastUpdatedEl.textContent = 'Connection lost';
-    console.error('[News]', e);
+    console.error('[News] Supabase load failed:', e);
+    feedEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:13px;">Could not load news right now.</div>';
   }
 }
 
