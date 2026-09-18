@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-returns-to-net-buying-after-single-day-outflow-dii-buying-streak-hits-19-sessions",
+    "title": "FII Returns to Net Buying After Single-Day Outflow; DII Buying Streak Hits 19 Sessions",
+    "excerpt": "FII net buying resumed at ₹599.54 Cr after selling ₹3,208.76 Cr in the previous session, while DIIs extended their 19-session buying streak with ₹1,019.69 Cr. The Nifty 50 gaine...",
+    "category": "fiidii-flows",
+    "date": "2026-09-18",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "adaniports-stock-spotlight",
     "title": "Adani Ports Surges 4.9% on Heavy Volume, Within Striking Distance of 52-Week High",
     "excerpt": "PRICE ACTION: Adani Ports rallied sharply on volume 68% above average, indicating genuine buying interest rather than thin-market drift. The stock now sits just 3.6% below its 5...",
