@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:50:25.546Z",
+  "generated_at": "2026-09-21T16:24:53.905Z",
   "source": {
     "crude": "Snapdata / EIA",
     "fx": "Snapdata / ECB cross-rates",
@@ -8,9 +8,9 @@
   },
   "data_quality": {
     "crude_latest_date": "2026-09-15",
-    "fx_latest_date": "2026-09-18",
+    "fx_latest_date": "2026-09-21",
     "crude_status": "final",
-    "fx_status": "final"
+    "fx_status": "provisional"
   },
   "crude": {
     "brent": {
@@ -31,11 +31,11 @@
     "regime": "BULLISH"
   },
   "usdinr": {
-    "rate": 95.8774,
-    "date": "2026-09-18",
+    "rate": 95.8203,
+    "date": "2026-09-21",
     "change_1d": -0.06,
-    "change_5d": 0.34,
-    "change_1m": 0.13
+    "change_5d": 0.28,
+    "change_1m": 0.12
   },
   "sector_impact": {
     "energy": {
@@ -89,7 +89,7 @@
   },
   "marketpulse": {
     "version": "1.0",
-    "generated_at": "2026-09-21T06:50:25.546Z",
+    "generated_at": "2026-09-21T16:24:53.905Z",
     "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
     "crude_regime": "BULLISH",
     "india_crude_pressure": "MODERATE"
@@ -650,8 +650,8 @@
       "published_duplicate_symbols": 0,
       "published_high_confidence": 19,
       "published_medium_confidence": 0,
-      "generated_at": "2026-09-21T06:50:29.183Z"
+      "generated_at": "2026-09-21T16:25:00.741Z"
     },
-    "generated_at": "2026-09-21T06:50:29.146Z"
+    "generated_at": "2026-09-21T16:25:00.664Z"
   }
 }
