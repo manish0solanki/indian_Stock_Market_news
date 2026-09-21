@@ -1,5 +1,25 @@
 [
   {
+    "slug": "bandhanbnk-stock-spotlight",
+    "title": "Bandhan Bank Rallies 2.3% on 1.7x Volume, Reclaims 50-Day Moving Average",
+    "excerpt": "PRICE ACTION: The stock broke above its 50-day SMA with conviction, suggesting buyers absorbed supply near a key technical threshold. Volume running 65% above average indicates...",
+    "category": "stock-spotlight",
+    "date": "2026-09-21",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "BANDHANBNK",
+      "BANDHAN BANK LIMITED"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-pharma-gains-1-16-percent-as-large-caps-lead-advance",
     "title": "Nifty Pharma Gains 1.16% as Large Caps Lead Advance",
     "excerpt": "Nifty Pharma rose 1.16% (311.05 points) to 27,021.15. Breadth was positive with 71 of 130 stocks advancing against 58 declining. Large caps outperformed, with the top 10 by market capitalization averaging 1.54% versus 0.78% for smaller stocks; Mankind Pharma gained 5.96% and Laurus Labs 3.25%.",
