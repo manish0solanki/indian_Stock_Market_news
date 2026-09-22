@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-intensifies-to-3810-cr-as-dii-buying-extends-21-session-streak",
+    "title": "FII Selling Intensifies to ₹3,810 Cr as DII Buying Extends 21-Session Streak",
+    "excerpt": "FIIs sold ₹3,810 Cr today, deepening from ₹576 Cr in the previous session, while DIIs bought ₹4,120 Cr. Nifty 50 slipped 0.36% to ₹23,329 despite net institutional inflows of ₹3...",
+    "category": "fiidii-flows",
+    "date": "2026-09-22",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "bandhanbnk-stock-spotlight",
     "title": "Bandhan Bank Surges 3.2% on 2.4x Volume, Clears 50-Day Moving Average",
     "excerpt": "PRICE ACTION: The stock posted its strongest single-day gain in recent sessions with volume more than doubling, indicating genuine buying interest rather than thin-market noise....",
