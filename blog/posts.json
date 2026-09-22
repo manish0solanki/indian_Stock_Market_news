@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-22-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 22 Sept 2026: Drops 0.36%",
+    "excerpt": "Nifty 50 dropped 0.36% to close at 23,329.00.",
+    "category": "daily-wrap",
+    "date": "2026-09-22T17:35:16+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "dii-buying-extends-to-20-straight-sessions-as-fii-selling-resumes",
     "title": "DII Buying Extends to 20 Straight Sessions as FII Selling Resumes",
     "excerpt": "FIIs turned net sellers at ₹576.2 Cr after one day of buying, while DIIs bought ₹2,797.27 Cr, extending their longest streak in the dataset. The Nifty 50 edged up 0.29% to ₹23,4...",
