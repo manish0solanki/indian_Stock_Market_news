@@ -1,128 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#2E1F82">
-<title>MarketPulse — Crypto Signals</title>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2E1F82"><title>MarketPulse — Crypto Signals</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--indigo:#2E1F82;--bg:#0F0F1A;--card:#1A1A2E;--card2:#222240;--border:#2A2A4A;--text:#E8E8F0;--muted:#A0A0B8;--dim:#6B6B8A;--green:#4ADE80;--red:#F87171;--yellow:#F5A623;--blue:#6EA8FE}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}.top{height:58px;background:var(--indigo);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:10}.brand{font-weight:800}.top-right{display:flex;gap:8px;align-items:center}.btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:8px 11px;cursor:pointer;font-size:12px;font-weight:700}.btn:hover{background:var(--card2)}.btn.primary{background:var(--indigo);border-color:#594cc0;color:#fff}.btn.green{color:var(--green)}.btn.red{color:var(--red)}.btn:disabled{opacity:.5;cursor:not-allowed}.wrap{max-width:1400px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;align-items:flex-end;gap:15px;flex-wrap:wrap}.title h1{margin:0 0 5px;font-size:25px}.title p{margin:0;color:var(--muted);font-size:12px}.status{margin:15px 0;padding:11px 13px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:12px;display:flex;gap:18px;flex-wrap:wrap}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px}.dot.off{background:var(--red)}.stats{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}.stat{min-width:125px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px}.stat b{display:block;font:700 20px monospace}.stat span{font-size:9px;color:var(--dim);text-transform:uppercase}.tabs{display:flex;gap:7px;margin:12px 0}.tab{padding:8px 14px;border:1px solid var(--border);background:var(--card);border-radius:8px;cursor:pointer;font-size:12px}.tab.active{background:var(--indigo);border-color:#594cc0;color:#fff}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:13px}.card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:15px}.topline{display:flex;justify-content:space-between;gap:10px}.sym{font-weight:800;font-family:monospace}.name{font-size:10px;color:var(--muted);margin-top:3px}.badge{display:inline-block;padding:4px 9px;border-radius:20px;font-size:10px;font-weight:800}.long{color:var(--green);background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25)}.short{color:var(--red);background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25)}.wait{color:var(--yellow);background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.25)}.levels{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.lvl{background:var(--card2);padding:9px;border-radius:8px}.k{font-size:9px;color:var(--dim);text-transform:uppercase}.v{font:600 14px monospace;margin-top:3px}.entry .v{color:var(--blue)}.sl .v{color:var(--red)}.tp .v{color:var(--green)}.reason{margin-top:11px;font-size:11px;color:var(--muted);line-height:1.5}.actions{margin-top:12px}.empty{text-align:center;color:var(--dim);padding:45px}.trade{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:grid;grid-template-columns:auto auto 1fr auto auto;gap:12px;align-items:center}.trade-info{font-size:11px;color:var(--muted);line-height:1.5}.pnl{font:700 14px monospace}.up{color:var(--green)}.down{color:var(--red)}.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:15px;z-index:30}.modal.open{display:flex}.box{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}.box h2{margin:0 0 14px;font-size:18px}.field{margin:10px 0}.field label{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.field input,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.login{text-align:center;padding:80px 20px}.login h1{font-size:25px}.login p{color:var(--muted);font-size:12px}.notice{padding:10px;border-radius:8px;background:rgba(248,113,113,.12);color:var(--red);font-size:11px;margin:10px 0;display:none}.notice.show{display:block}@media(max-width:700px){.wrap{padding:14px}.trade{grid-template-columns:1fr 1fr}.trade-info{grid-column:1/-1}.row{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-<header class="top"><div class="brand">◆ MarketPulse · Crypto Signals</div><div class="top-right"><span id="email" style="font-size:11px;color:#fff9"></span><button class="btn" onclick="location.href='/'">← MarketPulse</button><button class="btn" id="logout">Logout</button></div></header>
-
-<div id="loginView" class="login" style="display:none">
-<h1>🔐 Crypto Signals</h1><p>Please log in to MarketPulse first.</p><button class="btn primary" onclick="location.href='/'">Go to MarketPulse Login</button>
-</div>
-
-<main id="app" class="wrap" style="display:none">
-<div class="head"><div class="title"><h1>🔥 Crypto Signals</h1><p>Paper-trading tracker. Signals and trade state are stored in Supabase.</p></div><button class="btn" id="refresh">↻ Refresh</button></div>
-<div class="status"><span><i class="dot" id="dot"></i><b id="scanner">Scanner status: waiting for n8n</b></span><span>Last signal: <b id="lastSignal">—</b></span><span>Updated: <b id="updated">—</b></span></div>
-<div class="stats"><div class="stat"><b id="activeCount">0</b><span>Active Signals</span></div><div class="stat"><b id="tradeCount">0</b><span>My Trades</span></div><div class="stat"><b id="openCount">0</b><span>Open Trades</span></div><div class="stat"><b id="pnl">₹0</b><span>Total P&L</span></div></div>
-<div class="tabs"><button class="tab active" data-tab="signals">📶 Signals</button><button class="tab" data-tab="trades">💼 My Trades</button></div>
-<section id="signals"></section>
-<section id="trades" style="display:none"></section>
-</main>
-
-<div class="modal" id="modal"><div class="box">
-<h2 id="mTitle">Paper Trade</h2>
-<div class="row"><div class="field"><label>Amount (₹)</label><input id="amount" type="number" min="0" value="1000"></div><div class="field"><label>Leverage</label><input id="lev" type="number" min="1" max="10" value="1"></div></div>
-<div class="field"><label>Notes</label><textarea id="notes" rows="3" placeholder="Optional"></textarea></div>
-<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="saveTrade">Start Paper Trade</button></div>
+:root{--i:#2E1F82;--bg:#0F0F1A;--s:#1A1A2E;--s2:#222240;--b:#2A2A4A;--t:#E8E8F0;--m:#A0A0B8;--d:#6B6B8A;--g:#4ADE80;--r:#F87171;--y:#F5A623;--bl:#60A5FA}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif}.top{height:58px;background:var(--i);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:10}.brand{font-weight:800}.right{display:flex;gap:8px;align-items:center}.btn{border:1px solid var(--b);background:var(--s);color:var(--t);border-radius:8px;padding:8px 11px;cursor:pointer;font-size:12px;font-weight:700}.btn:hover{background:var(--s2)}.primary{background:var(--i);border-color:#5b4fc0;color:#fff}.wrap{max-width:1450px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;gap:15px;align-items:flex-end;margin-bottom:18px}.head h1{margin:0 0 5px;font-size:25px}.head p{margin:0;color:var(--m);font-size:12px}.status{display:flex;gap:12px;flex-wrap:wrap}.pill{background:var(--s);border:1px solid var(--b);border-radius:20px;padding:8px 12px;font-size:11px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);margin-right:6px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:16px}.toprow{display:flex;justify-content:space-between;gap:10px}.sym{font:800 17px monospace}.sub{color:var(--m);font-size:10px;margin-top:3px}.badge{display:inline-block;padding:4px 9px;border-radius:20px;font-size:10px;font-weight:800}.long{color:var(--g);background:rgba(74,222,128,.12)}.short{color:var(--r);background:rgba(248,113,113,.12)}.wait{color:var(--y);background:rgba(245,166,35,.12)}.levels{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.level{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:9px}.k{font-size:9px;color:var(--d);text-transform:uppercase}.v{font:700 14px monospace;margin-top:4px}.entry .v{color:var(--bl)}.sl .v{color:var(--r)}.tp .v{color:var(--g)}.rr .v{color:var(--y)}.reason{margin-top:12px;color:var(--m);font-size:11px;line-height:1.5}.actions{display:flex;gap:8px;margin-top:14px}.actions .btn{flex:1}.trade{margin-top:20px}.trade h2{font-size:17px}.trade-table{overflow:auto;background:var(--s);border:1px solid var(--b);border-radius:12px}.trade-table table{width:100%;border-collapse:collapse;min-width:850px}.trade-table th{background:var(--s2);color:var(--d);font-size:9px;text-transform:uppercase;text-align:left;padding:10px}.trade-table td{border-top:1px solid var(--b);padding:10px;font-size:11px}.empty{padding:35px;text-align:center;color:var(--d);background:var(--s);border:1px solid var(--b);border-radius:12px}.notice{padding:11px 13px;border-radius:8px;margin-bottom:14px;font-size:12px;display:none}.notice.error{display:block;background:rgba(248,113,113,.12);color:var(--r)}.notice.ok{display:block;background:rgba(74,222,128,.12);color:var(--g)}.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.login-card{width:min(420px,100%);background:var(--s);border:1px solid var(--b);border-radius:14px;padding:25px}.login-card h1{margin:0 0 8px}.login-card p{font-size:12px;color:var(--m)}input{width:100%;box-sizing:border-box;background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:7px;padding:10px;margin:6px 0 10px}.login-card .btn{width:100%;margin-top:5px}.hidden{display:none!important}.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:15px;z-index:50}.modal-bg.open{display:flex}.modal{width:min(430px,100%);background:var(--s);border:1px solid var(--b);border-radius:14px;padding:18px}.modal h2{margin:0 0 14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal label{display:block;color:var(--m);font-size:10px;margin-bottom:4px}.modal input{margin:0 0 10px}.modal-foot{display:flex;gap:8px;margin-top:10px}.modal-foot .btn{flex:1}@media(max-width:650px){.wrap{padding:14px}.head{align-items:flex-start;flex-direction:column}.row{grid-template-columns:1fr}}
+</style></head><body>
+<div id="loginView" class="login"><div class="login-card">
+<h1>⚡ MarketPulse Crypto Signals</h1><p>Sign in with your existing MarketPulse account. Paper trades are stored in Supabase.</p>
+<div id="loginNotice" class="notice"></div><label>Email or username</label><input id="email" autocomplete="username" placeholder="Email or admin">
+<label>Password</label><input id="password" type="password" autocomplete="current-password"><button class="btn primary" id="loginBtn">Sign in</button>
 </div></div>
-
+<div id="app" class="hidden"><header class="top"><div class="brand">◆ MarketPulse · Crypto Signals</div><div class="right"><span id="userEmail" style="font-size:11px;color:#fff9"></span><button class="btn" id="backBtn">← MarketPulse</button><button class="btn" id="logoutBtn">Logout</button></div></header>
+<main class="wrap"><div class="head"><div><h1>🔥 Crypto Signals</h1><p>Paper-trading dashboard. Backend scanner will run independently through n8n.</p></div><div class="status"><span class="pill"><span class="dot"></span><b id="scannerStatus">Checking backend…</b></span><span class="pill">Last signal: <b id="lastSignal">—</b></span></div></div>
+<div id="notice" class="notice"></div><section><h2 style="font-size:17px">Active Signals</h2><div id="signals" class="grid"></div></section>
+<section class="trade"><h2>💼 My Paper Trades</h2><div id="trades"></div></section></main></div>
+<div class="modal-bg" id="tradeBg"><div class="modal"><h2 id="tmTitle">Start Paper Trade</h2><div class="row"><div><label>Amount (₹)</label><input id="tmAmount" type="number" min="0" value="1000"></div><div><label>Leverage</label><input id="tmLeverage" type="number" min="1" max="10" value="1"></div></div><div id="tmInfo" style="font-size:11px;color:var(--m);line-height:1.5"></div><div class="modal-foot"><button class="btn" id="cancelTrade">Cancel</button><button class="btn primary" id="saveTradeBtn">Save Paper Trade</button></div></div></div>
 <script>
-const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
-const SUPABASE_KEY="sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let user=null,signals=[],trades=[],selected=null;
-
-const $=id=>document.getElementById(id);
-const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[c]));
-const money=v=>"₹"+Number(v||0).toLocaleString("en-IN",{maximumFractionDigits:2});
-const price=v=>Number(v||0).toLocaleString("en-US",{maximumFractionDigits:8});
-
-async function start(){
-  const {data}=await sb.auth.getSession();
-  user=data.session?.user||null;
-  if(!user){$("loginView").style.display="block";return}
-  $("app").style.display="block";$("email").textContent=user.email||"";
-  await refreshAll();
-}
-async function refreshAll(){
-  const [s,t]=await Promise.all([
-    sb.from("crypto_signals").select("*").in("status",["ACTIVE","TRIGGERED"]).order("created_at",{ascending:false}).limit(100),
-    sb.from("crypto_trades").select("*").order("opened_at",{ascending:false}).limit(100)
-  ]);
-  if(s.error){console.error(s.error);$("scanner").textContent="Scanner status: database error";$("dot").className="dot off";return}
-  if(t.error){console.error(t.error);$("trades").innerHTML='<div class="empty">Could not load trades.</div>'}
-  signals=s.data||[];trades=t.data||[];
-  renderSignals();renderTrades();updateStats();
-  $("updated").textContent=new Date().toLocaleTimeString();
-  if(signals.length){$("lastSignal").textContent=new Date(signals[0].created_at).toLocaleString()}
-}
-function updateStats(){
-  $("activeCount").textContent=signals.length;
-  $("tradeCount").textContent=trades.length;
-  $("openCount").textContent=trades.filter(t=>t.status==="RUNNING").length;
-  $("pnl").textContent=money(trades.reduce((a,t)=>a+Number(t.pnl_inr||0),0));
-}
-function renderSignals(){
-  if(!signals.length){$("signals").innerHTML='<div class="empty">No active crypto signals yet.<br><br>The n8n scanner will populate this page once it is connected.</div>';return}
-  $("signals").innerHTML='<div class="grid">'+signals.map((s,i)=>`
-  <article class="card">
-    <div class="topline"><div><div class="sym">${esc(s.symbol)}</div><div class="name">${esc(s.timeframe)} · ${esc(s.quote)}</div></div><span class="badge ${s.direction==="LONG"?"long":"short"}">${s.direction}</span></div>
-    <div style="margin-top:10px"><span class="badge wait">Score ${Number(s.score||0).toFixed(0)}/100</span> <span class="badge wait">RR 1:${Number(s.rr||0).toFixed(1)}</span></div>
-    <div class="levels">
-      <div class="lvl entry"><div class="k">Entry</div><div class="v">${price(s.entry_price)}</div></div>
-      <div class="lvl sl"><div class="k">Stop Loss</div><div class="v">${price(s.stop_loss)}</div></div>
-      <div class="lvl tp"><div class="k">Take Profit</div><div class="v">${price(s.take_profit)}</div></div>
-      <div class="lvl"><div class="k">Volume</div><div class="v">${s.volume_ratio?Number(s.volume_ratio).toFixed(2)+"x":"—"}</div></div>
-    </div>
-    <div class="reason">RSI: ${s.rsi?Number(s.rsi).toFixed(1):"—"} · ATR: ${s.atr?price(s.atr):"—"}<br>${Array.isArray(s.reasons)?esc(s.reasons.join(" · ")):esc(s.reasons||"")}</div>
-    <div class="actions"><button class="btn primary" onclick="openTrade(${i})">📝 Paper Trade</button></div>
-  </article>`).join("")+'</div>';
-}
-function renderTrades(){
-  if(!trades.length){$("trades").innerHTML='<div class="empty">No paper trades yet. Start one from an active signal.</div>';return}
-  $("trades").innerHTML=trades.map(t=>`
-  <div class="trade">
-    <div class="sym">${esc(t.symbol)}</div><span class="badge ${t.direction==="LONG"?"long":"short"}">${t.direction}</span>
-    <div class="trade-info">Entry ${price(t.entry_price)} · SL ${price(t.stop_loss)} · TP ${price(t.take_profit)}<br>${money(t.amount_inr)} · ${Number(t.leverage||1)}x · ${esc(t.status)}</div>
-    <div class="pnl ${Number(t.pnl_inr)>=0?"up":"down"}">${Number(t.pnl_inr)>=0?"+":""}${money(t.pnl_inr)}</div>
-    ${t.status==="RUNNING"?'<button class="btn red" onclick="closeTrade(\''+t.id+'\')">Close</button>':'<span></span>'}
-  </div>`).join("");
-}
-function openTrade(i){selected=signals[i];$("mTitle").textContent=`Paper Trade — ${selected.symbol} ${selected.direction}`;$("amount").value=1000;$("lev").value=1;$("notes").value="";$("modal").classList.add("open")}
-function closeModal(){$("modal").classList.remove("open");selected=null}
-$("saveTrade").onclick=async()=>{
- if(!selected)return;
- const amount=Number($("amount").value)||0,lev=Number($("lev").value)||1;
- $("saveTrade").disabled=true;
- const row={user_id:user.id,signal_id:selected.id,symbol:selected.symbol,direction:selected.direction,timeframe:selected.timeframe,entry_price:selected.entry_price,stop_loss:selected.stop_loss,take_profit:selected.take_profit,rr:selected.rr,amount_inr:amount,leverage:lev,status:"RUNNING",current_price:selected.entry_price,pnl_inr:0,r_multiple:0,notes:$("notes").value.trim()||null};
- const {error}=await sb.from("crypto_trades").insert(row);
- $("saveTrade").disabled=false;
- if(error){alert(error.message);return}
- closeModal();await refreshAll();
-};
-window.closeTrade=async id=>{
- if(!confirm("Close this paper trade manually?"))return;
- const t=trades.find(x=>x.id===id);if(!t)return;
- const cp=Number(t.current_price||t.entry_price);
- const move=t.direction==="LONG"?(cp-t.entry_price)/t.entry_price:(t.entry_price-cp)/t.entry_price;
- const pnl=Number(t.amount_inr||0)*Number(t.leverage||1)*move;
- const {error}=await sb.from("crypto_trades").update({status:"MANUAL",close_price:cp,pnl_inr:pnl,closed_at:new Date().toISOString()}).eq("id",id);
- if(error)alert(error.message);else await refreshAll();
-};
-document.querySelectorAll(".tab").forEach(x=>x.onclick=()=>{document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));x.classList.add("active");const n=x.dataset.tab;$("signals").style.display=n==="signals"?"block":"none";$("trades").style.display=n==="trades"?"block":"none"});
-$("refresh").onclick=refreshAll;
-$("logout").onclick=async()=>{await sb.auth.signOut();location.href="/"};
-sb.auth.onAuthStateChange((_e,session)=>{user=session?.user||null});
-start();
-setInterval(refreshAll,15000);
-</script>
-</body>
-</html>
+const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";const SUPABASE_KEY="sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);let user=null,signals=[],trades=[],selected=null;const $=id=>document.getElementById(id);
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]})}function crypto(v){return Number.isFinite(Number(v))?Number(v).toLocaleString("en-US",{maximumFractionDigits:8}):"—"}function money(v){return Number.isFinite(Number(v))?"₹"+Number(v).toLocaleString("en-IN",{maximumFractionDigits:2}):"—"}function notice(t,type){var e=$("notice");e.textContent=t;e.className="notice "+(type||"ok");if(t)setTimeout(function(){e.className="notice"},4000)}function loginNotice(t){var e=$("loginNotice");e.textContent=t;e.className="notice error"}
+function renderSignals(){var el=$("signals");if(!signals.length){el.innerHTML='<div class="empty" style="grid-column:1/-1">No active signals yet. The n8n scanner will populate this area when the backend is connected.</div>';return}el.innerHTML=signals.map(function(s,i){return '<div class="card"><div class="toprow"><div><div class="sym">'+esc(s.symbol)+'</div><div class="sub">'+esc(s.timeframe||"1h")+' · '+esc(s.quote||"USDT")+'</div></div><span class="badge '+(s.direction==="LONG"?"long":"short")+'">'+esc(s.direction)+'</span></div><div style="margin-top:10px"><span class="badge wait">Score '+esc(s.score==null?"—":s.score)+'</span></div><div class="levels"><div class="level entry"><div class="k">Entry</div><div class="v">'+crypto(s.entry_price)+'</div></div><div class="level sl"><div class="k">Stop Loss</div><div class="v">'+crypto(s.stop_loss)+'</div></div><div class="level tp"><div class="k">Take Profit</div><div class="v">'+crypto(s.take_profit)+'</div></div><div class="level rr"><div class="k">Risk : Reward</div><div class="v">1 : '+crypto(s.rr)+'</div></div></div><div class="reason">RSI: '+crypto(s.rsi)+' · Volume: '+crypto(s.volume_ratio)+'x<br>'+esc(s.reasons||"")+'</div><div class="actions"><button class="btn primary" onclick="openTrade('+i+')">📝 Paper Trade</button></div></div>'}).join("")}
+function renderTrades(){var el=$("trades");if(!trades.length){el.innerHTML='<div class="empty">No paper trades yet.</div>';return}var rows=trades.map(function(t){return '<tr><td><b>'+esc(t.symbol)+'</b></td><td><span class="badge '+(t.direction==="LONG"?"long":"short")+'">'+esc(t.direction)+'</span></td><td>'+crypto(t.entry_price)+'</td><td>'+crypto(t.stop_loss)+'</td><td>'+crypto(t.take_profit)+'</td><td>'+money(t.amount_inr)+'</td><td>'+esc(t.leverage)+'x</td><td>'+esc(t.status)+'</td><td style="color:'+(Number(t.pnl_inr)>=0?"var(--g)":"var(--r)")+'">'+money(t.pnl_inr)+'</td></tr>'}).join("");el.innerHTML='<div class="trade-table"><table><thead><tr><th>Symbol</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP</th><th>Amount</th><th>Leverage</th><th>Status</th><th>P&L</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
+async function loadData(){var s=await sb.from("crypto_signals").select("*").in("status",["ACTIVE","TRIGGERED"]).order("created_at",{ascending:false}).limit(50);if(s.error){console.error(s.error);$("scannerStatus").textContent="Setup required";notice("Run supabase_crypto_signals.sql in Supabase SQL Editor first.","error");renderSignals()}else{signals=s.data||[];$("scannerStatus").textContent="Connected";$("lastSignal").textContent=signals[0]?signals[0].symbol:"—";renderSignals()}var t=await sb.from("crypto_trades").select("*").order("created_at",{ascending:false}).limit(100);if(!t.error){trades=t.data||[]}renderTrades()}
+window.openTrade=function(i){selected=signals[i];if(!selected)return;$("tmTitle").textContent="Paper Trade — "+selected.symbol+" "+selected.direction;$("tmInfo").innerHTML="Entry: <b>"+crypto(selected.entry_price)+"</b> · SL: <b>"+crypto(selected.stop_loss)+"</b> · TP: <b>"+crypto(selected.take_profit)+"</b> · RR: <b>1:"+crypto(selected.rr)+"</b>";$("tradeBg").classList.add("open")};function closeTradeModal(){$("tradeBg").classList.remove("open");selected=null}$("cancelTrade").onclick=closeTradeModal;
+$("saveTradeBtn").onclick=async function(){if(!selected||!user)return;var amount=Number($("tmAmount").value)||0,lev=Number($("tmLeverage").value)||1;$("saveTradeBtn").disabled=true;var row={user_id:user.id,signal_id:selected.id,symbol:selected.symbol,direction:selected.direction,timeframe:selected.timeframe,entry_price:selected.entry_price,stop_loss:selected.stop_loss,take_profit:selected.take_profit,amount_inr:amount,leverage:lev,rr:selected.rr,score:selected.score,status:"RUNNING",current_price:selected.entry_price,pnl_inr:0};var r=await sb.from("crypto_trades").insert(row);$("saveTradeBtn").disabled=false;if(r.error){notice(r.error.message,"error");return}closeTradeModal();notice("Paper trade saved.");await loadData()};
+async function checkUser(){var s=await sb.auth.getSession();user=s.data.session?s.data.session.user:null;if(user)$("userEmail").textContent=user.email||"";return !!user}
+$("loginBtn").onclick=async function(){var v=$("email").value.trim(),p=$("password").value,email=v.toLowerCase()==="admin"?"admin@tradesutra.com":v;if(!email||!p)return loginNotice("Enter email and password.");$("loginBtn").disabled=true;var r=await sb.auth.signInWithPassword({email:email,password:p});if(r.error){loginNotice(r.error.message);$("loginBtn").disabled=false;return}user=r.data.user;$("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await loadData();$("loginBtn").disabled=false};$("password").addEventListener("keydown",function(e){if(e.key==="Enter")$("loginBtn").click()});$("logoutBtn").onclick=async function(){await sb.auth.signOut();location.reload()};$("backBtn").onclick=function(){location.href="/"};$("tradeBg").onclick=function(e){if(e.target===$("tradeBg"))closeTradeModal()};(async function(){if(await checkUser()){$("loginView").classList.add("hidden");$("app").classList.remove("hidden");await loadData()}})();
+</script></body></html>
