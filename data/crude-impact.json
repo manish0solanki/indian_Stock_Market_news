@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-22T18:30:22.083Z",
+  "generated_at": "2026-09-23T00:30:22.038Z",
   "source": {
     "crude": "Snapdata / EIA",
     "fx": "Snapdata / ECB cross-rates",
@@ -18,14 +18,14 @@
       "date": "2026-09-15",
       "change_1d": 7.88,
       "change_5d": 23.26,
-      "change_1m": 37.27
+      "change_1m": 41.6
     },
     "wti": {
       "price": 107.02,
       "date": "2026-09-15",
       "change_1d": 4.49,
       "change_5d": 13.6,
-      "change_1m": 23.75
+      "change_1m": 22.62
     },
     "average_5d_change": 18.43,
     "regime": "BULLISH"
@@ -89,7 +89,7 @@
   },
   "marketpulse": {
     "version": "1.0",
-    "generated_at": "2026-09-22T18:30:22.083Z",
+    "generated_at": "2026-09-23T00:30:22.038Z",
     "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
     "crude_regime": "BULLISH",
     "india_crude_pressure": "MODERATE"
@@ -650,8 +650,8 @@
       "published_duplicate_symbols": 0,
       "published_high_confidence": 19,
       "published_medium_confidence": 0,
-      "generated_at": "2026-09-22T18:30:25.271Z"
+      "generated_at": "2026-09-23T00:30:25.220Z"
     },
-    "generated_at": "2026-09-22T18:30:25.171Z"
+    "generated_at": "2026-09-23T00:30:25.097Z"
   }
 }
