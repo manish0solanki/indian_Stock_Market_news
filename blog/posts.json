@@ -1,5 +1,25 @@
 [
   {
+    "slug": "bandhanbnk-stock-spotlight",
+    "title": "Bandhan Bank Surges 3.6% on 4x Volume: Sharp Recovery Above Key Moving Averages",
+    "excerpt": "PRICE ACTION: Bandhan Bank posted its strongest single-day gain in recent sessions, with volume swelling to more than four times the daily average—suggesting genuine accumulatio...",
+    "category": "stock-spotlight",
+    "date": "2026-09-23",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "BANDHANBNK",
+      "BANDHAN BANK LIMITED"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-metal-gains-2-4-percent-as-broad-based-strength-lifts-sector",
     "title": "Nifty Metal Gains 2.4% as Broad-Based Strength Lifts Sector",
     "excerpt": "Nifty Metal gained 2.4% (312 points) to 13,302.35. Of 271 stocks in the broader universe, 195 advanced and 73 declined. The top 10 companies by market capitalization averaged 2.09%, while smaller stocks averaged 1.72%. Hindalco rose 3.17% and Tata Steel gained 3.16%.",
@@ -53,26 +73,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "bandhanbnk-stock-spotlight",
-    "title": "Bandhan Bank Surges 3.2% on 2.4x Volume, Clears 50-Day Moving Average",
-    "excerpt": "PRICE ACTION: The stock posted its strongest single-day gain in recent sessions with volume more than doubling, indicating genuine buying interest rather than thin-market noise....",
-    "category": "stock-spotlight",
-    "date": "2026-09-22",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "BANDHANBNK",
-      "BANDHAN BANK LIMITED"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
