@@ -1566,7 +1566,9 @@ function renderStats(){
   const closed=state.journal.filter(t=>t.closed);
   const wins=closed.filter(t=>calcClosedPnL(t)>0).length;
   const total=closed.length;
-  const pnl=state.journal.reduce((s,t)=>s+(t.closed?calcClosedPnL(t):calcLivePnL(t).pnl),0);
+  const bookedPnl=closed.reduce((s,t)=>s+calcClosedPnL(t),0);
+  const runningPnl=state.journal.filter(t=>!t.closed).reduce((s,t)=>s+calcLivePnL(t).pnl,0);
+  const pnl=bookedPnl+runningPnl;
   const wr=total?Math.round(wins/total*100):0;
   const heat=state.signals.length;
   const heatClass=heat>MAX_HEAT?"heat-warn":"heat-ok";
@@ -1576,7 +1578,9 @@ function renderStats(){
     <div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div>
     <div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Live Trades</div></div>
     <div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div>
-    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${fmtINR(pnl)}</div><div class="l">Total P&L</div></div>
+    <div class="stat"><div class="v" style="color:${bookedPnl>=0?'var(--green)':'var(--red)'}">${bookedPnl>=0?"+":""}${fmtINR(bookedPnl)}</div><div class="l">Booked P&L</div></div>
+    <div class="stat"><div class="v" style="color:${runningPnl>=0?'var(--green)':'var(--red)'}">${runningPnl>=0?"+":""}${fmtINR(runningPnl)}</div><div class="l">Running P&L</div></div>
+    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="l">Total P&L</div></div>
     <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
 }
 
