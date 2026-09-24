@@ -153,6 +153,8 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="INR">INR (converted)</option>
   </select>
   <button id="autoBtn" class="primary">⏸ Auto: ON</button>
+  <button id="autoTradeBtn">🤖 Auto Trades: OFF</button>
+  <button id="takeAllBtn" class="primary">⚡ Take All Qualified</button>
   <button id="scanBtn">🔍 Scan Now</button>
   <button id="notifyBtn">🔔 Alerts</button>
   <button id="jrnlBtn">📓 Journal</button>
@@ -187,13 +189,28 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <input id="moonKey" type="password" placeholder="sk-...">
   <label>Auto-scan interval (seconds)</label>
   <input id="scanInterval" type="number" min="30" max="600" value="60">
+  <label>Auto-trade minimum confidence</label>
+  <select id="autoConfidence">
+    <option value="65">65%</option><option value="70">70%</option>
+    <option value="75" selected>75%</option><option value="80">80%</option>
+    <option value="85">85%</option><option value="90">90%</option><option value="95">95%</option>
+  </select>
+  <label>Auto paper-trade amount (₹)</label>
+  <input id="autoAmount" type="number" min="1" step="100" value="1000">
+  <label>Auto paper-trade leverage</label>
+  <select id="autoLeverage">
+    <option value="1">1x</option><option value="2">2x</option>
+    <option value="3">3x</option><option value="5" selected>5x</option>
+  </select>
   <div class="settings-info">
     💾 Storage: <span id="dbStatus">Checking database...</span><br>
     👤 Account: <span id="accountStatus">Checking login...</span><br>
     📊 Binance public API only. INR mode converts Binance USDT prices to INR; it is not a native Binance INR market.<br>
     🚫 No CoinSwitch API.<br>
-    🚫 No automatic order execution.<br>
+    🚫 No CoinSwitch or live order execution. Auto-trade means AUTO PAPER TRADES only.<br>
     🧪 All trades are paper trades.<br>
+    🤖 Auto Trades opens every new signal at/above your confidence threshold.<br>
+    🎯 Running paper trades close automatically when live price reaches TP or SL.<br>
     🔔 Notifications require this page to remain open.<br>
     ⚠️ Score is a setup score, not a win probability.<br>
     🎯 Minimum score: 65 · Winner must lead by 10+<br>
@@ -620,7 +637,7 @@ const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
-const state = { signals:[], journal:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{} };
+const state = { signals:[], journal:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null;
 const $ = id => document.getElementById(id);
@@ -631,6 +648,13 @@ async function load(){
     $("moonKey").value = localStorage.getItem("cs_moon")||"";
     const iv = localStorage.getItem("cs_interval");
     if(iv) $("scanInterval").value = iv;
+    const ac = Number(localStorage.getItem("cs_auto_confidence"));
+    if(ac) { state.autoConfidence=ac; $("autoConfidence").value=String(ac); }
+    const aa = Number(localStorage.getItem("cs_auto_amount"));
+    if(aa) { state.autoAmount=aa; $("autoAmount").value=String(aa); }
+    const al = Number(localStorage.getItem("cs_auto_leverage"));
+    if(al) { state.autoLeverage=al; $("autoLeverage").value=String(al); }
+    state.autoTrades = localStorage.getItem("cs_auto_trades")==="1";
 
     if(dbEnabled()){
       const trades = await dbLoadTrades();
@@ -656,6 +680,13 @@ function save(){
 function saveSettings(){
   localStorage.setItem("cs_moon",$("moonKey").value);
   localStorage.setItem("cs_interval",$("scanInterval").value);
+  state.autoConfidence=Math.min(95,Math.max(0,Number($("autoConfidence").value)||75));
+  state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);
+  state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);
+  localStorage.setItem("cs_auto_confidence",String(state.autoConfidence));
+  localStorage.setItem("cs_auto_amount",String(state.autoAmount));
+  localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));
+  localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");
   $("saveMsg").style.display="block";
   setTimeout(()=>{$("saveMsg").style.display="none";},1500);
   if(state.auto) scheduleNext();
@@ -1048,6 +1079,8 @@ async function scan(manual=false){
       dbSaveSignals(state.signals);
     }
 
+    if(state.autoTrades){ await autoTradeFromSignals(); }
+
     state.scanTime=new Date();
     state.scans++;
     $("scanCount").textContent=state.scans;
@@ -1167,26 +1200,97 @@ function fmtINR(n){
   return "₹"+n.toFixed(0);
 }
 
+/* ================= AUTO PAPER-TRADE ENGINE ================= */
+function activeTradeExists(signal){
+  return state.journal.some(t=>!t.closed&&t.sym===signal.sym&&t.dir===signal.dir);
+}
+function signalConfidence(s){ return Number(s?.conf ?? s?.score ?? 0); }
+
+async function takeSignalAsPaperTrade(s){
+  if(!s||!s.dir||activeTradeExists(s)) return false;
+  const trade={
+    sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
+    amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
+    status:"running",date:new Date().toLocaleString(),notes:""
+  };
+  if(dbEnabled()){
+    const result=await dbSaveTrade(trade,s);
+    if(result.error){ console.warn("Auto paper trade failed:",result.error.message); return false; }
+    if(result.data) state.journal.unshift(dbTradeToUI(result.data));
+  }else{
+    state.journal.push(trade); save();
+  }
+  return true;
+}
+
+async function takeAllQualifiedTrades(){
+  state.autoConfidence=Math.min(95,Math.max(0,Number($("autoConfidence").value)||75));
+  state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);
+  state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);
+
+  const qualified=state.signals.filter(s=>s.dir&&signalConfidence(s)>=state.autoConfidence&&!activeTradeExists(s));
+  if(!qualified.length){
+    toast("ℹ️ No new signals meet the "+state.autoConfidence+"% confidence threshold.");
+    return 0;
+  }
+
+  let taken=0;
+  for(const s of qualified){ if(await takeSignalAsPaperTrade(s)) taken++; }
+  render();
+  toast(taken
+    ? "✓ "+taken+" paper trade"+(taken===1?"":"s")+" opened at ≥"+state.autoConfidence+"% confidence."
+    : "⚠️ No paper trades were opened.");
+  return taken;
+}
+
+function updateAutoTradeButton(){
+  const b=$("autoTradeBtn"); if(!b)return;
+  b.textContent=state.autoTrades?"🤖 Auto Trades: ON":"🤖 Auto Trades: OFF";
+  b.className=state.autoTrades?"primary":"";
+}
+async function autoTradeFromSignals(){ if(state.autoTrades) await takeAllQualifiedTrades(); }
+
 /* ================= LIVE P&L ENGINE ================= */
+
 async function updateLivePrices(){
-  const syms=[...new Set(state.journal.filter(t=>!t.closed).map(t=>t.sym))];
-  if(!syms.length)return;
+  const openTrades=state.journal.filter(t=>!t.closed);
+  const syms=[...new Set(openTrades.map(t=>t.sym))];
+  if(!syms.length){ renderJournal(); return; }
+
   await Promise.all(syms.map(async sym=>{
-    const trade=state.journal.find(x=>x.sym===sym&&!x.closed);
+    const trade=openTrades.find(x=>x.sym===sym);
     const p=await fetchPrice(sym,trade?.quote||state.quote);
-    if(p)state.livePrices[sym]=p;
+    if(p!=null) state.livePrices[sym]=p;
   }));
 
-  // Persist current price/P&L for running trades.
-  if(dbEnabled()){
-    for(const t of state.journal.filter(x=>!x.closed)){
-      const live=calcLivePnL(t);
-      t.currentPrice=live.cp;
-      t.pnl=live.pnl;
-      await dbUpdateTrade(t);
+  for(const t of [...state.journal].filter(x=>!x.closed)){
+    const cp=state.livePrices[t.sym];
+    if(!Number.isFinite(cp)) continue;
+    t.currentPrice=cp;
+
+    const hitTP=t.dir==="LONG" ? cp>=t.tp : cp<=t.tp;
+    const hitSL=t.dir==="LONG" ? cp<=t.sl : cp>=t.sl;
+
+    if(hitTP||hitSL){
+      t.closed=true;
+      t.status=hitTP?"tp":"sl";
+      t.closePrice=cp;
+      t.pnl=calcClosedPnL(t);
+      if(dbEnabled()) await dbUpdateTrade(t); else save();
+      toast(hitTP
+        ? "🎯 "+t.sym+" "+t.dir+" TP hit — paper trade closed automatically."
+        : "🛑 "+t.sym+" "+t.dir+" SL hit — paper trade closed automatically."
+      );
     }
   }
 
+  if(dbEnabled()){
+    for(const t of state.journal.filter(x=>!x.closed)){
+      const live=calcLivePnL(t);
+      t.currentPrice=live.cp;t.pnl=live.pnl;
+      await dbUpdateTrade(t);
+    }
+  }
   renderJournal();
 }
 function calcLivePnL(t){
@@ -1201,19 +1305,18 @@ function calcLivePnL(t){
 }
 
 function calcClosedPnL(t){
+  const close=Number(t.closePrice);
+  if(Number.isFinite(close)&&close>0){
+    const move=t.dir==="LONG"?(close-t.entry)/t.entry:(t.entry-close)/t.entry;
+    return t.amt*t.lev*move;
+  }
   if(t.status==="tp"){
-    const riskPct=Math.abs(t.entry-t.sl)/t.entry;
-    return t.amt*t.lev*2*riskPct;
+    const rewardPct=Math.abs(t.tp-t.entry)/t.entry;
+    return t.amt*t.lev*rewardPct;
   }
   if(t.status==="sl"){
     const riskPct=Math.abs(t.entry-t.sl)/t.entry;
     return -t.amt*t.lev*riskPct;
-  }
-  if(t.status==="manual"&&t.closePrice){
-    let move;
-    if(t.dir==="LONG")move=(t.closePrice-t.entry)/t.entry;
-    else move=(t.entry-t.closePrice)/t.entry;
-    return t.amt*t.lev*move;
   }
   return t.pnl||0;
 }
@@ -1257,7 +1360,7 @@ function renderSignals(){
         <div class="chg">${s.chg>=0?"▲":"▼"} ${Math.abs(s.chg).toFixed(2)}%</div></div>
       </div>
       <span class="badge ${s.dir==="LONG"?"long":"short"}">${s.dir==="LONG"?"📈 LONG":"📉 SHORT"}</span>
-      <span class="badge wait" style="margin-left:6px">Score ${s.score}/100</span>
+      <span class="badge wait" style="margin-left:6px">Confidence ${signalConfidence(s)}%</span>
       <div class="levels">
         <div class="lvl entry"><div class="k">Entry (approx)</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.entry)}</div></div>
         <div class="lvl sl"><div class="k">Stop Loss</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.sl)}</div></div>
@@ -1508,21 +1611,48 @@ async function deleteTrade(idx){
 async function askAI(idx){
   const s=state.signals[idx],box=$("ai-"+idx);
   if(!s||!box)return;
-  box.style.display="block"; box.innerHTML="<b>🤖 Reviewing...</b>";
+  box.style.display="block"; box.innerHTML="<b>🤖 Kimi K3 reviewing...</b>";
   const key=$("moonKey").value.trim();
   if(!key){box.innerHTML="<b>⚠️ Add Moonshot key in Settings.</b>";return;}
-  const recent=s.candles.slice(-15).map(c=>`${c.o}/${c.h}/${c.l}/${c.c}/${c.v}`).join(", ");
-  const prompt=`Review this crypto paper-trade setup. Do NOT place trades. Do NOT change Entry, Stop Loss or Take Profit. Return: 1. PROCEED, WAIT or SKIP 2. Two reasons 3. One risk warning. Symbol: ${s.sym} Timeframe: ${state.tf} Direction: ${s.dir} Entry: ${s.entry} Stop Loss: ${s.sl} Take Profit: ${s.tp} RR: 1:${s.rr.toFixed(1)} RSI: ${s.rsi.toFixed(1)} Volume: ${s.volumeRatio.toFixed(2)}x Recent OHLCV: ${recent}`;
+
+  const recent=s.candles.slice(-10).map(c=>[
+    Number(c.o).toPrecision(8),Number(c.h).toPrecision(8),
+    Number(c.l).toPrecision(8),Number(c.c).toPrecision(8),Math.round(Number(c.v))
+  ].join("/")).join(", ");
+
+  const prompt=[
+    "Review this crypto paper-trade setup.",
+    "Do NOT place trades and do NOT change Entry, Stop Loss or Take Profit.",
+    "Return exactly: DECISION (PROCEED/WAIT/SKIP), CONFIDENCE (0-100), TWO REASONS, ONE RISK WARNING.",
+    "This is analysis only, not a guarantee of profit.",
+    "Symbol: "+s.sym,"Timeframe: "+state.tf,"Direction: "+s.dir,
+    "Entry: "+s.entry,"Stop: "+s.sl,"Target: "+s.tp,
+    "RR: 1:"+s.rr.toFixed(1),"Setup score: "+s.score,
+    "RSI: "+s.rsi.toFixed(1),"Volume ratio: "+s.volumeRatio.toFixed(2)+"x",
+    "Recent OHLCV: "+recent
+  ].join("\\n");
+
   try{
     const r=await fetch("https://api.moonshot.ai/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-      body:JSON.stringify({model:"moonshot-v1-8k",messages:[{role:"user",content:prompt}],temperature:.2,max_tokens:220})
+      body:JSON.stringify({
+        model:"kimi-k3",
+        messages:[
+          {role:"system",content:"You are a concise crypto technical-analysis reviewer. Never claim certainty."},
+          {role:"user",content:prompt}
+        ],
+        temperature:.2,max_tokens:260
+      })
     });
     const d=await r.json();
+    if(!r.ok) throw new Error(d?.error?.message||d?.message||("Moonshot HTTP "+r.status));
     const txt=d?.choices?.[0]?.message?.content||"No response";
-    box.innerHTML="<b>🤖 AI:</b><br>"+txt.replace(/\n/g,"<br>");
-  }catch(e){console.error(e);box.innerHTML="<b>⚠️ AI request failed.</b>";}
+    box.innerHTML="<b>🤖 Kimi K3:</b><br>"+String(txt).replace(/\n/g,"<br>");
+  }catch(e){
+    console.error(e);
+    box.innerHTML="<b>⚠️ AI request failed:</b> "+String(e.message||e);
+  }
 }
 
 /* ================= TABS ================= */
@@ -1540,6 +1670,24 @@ document.querySelectorAll(".tab").forEach(tab=>{
 
 /* ================= UI EVENTS ================= */
 $("homeBtn").onclick=()=>{ window.location.href="https://tradesutra-chi.vercel.app/"; };
+$("autoTradeBtn").onclick=async()=>{
+  state.autoTrades=!state.autoTrades;
+  localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");
+  updateAutoTradeButton();
+  if(state.autoTrades){
+    toast("🤖 Auto Paper Trades ON — threshold "+state.autoConfidence+"%");
+    await takeAllQualifiedTrades();
+  }else toast("⏸ Auto Paper Trades OFF");
+};
+$("takeAllBtn").onclick=async()=>{ await takeAllQualifiedTrades(); };
+$("autoConfidence").onchange=()=>{
+  state.autoConfidence=Math.min(95,Math.max(0,Number($("autoConfidence").value)||75));
+  localStorage.setItem("cs_auto_confidence",String(state.autoConfidence));
+  toast("🎯 Auto-trade threshold: "+state.autoConfidence+"%");
+};
+$("autoAmount").onchange=()=>{state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);localStorage.setItem("cs_auto_amount",String(state.autoAmount));};
+$("autoLeverage").onchange=()=>{state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));};
+
 $("scanBtn").onclick=()=>scan(true);
 $("jrnlBtn").onclick=()=>{document.querySelector('[data-tab="journal"]').click();};
 function toast(msg){
@@ -1577,6 +1725,7 @@ function updateDbStatus(){
 (async()=>{
   await initSupabase();
   await load();
+  updateAutoTradeButton();
   updateDbStatus();
   render();
   await scan(true);
