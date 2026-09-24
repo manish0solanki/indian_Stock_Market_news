@@ -1944,8 +1944,8 @@ function generateReport(){
 
   const tx=state.walletTx.filter(x=>{const d=dateOnly(x.created_at);return d>=from&&d<=to;});
   const deposits=tx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
-  const withdrawals=Math.abs(tx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0);
-  const invested=Math.abs(tx.filter(x=>x.txn_type==="TRADE_DEBIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const withdrawals=Math.abs(tx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0));
+  const invested=Math.abs(tx.filter(x=>x.txn_type==="TRADE_DEBIT").reduce((s,x)=>s+Number(x.amount_inr||0),0));
   const returned=tx.filter(x=>x.txn_type==="TRADE_CREDIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
   const realized=returned-invested;
   const roi=invested>0?(realized/invested)*100:0;
