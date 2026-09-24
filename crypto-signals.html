@@ -88,6 +88,33 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .tp-hit{color:var(--green)}
 .sl-hit{color:var(--red)}
 .running{color:var(--yellow)}
+/* ================= MOBILE RESPONSIVE ================= */
+@media (max-width:600px){
+  header{position:relative;padding:14px 12px;display:block}
+  header>div:first-child{margin-bottom:12px}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .controls select,.controls button{width:100%;min-height:42px;padding:8px 7px;font-size:12px}
+  #autoBtn{grid-column:1/-1}
+  .statusbar{padding:9px 12px;gap:8px;font-size:11px}
+  .statusbar #lastSignal{display:none}
+  .stats{padding:10px 12px;gap:8px}
+  .stat{min-width:calc(50% - 4px);padding:10px 12px}
+  .tabs{padding:0 12px 10px}
+  .tab{flex:1;text-align:center;padding:9px 6px;font-size:12px}
+  .grid{grid-template-columns:1fr;gap:10px;padding:0 10px 16px}
+  .card{padding:13px}
+  .journal-list{padding:0 10px 20px}
+  .jrow{display:grid;grid-template-columns:auto auto 1fr;gap:8px;padding:12px}
+  .jdetail{grid-column:1/-1}
+  .jrow .jbtns{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .jrow .jbtns button{min-height:40px;padding:6px 4px}
+  .box{width:calc(100vw - 20px);max-height:92vh;overflow:auto;padding:16px}
+  .box .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+}
+@media (max-width:380px){
+  .controls{grid-template-columns:1fr}
+  #autoBtn{grid-column:auto}
+}
 </style>
 <base target="_blank">
 
@@ -99,7 +126,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <header>
 <div>
   <h1>⚡ CryptoSignal <span>Tracker</span></h1>
-  <div class="sub">Binance public data · CLOSED candles · Test/Paper mode · Minimum 1:2 RR</div>
+  <div class="sub">Binance public data · USDT / BTC / INR pairs · CLOSED candles · Test/Paper mode · Minimum 1:2 RR</div>
 </div>
 <div class="controls">
   <select id="tfSelect">
@@ -110,6 +137,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <select id="quoteSelect">
     <option value="USDT" selected>USDT pairs</option>
     <option value="BTC">BTC pairs</option>
+    <option value="INR">INR pairs</option>
   </select>
   <button id="autoBtn" class="primary">⏸ Auto: ON</button>
   <button id="scanBtn">🔍 Scan Now</button>
@@ -367,7 +395,7 @@ async function dbSaveSignals(signals){
   if(!dbEnabled() || !signals.length) return;
 
   const rows=signals.map(s=>({
-    symbol:s.sym.replace(/USDT$|BTC$/,""),
+    symbol:baseSymbolFromPair(s.sym),
     pair:s.sym,
     quote:state.quote,
     direction:s.dir,
@@ -464,7 +492,7 @@ async function dbSaveTrade(t,signal){
     user_id:currentUser.id,
     signal_id:signal?.id||null,
     symbol:signal?.symbol||
-           signal?.sym?.replace(/USDT$|BTC$/,"")||"",
+           baseSymbolFromPair(signal?.sym||"")||"",
     pair:signal?.pair||signal?.sym||"",
     quote:signal?.quote||state.quote,
     direction:t.dir,
@@ -498,7 +526,6 @@ async function dbSaveTrade(t,signal){
     error:null
   };
 }
-
 async function dbUpdateTrade(t){
   if(!dbEnabled()||!t.id) return;
 
@@ -512,7 +539,7 @@ async function dbUpdateTrade(t){
     "RUNNING";
 
   const row={
-    symbol:t.sym.replace(/USDT$|BTC$/,""),
+    symbol:baseSymbolFromPair(t.sym),
     pair:t.sym,
     direction:t.dir,
     entry_price:Number(t.entry),
@@ -641,6 +668,32 @@ $("notifyBtn").onclick = async()=>{
     toast("⚠️ Notification permission denied");
   }
 };
+
+/* ================= BINANCE PAIR DISCOVERY ================= */
+let exchangeInfoCache=null;
+let exchangeInfoFetchedAt=0;
+let availablePairs=[];
+
+async function getAvailablePairs(quote){
+  const now=Date.now();
+  if(!exchangeInfoCache || now-exchangeInfoFetchedAt>10*60*1000){
+    const r=await fetch("https://api.binance.com/api/v3/exchangeInfo");
+    if(!r.ok) throw new Error("Binance exchangeInfo HTTP "+r.status);
+    const d=await r.json();
+    if(!d || !Array.isArray(d.symbols)) throw new Error("Invalid Binance exchangeInfo response");
+    exchangeInfoCache=d.symbols;
+    exchangeInfoFetchedAt=now;
+  }
+  const q=String(quote||"USDT").toUpperCase();
+  return exchangeInfoCache.filter(x=>x.status==="TRADING" && x.quoteAsset===q && COINS.includes(x.baseAsset)).map(x=>x.symbol);
+}
+
+function pairCurrency(){ return state.quote==="INR" ? "₹" : "$"; }
+
+function baseSymbolFromPair(pair){
+  const q=state.quote||"USDT";
+  return pair.endsWith(q) ? pair.slice(0,-q.length) : pair;
+}
 
 /* ================= BINANCE DATA ================= */
 async function fetchKlines(symbol,tf){
@@ -782,62 +835,104 @@ function analyze(candles,symbol,ticker){
 
 /* ================= SCANNER ================= */
 async function scan(manual=false){
-  $("scanBtn").disabled=true; $("scanBtn").textContent="⏳ Scanning...";
-  $("connDot").className="dot on"; $("connTxt").textContent="Scanning...";
+  $("scanBtn").disabled=true;
+  $("scanBtn").textContent="⏳ Scanning...";
+  $("connDot").className="dot on";
+  $("connTxt").textContent="Checking Binance pairs...";
+
   const prevSigs=new Set(state.signals.map(s=>s.sym+"_"+s.dir));
   state.signals=[];
-  const tf=$("tfSelect").value,q=$("quoteSelect").value;
-  state.tf=tf; state.quote=q;
+
+  const tf=$("tfSelect").value;
+  const q=$("quoteSelect").value;
+  state.tf=tf;
+  state.quote=q;
+
   let ok=0,fail=0;
   const results=[];
-  for(let s=0;s<COINS.length;s+=5){
-    const batch=COINS.slice(s,s+5);
-    const batchRes=await Promise.all(batch.map(async coin=>{
-      const sym=coin+q;
-      try{
-        const [candles,tickerR]=await Promise.all([
-          fetchKlines(sym,tf),
-          fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`)
-        ]);
-        if(!tickerR.ok)throw new Error("Ticker failed");
-        const td=await tickerR.json();
-        ok++;
-        return analyze(candles,sym,{chg:Number(td.priceChangePercent)});
-      }catch(e){fail++;console.warn(sym,e);return null;}
-    }));
-    results.push(...batchRes);
+
+  try{
+    availablePairs=await getAvailablePairs(q);
+
+    if(!availablePairs.length){
+      $("connDot").className="dot off";
+      $("connTxt").textContent=\`⚠️ No \${q} pairs available\`;
+      state.scanTime=new Date();
+      state.scans++;
+      $("scanCount").textContent=state.scans;
+      render();
+      if(manual) toast(\`⚠️ Binance currently has no supported \${q} pairs in the scanner universe.\`);
+      $("scanBtn").disabled=false;
+      $("scanBtn").textContent="🔍 Scan Now";
+      return;
+    }
+
+    for(let s=0;s<availablePairs.length;s+=5){
+      const batch=availablePairs.slice(s,s+5);
+      const batchRes=await Promise.all(batch.map(async sym=>{
+        try{
+          const [candles,tickerR]=await Promise.all([
+            fetchKlines(sym,tf),
+            fetch(\`https://api.binance.com/api/v3/ticker/24hr?symbol=\${sym}\`)
+          ]);
+          if(!tickerR.ok) throw new Error("Ticker failed");
+          const td=await tickerR.json();
+          ok++;
+          return analyze(candles,sym,{chg:Number(td.priceChangePercent)});
+        }catch(e){
+          fail++;
+          console.warn(sym,e);
+          return null;
+        }
+      }));
+      results.push(...batchRes);
+    }
+
+    state.signals=results.filter(s=>s&&s.dir&&s.rr>=2&&s.score>=MIN_SCORE).sort((a,b)=>b.score-a.score);
+
+    if(dbEnabled() && state.signals.length) dbSaveSignals(state.signals);
+
+    state.scanTime=new Date();
+    state.scans++;
+    $("scanCount").textContent=state.scans;
+
+    const threshold=Math.max(1,Math.ceil(availablePairs.length*.75));
+    if(ok>=threshold){
+      $("connDot").className="dot on";
+      $("connTxt").textContent=\`Connected (\${ok}/\${availablePairs.length})\`;
+    }else{
+      $("connDot").className="dot off";
+      $("connTxt").textContent=\`⚠️ \${ok}/\${availablePairs.length} pairs\`;
+    }
+
+    const newSigs=state.signals.filter(s=>{
+      const key=s.sym+"_"+s.dir;
+      if(prevSigs.has(key)) return false;
+      const last=recentAlerts[key];
+      if(last && Date.now()-last<ALERT_COOLDOWN) return false;
+      recentAlerts[key]=Date.now();
+      return true;
+    });
+
+    if(newSigs.length && state.scans>1){
+      const s=newSigs[0], cur=pairCurrency();
+      const msg=\`\${s.dir} \${s.sym} @ \${cur}\${fmt(s.price)} → TP \${cur}\${fmt(s.tp)} / SL \${cur}\${fmt(s.sl)} (1:\${s.rr.toFixed(1)}) Score \${s.score}\`;
+      beep();
+      notify("⚡ New Crypto Signal",msg);
+      $("lastSignal").innerHTML=\`<span style="color:var(--green)">🆕 <b>\${s.sym} \${s.dir}</b> \${state.scanTime.toLocaleTimeString()}</span>\`;
+      toast("🆕 "+msg);
+    }else if(manual){
+      toast(\`✓ Scan complete — \${state.signals.length} valid setups (\${ok} ok, \${fail} failed)\`);
+    }
+  }catch(e){
+    console.error(e);
+    $("connDot").className="dot off";
+    $("connTxt").textContent="⚠️ Binance pair check failed";
+    if(manual) toast("⚠️ "+(e.message||"Could not load Binance pairs"));
   }
-  state.signals=results.filter(s=>s&&s.dir&&s.rr>=2&&s.score>=MIN_SCORE)
-    .sort((a,b)=>b.score-a.score);
-  // Persist every validated signal. The database handles duplicate protection.
-  if(dbEnabled() && state.signals.length){
-    dbSaveSignals(state.signals);
-  }
-  state.scanTime=new Date(); state.scans++;
-  $("scanCount").textContent=state.scans;
-  if(ok>=15){
-    $("connDot").className="dot on"; $("connTxt").textContent=`Connected (${ok}/${COINS.length})`;
-  }else{
-    $("connDot").className="dot off"; $("connTxt").textContent=`⚠️ ${ok}/${COINS.length} pairs`;
-  }
-  const newSigs=state.signals.filter(s=>{
-    const key=s.sym+"_"+s.dir;
-    if(prevSigs.has(key))return false;
-    const last=recentAlerts[key];
-    if(last&&Date.now()-last<ALERT_COOLDOWN)return false;
-    recentAlerts[key]=Date.now();
-    return true;
-  });
-  if(newSigs.length&&state.scans>1){
-    const s=newSigs[0];
-    const msg=`${s.dir} ${s.sym} @ $${fmt(s.price)} → TP $${fmt(s.tp)} / SL $${fmt(s.sl)} (1:${s.rr.toFixed(1)}) Score ${s.score}`;
-    beep(); notify("⚡ New Crypto Signal",msg);
-    $("lastSignal").innerHTML=`<span style="color:var(--green)">🆕 <b>${s.sym} ${s.dir}</b> ${state.scanTime.toLocaleTimeString()}</span>`;
-    toast("🆕 "+msg);
-  }else if(manual){
-    toast(`✓ Scan complete — ${state.signals.length} valid setups (${ok} ok, ${fail} failed)`);
-  }
-  $("scanBtn").disabled=false; $("scanBtn").textContent="🔍 Scan Now";
+
+  $("scanBtn").disabled=false;
+  $("scanBtn").textContent="🔍 Scan Now";
   render();
   updateLivePrices();
 }
@@ -958,7 +1053,7 @@ function renderSignals(){
   if(!state.signals.length){
     g.innerHTML=`<div class="empty" style="grid-column:1/-1">
       No validated setups right now.<br><br>
-      Watching ${COINS.length} ${state.quote} pairs using CLOSED candles.<br>
+      Watching ${availablePairs.length || 0} available ${state.quote} pairs using CLOSED candles.<br>
       Last scan: ${state.scanTime?state.scanTime.toLocaleTimeString():"never"}
     </div>`;
     return;
@@ -967,15 +1062,15 @@ function renderSignals(){
     <div class="card">
       <div class="top">
         <div><div class="sym">${s.sym}</div><div class="name">Test mode · ${state.tf}</div></div>
-        <div><div class="price">$${fmt(s.price)}</div>
+        <div><div class="price">${state.quote==="INR"?"₹":"$"}${fmt(s.price)}</div>
         <div class="chg">${s.chg>=0?"▲":"▼"} ${Math.abs(s.chg).toFixed(2)}%</div></div>
       </div>
       <span class="badge ${s.dir==="LONG"?"long":"short"}">${s.dir==="LONG"?"📈 LONG":"📉 SHORT"}</span>
       <span class="badge wait" style="margin-left:6px">Score ${s.score}/100</span>
       <div class="levels">
-        <div class="lvl entry"><div class="k">Entry (approx)</div><div class="val">$${fmt(s.entry)}</div></div>
-        <div class="lvl sl"><div class="k">Stop Loss</div><div class="val">$${fmt(s.sl)}</div></div>
-        <div class="lvl tp"><div class="k">Take Profit 2R</div><div class="val">$${fmt(s.tp)}</div></div>
+        <div class="lvl entry"><div class="k">Entry (approx)</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.entry)}</div></div>
+        <div class="lvl sl"><div class="k">Stop Loss</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.sl)}</div></div>
+        <div class="lvl tp"><div class="k">Take Profit 2R</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.tp)}</div></div>
         <div class="lvl rr"><div class="k">Risk : Reward</div><div class="val">1 : ${s.rr.toFixed(1)}</div></div>
       </div>
       <div class="riskbar"><i style="width:${s.score}%;background:${s.score>=75?"var(--green)":s.score>=60?"var(--yellow)":"var(--red)"}"></i></div>
@@ -997,8 +1092,7 @@ function renderJournal(){
   const l=$("journalList");
   if(!state.journal.length){
     l.innerHTML=`<div class="empty">${dbEnabled()&&!currentUser
-      ?"Please log in to MarketPulse to view and save paper trades."
-      :'No paper trades yet.<br>Click "📝 Paper Trade" on any signal to start.'}</div>`;
+      ?"Please log in to MarketPulse to view and save paper trades."      :'No paper trades yet.<br>Click "📝 Paper Trade" on any signal to start.'}</div>`;
     return;
   }
   l.innerHTML=state.journal.slice().reverse().map((t,idx)=>{
