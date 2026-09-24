@@ -88,6 +88,10 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .tp-hit{color:var(--green)}
 .sl-hit{color:var(--red)}
 .running{color:var(--yellow)}
+
+/* ================= WALLET / REPORTS ================= */
+.wallet-panel,.reports-panel{padding:0 20px 24px}.wallet-hero{display:flex;justify-content:space-between;align-items:center;gap:20px;background:linear-gradient(145deg,var(--card),#101521);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px}.eyebrow{font-size:10px;color:var(--muted);letter-spacing:1.5px}.wallet-balance{font-size:34px;font-weight:800;margin-top:5px}.wallet-sub{font-size:11px;color:var(--muted)}.wallet-invested{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:13px 18px;min-width:180px}.wallet-invested span,.wallet-metrics span,.report-grid span{display:block;font-size:10px;color:var(--muted);margin-bottom:5px}.wallet-invested b{font-size:20px}.wallet-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px}.wallet-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}.wallet-box h3{margin:0 0 5px}.wallet-box p{font-size:11px;color:var(--muted);margin:0 0 12px}.wallet-row{display:flex;gap:8px}.wallet-row input{flex:1;min-width:0}.wallet-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.wallet-metrics>div,.report-grid>div{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px}.wallet-metrics b{font-size:15px}.wallet-note{font-size:11px;color:var(--muted);padding:12px 0}.wallet-history{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}.wallet-history-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:11px}.wallet-history-row small{display:block;color:var(--muted);margin-top:2px}.report-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}.report-controls>div{min-width:150px}.report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.report-grid b{font-size:15px}.report-table-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:14px}.report-table-wrap table{width:100%;border-collapse:collapse;min-width:650px}.report-table-wrap th,.report-table-wrap td{padding:10px;border-bottom:1px solid var(--border);text-align:left;font-size:11px}.report-table-wrap th{color:var(--muted);font-size:10px;text-transform:uppercase}@media(max-width:899px){.wallet-actions{grid-template-columns:1fr}.wallet-metrics,.report-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.wallet-panel,.reports-panel{padding:0 12px 20px}.wallet-hero{display:block}.wallet-invested{margin-top:14px}.wallet-row{display:grid;grid-template-columns:1fr}.wallet-metrics,.report-grid{grid-template-columns:1fr 1fr}}
+
 /* ================= TRADE TABS / CARDS ================= */
 .trade-list{
   width:100%;
@@ -259,12 +263,36 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <div class="tab active" data-tab="signals">📶 Signals</div>
   <div class="tab" data-tab="live">🟢 Live Trades <span id="liveTabCount"></span></div>
   <div class="tab" data-tab="archive">🗄️ Archive <span id="archiveTabCount"></span></div>
+  <div class="tab" data-tab="wallet">💰 Wallet <span id="walletBalanceTab"></span></div>
+  <div class="tab" data-tab="reports">📊 Reports</div>
   <div class="tab" data-tab="settings">⚙️ Settings</div>
 </div>
 
 <div class="grid" id="signalsGrid"></div>
 <div class="journal-list" id="liveTradesList"></div>
 <div class="journal-list" id="archiveList"></div>
+
+<div class="wallet-panel" id="walletPane" style="display:none">
+  <div class="wallet-hero">
+    <div><div class="eyebrow">PAPER WALLET</div><div class="wallet-balance" id="walletBalance">₹0</div><div class="wallet-sub">Available balance</div></div>
+    <div class="wallet-invested"><span>Currently Invested</span><b id="walletInvested">₹0</b></div>
+  </div>
+  <div class="wallet-actions">
+    <div class="wallet-box"><h3>➕ Add Fake Money</h3><p>Add virtual INR to your paper wallet.</p><div class="wallet-row"><input id="depositAmount" type="number" min="1" step="100" placeholder="₹10,000"><button class="primary" id="depositBtn">Add Money</button></div></div>
+    <div class="wallet-box"><h3>➖ Withdraw Fake Money</h3><p>Remove unused virtual INR from the wallet.</p><div class="wallet-row"><input id="withdrawAmount" type="number" min="1" step="100" placeholder="₹1,000"><button id="withdrawBtn">Withdraw</button></div></div>
+  </div>
+  <div class="wallet-metrics" id="walletMetrics"></div>
+  <div class="wallet-note">🔒 Auto Trades and manual paper trades can use only the available wallet balance. Capital is reserved when a trade opens and returned with profit/loss when it closes.</div>
+  <div class="wallet-history" id="walletHistory"></div>
+</div>
+<div class="reports-panel" id="reportsPane" style="display:none">
+  <div class="report-controls">
+    <div><label>From</label><input id="reportFrom" type="date"></div>
+    <div><label>To</label><input id="reportTo" type="date"></div>
+    <button class="primary" id="generateReportBtn">📊 Generate Report</button><button id="exportReportBtn">⬇️ CSV</button>
+  </div>
+  <div id="reportSummary"></div><div id="reportTable"></div>
+</div>
 
 <div class="settings" id="settingsPane" style="display:none">
 <div class="card">
@@ -602,6 +630,87 @@ function dbTradeToUI(t){
   };
 }
 
+
+/* ================= PAPER WALLET ================= */
+async function dbLoadWalletTx(){
+  if(!dbEnabled()) return [];
+  const token=await requireLogin();
+  if(!token) return [];
+  const result=await dbRequest("crypto_wallet_transactions?order=created_at.asc&limit=2000");
+  if(result.error){ console.warn("Wallet load failed:",result.error.message); return []; }
+  return Array.isArray(result.data)?result.data:[];
+}
+function walletBalance(){ return state.walletTx.reduce((s,x)=>s+Number(x.amount_inr||0),0); }
+function walletInvested(){ return state.journal.filter(t=>!t.closed).reduce((s,t)=>s+Number(t.amt||0),0); }
+async function dbWalletTransaction(type,amount,tradeId=null,note=""){
+  if(!dbEnabled()) return {data:null,error:new Error("Wallet database is not configured")};
+  const token=await requireLogin();
+  if(!token) return {data:null,error:new Error("You are not logged in")};
+  const result=await dbRequest("crypto_wallet_transactions",{
+    method:"POST",headers:{"Prefer":"return=representation"},
+    body:JSON.stringify({user_id:currentUser.id,txn_type:type,amount_inr:Number(amount),trade_id:tradeId||null,note:String(note||"")})
+  });
+  if(!result.error&&Array.isArray(result.data)&&result.data[0]) state.walletTx.push(result.data[0]);
+  return {data:Array.isArray(result.data)?result.data[0]:result.data,error:result.error||null};
+}
+async function walletHasTransaction(tradeId,type){
+  if(!dbEnabled()||!tradeId) return false;
+  const result=await dbRequest("crypto_wallet_transactions?trade_id=eq."+encodeURIComponent(tradeId)+"&txn_type=eq."+encodeURIComponent(type)+"&limit=1");
+  return !result.error&&Array.isArray(result.data)&&result.data.length>0;
+}
+async function reserveWalletForTrade(tradeId,amount){
+  if(walletBalance()+0.000001<Number(amount)) return {ok:false,error:new Error("Insufficient wallet balance")};
+  if(await walletHasTransaction(tradeId,"TRADE_DEBIT")) return {ok:true};
+  const result=await dbWalletTransaction("TRADE_DEBIT",-Math.abs(Number(amount)),tradeId,"Paper trade capital reserved");
+  return {ok:!result.error,error:result.error||null};
+}
+async function settleWalletTrade(t){
+  if(!dbEnabled()||!t.id) return {ok:true};
+  if(!await walletHasTransaction(t.id,"TRADE_DEBIT")) return {ok:true};
+  if(await walletHasTransaction(t.id,"TRADE_CREDIT")) return {ok:true};
+  const returned=Math.max(0,Number(t.amt||0)+Number(t.pnl||0));
+  const result=await dbWalletTransaction("TRADE_CREDIT",returned,t.id,"Trade closed - capital returned + realized P&L");
+  return {ok:!result.error,error:result.error||null};
+}
+async function loadWallet(){
+  if(dbEnabled()) state.walletTx=await dbLoadWalletTx();
+  else state.walletTx=JSON.parse(localStorage.getItem("cs_wallet_tx")||"[]");
+}
+function walletSaveLocal(){ if(!dbEnabled()) localStorage.setItem("cs_wallet_tx",JSON.stringify(state.walletTx)); }
+function renderWallet(){
+  const bal=walletBalance(), invested=walletInvested();
+  const deposits=state.walletTx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const withdrawals=Math.abs(state.walletTx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0));
+  const debits=Math.abs(state.walletTx.filter(x=>x.txn_type==="TRADE_DEBIT").reduce((s,x)=>s+Number(x.amount_inr||0),0));
+  const credits=state.walletTx.filter(x=>x.txn_type==="TRADE_CREDIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const realized=credits-debits;
+  if($("walletBalance")) $("walletBalance").textContent=fmtINR(bal);
+  if($("walletInvested")) $("walletInvested").textContent=fmtINR(invested);
+  if($("walletBalanceTab")) $("walletBalanceTab").textContent=bal?" · "+fmtINR(bal):"";
+  if($("walletMetrics")) $("walletMetrics").innerHTML='<div><span>Total Added</span><b>'+fmtINR(deposits)+'</b></div><div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div><div><span>Open Capital</span><b>'+fmtINR(invested)+'</b></div><div><span>Realized P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>';
+  const h=$("walletHistory");
+  if(h){
+    const rows=state.walletTx.slice().reverse().slice(0,30);
+    h.innerHTML='<h3>Wallet History</h3>'+(rows.length?rows.map(x=>{const a=Number(x.amount_inr||0);return '<div class="wallet-history-row"><span>'+new Date(x.created_at).toLocaleString()+'<small>'+String(x.txn_type).replaceAll("_"," ")+'</small></span><b class="'+(a>=0?"profit":"loss")+'">'+(a>=0?"+":"")+fmtINR(a)+'</b></div>';}).join(""):'<div class="empty">No wallet transactions yet.</div>');
+  }
+}
+async function addWalletMoney(){
+  const amount=Number($("depositAmount").value)||0;
+  if(amount<=0){toast("⚠️ Enter an amount to add.");return;}
+  const result=dbEnabled()?await dbWalletTransaction("DEPOSIT",amount,null,"Manual fake-money deposit"):{error:null};
+  if(!dbEnabled()) state.walletTx.push({txn_type:"DEPOSIT",amount_inr:amount,created_at:new Date().toISOString(),note:"Manual fake-money deposit"});
+  if(!result.error){walletSaveLocal();$("depositAmount").value="";renderWallet();renderStats();toast("✓ "+fmtINR(amount)+" added to paper wallet.");}
+  else toast("⚠️ "+result.error.message);
+}
+async function withdrawWalletMoney(){
+  const amount=Number($("withdrawAmount").value)||0;
+  if(amount<=0){toast("⚠️ Enter an amount to withdraw.");return;}
+  if(walletBalance()+0.000001<amount){toast("⚠️ Insufficient available wallet balance.");return;}
+  const result=dbEnabled()?await dbWalletTransaction("WITHDRAWAL",-amount,null,"Manual fake-money withdrawal"):{error:null};
+  if(!dbEnabled()) state.walletTx.push({txn_type:"WITHDRAWAL",amount_inr:-amount,created_at:new Date().toISOString(),note:"Manual fake-money withdrawal"});
+  if(!result.error){walletSaveLocal();$("withdrawAmount").value="";renderWallet();renderStats();toast("✓ "+fmtINR(amount)+" withdrawn.");}
+  else toast("⚠️ "+result.error.message);
+}
 async function dbSaveTrade(t,signal){
   if(!dbEnabled()){
     return {data:null,error:new Error("Supabase is not configured")};
@@ -723,7 +832,7 @@ const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
-const state = { signals:[], journal:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
+const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null;
 const $ = id => document.getElementById(id);
@@ -743,11 +852,13 @@ async function load(){
     state.autoTrades = localStorage.getItem("cs_auto_trades")==="1";
 
     if(dbEnabled()){
+      state.walletTx = await dbLoadWalletTx();
       const trades = await dbLoadTrades();
       state.journal = trades.map(dbTradeToUI);
     }else{
       // Temporary fallback for testing before Supabase is configured.
       state.journal = JSON.parse(localStorage.getItem("cs_journal")||"[]");
+      state.walletTx = JSON.parse(localStorage.getItem("cs_wallet_tx")||"[]");
     }
   }catch(e){
     console.error(e);
@@ -1299,14 +1410,7 @@ async function takeSignalAsPaperTrade(s){
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
     status:"running",date:new Date().toLocaleString(),notes:""
   };
-  if(dbEnabled()){
-    const result=await dbSaveTrade(trade,s);
-    if(result.error){ console.warn("Auto paper trade failed:",result.error.message); return false; }
-    if(result.data) state.journal.unshift(dbTradeToUI(result.data));
-  }else{
-    state.journal.push(trade); save();
-  }
-  return true;
+  return await saveTradeToWallet(trade,s);
 }
 
 async function takeAllQualifiedTrades(){
@@ -1362,7 +1466,7 @@ async function updateLivePrices(){
       t.status=hitTP?"tp":"sl";
       t.closePrice=cp;
       t.pnl=calcClosedPnL(t);
-      if(dbEnabled()) await dbUpdateTrade(t); else save();
+      if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
       toast(hitTP
         ? "🎯 "+t.sym+" "+t.dir+" TP hit — paper trade closed automatically."
         : "🛑 "+t.sym+" "+t.dir+" SL hit — paper trade closed automatically."
@@ -1409,7 +1513,7 @@ function calcClosedPnL(t){
 }
 
 /* ================= RENDER ================= */
-function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();}
+function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();renderWallet();}
 
 function renderStats(){
   const closed=state.journal.filter(t=>t.closed);
@@ -1652,6 +1756,19 @@ function updateTradeCalculator(){
 $("tmAmt").addEventListener("input",updateTradeCalculator);
 $("tmLev").addEventListener("change",updateTradeCalculator);
 
+
+async function saveTradeToWallet(trade,signal){
+  if(!dbEnabled()){toast("⚠️ Wallet requires Supabase. Add fake money in Wallet first.");return false;}
+  if(walletBalance()+0.000001<Number(trade.amt)){toast("⚠️ Insufficient wallet balance. Available: "+fmtINR(walletBalance()));return false;}
+  const result=await dbSaveTrade(trade,signal);
+  if(result.error){toast("⚠️ Could not save trade: "+result.error.message);return false;}
+  const saved=dbTradeToUI(result.data);
+  const reserve=await reserveWalletForTrade(saved.id,trade.amt);
+  if(!reserve.ok){await dbDeleteTrade(saved);toast("⚠️ Wallet reservation failed: "+(reserve.error?.message||"unknown error"));return false;}
+  state.journal.unshift(saved);
+  renderWallet();
+  return true;
+}
 async function saveTrade(){
   const s=state.signals[curIdx]; if(!s)return;
 
@@ -1674,22 +1791,8 @@ async function saveTrade(){
     notes:""
   };
 
-  if(dbEnabled()){
-    const result=await dbSaveTrade(trade,s);
-    if(result.error){
-      console.error(result.error);
-      toast("⚠️ Could not save trade: "+result.error.message);
-      return;
-    }
-    if(result.data){
-      const saved=dbTradeToUI(result.data);
-      state.journal.unshift(saved);
-    }
-  }else{
-    state.journal.push(trade);
-    save();
-  }
-
+  const opened=await saveTradeToWallet(trade,s);
+  if(!opened) return;
   closeModal();
   render();
   updateLivePrices();
@@ -1702,13 +1805,10 @@ async function quickClose(idx,result){
   t.pnl=calcClosedPnL(t);
   t.closePrice=state.livePrices[t.sym]||t.entry;
 
-  if(dbEnabled()){
-    await dbUpdateTrade(t);
-  }else{
-    save();
-  }
+  if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
 
   render();
+  renderWallet();
   toast(result==="tp"?`🎯 TP hit! +${fmtINR(t.pnl)}`:`🛑 SL hit. ${fmtINR(t.pnl)}`);
 }
 
@@ -1829,6 +1929,55 @@ async function askAI(idx){
 }
 
 /* ================= TABS ================= */
+
+/* ================= REPORTS ================= */
+function dateOnly(v){
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime())) return "";
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function generateReport(){
+  const from=$("reportFrom")?.value||dateOnly(Date.now()-30*86400000);
+  const to=$("reportTo")?.value||dateOnly(Date.now());
+  if($("reportFrom")&&!$("reportFrom").value) $("reportFrom").value=from;
+  if($("reportTo")&&!$("reportTo").value) $("reportTo").value=to;
+
+  const tx=state.walletTx.filter(x=>{const d=dateOnly(x.created_at);return d>=from&&d<=to;});
+  const deposits=tx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const withdrawals=Math.abs(tx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const invested=Math.abs(tx.filter(x=>x.txn_type==="TRADE_DEBIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const returned=tx.filter(x=>x.txn_type==="TRADE_CREDIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const realized=returned-invested;
+  const roi=invested>0?(realized/invested)*100:0;
+  const closed=state.journal.filter(t=>t.closed);
+  const wins=closed.filter(t=>calcClosedPnL(t)>0).length;
+
+  if($("reportSummary")) $("reportSummary").innerHTML='<div class="report-grid">'+
+    '<div><span>Money Added</span><b>'+fmtINR(deposits)+'</b></div>'+
+    '<div><span>Invested</span><b>'+fmtINR(invested)+'</b></div>'+
+    '<div><span>Realized P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
+    '<div><span>ROI</span><b class="'+(roi>=0?"profit":"loss")+'">'+roi.toFixed(2)+'%</b></div>'+
+    '<div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div>'+
+    '<div><span>Current Wallet</span><b>'+fmtINR(walletBalance())+'</b></div>'+
+    '<div><span>Open Capital</span><b>'+fmtINR(walletInvested())+'</b></div>'+
+    '<div><span>Closed Win Rate</span><b>'+closed.length?Math.round(wins/Math.max(1,closed.length)*100):0+'%</b></div>'+
+  '</div>';
+
+  const byDay={};
+  tx.forEach(x=>{const day=dateOnly(x.created_at);if(!byDay[day])byDay[day]={deposit:0,withdraw:0,invested:0,returned:0};const a=Number(x.amount_inr||0);if(x.txn_type==="DEPOSIT")byDay[day].deposit+=a;if(x.txn_type==="WITHDRAWAL")byDay[day].withdraw+=Math.abs(a);if(x.txn_type==="TRADE_DEBIT")byDay[day].invested+=Math.abs(a);if(x.txn_type==="TRADE_CREDIT")byDay[day].returned+=a;});
+  const days=Object.keys(byDay).sort().reverse();
+  if($("reportTable")) $("reportTable").innerHTML=days.length?'<div class="report-table-wrap"><table><thead><tr><th>Date</th><th>Added</th><th>Invested</th><th>Returned</th><th>P&L</th><th>Withdrawn</th></tr></thead><tbody>'+days.map(day=>{const x=byDay[day],p=x.returned-x.invested;return '<tr><td>'+day+'</td><td>'+fmtINR(x.deposit)+'</td><td>'+fmtINR(x.invested)+'</td><td>'+fmtINR(x.returned)+'</td><td class="'+(p>=0?"profit":"loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+fmtINR(x.withdraw)+'</td></tr>';}).join("")+'</tbody></table></div>':'<div class="empty">No wallet activity in this date range.</div>';
+  return {from,to,deposits,withdrawals,invested,returned,realized,roi,days,byDay};
+}
+function exportReportCSV(){
+  const r=generateReport();
+  const lines=[["Date","Added INR","Invested INR","Returned INR","P&L INR","Withdrawn INR"]];
+  r.days.forEach(day=>{const x=r.byDay[day];lines.push([day,x.deposit,x.invested,x.returned,x.returned-x.invested,x.withdraw]);});
+  lines.push([]);lines.push(["Summary","Value"]);lines.push(["Added",r.deposits],["Invested",r.invested],["Realized P&L",r.realized],["ROI %",r.roi.toFixed(2)],["Withdrawn",r.withdrawals],["Ending Wallet",walletBalance()]);
+  const csv=lines.map(row=>row.map(v=>'"'+String(v==null?"":v).replaceAll('"','""')+'"').join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="crypto-paper-trade-report-"+r.from+"-to-"+r.to+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
 document.querySelectorAll(".tab").forEach(tab=>{
   tab.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -1837,18 +1986,23 @@ document.querySelectorAll(".tab").forEach(tab=>{
 
     $("signalsGrid").style.display=sel==="signals"?"grid":"none";
     $("settingsPane").style.display=sel==="settings"?"block":"none";
-
-    // Use a class for Live/Archive visibility so desktop's 2-column grid
-    // does not override the tab selection.
+    $("walletPane").style.display=sel==="wallet"?"block":"none";
+    $("reportsPane").style.display=sel==="reports"?"block":"none";
     $("liveTradesList").classList.toggle("panel-visible",sel==="live");
     $("archiveList").classList.toggle("panel-visible",sel==="archive");
-
     if(sel==="live") updateLivePrices();
     if(sel==="archive") renderArchive();
+    if(sel==="wallet") renderWallet();
+    if(sel==="reports") generateReport();
   };
 });
 
 /* ================= UI EVENTS ================= */
+$("depositBtn").onclick=addWalletMoney;
+$("withdrawBtn").onclick=withdrawWalletMoney;
+$("generateReportBtn").onclick=generateReport;
+$("exportReportBtn").onclick=exportReportCSV;
+
 $("homeBtn").onclick=()=>{ window.location.href="https://tradesutra-chi.vercel.app/"; };
 $("autoTradeBtn").onclick=async()=>{
   state.autoTrades=!state.autoTrades;
@@ -1905,6 +2059,7 @@ function updateDbStatus(){
 (async()=>{
   await initSupabase();
   await load();
+  await loadWallet();
   updateAutoTradeButton();
   updateDbStatus();
   render();
