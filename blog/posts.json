@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-return-to-net-buying-after-5-session-outflow-spell-as-dii-22-day-buying-streak-continues",
+    "title": "FII Return to Net Buying After 5-Session Outflow Spell as DII 22-Day Buying Streak Continues",
+    "excerpt": "FII/FPI turned net buyers at ₹1,617.45 Cr today after selling ₹3,809.99 Cr yesterday, while DII extended their 22-session buying streak with ₹2,341.46 Cr inflow. The Nifty 50 fe...",
+    "category": "fiidii-flows",
+    "date": "2026-09-23",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "sbilife-stock-spotlight",
     "title": "SBI Life Dips 0.3% on Nearly 4x Volume: Distribution Near 50-Day Average",
     "excerpt": "PRICE ACTION: SBI Life edged lower on Monday but saw volume surge to nearly four times its daily average, suggesting meaningful institutional participation despite the modest pr...",
