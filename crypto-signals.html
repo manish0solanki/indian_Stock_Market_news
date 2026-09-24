@@ -21,7 +21,7 @@ button{cursor:pointer} button:hover{border-color:var(--blue)}
 button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
 button:disabled{opacity:.5;cursor:not-allowed}
 button.danger{background:rgba(234,57,67,.15);border-color:var(--red);color:var(--red)}
-button.small{padding:4px 10px;font-size:11px}
+button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(--blue)}
 .statusbar{display:flex;gap:16px;align-items:center;padding:10px 20px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap}
 .mono{font-family:monospace;color:var(--muted)}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
@@ -89,6 +89,9 @@ button.small{padding:4px 10px;font-size:11px}
 .running{color:var(--yellow)}
 </style>
 <base target="_blank">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
 <body>
 
@@ -111,6 +114,7 @@ button.small{padding:4px 10px;font-size:11px}
   <button id="scanBtn">🔍 Scan Now</button>
   <button id="notifyBtn">🔔 Alerts</button>
   <button id="jrnlBtn">📓 Journal</button>
+  <button id="homeBtn" class="home-btn">🏠 MarketPulse Home</button>
 </div>
 </header>
 
@@ -143,6 +147,7 @@ button.small{padding:4px 10px;font-size:11px}
   <input id="scanInterval" type="number" min="30" max="600" value="60">
   <div class="settings-info">
     💾 Storage: <span id="dbStatus">Checking database...</span><br>
+    👤 Account: <span id="accountStatus">Checking login...</span><br>
     📊 Binance public API only.<br>
     🚫 No CoinSwitch API.<br>
     🚫 No automatic order execution.<br>
@@ -230,14 +235,15 @@ button.small{padding:4px 10px;font-size:11px}
 <script>
 /* ================= CONFIG ================= */
 
-/* ================= SUPABASE DATABASE =================
-   Replace these two values with your Supabase project values.
-   Use the browser-safe anon/public key here, NOT the service-role key.
+/* ================= SUPABASE DATABASE + AUTH =================
+   Use the SAME Supabase project as MarketPulse.
+   Use the browser-safe anon/publishable key, NOT the service-role key.
 */
 const SUPABASE_URL = "https://fzazdrzlemmkqngvpzxj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6YXpkcnpsZW1ta3FuZ3ZwenhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMzc2MzEsImV4cCI6MjEwNDgxMzYzMX0.LNeR5_h0n2Y-hA2GD9e_tle3Euz1esB0Vr3_-ZtEYAk";
 
 let supabaseClient = null;
+let currentUser = null;
 
 function dbEnabled(){
   return SUPABASE_URL &&
@@ -246,28 +252,104 @@ function dbEnabled(){
          !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
 }
 
-async function dbRequest(path, options={}){
-  if(!dbEnabled()) return {data:null,error:new Error("Supabase is not configured")};
+async function initSupabase(){
+  if(!dbEnabled()){
+    currentUser = null;
+    return false;
+  }
 
-  const headers = {
-    "apikey": SUPABASE_ANON_KEY,
-    "Authorization": "Bearer " + SUPABASE_ANON_KEY,
-    "Content-Type": "application/json",
+  try{
+    supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      {
+        auth:{
+          persistSession:true,
+          autoRefreshToken:true,
+          detectSessionInUrl:true
+        }
+      }
+    );
+
+    const {data,error}=await supabaseClient.auth.getSession();
+
+    if(error){
+      console.error("Supabase session error:",error);
+      currentUser=null;
+      return false;
+    }
+
+    currentUser=data?.session?.user||null;
+
+    supabaseClient.auth.onAuthStateChange((_event,session)=>{
+      currentUser=session?.user||null;
+      updateDbStatus();
+    });
+
+    return true;
+  }catch(e){
+    console.error("Supabase initialization failed:",e);
+    currentUser=null;
+    return false;
+  }
+}
+
+async function getAccessToken(){
+  if(!supabaseClient) return null;
+
+  const {data,error}=await supabaseClient.auth.getSession();
+
+  if(error){
+    console.error("Supabase session error:",error);
+    return null;
+  }
+
+  currentUser=data?.session?.user||null;
+  return data?.session?.access_token||null;
+}
+
+async function requireLogin(){
+  const token=await getAccessToken();
+
+  if(!token || !currentUser){
+    toast("⚠️ Please log in to MarketPulse first.");
+    return null;
+  }
+
+  return token;
+}
+
+async function dbRequest(path, options={}){
+  if(!dbEnabled()){
+    return {data:null,error:new Error("Supabase is not configured")};
+  }
+
+  const token=await getAccessToken();
+
+  const headers={
+    "apikey":SUPABASE_ANON_KEY,
+    "Authorization":"Bearer "+(token||SUPABASE_ANON_KEY),
+    "Content-Type":"application/json",
     ...(options.headers||{})
   };
 
   try{
-    const r = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
-      ...options,
-      headers
-    });
+    const r=await fetch(
+      SUPABASE_URL+"/rest/v1/"+path,
+      {...options,headers}
+    );
 
-    const raw = await r.text();
-    let data = null;
-    try{ data = raw ? JSON.parse(raw) : null; }catch(e){ data = raw; }
+    const raw=await r.text();
+    let data=null;
+
+    try{
+      data=raw?JSON.parse(raw):null;
+    }catch(e){
+      data=raw;
+    }
 
     if(!r.ok){
-      const msg = data?.message || data?.error_description || raw || ("HTTP "+r.status);
+      const msg=data?.message||data?.error_description||raw||("HTTP "+r.status);
       return {data:null,error:new Error(msg)};
     }
 
@@ -277,64 +359,59 @@ async function dbRequest(path, options={}){
   }
 }
 
-/* Save a newly detected signal. Duplicate signals from the same scan
-   are ignored by the database unique index. */
+
+/* ================= SIGNAL DATABASE ================= */
+
 async function dbSaveSignals(signals){
   if(!dbEnabled() || !signals.length) return;
 
-  const rows = signals.map(s => ({
-    symbol: s.sym.replace(/USDT$|BTC$/,""),
-    pair: s.sym,
-    quote: state.quote,
-    direction: s.dir,
-    timeframe: state.tf,
-    entry_price: Number(s.entry),
-    stop_loss: Number(s.sl),
-    take_profit: Number(s.tp),
-    rr: Number(s.rr),
-    score: Number(s.score),
-    confidence: Number(s.conf),
-    rsi: Number(s.rsi),
-    atr: Number(s.atr),
-    volume_ratio: Number(s.volumeRatio),
-    reasons: Array.isArray(s.reasons) ? s.reasons.join(" · ") : String(s.reasons||""),
-    status: "ACTIVE"
+  const rows=signals.map(s=>({
+    symbol:s.sym.replace(/USDT$|BTC$/,""),
+    pair:s.sym,
+    quote:state.quote,
+    direction:s.dir,
+    timeframe:state.tf,
+    entry_price:Number(s.entry),
+    stop_loss:Number(s.sl),
+    take_profit:Number(s.tp),
+    rr:Number(s.rr),
+    score:Number(s.score),
+    confidence:Number(s.conf),
+    rsi:Number(s.rsi),
+    atr:Number(s.atr),
+    volume_ratio:Number(s.volumeRatio),
+    reasons:Array.isArray(s.reasons)
+      ? s.reasons.join(" · ")
+      : String(s.reasons||""),
+    status:"ACTIVE"
   }));
 
-  const result = await dbRequest("crypto_signals?on_conflict=pair%2Ctimeframe%2Cdirection%2Cquote%2Cstatus", {
-    method:"POST",
-    headers:{
-      "Prefer":"resolution=ignore-duplicates,return=minimal"
-    },
-    body:JSON.stringify(rows)
-  });
+  const result=await dbRequest(
+    "crypto_signals?on_conflict=pair%2Ctimeframe%2Cdirection%2Cquote%2Cstatus",
+    {
+      method:"POST",
+      headers:{
+        "Prefer":"resolution=ignore-duplicates,return=minimal"
+      },
+      body:JSON.stringify(rows)
+    }
+  );
 
   if(result.error){
     console.warn("Signal database save failed:",result.error.message);
   }
 }
 
-/* Load recent signals from Supabase. */
-async function dbLoadSignals(){
-  if(!dbEnabled()) return [];
 
-  const result = await dbRequest(
-    "crypto_signals?status=eq.ACTIVE&order=created_at.desc&limit=100"
-  );
+/* ================= TRADE DATABASE ================= */
 
-  if(result.error){
-    console.warn("Signal database load failed:",result.error.message);
-    return [];
-  }
-
-  return Array.isArray(result.data) ? result.data : [];
-}
-
-/* Load this user's paper trades. RLS ensures users only see their own rows. */
 async function dbLoadTrades(){
   if(!dbEnabled()) return [];
 
-  const result = await dbRequest(
+  const token=await requireLogin();
+  if(!token) return [];
+
+  const result=await dbRequest(
     "crypto_trades?order=created_at.desc&limit=500"
   );
 
@@ -343,15 +420,14 @@ async function dbLoadTrades(){
     return [];
   }
 
-  return Array.isArray(result.data) ? result.data : [];
+  return Array.isArray(result.data)?result.data:[];
 }
 
-/* Convert database trade -> existing UI trade format. */
 function dbTradeToUI(t){
   return {
     id:t.id,
     signalId:t.signal_id,
-    sym:t.pair || ((t.symbol||"") + (t.quote||"USDT")),
+    sym:t.pair||((t.symbol||"")+(t.quote||"USDT")),
     dir:t.direction,
     entry:Number(t.entry_price),
     sl:Number(t.stop_loss),
@@ -361,63 +437,80 @@ function dbTradeToUI(t){
     pnl:Number(t.pnl_inr)||0,
     closed:["TP_HIT","SL_HIT","MANUAL_CLOSE","CANCELLED"].includes(t.status),
     status:
-      t.status==="TP_HIT" ? "tp" :
-      t.status==="SL_HIT" ? "sl" :
-      t.status==="MANUAL_CLOSE" ? "manual" :
+      t.status==="TP_HIT"?"tp":
+      t.status==="SL_HIT"?"sl":
+      t.status==="MANUAL_CLOSE"?"manual":
       "running",
     currentPrice:Number(t.current_price)||Number(t.entry_price),
-    closePrice:t.close_price==null ? null : Number(t.close_price),
-    date:t.created_at ? new Date(t.created_at).toLocaleString() : "",
-    notes:t.notes||""
+    closePrice:t.close_price==null?null:Number(t.close_price),
+    date:t.created_at?new Date(t.created_at).toLocaleString():"",
+    notes:""
   };
 }
 
-/* Save one paper trade. */
-async function dbSaveTrade(t, signal){
-  if(!dbEnabled()) return {data:null,error:new Error("Supabase is not configured")};
+async function dbSaveTrade(t,signal){
+  if(!dbEnabled()){
+    return {data:null,error:new Error("Supabase is not configured")};
+  }
 
-  const row = {
-    signal_id: signal?.id || null,
-    symbol: signal?.symbol || signal?.sym?.replace(/USDT$|BTC$/,"") || "",
-    pair: signal?.pair || signal?.sym || "",
-    quote: signal?.quote || state.quote,
-    direction: t.dir,
-    timeframe: signal?.timeframe || state.tf,
-    entry_price: Number(t.entry),
-    stop_loss: Number(t.sl),
-    take_profit: Number(t.tp),
-    amount_inr: Number(t.amt)||0,
-    leverage: Number(t.lev)||1,
-    rr: Number(signal?.rr ?? t.rr ?? 0),
-    score: Number(signal?.score ?? 0),
+  const token=await requireLogin();
+
+  if(!token){
+    return {data:null,error:new Error("You are not logged in to MarketPulse")};
+  }
+
+  const row={
+    user_id:currentUser.id,
+    signal_id:signal?.id||null,
+    symbol:signal?.symbol||
+           signal?.sym?.replace(/USDT$|BTC$/,"")||"",
+    pair:signal?.pair||signal?.sym||"",
+    quote:signal?.quote||state.quote,
+    direction:t.dir,
+    timeframe:signal?.timeframe||state.tf,
+    entry_price:Number(t.entry),
+    stop_loss:Number(t.sl),
+    take_profit:Number(t.tp),
+    amount_inr:Number(t.amt)||0,
+    leverage:Number(t.lev)||1,
+    rr:Number(signal?.rr??t.rr??0),
+    score:Number(signal?.score??0),
     status:"RUNNING",
     current_price:Number(t.entry),
     pnl_inr:0,
-    notes:t.notes||""
+    notes:""
   };
 
-  const result = await dbRequest("crypto_trades", {
-    method:"POST",
-    headers:{"Prefer":"return=representation"},
-    body:JSON.stringify(row)
-  });
+  const result=await dbRequest(
+    "crypto_trades",
+    {
+      method:"POST",
+      headers:{"Prefer":"return=representation"},
+      body:JSON.stringify(row)
+    }
+  );
 
   if(result.error) return result;
 
-  return {data:Array.isArray(result.data) ? result.data[0] : result.data,error:null};
+  return {
+    data:Array.isArray(result.data)?result.data[0]:result.data,
+    error:null
+  };
 }
 
-/* Update a trade in Supabase. */
 async function dbUpdateTrade(t){
-  if(!dbEnabled() || !t.id) return;
+  if(!dbEnabled()||!t.id) return;
 
-  const status =
-    t.status==="tp" ? "TP_HIT" :
-    t.status==="sl" ? "SL_HIT" :
-    t.status==="manual" ? "MANUAL_CLOSE" :
+  const token=await requireLogin();
+  if(!token) return;
+
+  const status=
+    t.status==="tp"?"TP_HIT":
+    t.status==="sl"?"SL_HIT":
+    t.status==="manual"?"MANUAL_CLOSE":
     "RUNNING";
 
-  const row = {
+  const row={
     symbol:t.sym.replace(/USDT$|BTC$/,""),
     pair:t.sym,
     direction:t.dir,
@@ -428,29 +521,47 @@ async function dbUpdateTrade(t){
     leverage:Number(t.lev)||1,
     status,
     current_price:Number(t.currentPrice)||Number(t.entry),
-    close_price:t.closePrice==null ? null : Number(t.closePrice),
+    close_price:t.closePrice==null?null:Number(t.closePrice),
     pnl_inr:Number(t.pnl)||0,
-    notes:t.notes||""
+    notes:""
   };
 
-  if(t.closed) row.closed_at = new Date().toISOString();
+  if(t.closed){
+    row.closed_at=new Date().toISOString();
+  }
 
-  const result = await dbRequest("crypto_trades?id=eq."+encodeURIComponent(t.id), {
-    method:"PATCH",
-    headers:{"Prefer":"return=minimal"},
-    body:JSON.stringify(row)
-  });
+  const result=await dbRequest(
+    "crypto_trades?id=eq."+encodeURIComponent(t.id),
+    {
+      method:"PATCH",
+      headers:{"Prefer":"return=minimal"},
+      body:JSON.stringify(row)
+    }
+  );
 
-  if(result.error) console.warn("Trade database update failed:",result.error.message);
+  if(result.error){
+    console.warn("Trade database update failed:",result.error.message);
+  }
 }
 
 async function dbDeleteTrade(t){
-  if(!dbEnabled() || !t.id) return;
-  const result = await dbRequest("crypto_trades?id=eq."+encodeURIComponent(t.id), {
-    method:"DELETE"
-  });
-  if(result.error) console.warn("Trade database delete failed:",result.error.message);
+  if(!dbEnabled()||!t.id) return;
+
+  const token=await requireLogin();
+  if(!token) return;
+
+  const result=await dbRequest(
+    "crypto_trades?id=eq."+encodeURIComponent(t.id),
+    {method:"DELETE"}
+  );
+
+  if(result.error){
+    console.warn("Trade database delete failed:",result.error.message);
+  }
 }
+
+
+/* ================= LOCAL SETTINGS ================= */
 
 const COINS = ["BTC","ETH","SOL","BNB","XRP","ADA","DOGE","AVAX","LINK","MATIC","DOT","LTC","TRX","ATOM","UNI","NEAR","APT","ARB","OP","INJ","SUI","SEI","TIA","JUP","PYTH"];
 const MIN_SCORE = 65;
@@ -884,7 +995,9 @@ function renderSignals(){
 function renderJournal(){
   const l=$("journalList");
   if(!state.journal.length){
-    l.innerHTML=`<div class="empty">No paper trades yet.<br>Click "📝 Paper Trade" on any signal to start.</div>`;
+    l.innerHTML=`<div class="empty">${dbEnabled()&&!currentUser
+      ?"Please log in to MarketPulse to view and save paper trades."
+      :'No paper trades yet.<br>Click "📝 Paper Trade" on any signal to start.'}</div>`;
     return;
   }
   l.innerHTML=state.journal.slice().reverse().map((t,idx)=>{
@@ -920,7 +1033,6 @@ function renderJournal(){
       <span class="jdetail">
         Entry $${fmt(t.entry)} → TP $${fmt(t.tp)} / SL $${fmt(t.sl)}<br>
         ${fmtINR(t.amt)} @ ${t.lev}x · ${t.date}
-        ${t.notes?`<br>📝 ${t.notes}`:""}
       </span>
       ${pnlHtml}
       <div class="jbtns">
@@ -964,7 +1076,7 @@ async function saveTrade(){
     closed:false,
     status:"running",
     date:new Date().toLocaleString(),
-    notes:notes
+    notes:""
   };
 
   if(dbEnabled()){
@@ -1108,6 +1220,7 @@ document.querySelectorAll(".tab").forEach(tab=>{
 });
 
 /* ================= UI EVENTS ================= */
+$("homeBtn").onclick=()=>{ window.location.href="https://tradesutra-chi.vercel.app/"; };
 $("scanBtn").onclick=()=>scan(true);
 $("jrnlBtn").onclick=()=>{document.querySelector('[data-tab="journal"]').click();};
 function toast(msg){
@@ -1118,18 +1231,32 @@ function toast(msg){
 /* ================= DATABASE STATUS ================= */
 function updateDbStatus(){
   const el=$("dbStatus");
-  if(!el)return;
-  if(dbEnabled()){
-    el.textContent="Supabase connected";
-    el.style.color="var(--green)";
-  }else{
-    el.textContent="Not configured — using browser storage";
-    el.style.color="var(--yellow)";
+  const acct=$("accountStatus");
+
+  if(el){
+    if(dbEnabled()){
+      el.textContent="Supabase connected";
+      el.style.color="var(--green)";
+    }else{
+      el.textContent="Not configured — using browser storage";
+      el.style.color="var(--yellow)";
+    }
+  }
+
+  if(acct){
+    if(currentUser){
+      acct.textContent=currentUser.email||"Logged in";
+      acct.style.color="var(--green)";
+    }else{
+      acct.textContent="Not logged in";
+      acct.style.color="var(--red)";
+    }
   }
 }
 
 /* ================= INIT ================= */
 (async()=>{
+  await initSupabase();
   await load();
   updateDbStatus();
   render();
