@@ -315,10 +315,10 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 </div>
 
 <div class="grid" id="signalsGrid"></div>
-<div class="journal-list" id="liveTradesList"></div>
-<div class="journal-list" id="archiveList"></div>
+<div class="journal-list" id="liveTradesList" hidden></div>
+<div class="journal-list" id="archiveList" hidden></div>
 
-<div class="wallet-panel" id="walletPane" style="display:none">
+<div class="wallet-panel" id="walletPane" hidden>
   <div class="wallet-hero">
     <div><div class="eyebrow">PAPER WALLET</div><div class="wallet-balance" id="walletBalance">₹0</div><div class="wallet-sub">Available balance</div></div>
     <div class="wallet-invested"><span>Currently Invested</span><b id="walletInvested">₹0</b></div>
@@ -331,7 +331,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <div class="wallet-note">🔒 Auto Trades and manual paper trades can use only the available wallet balance. Capital is reserved when a trade opens and returned with profit/loss when it closes.</div>
   <div class="wallet-history" id="walletHistory"></div>
 </div>
-<div class="reports-panel" id="reportsPane" style="display:none">
+<div class="reports-panel" id="reportsPane" hidden>
   <div class="report-controls">
     <div><label>From</label><input id="reportFrom" type="date"></div>
     <div><label>To</label><input id="reportTo" type="date"></div>
@@ -340,7 +340,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <div id="reportSummary"></div><div id="reportTable"></div>
 </div>
 
-<div class="settings" id="settingsPane" style="display:none">
+<div class="settings" id="settingsPane" hidden>
 <div class="card">
   <h3>⚙️ Settings</h3>
   <label>Moonshot API key (optional)</label>
