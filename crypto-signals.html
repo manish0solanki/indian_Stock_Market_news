@@ -1960,7 +1960,7 @@ function generateReport(){
     '<div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div>'+
     '<div><span>Current Wallet</span><b>'+fmtINR(walletBalance())+'</b></div>'+
     '<div><span>Open Capital</span><b>'+fmtINR(walletInvested())+'</b></div>'+
-    '<div><span>Closed Win Rate</span><b>'+closed.length?Math.round(wins/Math.max(1,closed.length)*100):0+'%</b></div>'+
+    '<div><span>Closed Win Rate</span><b>'+(closed.length?Math.round(wins/closed.length*100):0)+'%</b></div>'+
   '</div>';
 
   const byDay={};
