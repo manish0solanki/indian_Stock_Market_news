@@ -175,12 +175,14 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 
 <div class="tabs">
   <div class="tab active" data-tab="signals">📶 Signals</div>
-  <div class="tab" data-tab="journal">📓 Paper Journal</div>
+  <div class="tab" data-tab="live">🟢 Live Trades <span id="liveTabCount"></span></div>
+  <div class="tab" data-tab="archive">🗄️ Archive <span id="archiveTabCount"></span></div>
   <div class="tab" data-tab="settings">⚙️ Settings</div>
 </div>
 
 <div class="grid" id="signalsGrid"></div>
-<div class="journal-list" id="journalList" style="display:none"></div>
+<div class="journal-list" id="liveTradesList" style="display:none"></div>
+<div class="journal-list" id="archiveList" style="display:none"></div>
 
 <div class="settings" id="settingsPane" style="display:none">
 <div class="card">
@@ -189,7 +191,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <input id="moonKey" type="password" placeholder="sk-...">
   <label>Auto-scan interval (seconds)</label>
   <input id="scanInterval" type="number" min="30" max="600" value="60">
-  <label>Auto-trade minimum confidence</label>
+  <label>Auto-trade minimum confidence %</label>
   <select id="autoConfidence">
     <option value="65">65%</option><option value="70">70%</option>
     <option value="75" selected>75%</option><option value="80">80%</option>
@@ -211,6 +213,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     🧪 All trades are paper trades.<br>
     🤖 Auto Trades opens every new signal at/above your confidence threshold.<br>
     🎯 Running paper trades close automatically when live price reaches TP or SL.<br>
+    💰 Trade capital, TP profit and SL loss are always in INR; Entry/SL/TP prices use the symbol quote currency.<br>
     🔔 Notifications require this page to remain open.<br>
     ⚠️ Score is a setup score, not a win probability.<br>
     🎯 Minimum score: 65 · Winner must lead by 10+<br>
@@ -226,6 +229,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <div class="modal" id="tradeModal">
 <div class="box">
   <h3 id="tmTitle">Paper Trade</h3>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Entry / SL / TP use the symbol quote currency. Capital, TP profit and SL loss are always in INR.</div>
   <div class="row">
     <div><label>Direction</label><input id="tmDir" readonly></div>
     <div><label>Entry (approx)</label><input id="tmEntry" readonly></div>
@@ -1299,8 +1303,8 @@ function calcLivePnL(t){
   let move;
   if(t.dir==="LONG")move=(cp-t.entry)/t.entry;
   else move=(t.entry-cp)/t.entry;
-  const pnl=t.amt*t.lev*move;
-  const rMultiple=move/riskPct; // how many R's of profit/loss
+  const pnl=Number(t.amt||0)*Number(t.lev||1)*move;
+  const rMultiple=riskPct>0?move/riskPct:0;
   return {pnl,cp,rMultiple};
 }
 
@@ -1322,7 +1326,7 @@ function calcClosedPnL(t){
 }
 
 /* ================= RENDER ================= */
-function render(){renderStats();renderSignals();renderJournal();}
+function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();}
 
 function renderStats(){
   const closed=state.journal.filter(t=>t.closed);
@@ -1336,7 +1340,7 @@ function renderStats(){
   $("statsBar").innerHTML=`
     <div class="stat"><div class="v" style="color:var(--blue)">${state.signals.length}</div><div class="l">Active Signals</div></div>
     <div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div>
-    <div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Open</div></div>
+    <div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Live Trades</div></div>
     <div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div>
     <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${fmtINR(pnl)}</div><div class="l">Total P&L</div></div>
     <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
@@ -1382,8 +1386,8 @@ function renderSignals(){
 }
 
 /* ================= JOURNAL (INTERACTIVE) ================= */
-function renderJournal(){
-  const l=$("journalList");
+function renderLiveTrades(){
+  const l=$("liveTradesList");
   if(!state.journal.length){
     l.innerHTML=`<div class="empty">${dbEnabled()&&!currentUser
       ?"Please log in to MarketPulse to view and save paper trades."      :'No paper trades yet.<br>Click "📝 Paper Trade" on any signal to start.'}</div>`;
@@ -1420,8 +1424,8 @@ function renderJournal(){
       <span class="badge ${t.dir==="LONG"?"long":"short"}">${t.dir}</span>
       ${statusBadge}
       <span class="jdetail">
-        Entry $${fmt(t.entry)} → TP $${fmt(t.tp)} / SL $${fmt(t.sl)}<br>
-        ${fmtINR(t.amt)} @ ${t.lev}x · ${t.date}
+        Entry ${(t.quote==="INR"?"₹":"$")}${fmt(t.entry)} → TP ${(t.quote==="INR"?"₹":"$")}${fmt(t.tp)} / SL ${(t.quote==="INR"?"₹":"$")}${fmt(t.sl)}<br>
+        Capital: ₹${fmtINR(t.amt).replace("₹","")} @ ${t.lev}x · ${t.date}
       </span>
       ${pnlHtml}
       <div class="jbtns">
@@ -1433,6 +1437,30 @@ function renderJournal(){
       ${progressHtml}
     </div>`;
   }).join("");
+}
+
+function renderArchive(){
+  const l=$("archiveList");
+  if(!l)return;
+
+  const all=state.journal;
+  const closed=all.filter(t=>t.closed);
+
+  if(!closed.length){
+    l.innerHTML="<div class=\"empty\">No completed trades in Archive yet.</div>";
+    return;
+  }
+
+  state.journal=closed;
+  renderLiveTrades();
+  l.innerHTML=$("liveTradesList").innerHTML;
+  l.querySelectorAll(".jbtns").forEach(x=>x.remove());
+  state.journal=all;
+
+  const count=$("archiveTabCount");
+  if(count)count.textContent="("+closed.length+")";
+  const count=$("liveTabCount");
+  if(count)count.textContent="("+state.journal.filter(t=>!t.closed).length+")";
 }
 
 /* ================= TRADE CRUD ================= */
@@ -1662,9 +1690,11 @@ document.querySelectorAll(".tab").forEach(tab=>{
     tab.classList.add("active");
     const sel=tab.dataset.tab;
     $("signalsGrid").style.display=sel==="signals"?"grid":"none";
-    $("journalList").style.display=sel==="journal"?"flex":"none";
+    $("liveTradesList").style.display=sel==="live"?"flex":"none";
+    $("archiveList").style.display=sel==="archive"?"flex":"none";
     $("settingsPane").style.display=sel==="settings"?"block":"none";
-    if(sel==="journal")updateLivePrices();
+    if(sel==="live") updateLivePrices();
+    if(sel==="archive") renderArchive();
   };
 });
 
@@ -1689,7 +1719,7 @@ $("autoAmount").onchange=()=>{state.autoAmount=Math.max(1,Number($("autoAmount")
 $("autoLeverage").onchange=()=>{state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));};
 
 $("scanBtn").onclick=()=>scan(true);
-$("jrnlBtn").onclick=()=>{document.querySelector('[data-tab="journal"]').click();};
+$("jrnlBtn").onclick=()=>{document.querySelector('[data-tab="live"]').click();};
 function toast(msg){
   const el=$("toast"); el.textContent=msg; el.style.display="block";
   setTimeout(()=>{el.style.display="none";},3500);
@@ -1728,6 +1758,7 @@ function updateDbStatus(){
   updateAutoTradeButton();
   updateDbStatus();
   render();
+  renderArchive();
   await scan(true);
   scheduleNext();
 })();
