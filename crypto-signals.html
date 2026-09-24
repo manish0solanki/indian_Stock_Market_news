@@ -1259,7 +1259,7 @@ async function autoTradeFromSignals(){ if(state.autoTrades) await takeAllQualifi
 async function updateLivePrices(){
   const openTrades=state.journal.filter(t=>!t.closed);
   const syms=[...new Set(openTrades.map(t=>t.sym))];
-  if(!syms.length){ renderJournal(); return; }
+  if(!syms.length){ renderLiveTrades(); renderArchive(); return; }
 
   await Promise.all(syms.map(async sym=>{
     const trade=openTrades.find(x=>x.sym===sym);
@@ -1295,7 +1295,8 @@ async function updateLivePrices(){
       await dbUpdateTrade(t);
     }
   }
-  renderJournal();
+  renderLiveTrades();
+  renderArchive();
 }
 function calcLivePnL(t){
   const cp=state.livePrices[t.sym]||t.entry;
@@ -1457,10 +1458,10 @@ function renderArchive(){
   l.querySelectorAll(".jbtns").forEach(x=>x.remove());
   state.journal=all;
 
-  const count=$("archiveTabCount");
-  if(count)count.textContent="("+closed.length+")";
-  const count=$("liveTabCount");
-  if(count)count.textContent="("+state.journal.filter(t=>!t.closed).length+")";
+  const archiveCount=$("archiveTabCount");
+  if(archiveCount)archiveCount.textContent="("+closed.length+")";
+  const liveCount=$("liveTabCount");
+  if(liveCount)liveCount.textContent="("+state.journal.filter(t=>!t.closed).length+")";
 }
 
 /* ================= TRADE CRUD ================= */
