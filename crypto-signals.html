@@ -92,28 +92,41 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 @media (max-width:600px){
   header{position:relative;padding:14px 12px;display:block}
   header>div:first-child{margin-bottom:12px}
+  h1{font-size:20px}
+  .sub{font-size:11px;line-height:1.35}
   .controls{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-  .controls select,.controls button{width:100%;min-height:42px;padding:8px 7px;font-size:12px}
+  .controls select,.controls button{width:100%;min-height:44px;padding:8px 6px;font-size:12px}
   #autoBtn{grid-column:1/-1}
   .statusbar{padding:9px 12px;gap:8px;font-size:11px}
-  .statusbar #lastSignal{display:none}
+  #lastSignal{display:none}
   .stats{padding:10px 12px;gap:8px}
   .stat{min-width:calc(50% - 4px);padding:10px 12px}
-  .tabs{padding:0 12px 10px}
-  .tab{flex:1;text-align:center;padding:9px 6px;font-size:12px}
-  .grid{grid-template-columns:1fr;gap:10px;padding:0 10px 16px}
-  .card{padding:13px}
-  .journal-list{padding:0 10px 20px}
+  .stat .v{font-size:19px}
+  .tabs{padding:0 10px 10px}
+  .tab{flex:1;text-align:center;padding:9px 5px;font-size:12px}
+  .grid{grid-template-columns:1fr;gap:10px;padding:0 10px 18px}
+  .card{padding:13px;border-radius:12px}
+  .top{gap:8px}
+  .sym{font-size:15px}
+  .price{font-size:17px}
+  .levels{grid-template-columns:1fr 1fr;gap:7px}
+  .actions{gap:6px}
+  .actions button{min-height:42px;padding:8px 5px}
+  .journal-list{padding:0 10px 20px;gap:9px}
   .jrow{display:grid;grid-template-columns:auto auto 1fr;gap:8px;padding:12px}
-  .jdetail{grid-column:1/-1}
+  .jdetail{grid-column:1/-1;line-height:1.5}
   .jrow .jbtns{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-  .jrow .jbtns button{min-height:40px;padding:6px 4px}
+  .jrow .jbtns button{min-height:40px;padding:6px 3px}
+  .progress{grid-column:1/-1}
   .box{width:calc(100vw - 20px);max-height:92vh;overflow:auto;padding:16px}
   .box .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #tradeCalc{grid-template-columns:1fr 1fr!important}
 }
 @media (max-width:380px){
   .controls{grid-template-columns:1fr}
   #autoBtn{grid-column:auto}
+  .box .row{grid-template-columns:1fr}
+  #tradeCalc{grid-template-columns:1fr!important}
 }
 </style>
 <base target="_blank">
@@ -137,7 +150,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <select id="quoteSelect">
     <option value="USDT" selected>USDT pairs</option>
     <option value="BTC">BTC pairs</option>
-    <option value="INR">INR pairs</option>
+    <option value="INR">INR (converted)</option>
   </select>
   <button id="autoBtn" class="primary">⏸ Auto: ON</button>
   <button id="scanBtn">🔍 Scan Now</button>
@@ -177,7 +190,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <div class="settings-info">
     💾 Storage: <span id="dbStatus">Checking database...</span><br>
     👤 Account: <span id="accountStatus">Checking login...</span><br>
-    📊 Binance public API only.<br>
+    📊 Binance public API only. INR mode converts Binance USDT prices to INR; it is not a native Binance INR market.<br>
     🚫 No CoinSwitch API.<br>
     🚫 No automatic order execution.<br>
     🧪 All trades are paper trades.<br>
@@ -209,6 +222,14 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <div><label>Leverage</label>
       <select id="tmLev"><option>1</option><option>2</option><option>3</option><option>5</option></select>
     </div>
+  </div>
+  <div id="tradeCalc" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+    <div class="lvl"><div class="k">Position Size</div><div class="val" id="calcPosition">₹0</div></div>
+    <div class="lvl"><div class="k">Your Capital</div><div class="val" id="calcCapital">₹0</div></div>
+    <div class="lvl tp"><div class="k">Profit if TP Hits</div><div class="val" id="calcTPProfit">+₹0</div></div>
+    <div class="lvl tp"><div class="k">Final after TP</div><div class="val" id="calcTPFinal">₹0</div></div>
+    <div class="lvl sl"><div class="k">Loss if SL Hits</div><div class="val" id="calcSLLoss">-₹0</div></div>
+    <div class="lvl sl"><div class="k">Final after SL</div><div class="val" id="calcSLFinal">₹0</div></div>
   </div>
   <div style="display:flex;gap:10px;margin-top:18px">
     <button class="primary" style="flex:1" onclick="saveTrade()">💾 Save Paper Trade</button>
@@ -457,6 +478,7 @@ function dbTradeToUI(t){
     id:t.id,
     signalId:t.signal_id,
     sym:t.pair||((t.symbol||"")+(t.quote||"USDT")),
+    quote:t.quote||"USDT",
     dir:t.direction,
     entry:Number(t.entry_price),
     sl:Number(t.stop_loss),
@@ -497,8 +519,7 @@ async function dbSaveTrade(t,signal){
     quote:signal?.quote||state.quote,
     direction:t.dir,
     timeframe:signal?.timeframe||state.tf,
-    entry_price:Number(t.entry),
-    stop_loss:Number(t.sl),
+    entry_price:Number(t.entry),    stop_loss:Number(t.sl),
     take_profit:Number(t.tp),
     amount_inr:Number(t.amt)||0,
     leverage:Number(t.lev)||1,
@@ -673,29 +694,93 @@ $("notifyBtn").onclick = async()=>{
 let exchangeInfoCache=null;
 let exchangeInfoFetchedAt=0;
 let availablePairs=[];
+let usdInrRate=null;
+let usdInrFetchedAt=0;
 
-async function getAvailablePairs(quote){
+async function getExchangeInfo(){
   const now=Date.now();
-  if(!exchangeInfoCache || now-exchangeInfoFetchedAt>10*60*1000){
-    const r=await fetch("https://api.binance.com/api/v3/exchangeInfo");
-    if(!r.ok) throw new Error("Binance exchangeInfo HTTP "+r.status);
-    const d=await r.json();
-    if(!d || !Array.isArray(d.symbols)) throw new Error("Invalid Binance exchangeInfo response");
-    exchangeInfoCache=d.symbols;
-    exchangeInfoFetchedAt=now;
+  if(exchangeInfoCache && now-exchangeInfoFetchedAt<10*60*1000){
+    return exchangeInfoCache;
   }
-  const q=String(quote||"USDT").toUpperCase();
-  return exchangeInfoCache.filter(x=>x.status==="TRADING" && x.quoteAsset===q && COINS.includes(x.baseAsset)).map(x=>x.symbol);
+
+  const r=await fetch("https://api.binance.com/api/v3/exchangeInfo");
+  if(!r.ok) throw new Error("Binance exchangeInfo HTTP "+r.status);
+
+  const d=await r.json();
+  if(!d || !Array.isArray(d.symbols)){
+    throw new Error("Invalid Binance exchangeInfo response");
+  }
+
+  exchangeInfoCache=d.symbols;
+  exchangeInfoFetchedAt=now;
+  return exchangeInfoCache;
 }
 
-function pairCurrency(){ return state.quote==="INR" ? "₹" : "$"; }
+async function getUsdInr(){
+  const now=Date.now();
+
+  if(usdInrRate && now-usdInrFetchedAt<12*60*60*1000){
+    return usdInrRate;
+  }
+
+  const r=await fetch("https://open.er-api.com/v6/latest/USD");
+  if(!r.ok) throw new Error("USD/INR service HTTP "+r.status);
+
+  const d=await r.json();
+  const rate=Number(d?.rates?.INR);
+
+  if(!Number.isFinite(rate) || rate<=0){
+    throw new Error("USD/INR rate unavailable");
+  }
+
+  usdInrRate=rate;
+  usdInrFetchedAt=now;
+  return rate;
+}
+
+async function getAvailablePairs(quote){
+  const q=String(quote||"USDT").toUpperCase();
+  const symbols=await getExchangeInfo();
+
+  // INR mode uses Binance USDT market data and converts the displayed
+  // price/levels to INR. This keeps the scanner working even when Binance
+  // does not list a native BTCINR/ETHINR spot symbol.
+  const sourceQuote=q==="INR" ? "USDT" : q;
+
+  return symbols
+    .filter(x =>
+      x.status==="TRADING" &&
+      x.quoteAsset===sourceQuote &&
+      COINS.includes(x.baseAsset) &&
+      !(sourceQuote==="BTC" && x.baseAsset==="BTC")
+    )
+    .map(x=>x.symbol);
+}
+
+function pairCurrency(){
+  return state.quote==="INR" ? "₹" : "$";
+}
+
+function displayPairFromSource(sourceSymbol){
+  if(state.quote!=="INR") return sourceSymbol;
+
+  const base=sourceSymbol.endsWith("USDT")
+    ? sourceSymbol.slice(0,-4)
+    : sourceSymbol;
+
+  return base+"INR";
+}
 
 function baseSymbolFromPair(pair){
-  const q=state.quote||"USDT";
-  return pair.endsWith(q) ? pair.slice(0,-q.length) : pair;
+  const p=String(pair||"");
+  if(p.endsWith("INR")) return p.slice(0,-3);
+  if(p.endsWith("USDT")) return p.slice(0,-4);
+  if(p.endsWith("BTC")) return p.slice(0,-3);
+  return p;
 }
 
 /* ================= BINANCE DATA ================= */
+
 async function fetchKlines(symbol,tf){
   const url=`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${tf}&limit=160`;
   const r=await fetch(url);
@@ -706,12 +791,36 @@ async function fetchKlines(symbol,tf){
   return raw.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
 }
 
-async function fetchPrice(symbol){
+async function fetchPrice(symbol, quoteOverride=null){
   try{
-    const r=await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+    const q=quoteOverride || state.quote || "USDT";
+
+    if(q==="INR" || String(symbol).endsWith("INR")){
+      const base=baseSymbolFromPair(symbol);
+      const fx=await getUsdInr();
+      const source=base+"USDT";
+      const r=await fetch(
+        "https://api.binance.com/api/v3/ticker/price?symbol="+source
+      );
+      if(!r.ok) return null;
+
+      const d=await r.json();
+      const usdPrice=Number(d.price);
+
+      return Number.isFinite(usdPrice) ? usdPrice*fx : null;
+    }
+
+    const r=await fetch(
+      "https://api.binance.com/api/v3/ticker/price?symbol="+symbol
+    );
+    if(!r.ok) return null;
+
     const d=await r.json();
     return Number(d.price);
-  }catch(e){return null;}
+  }catch(e){
+    console.warn("Price fetch failed:",symbol,e);
+    return null;
+  }
 }
 
 /* ================= INDICATORS ================= */
@@ -838,7 +947,7 @@ async function scan(manual=false){
   $("scanBtn").disabled=true;
   $("scanBtn").textContent="⏳ Scanning...";
   $("connDot").className="dot on";
-  $("connTxt").textContent="Checking Binance pairs...";
+  $("connTxt").textContent="Checking Binance markets...";
 
   const prevSigs=new Set(state.signals.map(s=>s.sym+"_"+s.dir));
   state.signals=[];
@@ -849,19 +958,28 @@ async function scan(manual=false){
   state.quote=q;
 
   let ok=0,fail=0;
+  let fx=1;
   const results=[];
 
   try{
     availablePairs=await getAvailablePairs(q);
 
+    if(q==="INR"){
+      fx=await getUsdInr();
+    }
+
     if(!availablePairs.length){
       $("connDot").className="dot off";
-      $("connTxt").textContent=\`⚠️ No \${q} pairs available\`;
+      $("connTxt").textContent="⚠️ No supported pairs";
       state.scanTime=new Date();
       state.scans++;
       $("scanCount").textContent=state.scans;
       render();
-      if(manual) toast(\`⚠️ Binance currently has no supported \${q} pairs in the scanner universe.\`);
+
+      if(manual){
+        toast("⚠️ No supported Binance pairs found for "+q+".");
+      }
+
       $("scanBtn").disabled=false;
       $("scanBtn").textContent="🔍 Scan Now";
       return;
@@ -869,66 +987,139 @@ async function scan(manual=false){
 
     for(let s=0;s<availablePairs.length;s+=5){
       const batch=availablePairs.slice(s,s+5);
-      const batchRes=await Promise.all(batch.map(async sym=>{
+
+      const batchRes=await Promise.all(batch.map(async sourceSym=>{
         try{
-          const [candles,tickerR]=await Promise.all([
-            fetchKlines(sym,tf),
-            fetch(\`https://api.binance.com/api/v3/ticker/24hr?symbol=\${sym}\`)
+          const [rawCandles,tickerR]=await Promise.all([
+            fetchKlines(sourceSym,tf),
+            fetch("https://api.binance.com/api/v3/ticker/24hr?symbol="+sourceSym)
           ]);
+
           if(!tickerR.ok) throw new Error("Ticker failed");
+
           const td=await tickerR.json();
+
+          let candles=rawCandles;
+          let price=Number(td.lastPrice);
+
+          if(q==="INR"){
+            candles=rawCandles.map(c=>({
+              t:c.t,
+              o:c.o*fx,
+              h:c.h*fx,
+              l:c.l*fx,
+              c:c.c*fx,
+              v:c.v
+            }));
+            price=price*fx;
+          }
+
           ok++;
-          return analyze(candles,sym,{chg:Number(td.priceChangePercent)});
+
+          const displaySym=displayPairFromSource(sourceSym);
+          const signal=analyze(
+            candles,
+            displaySym,
+            {chg:Number(td.priceChangePercent)}
+          );
+
+          if(signal){
+            signal.sourcePair=sourceSym;
+            signal.quote=q;
+            signal.price=price;
+          }
+
+          return signal;
         }catch(e){
           fail++;
-          console.warn(sym,e);
+          console.warn(sourceSym,e);
           return null;
         }
       }));
+
       results.push(...batchRes);
     }
 
-    state.signals=results.filter(s=>s&&s.dir&&s.rr>=2&&s.score>=MIN_SCORE).sort((a,b)=>b.score-a.score);
+    state.signals=results
+      .filter(s=>s&&s.dir&&s.rr>=2&&s.score>=MIN_SCORE)
+      .sort((a,b)=>b.score-a.score);
 
-    if(dbEnabled() && state.signals.length) dbSaveSignals(state.signals);
+    if(dbEnabled() && state.signals.length){
+      dbSaveSignals(state.signals);
+    }
 
     state.scanTime=new Date();
     state.scans++;
     $("scanCount").textContent=state.scans;
 
     const threshold=Math.max(1,Math.ceil(availablePairs.length*.75));
+
     if(ok>=threshold){
       $("connDot").className="dot on";
-      $("connTxt").textContent=\`Connected (\${ok}/\${availablePairs.length})\`;
+      $("connTxt").textContent=
+        q==="INR"
+          ? "Connected ("+ok+"/"+availablePairs.length+") · INR converted"
+          : "Connected ("+ok+"/"+availablePairs.length+")";
     }else{
       $("connDot").className="dot off";
-      $("connTxt").textContent=\`⚠️ \${ok}/\${availablePairs.length} pairs\`;
+      $("connTxt").textContent="⚠️ "+ok+"/"+availablePairs.length+" pairs";
     }
 
     const newSigs=state.signals.filter(s=>{
       const key=s.sym+"_"+s.dir;
+
       if(prevSigs.has(key)) return false;
+
       const last=recentAlerts[key];
-      if(last && Date.now()-last<ALERT_COOLDOWN) return false;
+
+      if(last && Date.now()-last<ALERT_COOLDOWN){
+        return false;
+      }
+
       recentAlerts[key]=Date.now();
       return true;
     });
 
     if(newSigs.length && state.scans>1){
-      const s=newSigs[0], cur=pairCurrency();
-      const msg=\`\${s.dir} \${s.sym} @ \${cur}\${fmt(s.price)} → TP \${cur}\${fmt(s.tp)} / SL \${cur}\${fmt(s.sl)} (1:\${s.rr.toFixed(1)}) Score \${s.score}\`;
+      const s=newSigs[0];
+      const cur=pairCurrency();
+
+      const msg=
+        s.dir+" "+s.sym+
+        " @ "+cur+fmt(s.price)+
+        " → TP "+cur+fmt(s.tp)+
+        " / SL "+cur+fmt(s.sl)+
+        " (1:"+s.rr.toFixed(1)+") Score "+s.score;
+
       beep();
       notify("⚡ New Crypto Signal",msg);
-      $("lastSignal").innerHTML=\`<span style="color:var(--green)">🆕 <b>\${s.sym} \${s.dir}</b> \${state.scanTime.toLocaleTimeString()}</span>\`;
+
+      $("lastSignal").innerHTML=
+        '<span style="color:var(--green)">🆕 <b>'+
+        s.sym+" "+s.dir+
+        "</b> "+
+        state.scanTime.toLocaleTimeString()+
+        "</span>";
+
       toast("🆕 "+msg);
+
     }else if(manual){
-      toast(\`✓ Scan complete — \${state.signals.length} valid setups (\${ok} ok, \${fail} failed)\`);
+      toast(
+        "✓ Scan complete — "+
+        state.signals.length+
+        " valid setups ("+ok+" ok, "+fail+" failed)"
+      );
     }
+
   }catch(e){
     console.error(e);
+
     $("connDot").className="dot off";
-    $("connTxt").textContent="⚠️ Binance pair check failed";
-    if(manual) toast("⚠️ "+(e.message||"Could not load Binance pairs"));
+    $("connTxt").textContent="⚠️ Market data check failed";
+
+    if(manual){
+      toast("⚠️ "+(e.message||"Could not load market data"));
+    }
   }
 
   $("scanBtn").disabled=false;
@@ -981,7 +1172,8 @@ async function updateLivePrices(){
   const syms=[...new Set(state.journal.filter(t=>!t.closed).map(t=>t.sym))];
   if(!syms.length)return;
   await Promise.all(syms.map(async sym=>{
-    const p=await fetchPrice(sym);
+    const trade=state.journal.find(x=>x.sym===sym&&!x.closed);
+    const p=await fetchPrice(sym,trade?.quote||state.quote);
     if(p)state.livePrices[sym]=p;
   }));
 
@@ -997,7 +1189,6 @@ async function updateLivePrices(){
 
   renderJournal();
 }
-
 function calcLivePnL(t){
   const cp=state.livePrices[t.sym]||t.entry;
   const riskPct=Math.abs(t.entry-t.sl)/t.entry;
@@ -1111,7 +1302,7 @@ function renderJournal(){
       statusBadge=`<span class="badge wait">RUNNING</span>`;
       pnlHtml=`<div>
         <div class="live-pnl ${live.pnl>=0?"up":"down"}">${live.pnl>=0?"+":""}${fmtINR(live.pnl)}</div>
-        <div class="pnl-label">${rTxt} · Live @ $${fmt(live.cp)}</div>
+        <div class="pnl-label">${rTxt} · Live @ ${t.quote==="INR"?"₹":"$"}${fmt(live.cp)}</div>
       </div>`;
       // Progress bar toward TP/SL
       const range=Math.abs(t.tp-t.sl);
@@ -1148,16 +1339,49 @@ function openTrade(idx){
   $("tmDir").value=s.dir; $("tmEntry").value=fmt(s.entry);
   $("tmSL").value=fmt(s.sl); $("tmTP").value=fmt(s.tp);
   $("tradeModal").classList.add("show");
+  $("tmAmt").value="";
+  updateTradeCalculator();
 }
 function closeModal(){$("tradeModal").classList.remove("show");}
+function updateTradeCalculator(){
+  const s=state.signals[curIdx];
+  if(!s) return;
+
+  const amount=Number($("tmAmt").value)||0;
+  const leverage=Number($("tmLev").value)||1;
+
+  const position=amount*leverage;
+
+  const riskPct=
+    s.entry>0
+      ? Math.abs(s.entry-s.sl)/s.entry
+      : 0;
+
+  const rewardPct=
+    s.entry>0
+      ? Math.abs(s.tp-s.entry)/s.entry
+      : 0;
+
+  const tpProfit=position*rewardPct;
+  const slLoss=position*riskPct;
+
+  $("calcPosition").textContent=fmtINR(position);
+  $("calcCapital").textContent=fmtINR(amount);
+  $("calcTPProfit").textContent="+"+fmtINR(tpProfit);
+  $("calcTPFinal").textContent=fmtINR(amount+tpProfit);
+  $("calcSLLoss").textContent="-"+fmtINR(slLoss);
+  $("calcSLFinal").textContent=fmtINR(Math.max(0,amount-slLoss));
+}
+
+$("tmAmt").addEventListener("input",updateTradeCalculator);
+$("tmLev").addEventListener("change",updateTradeCalculator);
+
 async function saveTrade(){
   const s=state.signals[curIdx]; if(!s)return;
 
   const amt=Number($("tmAmt").value)||0;
   const lev=Number($("tmLev").value);
   if(amt<=0){toast("⚠️ Enter a paper-trade amount.");return;}
-
-  const notes=prompt("Notes (optional):","")||"";
 
   const trade={
     sym:s.sym,
