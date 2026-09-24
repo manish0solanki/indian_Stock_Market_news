@@ -89,12 +89,19 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .sl-hit{color:var(--red)}
 .running{color:var(--yellow)}
 /* ================= TRADE TABS / CARDS ================= */
+.trade-list{
+  width:100%;
+}
+#liveTradesList,#archiveList{
+  width:100%;
+}
 .trade-card{
   background:linear-gradient(145deg,var(--card),#101521);
   border:1px solid var(--border);
   border-radius:16px;
   padding:16px;
   box-shadow:0 8px 24px rgba(0,0,0,.16);
+  min-width:0;
 }
 .trade-card.active-trade{border-color:rgba(79,140,255,.30)}
 .trade-card.archived{opacity:.94}
@@ -107,12 +114,14 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .status-tp{color:var(--green);border-color:rgba(22,199,132,.35);background:rgba(22,199,132,.10)}
 .status-sl{color:var(--red);border-color:rgba(234,57,67,.35);background:rgba(234,57,67,.10)}
 .status-manual{color:var(--muted);border-color:var(--border);background:var(--card2)}
-.trade-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
+.trade-levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:8px}
 .trade-levels>div,.trade-money>div{
-  background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px;
+  background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px;min-width:0;
 }
-.trade-levels span,.trade-money span{display:block;font-size:9px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px}
-.trade-levels b{font-family:monospace;font-size:13px}
+.trade-levels span,.trade-money span,.trade-current span{display:block;font-size:9px;color:var(--muted);letter-spacing:.5px;margin-bottom:4px}
+.trade-levels b{font-family:monospace;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trade-current b{font-family:monospace;font-size:14px}
+.trade-current.unavailable b{color:var(--muted)}
 .sl-text{color:var(--red)}
 .tp-text{color:var(--green)}
 .trade-money{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:7px;margin-top:7px}
@@ -125,17 +134,36 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .trade-progress span{display:block;height:100%;border-radius:4px;transition:width .4s}
 .trade-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;color:var(--muted);font-size:10px}
 .trade-footer .jbtns{display:flex;gap:5px}
+
+@media(min-width:900px){
+  #liveTradesList,#archiveList{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+    align-items:stretch;
+  }
+  #liveTradesList .empty,#archiveList .empty{
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:899px){
+  #liveTradesList,#archiveList{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+}
+
 @media(max-width:600px){
   .trade-card{padding:13px;border-radius:14px}
   .trade-levels{grid-template-columns:1fr 1fr}
-  .trade-levels>div:first-child{grid-column:1/-1}
   .trade-money{grid-template-columns:1fr 1fr}
   .trade-money>div:last-child{grid-column:1/-1}
   .trade-footer{display:block}
   .trade-footer .jbtns{margin-top:9px;display:grid;grid-template-columns:repeat(4,1fr)}
   .trade-footer .jbtns button{min-height:38px;padding:5px 3px}
 }
-
 /* ================= MOBILE RESPONSIVE ================= */
 @media (max-width:600px){
   header{position:relative;padding:14px 12px;display:block}
@@ -1449,21 +1477,38 @@ function renderTradeCard(t, ri, archived=false){
 
   let statusBadge="";
   let pnlHtml="";
+  let currentPriceHtml="";
   let progressHtml="";
+
+  // Current price is fetched by updateLivePrices() for open trades.
+  // For archived trades, currentPrice is the last price captured before close.
+  const current=Number(t.currentPrice);
+  if(Number.isFinite(current) && current>0){
+    currentPriceHtml=`
+      <div class="trade-current">
+        <span>CURRENT PRICE</span>
+        <b>${price(current)}</b>
+      </div>`;
+  }else{
+    currentPriceHtml=`
+      <div class="trade-current unavailable">
+        <span>CURRENT PRICE</span>
+        <b>--</b>
+      </div>`;
+  }
 
   if(t.closed){
     const pnl=calcClosedPnL(t);
-    const isWin=pnl>=0;
     const statusText=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":"MANUAL CLOSE";
     statusBadge=`<span class="trade-status ${t.status==="tp"?"status-tp":t.status==="sl"?"status-sl":"status-manual"}">${statusText}</span>`;
-    pnlHtml=`<div class="trade-pnl ${isWin?"profit":"loss"}">${isWin?"+":""}${fmtINR(pnl)}</div>`;
+    pnlHtml=`<div class="trade-pnl ${pnl>=0?"profit":"loss"}">${pnl>=0?"+":""}${fmtINR(pnl)}</div>`;
   }else{
     const live=calcLivePnL(t);
     const rTxt=live.rMultiple>=0?`+${live.rMultiple.toFixed(1)}R`:`${live.rMultiple.toFixed(1)}R`;
     statusBadge='<span class="trade-status status-running">● RUNNING</span>';
     pnlHtml=`
       <div class="trade-pnl ${live.pnl>=0?"profit":"loss"}">${live.pnl>=0?"+":""}${fmtINR(live.pnl)}</div>
-      <div class="trade-live-price">${rTxt} · Live ${price(live.cp)}</div>`;
+      <div class="trade-live-price">${rTxt}</div>`;
 
     const range=Math.abs(t.tp-t.sl);
     const fromSL=Math.abs(live.cp-t.sl);
@@ -1497,6 +1542,7 @@ function renderTradeCard(t, ri, archived=false){
 
       <div class="trade-levels">
         <div><span>ENTRY</span><b>${price(t.entry)}</b></div>
+        <div class="trade-current-cell">${currentPriceHtml}</div>
         <div><span>STOP LOSS</span><b class="sl-text">${price(t.sl)}</b></div>
         <div><span>TAKE PROFIT</span><b class="tp-text">${price(t.tp)}</b></div>
       </div>
