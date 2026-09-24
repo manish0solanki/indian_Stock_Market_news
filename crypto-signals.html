@@ -12,6 +12,7 @@
   --yellow:#f0b90b; --blue:#4f8cff; --purple:#9b6bff;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--text);font-family:Segoe UI,system-ui,sans-serif;min-height:100vh}
 header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--card);position:sticky;top:0;z-index:50}
 h1{font-size:20px} h1 span{color:var(--yellow)}
@@ -158,10 +159,39 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 }
 
 @media(max-width:899px){
+  /* Keep trade panels hidden until their tab is selected. */
   #liveTradesList,#archiveList{
+    display:none;
+  }
+  #liveTradesList.panel-visible,#archiveList.panel-visible{
     display:flex;
     flex-direction:column;
     gap:12px;
+  }
+}
+.trade-tools{
+  padding:0 20px 12px;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+}
+.trade-tools label{
+  color:var(--muted);
+  font-size:11px;
+}
+.trade-tools select{
+  min-width:170px;
+}
+@media(max-width:600px){
+  .trade-tools{
+    padding:0 10px 10px;
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .trade-tools select{
+    width:100%;
+    min-height:42px;
   }
 }
 
@@ -266,6 +296,22 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <div class="tab" data-tab="wallet">💰 Wallet <span id="walletBalanceTab"></span></div>
   <div class="tab" data-tab="reports">📊 Reports</div>
   <div class="tab" data-tab="settings">⚙️ Settings</div>
+</div>
+
+<div class="trade-tools" id="tradeTools" style="display:none">
+  <label for="tradeSort">Sort trades:</label>
+  <select id="tradeSort">
+    <option value="newest">New → Old</option>
+    <option value="oldest">Old → New</option>
+    <option value="pnlHigh">P&L High → Low</option>
+    <option value="pnlLow">P&L Low → High</option>
+    <option value="capitalHigh">Capital High → Low</option>
+    <option value="capitalLow">Capital Low → High</option>
+    <option value="entryHigh">Entry High → Low</option>
+    <option value="entryLow">Entry Low → High</option>
+    <option value="symbolAZ">Symbol A → Z</option>
+    <option value="symbolZA">Symbol Z → A</option>
+  </select>
 </div>
 
 <div class="grid" id="signalsGrid"></div>
@@ -835,6 +881,7 @@ const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null;
+let tradeSort=localStorage.getItem("cs_trade_sort")||"newest";
 const $ = id => document.getElementById(id);
 
 /* ================= STORAGE ================= */
@@ -1672,6 +1719,33 @@ function renderTradeCard(t, ri, archived=false){
     </div>`;
 }
 
+function tradeSortValue(t){
+  const sort=tradeSort;
+  if(sort==="pnlHigh"||sort==="pnlLow"){
+    return t.closed ? calcClosedPnL(t) : calcLivePnL(t).pnl;
+  }
+  if(sort==="capitalHigh"||sort==="capitalLow") return Number(t.amt)||0;
+  if(sort==="entryHigh"||sort==="entryLow") return Number(t.entry)||0;
+  if(sort==="symbolAZ"||sort==="symbolZA") return String(t.sym||"").toUpperCase();
+  const dt=new Date(t.date||t.created_at||0).getTime();
+  return Number.isFinite(dt)?dt:0;
+}
+
+function sortTrades(list){
+  const arr=list.slice();
+  const sort=tradeSort;
+  arr.sort((a,b)=>{
+    const av=tradeSortValue(a), bv=tradeSortValue(b);
+    if(typeof av==="string"||typeof bv==="string"){
+      const cmp=String(av).localeCompare(String(bv));
+      return sort==="symbolZA" ? -cmp : cmp;
+    }
+    if(sort==="oldest"||sort==="pnlLow"||sort==="capitalLow"||sort==="entryLow") return av-bv;
+    return bv-av;
+  });
+  return arr;
+}
+
 function renderLiveTrades(){
   const l=$("liveTradesList");
   if(!l)return;
@@ -1685,7 +1759,7 @@ function renderLiveTrades(){
       <span>Open a paper trade from Signals or enable Auto Trades.</span>
     </div>`;
   }else{
-    l.innerHTML=live.slice().reverse().map(t=>renderTradeCard(t,state.journal.indexOf(t),false)).join("");
+    l.innerHTML=sortTrades(live).map(t=>renderTradeCard(t,state.journal.indexOf(t),false)).join("");
   }
 
   const count=$("liveTabCount");
@@ -1705,7 +1779,7 @@ function renderArchive(){
       <span>Completed TP/SL/manual trades will appear here.</span>
     </div>`;
   }else{
-    l.innerHTML=archived.slice().reverse().map(t=>renderTradeCard(t,state.journal.indexOf(t),true)).join("");
+    l.innerHTML=sortTrades(archived).map(t=>renderTradeCard(t,state.journal.indexOf(t),true)).join("");
   }
 
   const count=$("archiveTabCount");
@@ -1978,23 +2052,40 @@ function exportReportCSV(){
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="crypto-paper-trade-report-"+r.from+"-to-"+r.to+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-document.querySelectorAll(".tab").forEach(tab=>{
-  tab.onclick=()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    tab.classList.add("active");
-    const sel=tab.dataset.tab;
+function selectAppTab(sel){
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===sel));
 
-    $("signalsGrid").style.display=sel==="signals"?"grid":"none";
-    $("settingsPane").style.display=sel==="settings"?"block":"none";
-    $("walletPane").style.display=sel==="wallet"?"block":"none";
-    $("reportsPane").style.display=sel==="reports"?"block":"none";
-    $("liveTradesList").classList.toggle("panel-visible",sel==="live");
-    $("archiveList").classList.toggle("panel-visible",sel==="archive");
-    if(sel==="live") updateLivePrices();
-    if(sel==="archive") renderArchive();
-    if(sel==="wallet") renderWallet();
-    if(sel==="reports") generateReport();
-  };
+  /* Use the HTML hidden property rather than relying on inline display.
+     This is more reliable across Android browsers and responsive CSS. */
+  $("signalsGrid").hidden=sel!=="signals";
+  $("settingsPane").hidden=sel!=="settings";
+  $("walletPane").hidden=sel!=="wallet";
+  $("reportsPane").hidden=sel!=="reports";
+  $("liveTradesList").hidden=sel!=="live";
+  $("archiveList").hidden=sel!=="archive";
+
+  $("liveTradesList").classList.toggle("panel-visible",sel==="live");
+  $("archiveList").classList.toggle("panel-visible",sel==="archive");
+
+  const tools=$("tradeTools");
+  if(tools) tools.style.display=(sel==="live"||sel==="archive")?"flex":"none";
+
+  if(sel==="live") updateLivePrices();
+  if(sel==="archive") renderArchive();
+  if(sel==="wallet") renderWallet();
+  if(sel==="reports") generateReport();
+}
+
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",()=>selectAppTab(tab.dataset.tab));
+});
+
+$("tradeSort").value=tradeSort;
+$("tradeSort").addEventListener("change",()=>{
+  tradeSort=$("tradeSort").value;
+  localStorage.setItem("cs_trade_sort",tradeSort);
+  renderLiveTrades();
+  renderArchive();
 });
 
 /* ================= UI EVENTS ================= */
@@ -2063,7 +2154,9 @@ function updateDbStatus(){
   updateAutoTradeButton();
   updateDbStatus();
   render();
+  renderLiveTrades();
   renderArchive();
+  selectAppTab("signals");
   await scan(true);
   scheduleNext();
 })();
