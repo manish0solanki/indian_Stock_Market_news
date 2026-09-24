@@ -1,81 +1,1143 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#2E1F82"><title>MarketPulse — Crypto Signals</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CryptoSignal Tracker — TEST MODE</title>
 <style>
-:root{--i:#2E1F82;--bg:#0F0F1A;--s:#1A1A2E;--s2:#222240;--b:#2A2A4A;--t:#E8E8F0;--m:#A0A0B8;--d:#6B6B8A;--g:#4ADE80;--r:#F87171;--y:#F5A623;--bl:#60A5FA}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif}.top{height:58px;background:var(--i);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:10}.brand{font-weight:800}.right{display:flex;gap:8px;align-items:center}.btn{border:1px solid var(--b);background:var(--s);color:var(--t);border-radius:8px;padding:8px 11px;cursor:pointer;font-size:12px;font-weight:700}.btn:hover{background:var(--s2)}.primary{background:var(--i);border-color:#5b4fc0;color:#fff}.wrap{max-width:1450px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;gap:15px;align-items:flex-end;margin-bottom:18px}.head h1{margin:0 0 5px;font-size:25px}.head p{margin:0;color:var(--m);font-size:12px}.status{display:flex;gap:12px;flex-wrap:wrap}.pill{background:var(--s);border:1px solid var(--b);border-radius:20px;padding:8px 12px;font-size:11px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);margin-right:6px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:16px}.toprow{display:flex;justify-content:space-between;gap:10px}.sym{font:800 17px monospace}.sub{color:var(--m);font-size:10px;margin-top:3px}.badge{display:inline-block;padding:4px 9px;border-radius:20px;font-size:10px;font-weight:800}.long{color:var(--g);background:rgba(74,222,128,.12)}.short{color:var(--r);background:rgba(248,113,113,.12)}.wait{color:var(--y);background:rgba(245,166,35,.12)}.levels{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.level{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:9px}.k{font-size:9px;color:var(--d);text-transform:uppercase}.v{font:700 14px monospace;margin-top:4px}.entry .v{color:var(--bl)}.sl .v{color:var(--r)}.tp .v{color:var(--g)}.rr .v{color:var(--y)}.reason{margin-top:12px;color:var(--m);font-size:11px;line-height:1.5}.actions{display:flex;gap:8px;margin-top:14px}.actions .btn{flex:1}.trade{margin-top:20px}.trade h2{font-size:17px}.trade-table{overflow:auto;background:var(--s);border:1px solid var(--b);border-radius:12px}.trade-table table{width:100%;border-collapse:collapse;min-width:850px}.trade-table th{background:var(--s2);color:var(--d);font-size:9px;text-transform:uppercase;text-align:left;padding:10px}.trade-table td{border-top:1px solid var(--b);padding:10px;font-size:11px}.empty{padding:35px;text-align:center;color:var(--d);background:var(--s);border:1px solid var(--b);border-radius:12px}.notice{padding:11px 13px;border-radius:8px;margin-bottom:14px;font-size:12px;display:none}.notice.error{display:block;background:rgba(248,113,113,.12);color:var(--r)}.notice.ok{display:block;background:rgba(74,222,128,.12);color:var(--g)}.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.login-card{width:min(420px,100%);background:var(--s);border:1px solid var(--b);border-radius:14px;padding:25px}.login-card h1{margin:0 0 8px}.login-card p{font-size:12px;color:var(--m)}input{width:100%;box-sizing:border-box;background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:7px;padding:10px;margin:6px 0 10px}.login-card .btn{width:100%;margin-top:5px}.hidden{display:none!important}.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:15px;z-index:50}.modal-bg.open{display:flex}.modal{width:min(430px,100%);background:var(--s);border:1px solid var(--b);border-radius:14px;padding:18px}.modal h2{margin:0 0 14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal label{display:block;color:var(--m);font-size:10px;margin-bottom:4px}.modal input{margin:0 0 10px}.modal-foot{display:flex;gap:8px;margin-top:10px}.modal-foot .btn{flex:1}@media(max-width:650px){.wrap{padding:14px}.head{align-items:flex-start;flex-direction:column}.row{grid-template-columns:1fr}}
-</style></head><body>
-<div id="loginView" class="login"><div class="login-card">
-<h1>⚡ MarketPulse Crypto Signals</h1><p>Sign in with your existing MarketPulse account. Paper trades are stored in Supabase.</p>
-<div id="loginNotice" class="notice"></div><label>Email or username</label><input id="email" autocomplete="username" placeholder="Email or admin">
-<label>Password</label><input id="password" type="password" autocomplete="current-password"><button class="btn primary" id="loginBtn">Sign in</button>
-</div></div>
-<div id="app" class="hidden"><header class="top"><div class="brand">◆ MarketPulse · Crypto Signals</div><div class="right"><span id="userEmail" style="font-size:11px;color:#fff9"></span><button class="btn" id="backBtn">← MarketPulse</button><button class="btn" id="logoutBtn">Logout</button></div></header>
-<main class="wrap"><div class="head"><div><h1>🔥 Crypto Signals</h1><p>Paper-trading dashboard. Backend scanner runs through n8n.</p></div><div class="status"><span class="pill"><span class="dot"></span><b id="scannerStatus">Checking backend…</b></span><span class="pill">Last signal: <b id="lastSignal">—</b></span></div></div>
-<div id="notice" class="notice"></div><section><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px"><h2 style="font-size:17px;margin:0">Active Signals</h2><div style="display:flex;align-items:center;gap:8px"><label for="quoteFilter" style="font-size:11px;color:var(--m)">Pair</label><select id="quoteFilter" class="btn" style="min-width:150px"><option value="USDT">USDT pairs</option><option value="BTC">BTC pairs</option></select></div></div><div id="signals" class="grid"></div></section>
-<section class="trade"><h2>💼 My Paper Trades</h2><div id="trades"></div></section></main></div>
-<div class="modal-bg" id="tradeBg"><div class="modal"><h2 id="tmTitle">Start Paper Trade</h2><div class="row"><div><label>Amount (₹)</label><input id="tmAmount" type="number" min="0" value="1000"></div><div><label>Leverage</label><input id="tmLeverage" type="number" min="1" max="10" value="1"></div></div><div id="tmInfo" style="font-size:11px;color:var(--m);line-height:1.5"></div><div class="modal-foot"><button class="btn" id="cancelTrade">Cancel</button><button class="btn primary" id="saveTradeBtn">Save Paper Trade</button></div></div></div>
+:root{
+  --bg:#0b0e14; --card:#131722; --card2:#1a2130; --border:#232b3d;
+  --text:#e8ecf4; --muted:#8b94a7; --green:#16c784; --red:#ea3943;
+  --yellow:#f0b90b; --blue:#4f8cff; --purple:#9b6bff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Segoe UI,system-ui,sans-serif;min-height:100vh}
+header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--card);position:sticky;top:0;z-index:50}
+h1{font-size:20px} h1 span{color:var(--yellow)}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+select,button,input{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px}
+button{cursor:pointer} button:hover{border-color:var(--blue)}
+button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.danger{background:rgba(234,57,67,.15);border-color:var(--red);color:var(--red)}
+button.small{padding:4px 10px;font-size:11px}
+.statusbar{display:flex;gap:16px;align-items:center;padding:10px 20px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap}
+.mono{font-family:monospace;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
+.dot.on{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.5s infinite}
+.dot.off{background:var(--red)}
+@keyframes pulse{50%{opacity:.4}}
+.stats{display:flex;gap:14px;padding:14px 20px;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 18px;min-width:130px}
+.stat .v{font-size:22px;font-weight:700}
+.stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.tabs{display:flex;gap:6px;padding:0 20px 12px;flex-wrap:wrap}
+.tab{padding:8px 16px;border-radius:8px;background:var(--card);border:1px solid var(--border);cursor:pointer;font-size:13px}
+.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;padding:0 20px 20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.sym{font-weight:700;font-size:16px}
+.name{font-size:11px;color:var(--muted)}
+.price{font-size:20px;font-weight:700;text-align:right}
+.chg{font-size:12px;text-align:right;color:var(--muted)}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.long{background:rgba(22,199,132,.15);color:var(--green);border:1px solid rgba(22,199,132,.4)}
+.short{background:rgba(234,57,67,.15);color:var(--red);border:1px solid rgba(234,57,67,.4)}
+.wait{background:rgba(240,185,11,.12);color:var(--yellow);border:1px solid rgba(240,185,11,.35)}
+.levels{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.lvl{background:var(--card2);border-radius:8px;padding:8px 10px}
+.k{font-size:10px;color:var(--muted);text-transform:uppercase}
+.val{font-size:14px;font-weight:600;font-family:monospace}
+.entry .val{color:var(--blue)} .sl .val{color:var(--red)} .tp .val{color:var(--green)} .rr .val{color:var(--yellow)}
+.riskbar{height:6px;background:var(--card2);border-radius:3px;margin-top:10px;overflow:hidden}
+.riskbar i{display:block;height:100%;border-radius:3px}
+.reason{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.55}
+.actions{margin-top:12px;display:flex;gap:8px}
+.actions button{flex:1;font-size:12px}
+.ai-box{display:none;margin-top:10px;padding:10px;border:1px solid rgba(155,107,255,.25);border-radius:8px;background:rgba(155,107,255,.06);font-size:12px;line-height:1.5}
+.journal-list{padding:0 20px 30px;display:flex;flex-direction:column;gap:10px}
+.jrow{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.jdetail{font-size:12px;color:var(--muted);flex:1}
+.jpnl{font-weight:700;font-family:monospace}
+.up{color:var(--green)} .down{color:var(--red)}
+.empty{text-align:center;color:var(--muted);padding:40px;font-size:14px}
+.settings{padding:0 20px 30px}
+.settings .card{max-width:600px}
+.settings input{width:100%;margin-top:6px}
+.settings-info{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.6}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100}
+.modal.show{display:flex}
+.box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;width:min(480px,92vw)}
+.box h3{margin-bottom:14px}
+.box label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.box input,.box select{width:100%}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--card2);border:1px solid var(--green);color:var(--green);padding:12px 18px;border-radius:10px;font-size:13px;display:none;z-index:200}
+.heat-warn{color:var(--red);font-weight:700}
+.heat-ok{color:var(--green)}
+/* LIVE PNL */
+.live-pnl{font-size:18px;font-weight:700;font-family:monospace;min-width:90px;text-align:right}
+.pnl-label{font-size:10px;color:var(--muted);text-transform:uppercase}
+.progress{height:4px;background:var(--card2);border-radius:2px;margin-top:6px;overflow:hidden;flex-basis:100%}
+.progress i{display:block;height:100%;border-radius:2px;transition:width .5s}
+.jrow .jbtns{display:flex;gap:6px}
+.tp-hit{color:var(--green)}
+.sl-hit{color:var(--red)}
+.running{color:var(--yellow)}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<header>
+<div>
+  <h1>⚡ CryptoSignal <span>Tracker</span></h1>
+  <div class="sub">Binance public data · CLOSED candles · Test/Paper mode · Minimum 1:2 RR</div>
+</div>
+<div class="controls">
+  <select id="tfSelect">
+    <option value="15m">15m</option>
+    <option value="1h" selected>1H</option>
+    <option value="4h">4H</option>
+  </select>
+  <select id="quoteSelect">
+    <option value="USDT" selected>USDT pairs</option>
+    <option value="BTC">BTC pairs</option>
+  </select>
+  <button id="autoBtn" class="primary">⏸ Auto: ON</button>
+  <button id="scanBtn">🔍 Scan Now</button>
+  <button id="notifyBtn">🔔 Alerts</button>
+  <button id="jrnlBtn">📓 Journal</button>
+</div>
+</header>
+
+<div class="statusbar">
+  <span><span class="dot on" id="connDot"></span><span id="connTxt">Starting...</span></span>
+  <span>⏱ Next: <b class="mono" id="nextScan">—</b></span>
+  <span>📡 Scans: <b class="mono" id="scanCount">0</b></span>
+  <span>🔔 <b class="mono" id="alertStatus">Off</b></span>
+  <span id="heatStat"></span>
+  <span id="lastSignal" style="margin-left:auto"></span>
+</div>
+
+<div class="stats" id="statsBar"></div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="signals">📶 Signals</div>
+  <div class="tab" data-tab="journal">📓 Paper Journal</div>
+  <div class="tab" data-tab="settings">⚙️ Settings</div>
+</div>
+
+<div class="grid" id="signalsGrid"></div>
+<div class="journal-list" id="journalList" style="display:none"></div>
+
+<div class="settings" id="settingsPane" style="display:none">
+<div class="card">
+  <h3>⚙️ Settings</h3>
+  <label>Moonshot API key (optional)</label>
+  <input id="moonKey" type="password" placeholder="sk-...">
+  <label>Auto-scan interval (seconds)</label>
+  <input id="scanInterval" type="number" min="30" max="600" value="60">
+  <div class="settings-info">
+    💾 Storage: <span id="dbStatus">Checking database...</span><br>
+    📊 Binance public API only.<br>
+    🚫 No CoinSwitch API.<br>
+    🚫 No automatic order execution.<br>
+    🧪 All trades are paper trades.<br>
+    🔔 Notifications require this page to remain open.<br>
+    ⚠️ Score is a setup score, not a win probability.<br>
+    🎯 Minimum score: 65 · Winner must lead by 10+<br>
+    📏 EMA20 distance: ATR-based (adapts to each coin)<br>
+    ⏳ Alert cooldown: 5 min per symbol+direction
+  </div>
+  <button class="primary" style="margin-top:14px" onclick="saveSettings()">Save</button>
+  <div id="saveMsg" style="font-size:12px;color:var(--green);margin-top:8px;display:none">✓ Saved</div>
+</div>
+</div>
+
+<!-- PAPER TRADE MODAL -->
+<div class="modal" id="tradeModal">
+<div class="box">
+  <h3 id="tmTitle">Paper Trade</h3>
+  <div class="row">
+    <div><label>Direction</label><input id="tmDir" readonly></div>
+    <div><label>Entry (approx)</label><input id="tmEntry" readonly></div>
+  </div>
+  <div class="row">
+    <div><label>Stop Loss</label><input id="tmSL" readonly></div>
+    <div><label>Take Profit</label><input id="tmTP" readonly></div>
+  </div>
+  <div class="row">
+    <div><label>Amount (₹)</label><input id="tmAmt" type="number" min="0" placeholder="1000"></div>
+    <div><label>Leverage</label>
+      <select id="tmLev"><option>1</option><option>2</option><option>3</option><option>5</option></select>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:18px">
+    <button class="primary" style="flex:1" onclick="saveTrade()">💾 Save Paper Trade</button>
+    <button style="flex:1" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+</div>
+
+<!-- EDIT TRADE MODAL -->
+<div class="modal" id="editModal">
+<div class="box">
+  <h3 id="emTitle">Edit Trade</h3>
+  <div class="row">
+    <div><label>Symbol</label><input id="emSym"></div>
+    <div><label>Direction</label>
+      <select id="emDir"><option>LONG</option><option>SHORT</option></select>
+    </div>
+  </div>
+  <div class="row">
+    <div><label>Entry Price</label><input id="emEntry" type="number" step="any"></div>
+    <div><label>Current Price</label><input id="emPrice" type="number" step="any"></div>
+  </div>
+  <div class="row">
+    <div><label>Stop Loss</label><input id="emSL" type="number" step="any"></div>
+    <div><label>Take Profit</label><input id="emTP" type="number" step="any"></div>
+  </div>
+  <div class="row">
+    <div><label>Amount (₹)</label><input id="emAmt" type="number"></div>
+    <div><label>Leverage</label>
+      <select id="emLev"><option>1</option><option>2</option><option>3</option><option>5</option></select>
+    </div>
+  </div>
+  <div class="row">
+    <div><label>Status</label>
+      <select id="emStatus">
+        <option value="running">Running</option>
+        <option value="tp">TP Hit</option>
+        <option value="sl">SL Hit</option>
+        <option value="manual">Manual Close</option>
+      </select>
+    </div>
+    <div><label>Close Price (if closed)</label><input id="emClose" type="number" step="any" placeholder="optional"></div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:18px">
+    <button class="primary" style="flex:1" onclick="saveEdit()">💾 Save Changes</button>
+    <button style="flex:1" onclick="closeEdit()">Cancel</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";const SUPABASE_KEY="sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);let user=null,signals=[],trades=[],selected=null,selectedQuote="USDT";const $=id=>document.getElementById(id);
-function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]})}function crypto(v){return Number.isFinite(Number(v))?Number(v).toLocaleString("en-US",{maximumFractionDigits:8}):"—"}function money(v){return Number.isFinite(Number(v))?"₹"+Number(v).toLocaleString("en-IN",{maximumFractionDigits:2}):"—"}function notice(t,type){var e=$("notice");e.textContent=t;e.className="notice "+(type||"ok");if(t)setTimeout(function(){e.className="notice"},4000)}function loginNotice(t){var e=$("loginNotice");e.textContent=t;e.className="notice error"}
-function renderSignals(){var el=$("signals");var filtered=signals.filter(function(s){return String(s.quote||"USDT").toUpperCase()===selectedQuote;});if(!filtered.length){el.innerHTML='<div class="empty" style="grid-column:1/-1">No active '+esc(selectedQuote)+' signals right now.<br><br>The n8n backend scans both USDT and BTC pairs.</div>';return}el.innerHTML=filtered.map(function(s){return '<div class="card"><div class="toprow"><div><div class="sym">'+esc(s.symbol)+'/'+esc(s.quote||selectedQuote)+'</div><div class="sub">'+esc(s.timeframe||"1h")+' · '+esc(s.quote||selectedQuote)+' pair</div></div><span class="badge '+(s.direction==="LONG"?"long":"short")+'">'+esc(s.direction)+'</span></div><div style="margin-top:10px"><span class="badge wait">Score '+esc(s.score==null?"—":s.score)+'</span></div><div class="levels"><div class="level entry"><div class="k">Entry</div><div class="v">'+crypto(s.entry_price)+'</div></div><div class="level sl"><div class="k">Stop Loss</div><div class="v">'+crypto(s.stop_loss)+'</div></div><div class="level tp"><div class="k">Take Profit</div><div class="v">'+crypto(s.take_profit)+'</div></div><div class="level rr"><div class="k">Risk : Reward</div><div class="v">1 : '+crypto(s.rr)+'</div></div></div><div class="reason">RSI: '+crypto(s.rsi)+' · Volume: '+crypto(s.volume_ratio)+'x<br>'+esc(s.reasons||"")+'</div><div class="actions"><button class="btn primary" onclick="openTradeById('+JSON.stringify(s.id)+')">📝 Paper Trade</button></div></div>'}).join("")}
-function renderTrades(){var el=$("trades");if(!trades.length){el.innerHTML='<div class="empty">No paper trades yet.</div>';return}var rows=trades.map(function(t){return '<tr><td><b>'+esc(t.symbol)+'</b></td><td><span class="badge '+(t.direction==="LONG"?"long":"short")+'">'+esc(t.direction)+'</span></td><td>'+crypto(t.entry_price)+'</td><td>'+crypto(t.stop_loss)+'</td><td>'+crypto(t.take_profit)+'</td><td>'+money(t.amount_inr)+'</td><td>'+esc(t.leverage)+'x</td><td>'+esc(t.status)+'</td><td style="color:'+(Number(t.pnl_inr)>=0?"var(--g)":"var(--r)")+'">'+money(t.pnl_inr)+'</td></tr>'}).join("");el.innerHTML='<div class="trade-table"><table><thead><tr><th>Symbol</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP</th><th>Amount</th><th>Leverage</th><th>Status</th><th>P&L</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
-async function loadData(){var s=await sb.from("crypto_signals").select("*").in("status",["ACTIVE","TRIGGERED"]).order("created_at",{ascending:false}).limit(50);if(s.error){console.error(s.error);$("scannerStatus").textContent="Setup required";notice("Run supabase_crypto_signals.sql in Supabase SQL Editor first.","error");renderSignals()}else{signals=s.data||[];$("scannerStatus").textContent="Connected";$("lastSignal").textContent=signals[0]?signals[0].symbol+"/"+signals[0].quote:"—";renderSignals()}var t=await sb.from("crypto_trades").select("*").order("created_at",{ascending:false}).limit(100);if(!t.error){trades=t.data||[]}renderTrades()}
-window.openTradeById=function(id){selected=signals.find(function(s){return String(s.id)===String(id);});if(!selected)return;$("tmTitle").textContent="Paper Trade — "+selected.symbol+"/"+selected.quote+" "+selected.direction;$("tmInfo").innerHTML="Pair: <b>"+esc(selected.symbol)+"/"+esc(selected.quote)+"</b> · Entry: <b>"+crypto(selected.entry_price)+"</b> · SL: <b>"+crypto(selected.stop_loss)+"</b> · TP: <b>"+crypto(selected.take_profit)+"</b> · RR: <b>1:"+crypto(selected.rr)+"</b>";$("tradeBg").classList.add("open")};function closeTradeModal(){$("tradeBg").classList.remove("open");selected=null}$("cancelTrade").onclick=closeTradeModal;
-$("saveTradeBtn").onclick=async function(){
-  if(!selected){notice("Select a signal first.","error");return}
-  $("saveTradeBtn").disabled=true;
+/* ================= CONFIG ================= */
+
+/* ================= SUPABASE DATABASE =================
+   Replace these two values with your Supabase project values.
+   Use the browser-safe anon/public key here, NOT the service-role key.
+*/
+const SUPABASE_URL = "https://fzazdrzlemmkqngvpzxj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6YXpkcnpsZW1ta3FuZ3ZwenhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMzc2MzEsImV4cCI6MjEwNDgxMzYzMX0.LNeR5_h0n2Y-hA2GD9e_tle3Euz1esB0Vr3_-ZtEYAk";
+
+let supabaseClient = null;
+
+function dbEnabled(){
+  return SUPABASE_URL &&
+         SUPABASE_ANON_KEY &&
+         !SUPABASE_URL.includes("YOUR-PROJECT") &&
+         !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
+}
+
+async function dbRequest(path, options={}){
+  if(!dbEnabled()) return {data:null,error:new Error("Supabase is not configured")};
+
+  const headers = {
+    "apikey": SUPABASE_ANON_KEY,
+    "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+    "Content-Type": "application/json",
+    ...(options.headers||{})
+  };
+
   try{
-    const sessionResult=await sb.auth.getSession();
-    const session=sessionResult.data&&sessionResult.data.session;
-    const currentUser=session&&session.user;
-    if(!currentUser){notice("Your login session has expired. Please sign in again.","error");return}
-    user=currentUser;
+    const r = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
+      ...options,
+      headers
+    });
 
-    const amount=Number($("tmAmount").value);
-    const lev=Number($("tmLeverage").value);
-    if(!Number.isFinite(amount)||amount<=0){notice("Enter a paper-trade amount greater than ₹0.","error");return}
-    if(!Number.isFinite(lev)||lev<1||lev>10){notice("Leverage must be between 1x and 10x.","error");return}
+    const raw = await r.text();
+    let data = null;
+    try{ data = raw ? JSON.parse(raw) : null; }catch(e){ data = raw; }
 
-    const row={
-      user_id:currentUser.id,
-      signal_id:selected.id,
-      symbol:selected.symbol,
-      direction:selected.direction,
-      timeframe:selected.timeframe||"1h",
-      entry_price:Number(selected.entry_price),
-      stop_loss:Number(selected.stop_loss),
-      take_profit:Number(selected.take_profit),
-      amount_inr:amount,
-      leverage:lev,
-      rr:Number(selected.rr),
-      score:Number(selected.score),
-      status:"RUNNING",
-      current_price:Number(selected.entry_price),
-      pnl_inr:0
-    };
-
-    const result=await sb.from("crypto_trades").insert(row).select().single();
-    if(result.error){
-      console.error("Paper trade insert failed:",result.error,row);
-      notice("Could not save paper trade: "+(result.error.message||"Supabase error"),"error");
-      return
+    if(!r.ok){
+      const msg = data?.message || data?.error_description || raw || ("HTTP "+r.status);
+      return {data:null,error:new Error(msg)};
     }
 
-    closeTradeModal();
-    notice("Paper trade saved for "+selected.symbol+"/"+selected.quote+".","ok");
-    await loadData();
-  }catch(err){
-    console.error("Paper trade error:",err);
-    notice("Could not save paper trade: "+(err.message||String(err)),"error");
-  }finally{
-    $("saveTradeBtn").disabled=false;
+    return {data,error:null};
+  }catch(e){
+    return {data:null,error:e};
+  }
+}
+
+/* Save a newly detected signal. Duplicate signals from the same scan
+   are ignored by the database unique index. */
+async function dbSaveSignals(signals){
+  if(!dbEnabled() || !signals.length) return;
+
+  const rows = signals.map(s => ({
+    symbol: s.sym.replace(/USDT$|BTC$/,""),
+    pair: s.sym,
+    quote: state.quote,
+    direction: s.dir,
+    timeframe: state.tf,
+    entry_price: Number(s.entry),
+    stop_loss: Number(s.sl),
+    take_profit: Number(s.tp),
+    rr: Number(s.rr),
+    score: Number(s.score),
+    confidence: Number(s.conf),
+    rsi: Number(s.rsi),
+    atr: Number(s.atr),
+    volume_ratio: Number(s.volumeRatio),
+    reasons: Array.isArray(s.reasons) ? s.reasons.join(" · ") : String(s.reasons||""),
+    status: "ACTIVE"
+  }));
+
+  const result = await dbRequest("crypto_signals?on_conflict=pair%2Ctimeframe%2Cdirection%2Cquote%2Cstatus", {
+    method:"POST",
+    headers:{
+      "Prefer":"resolution=ignore-duplicates,return=minimal"
+    },
+    body:JSON.stringify(rows)
+  });
+
+  if(result.error){
+    console.warn("Signal database save failed:",result.error.message);
+  }
+}
+
+/* Load recent signals from Supabase. */
+async function dbLoadSignals(){
+  if(!dbEnabled()) return [];
+
+  const result = await dbRequest(
+    "crypto_signals?status=eq.ACTIVE&order=created_at.desc&limit=100"
+  );
+
+  if(result.error){
+    console.warn("Signal database load failed:",result.error.message);
+    return [];
+  }
+
+  return Array.isArray(result.data) ? result.data : [];
+}
+
+/* Load this user's paper trades. RLS ensures users only see their own rows. */
+async function dbLoadTrades(){
+  if(!dbEnabled()) return [];
+
+  const result = await dbRequest(
+    "crypto_trades?order=created_at.desc&limit=500"
+  );
+
+  if(result.error){
+    console.warn("Trade database load failed:",result.error.message);
+    return [];
+  }
+
+  return Array.isArray(result.data) ? result.data : [];
+}
+
+/* Convert database trade -> existing UI trade format. */
+function dbTradeToUI(t){
+  return {
+    id:t.id,
+    signalId:t.signal_id,
+    sym:t.pair || ((t.symbol||"") + (t.quote||"USDT")),
+    dir:t.direction,
+    entry:Number(t.entry_price),
+    sl:Number(t.stop_loss),
+    tp:Number(t.take_profit),
+    amt:Number(t.amount_inr)||0,
+    lev:Number(t.leverage)||1,
+    pnl:Number(t.pnl_inr)||0,
+    closed:["TP_HIT","SL_HIT","MANUAL_CLOSE","CANCELLED"].includes(t.status),
+    status:
+      t.status==="TP_HIT" ? "tp" :
+      t.status==="SL_HIT" ? "sl" :
+      t.status==="MANUAL_CLOSE" ? "manual" :
+      "running",
+    currentPrice:Number(t.current_price)||Number(t.entry_price),
+    closePrice:t.close_price==null ? null : Number(t.close_price),
+    date:t.created_at ? new Date(t.created_at).toLocaleString() : "",
+    notes:t.notes||""
+  };
+}
+
+/* Save one paper trade. */
+async function dbSaveTrade(t, signal){
+  if(!dbEnabled()) return {data:null,error:new Error("Supabase is not configured")};
+
+  const row = {
+    signal_id: signal?.id || null,
+    symbol: signal?.symbol || signal?.sym?.replace(/USDT$|BTC$/,"") || "",
+    pair: signal?.pair || signal?.sym || "",
+    quote: signal?.quote || state.quote,
+    direction: t.dir,
+    timeframe: signal?.timeframe || state.tf,
+    entry_price: Number(t.entry),
+    stop_loss: Number(t.sl),
+    take_profit: Number(t.tp),
+    amount_inr: Number(t.amt)||0,
+    leverage: Number(t.lev)||1,
+    rr: Number(signal?.rr ?? t.rr ?? 0),
+    score: Number(signal?.score ?? 0),
+    status:"RUNNING",
+    current_price:Number(t.entry),
+    pnl_inr:0,
+    notes:t.notes||""
+  };
+
+  const result = await dbRequest("crypto_trades", {
+    method:"POST",
+    headers:{"Prefer":"return=representation"},
+    body:JSON.stringify(row)
+  });
+
+  if(result.error) return result;
+
+  return {data:Array.isArray(result.data) ? result.data[0] : result.data,error:null};
+}
+
+/* Update a trade in Supabase. */
+async function dbUpdateTrade(t){
+  if(!dbEnabled() || !t.id) return;
+
+  const status =
+    t.status==="tp" ? "TP_HIT" :
+    t.status==="sl" ? "SL_HIT" :
+    t.status==="manual" ? "MANUAL_CLOSE" :
+    "RUNNING";
+
+  const row = {
+    symbol:t.sym.replace(/USDT$|BTC$/,""),
+    pair:t.sym,
+    direction:t.dir,
+    entry_price:Number(t.entry),
+    stop_loss:Number(t.sl),
+    take_profit:Number(t.tp),
+    amount_inr:Number(t.amt)||0,
+    leverage:Number(t.lev)||1,
+    status,
+    current_price:Number(t.currentPrice)||Number(t.entry),
+    close_price:t.closePrice==null ? null : Number(t.closePrice),
+    pnl_inr:Number(t.pnl)||0,
+    notes:t.notes||""
+  };
+
+  if(t.closed) row.closed_at = new Date().toISOString();
+
+  const result = await dbRequest("crypto_trades?id=eq."+encodeURIComponent(t.id), {
+    method:"PATCH",
+    headers:{"Prefer":"return=minimal"},
+    body:JSON.stringify(row)
+  });
+
+  if(result.error) console.warn("Trade database update failed:",result.error.message);
+}
+
+async function dbDeleteTrade(t){
+  if(!dbEnabled() || !t.id) return;
+  const result = await dbRequest("crypto_trades?id=eq."+encodeURIComponent(t.id), {
+    method:"DELETE"
+  });
+  if(result.error) console.warn("Trade database delete failed:",result.error.message);
+}
+
+const COINS = ["BTC","ETH","SOL","BNB","XRP","ADA","DOGE","AVAX","LINK","MATIC","DOT","LTC","TRX","ATOM","UNI","NEAR","APT","ARB","OP","INJ","SUI","SEI","TIA","JUP","PYTH"];
+const MIN_SCORE = 65;
+const MIN_SPREAD = 10;
+const MIN_VOLUME = 1.2;
+const ALERT_COOLDOWN = 5 * 60 * 1000;
+const MAX_HEAT = 3;
+const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
+
+const state = { signals:[], journal:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{} };
+const recentAlerts = {};
+let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null;
+const $ = id => document.getElementById(id);
+
+/* ================= STORAGE ================= */
+async function load(){
+  try{
+    $("moonKey").value = localStorage.getItem("cs_moon")||"";
+    const iv = localStorage.getItem("cs_interval");
+    if(iv) $("scanInterval").value = iv;
+
+    if(dbEnabled()){
+      const trades = await dbLoadTrades();
+      state.journal = trades.map(dbTradeToUI);
+    }else{
+      // Temporary fallback for testing before Supabase is configured.
+      state.journal = JSON.parse(localStorage.getItem("cs_journal")||"[]");
+    }
+  }catch(e){
+    console.error(e);
+    state.journal=[];
+  }
+}
+
+function save(){
+  // Database is the primary storage.
+  // Keep localStorage only as a fallback when Supabase is not configured.
+  if(!dbEnabled()){
+    localStorage.setItem("cs_journal", JSON.stringify(state.journal));
+  }
+}
+
+function saveSettings(){
+  localStorage.setItem("cs_moon",$("moonKey").value);
+  localStorage.setItem("cs_interval",$("scanInterval").value);
+  $("saveMsg").style.display="block";
+  setTimeout(()=>{$("saveMsg").style.display="none";},1500);
+  if(state.auto) scheduleNext();
+}
+
+/* ================= ALERTS ================= */
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value=880; gain.gain.value=0.12;
+    osc.start();
+    setTimeout(()=>{osc.frequency.value=1174;},140);
+    setTimeout(()=>{osc.stop();ctx.close();},320);
+  }catch(e){}
+}
+function notify(title,body){
+  if("Notification" in window && Notification.permission==="granted"){
+    new Notification(title,{body:body});
+  }
+}
+$("notifyBtn").onclick = async()=>{
+  if(!("Notification" in window)){ toast("⚠️ Notifications unavailable"); return; }
+  const p = await Notification.requestPermission();
+  if(p==="granted"){
+    $("alertStatus").textContent="On";
+    $("notifyBtn").textContent="🔔 Alerts On";
+    toast("✓ Alerts enabled");
+  }else{
+    toast("⚠️ Notification permission denied");
   }
 };
 
-$("quoteFilter").value=selectedQuote;$("quoteFilter").onchange=function(){selectedQuote=$("quoteFilter").value;renderSignals();};
-async function checkUser(){var s=await sb.auth.getSession();user=s.data.session?s.data.session.user:null;if(user)$("userEmail").textContent=user.email||"";return !!user}
-$("loginBtn").onclick=async function(){var v=$("email").value.trim(),p=$("password").value,email=v.toLowerCase()==="admin"?"admin@tradesutra.com":v;if(!email||!p)return loginNotice("Enter email and password.");$("loginBtn").disabled=true;var r=await sb.auth.signInWithPassword({email:email,password:p});if(r.error){loginNotice(r.error.message);$("loginBtn").disabled=false;return}user=r.data.user;$("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await loadData();$("loginBtn").disabled=false};$("password").addEventListener("keydown",function(e){if(e.key==="Enter")$("loginBtn").click()});$("logoutBtn").onclick=async function(){await sb.auth.signOut();location.reload()};$("backBtn").onclick=function(){location.href="/"};$("tradeBg").onclick=function(e){if(e.target===$("tradeBg"))closeTradeModal()};(async function(){if(await checkUser()){$("loginView").classList.add("hidden");$("app").classList.remove("hidden");await loadData()}})();
-</script></body></html>
+/* ================= BINANCE DATA ================= */
+async function fetchKlines(symbol,tf){
+  const url=`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${tf}&limit=160`;
+  const r=await fetch(url);
+  if(!r.ok) throw new Error("Binance HTTP "+r.status);
+  const raw=await r.json();
+  if(!Array.isArray(raw)||raw.length<120) throw new Error("Not enough candles");
+  raw.pop();
+  return raw.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+}
+
+async function fetchPrice(symbol){
+  try{
+    const r=await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+    const d=await r.json();
+    return Number(d.price);
+  }catch(e){return null;}
+}
+
+/* ================= INDICATORS ================= */
+function ema(data,period){
+  if(!data.length) return [];
+  const m=2/(period+1); let v=data[0]; const r=[v];
+  for(let i=1;i<data.length;i++){ v=data[i]*m+v*(1-m); r.push(v); }
+  return r;
+}
+function rsi(data,period=14){
+  const result=new Array(data.length).fill(null);
+  if(data.length<=period) return result;
+  let g=0,l=0;
+  for(let i=1;i<=period;i++){const d=data[i]-data[i-1];g+=Math.max(d,0);l+=Math.max(-d,0);}
+  let ag=g/period, al=l/period;
+  result[period]=al===0?100:100-100/(1+ag/al);
+  for(let i=period+1;i<data.length;i++){
+    const d=data[i]-data[i-1];
+    ag=(ag*(period-1)+Math.max(d,0))/period;
+    al=(al*(period-1)+Math.max(-d,0))/period;
+    result[i]=al===0?100:100-100/(1+ag/al);
+  }
+  return result;
+}
+function atr(candles,period=14){
+  const tr=[];
+  for(let i=0;i<candles.length;i++){
+    if(i===0){tr.push(candles[i].h-candles[i].l);continue;}
+    const c=candles[i],p=candles[i-1];
+    tr.push(Math.max(c.h-c.l,Math.abs(c.h-p.c),Math.abs(c.l-p.c)));
+  }
+  if(tr.length<period) return new Array(tr.length).fill(null);
+  const result=new Array(tr.length).fill(null);
+  let a=0;
+  for(let i=0;i<period;i++)a+=tr[i];
+  a/=period; result[period-1]=a;
+  for(let i=period;i<tr.length;i++){a=(a*(period-1)+tr[i])/period;result[i]=a;}
+  return result;
+}
+function macd(data){
+  const f=ema(data,12),s=ema(data,26);
+  const line=data.map((_,i)=>f[i]-s[i]);
+  const sig=ema(line,9);
+  return {line,sig,hist:line.map((v,i)=>v-sig[i])};
+}
+function volumeRatio(candles,index,lookback=20){
+  if(index<lookback)return 1;
+  let t=0;
+  for(let i=index-lookback;i<index;i++)t+=candles[i].v;
+  const avg=t/lookback;
+  return avg>0?candles[index].v/avg:1;
+}
+
+/* ================= SIGNAL ANALYSIS ================= */
+function analyze(candles,symbol,ticker){
+  const closes=candles.map(c=>c.c),highs=candles.map(c=>c.h),lows=candles.map(c=>c.l);
+  const e20=ema(closes,20),e50=ema(closes,50),e100=ema(closes,100);
+  const rsiV=rsi(closes),atrV=atr(candles),macdV=macd(closes);
+  const i=closes.length-1;
+  const price=closes[i],atrVal=atrV[i],rsiVal=rsiV[i];
+  if(!Number.isFinite(price)||!Number.isFinite(atrVal))return null;
+  const cur=candles[i],prev=candles[i-1];
+  const volRatio=volumeRatio(candles,i);
+  const trendUp=e20[i]>e50[i],trendDn=e20[i]<e50[i];
+  const strongUp=e20[i]>e50[i]&&e50[i]>e100[i];
+  const strongDn=e20[i]<e50[i]&&e50[i]<e100[i];
+  const emaDist=Math.abs(price-e20[i]);
+  const nearEMA20=emaDist<=atrVal*0.5;
+  const hist=macdV.hist[i],prevHist=macdV.hist[i-1];
+  const momUp=hist>prevHist,momDn=hist<prevHist;
+  const bull=cur.c>cur.o,bear=cur.c<cur.o;
+  let longScore=0,shortScore=0;
+  const longReasons=[],shortReasons=[];
+  if(strongUp){longScore+=25;longReasons.push("EMA20>50>100");}
+  else if(trendUp){longScore+=15;longReasons.push("EMA20>EMA50");}
+  if(nearEMA20){longScore+=15;longReasons.push("Near EMA20");}
+  if(price>e20[i])longScore+=5;
+  if(hist>0){longScore+=10;longReasons.push("MACD+");}
+  if(momUp){longScore+=10;longReasons.push("Mom↑");}
+  if(rsiVal>=45&&rsiVal<=68){longScore+=15;longReasons.push("RSI "+rsiVal.toFixed(0));}
+  if(bull){longScore+=10;longReasons.push("Bull candle");}
+  if(volRatio>=1){longScore+=5;longReasons.push("Vol "+volRatio.toFixed(1)+"x");}
+  if(ticker.chg>-5)longScore+=5;
+  if(strongDn){shortScore+=25;shortReasons.push("EMA20<50<100");}
+  else if(trendDn){shortScore+=15;shortReasons.push("EMA20<EMA50");}
+  if(nearEMA20){shortScore+=15;shortReasons.push("Near EMA20");}
+  if(price<e20[i])shortScore+=5;
+  if(hist<0){shortScore+=10;shortReasons.push("MACD-");}
+  if(momDn){shortScore+=10;shortReasons.push("Mom↓");}
+  if(rsiVal>=32&&rsiVal<=55){shortScore+=15;shortReasons.push("RSI "+rsiVal.toFixed(0));}
+  if(bear){shortScore+=10;shortReasons.push("Bear candle");}
+  if(volRatio>=1){shortScore+=5;shortReasons.push("Vol "+volRatio.toFixed(1)+"x");}
+  if(ticker.chg<5)shortScore+=5;
+  let dir=null,score=0,reasons=[];
+  if(longScore>=MIN_SCORE&&longScore>=shortScore+MIN_SPREAD){dir="LONG";score=longScore;reasons=longReasons;}
+  else if(shortScore>=MIN_SCORE&&shortScore>=longScore+MIN_SPREAD){dir="SHORT";score=shortScore;reasons=shortReasons;}
+  if(!dir){
+    return {sym:symbol,name:symbol,price:price,chg:ticker.chg,dir:null,
+      score:Math.max(longScore,shortScore),rsi:rsiVal,atr:atrVal,
+      volumeRatio:volRatio,candles:candles};
+  }
+  let entry=price,sl,tp,risk;
+  if(dir==="LONG"){
+    sl=Math.min(lows[i],lows[i-1])-atrVal*0.25;
+    if(sl>=entry)sl=entry-atrVal*1.2;
+    risk=entry-sl; tp=entry+risk*2;
+  }else{
+    sl=Math.max(highs[i],highs[i-1])+atrVal*0.25;
+    if(sl<=entry)sl=entry+atrVal*1.2;
+    risk=sl-entry; tp=entry-risk*2;
+  }
+  if(risk<=0)return null;
+  const rr=Math.abs(tp-entry)/risk;
+  if(!Number.isFinite(rr)||rr<2)return null;
+  if(volRatio<MIN_VOLUME)return null;
+  return {sym:symbol,name:symbol,price:price,chg:ticker.chg,dir:dir,
+    entry:entry,sl:sl,tp:tp,rr:rr,
+    score:Math.min(95,score),conf:Math.min(95,score),
+    reasons:reasons,rsi:rsiVal,atr:atrVal,volumeRatio:volRatio,candles:candles};
+}
+
+/* ================= SCANNER ================= */
+async function scan(manual=false){
+  $("scanBtn").disabled=true; $("scanBtn").textContent="⏳ Scanning...";
+  $("connDot").className="dot on"; $("connTxt").textContent="Scanning...";
+  const prevSigs=new Set(state.signals.map(s=>s.sym+"_"+s.dir));
+  state.signals=[];
+  const tf=$("tfSelect").value,q=$("quoteSelect").value;
+  state.tf=tf; state.quote=q;
+  let ok=0,fail=0;
+  const results=[];
+  for(let s=0;s<COINS.length;s+=5){
+    const batch=COINS.slice(s,s+5);
+    const batchRes=await Promise.all(batch.map(async coin=>{
+      const sym=coin+q;
+      try{
+        const [candles,tickerR]=await Promise.all([
+          fetchKlines(sym,tf),
+          fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`)
+        ]);
+        if(!tickerR.ok)throw new Error("Ticker failed");
+        const td=await tickerR.json();
+        ok++;
+        return analyze(candles,sym,{chg:Number(td.priceChangePercent)});
+      }catch(e){fail++;console.warn(sym,e);return null;}
+    }));
+    results.push(...batchRes);
+  }
+  state.signals=results.filter(s=>s&&s.dir&&s.rr>=2&&s.score>=MIN_SCORE)
+    .sort((a,b)=>b.score-a.score);
+  // Persist every validated signal. The database handles duplicate protection.
+  if(dbEnabled() && state.signals.length){
+    dbSaveSignals(state.signals);
+  }
+  state.scanTime=new Date(); state.scans++;
+  $("scanCount").textContent=state.scans;
+  if(ok>=15){
+    $("connDot").className="dot on"; $("connTxt").textContent=`Connected (${ok}/${COINS.length})`;
+  }else{
+    $("connDot").className="dot off"; $("connTxt").textContent=`⚠️ ${ok}/${COINS.length} pairs`;
+  }
+  const newSigs=state.signals.filter(s=>{
+    const key=s.sym+"_"+s.dir;
+    if(prevSigs.has(key))return false;
+    const last=recentAlerts[key];
+    if(last&&Date.now()-last<ALERT_COOLDOWN)return false;
+    recentAlerts[key]=Date.now();
+    return true;
+  });
+  if(newSigs.length&&state.scans>1){
+    const s=newSigs[0];
+    const msg=`${s.dir} ${s.sym} @ $${fmt(s.price)} → TP $${fmt(s.tp)} / SL $${fmt(s.sl)} (1:${s.rr.toFixed(1)}) Score ${s.score}`;
+    beep(); notify("⚡ New Crypto Signal",msg);
+    $("lastSignal").innerHTML=`<span style="color:var(--green)">🆕 <b>${s.sym} ${s.dir}</b> ${state.scanTime.toLocaleTimeString()}</span>`;
+    toast("🆕 "+msg);
+  }else if(manual){
+    toast(`✓ Scan complete — ${state.signals.length} valid setups (${ok} ok, ${fail} failed)`);
+  }
+  $("scanBtn").disabled=false; $("scanBtn").textContent="🔍 Scan Now";
+  render();
+  updateLivePrices();
+}
+
+/* ================= AUTO SCAN ================= */
+function scheduleNext(){
+  clearTimeout(autoTimer); clearInterval(countdownTimer);
+  if(!state.auto){$("nextScan").textContent="paused";return;}
+  const sec=Math.max(30,Number($("scanInterval").value)||60);
+  nextScanAt=Date.now()+sec*1000;
+  autoTimer=setTimeout(async()=>{await scan();scheduleNext();},sec*1000);
+  countdownTimer=setInterval(()=>{
+    const left=Math.max(0,Math.round((nextScanAt-Date.now())/1000));
+    $("nextScan").textContent=left+"s";
+    if(left<=0)clearInterval(countdownTimer);
+  },1000);
+}
+$("autoBtn").onclick=()=>{
+  state.auto=!state.auto;
+  $("autoBtn").textContent=state.auto?"⏸ Auto: ON":"▶ Auto: OFF";
+  $("autoBtn").className=state.auto?"primary":"";
+  if(state.auto){scheduleNext();toast("✓ Auto-scan resumed");}
+  else{clearTimeout(autoTimer);clearInterval(countdownTimer);$("nextScan").textContent="paused";toast("⏸ Auto-scan paused");}
+};
+$("tfSelect").onchange=()=>{if(state.auto)scheduleNext();scan(true);};
+$("quoteSelect").onchange=()=>{if(state.auto)scheduleNext();scan(true);};
+
+/* ================= FORMAT ================= */
+function fmt(n){
+  if(!Number.isFinite(n))return "—";
+  if(n>=100)return n.toFixed(1);
+  if(n>=1)return n.toFixed(3);
+  if(n<0.000001)return n.toExponential(2);
+  return n.toFixed(6);
+}
+function fmtINR(n){
+  if(!Number.isFinite(n))return "—";
+  const a=Math.abs(n);
+  if(a>=100000)return "₹"+(n/100000).toFixed(2)+"L";
+  if(a>=1000)return "₹"+(n/1000).toFixed(1)+"k";
+  return "₹"+n.toFixed(0);
+}
+
+/* ================= LIVE P&L ENGINE ================= */
+async function updateLivePrices(){
+  const syms=[...new Set(state.journal.filter(t=>!t.closed).map(t=>t.sym))];
+  if(!syms.length)return;
+  await Promise.all(syms.map(async sym=>{
+    const p=await fetchPrice(sym);
+    if(p)state.livePrices[sym]=p;
+  }));
+
+  // Persist current price/P&L for running trades.
+  if(dbEnabled()){
+    for(const t of state.journal.filter(x=>!x.closed)){
+      const live=calcLivePnL(t);
+      t.currentPrice=live.cp;
+      t.pnl=live.pnl;
+      await dbUpdateTrade(t);
+    }
+  }
+
+  renderJournal();
+}
+
+function calcLivePnL(t){
+  const cp=state.livePrices[t.sym]||t.entry;
+  const riskPct=Math.abs(t.entry-t.sl)/t.entry;
+  let move;
+  if(t.dir==="LONG")move=(cp-t.entry)/t.entry;
+  else move=(t.entry-cp)/t.entry;
+  const pnl=t.amt*t.lev*move;
+  const rMultiple=move/riskPct; // how many R's of profit/loss
+  return {pnl,cp,rMultiple};
+}
+
+function calcClosedPnL(t){
+  if(t.status==="tp"){
+    const riskPct=Math.abs(t.entry-t.sl)/t.entry;
+    return t.amt*t.lev*2*riskPct;
+  }
+  if(t.status==="sl"){
+    const riskPct=Math.abs(t.entry-t.sl)/t.entry;
+    return -t.amt*t.lev*riskPct;
+  }
+  if(t.status==="manual"&&t.closePrice){
+    let move;
+    if(t.dir==="LONG")move=(t.closePrice-t.entry)/t.entry;
+    else move=(t.entry-t.closePrice)/t.entry;
+    return t.amt*t.lev*move;
+  }
+  return t.pnl||0;
+}
+
+/* ================= RENDER ================= */
+function render(){renderStats();renderSignals();renderJournal();}
+
+function renderStats(){
+  const closed=state.journal.filter(t=>t.closed);
+  const wins=closed.filter(t=>calcClosedPnL(t)>0).length;
+  const total=closed.length;
+  const pnl=state.journal.reduce((s,t)=>s+(t.closed?calcClosedPnL(t):calcLivePnL(t).pnl),0);
+  const wr=total?Math.round(wins/total*100):0;
+  const heat=state.signals.length;
+  const heatClass=heat>MAX_HEAT?"heat-warn":"heat-ok";
+  $("heatStat").innerHTML=`🌡 Heat: <b class="${heatClass}">${heat}/${MAX_HEAT}</b>`;
+  $("statsBar").innerHTML=`
+    <div class="stat"><div class="v" style="color:var(--blue)">${state.signals.length}</div><div class="l">Active Signals</div></div>
+    <div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div>
+    <div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Open</div></div>
+    <div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div>
+    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${fmtINR(pnl)}</div><div class="l">Total P&L</div></div>
+    <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
+}
+
+function renderSignals(){
+  const g=$("signalsGrid");
+  if(!state.signals.length){
+    g.innerHTML=`<div class="empty" style="grid-column:1/-1">
+      No validated setups right now.<br><br>
+      Watching ${COINS.length} ${state.quote} pairs using CLOSED candles.<br>
+      Last scan: ${state.scanTime?state.scanTime.toLocaleTimeString():"never"}
+    </div>`;
+    return;
+  }
+  g.innerHTML=state.signals.map((s,idx)=>`
+    <div class="card">
+      <div class="top">
+        <div><div class="sym">${s.sym}</div><div class="name">Test mode · ${state.tf}</div></div>
+        <div><div class="price">$${fmt(s.price)}</div>
+        <div class="chg">${s.chg>=0?"▲":"▼"} ${Math.abs(s.chg).toFixed(2)}%</div></div>
+      </div>
+      <span class="badge ${s.dir==="LONG"?"long":"short"}">${s.dir==="LONG"?"📈 LONG":"📉 SHORT"}</span>
+      <span class="badge wait" style="margin-left:6px">Score ${s.score}/100</span>
+      <div class="levels">
+        <div class="lvl entry"><div class="k">Entry (approx)</div><div class="val">$${fmt(s.entry)}</div></div>
+        <div class="lvl sl"><div class="k">Stop Loss</div><div class="val">$${fmt(s.sl)}</div></div>
+        <div class="lvl tp"><div class="k">Take Profit 2R</div><div class="val">$${fmt(s.tp)}</div></div>
+        <div class="lvl rr"><div class="k">Risk : Reward</div><div class="val">1 : ${s.rr.toFixed(1)}</div></div>
+      </div>
+      <div class="riskbar"><i style="width:${s.score}%;background:${s.score>=75?"var(--green)":s.score>=60?"var(--yellow)":"var(--red)"}"></i></div>
+      <div class="reason">
+        🧠 ${s.reasons.join(" · ")}<br>
+        📊 Volume: ${s.volumeRatio.toFixed(2)}x · RSI: ${s.rsi.toFixed(1)}<br>
+        🧪 TEST ONLY — no order is sent.
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="openTrade(${idx})">📝 Paper Trade</button>
+        <button onclick="askAI(${idx})">🤖 AI Review</button>
+      </div>
+      <div class="ai-box" id="ai-${idx}"></div>
+    </div>`).join("");
+}
+
+/* ================= JOURNAL (INTERACTIVE) ================= */
+function renderJournal(){
+  const l=$("journalList");
+  if(!state.journal.length){
+    l.innerHTML=`<div class="empty">No paper trades yet.<br>Click "📝 Paper Trade" on any signal to start.</div>`;
+    return;
+  }
+  l.innerHTML=state.journal.slice().reverse().map((t,idx)=>{
+    const ri=state.journal.length-1-idx;
+    let pnlHtml,statusBadge,progressHtml="";
+
+    if(t.closed){
+      const pnl=calcClosedPnL(t);
+      const statusTxt=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":"MANUAL";
+      const statusClass=t.status==="tp"?"tp-hit":t.status==="sl"?"sl-hit":"running";
+      statusBadge=`<span class="badge ${t.status==="tp"?"long":t.status==="sl"?"short":"wait"}">${statusTxt}</span>`;
+      pnlHtml=`<div class="live-pnl ${pnl>=0?"up":"down"}">${pnl>=0?"+":""}${fmtINR(pnl)}</div>`;
+    }else{
+      const live=calcLivePnL(t);
+      const rTxt=live.rMultiple>=0?`+${live.rMultiple.toFixed(1)}R`:`${live.rMultiple.toFixed(1)}R`;
+      statusBadge=`<span class="badge wait">RUNNING</span>`;
+      pnlHtml=`<div>
+        <div class="live-pnl ${live.pnl>=0?"up":"down"}">${live.pnl>=0?"+":""}${fmtINR(live.pnl)}</div>
+        <div class="pnl-label">${rTxt} · Live @ $${fmt(live.cp)}</div>
+      </div>`;
+      // Progress bar toward TP/SL
+      const range=Math.abs(t.tp-t.sl);
+      const dist=Math.abs(live.cp-t.sl);
+      const pct=Math.min(100,Math.max(0,(dist/range)*100));
+      const barColor=live.pnl>=0?"var(--green)":"var(--red)";
+      progressHtml=`<div class="progress"><i style="width:${pct}%;background:${barColor}"></i></div>`;
+    }
+
+    return `<div class="jrow" style="${t.closed?"opacity:.75":""}">
+      <span class="sym">${t.sym}</span>
+      <span class="badge ${t.dir==="LONG"?"long":"short"}">${t.dir}</span>
+      ${statusBadge}
+      <span class="jdetail">
+        Entry $${fmt(t.entry)} → TP $${fmt(t.tp)} / SL $${fmt(t.sl)}<br>
+        ${fmtINR(t.amt)} @ ${t.lev}x · ${t.date}
+        ${t.notes?`<br>📝 ${t.notes}`:""}
+      </span>
+      ${pnlHtml}
+      <div class="jbtns">
+        ${!t.closed?`<button class="small primary" onclick="quickClose(${ri},'tp')">🎯 TP</button>
+        <button class="small danger" onclick="quickClose(${ri},'sl')">🛑 SL</button>`:""}
+        <button class="small" onclick="openEdit(${ri})">✏️ Edit</button>
+        <button class="small danger" onclick="deleteTrade(${ri})">🗑️</button>
+      </div>
+      ${progressHtml}
+    </div>`;
+  }).join("");
+}
+
+/* ================= TRADE CRUD ================= */
+function openTrade(idx){
+  curIdx=idx; const s=state.signals[idx];
+  $("tmTitle").textContent=`Paper Trade — ${s.sym} ${s.dir}`;
+  $("tmDir").value=s.dir; $("tmEntry").value=fmt(s.entry);
+  $("tmSL").value=fmt(s.sl); $("tmTP").value=fmt(s.tp);
+  $("tradeModal").classList.add("show");
+}
+function closeModal(){$("tradeModal").classList.remove("show");}
+async function saveTrade(){
+  const s=state.signals[curIdx]; if(!s)return;
+
+  const amt=Number($("tmAmt").value)||0;
+  const lev=Number($("tmLev").value);
+  if(amt<=0){toast("⚠️ Enter a paper-trade amount.");return;}
+
+  const notes=prompt("Notes (optional):","")||"";
+
+  const trade={
+    sym:s.sym,
+    dir:s.dir,
+    entry:s.entry,
+    sl:s.sl,
+    tp:s.tp,
+    amt:amt,
+    lev:lev,
+    pnl:0,
+    closed:false,
+    status:"running",
+    date:new Date().toLocaleString(),
+    notes:notes
+  };
+
+  if(dbEnabled()){
+    const result=await dbSaveTrade(trade,s);
+    if(result.error){
+      console.error(result.error);
+      toast("⚠️ Could not save trade: "+result.error.message);
+      return;
+    }
+    if(result.data){
+      const saved=dbTradeToUI(result.data);
+      state.journal.unshift(saved);
+    }
+  }else{
+    state.journal.push(trade);
+    save();
+  }
+
+  closeModal();
+  render();
+  updateLivePrices();
+  toast("✓ Paper trade saved — live P&L tracking started");
+}
+
+async function quickClose(idx,result){
+  const t=state.journal[idx]; if(!t||t.closed)return;
+  t.closed=true; t.status=result;
+  t.pnl=calcClosedPnL(t);
+  t.closePrice=state.livePrices[t.sym]||t.entry;
+
+  if(dbEnabled()){
+    await dbUpdateTrade(t);
+  }else{
+    save();
+  }
+
+  render();
+  toast(result==="tp"?`🎯 TP hit! +${fmtINR(t.pnl)}`:`🛑 SL hit. ${fmtINR(t.pnl)}`);
+}
+
+function openEdit(idx){
+  editIdx=idx; const t=state.journal[idx];
+  $("emTitle").textContent=`Edit Trade — ${t.sym}`;
+  $("emSym").value=t.sym;
+  $("emDir").value=t.dir;
+  $("emEntry").value=t.entry;
+  $("emPrice").value=state.livePrices[t.sym]||t.entry;
+  $("emSL").value=t.sl;
+  $("emTP").value=t.tp;
+  $("emAmt").value=t.amt;
+  $("emLev").value=t.lev;
+  $("emStatus").value=t.status||"running";
+  $("emClose").value=t.closePrice||"";
+  $("editModal").classList.add("show");
+}
+function closeEdit(){$("editModal").classList.remove("show");}
+async function saveEdit(){
+  const t=state.journal[editIdx]; if(!t)return;
+  t.sym=$("emSym").value.toUpperCase();
+  t.dir=$("emDir").value;
+  t.entry=Number($("emEntry").value)||t.entry;
+  t.sl=Number($("emSL").value)||t.sl;
+  t.tp=Number($("emTP").value)||t.tp;
+  t.amt=Number($("emAmt").value)||t.amt;
+  t.lev=Number($("emLev").value)||t.lev;
+
+  const st=$("emStatus").value;
+  t.status=st;
+
+  if(st==="tp"||st==="sl"||st==="manual"){
+    t.closed=true;
+    t.closePrice=Number($("emClose").value)||null;
+    t.pnl=calcClosedPnL(t);
+  }else{
+    t.closed=false;
+    t.pnl=0;
+    t.closePrice=null;
+  }
+
+  if(dbEnabled()){
+    await dbUpdateTrade(t);
+  }else{
+    save();
+  }
+
+  closeEdit();
+  render();
+  updateLivePrices();
+  toast("✓ Trade updated");
+}
+
+async function deleteTrade(idx){
+  const t=state.journal[idx];
+  if(!t)return;
+  if(!confirm(`Delete ${t.sym} ${t.dir} trade?`))return;
+
+  if(dbEnabled()){
+    await dbDeleteTrade(t);
+  }
+
+  state.journal.splice(idx,1);
+
+  if(!dbEnabled()) save();
+
+  render();
+  toast("🗑️ Trade deleted");
+}
+
+/* ================= AI REVIEW ================= */
+async function askAI(idx){
+  const s=state.signals[idx],box=$("ai-"+idx);
+  if(!s||!box)return;
+  box.style.display="block"; box.innerHTML="<b>🤖 Reviewing...</b>";
+  const key=$("moonKey").value.trim();
+  if(!key){box.innerHTML="<b>⚠️ Add Moonshot key in Settings.</b>";return;}
+  const recent=s.candles.slice(-15).map(c=>`${c.o}/${c.h}/${c.l}/${c.c}/${c.v}`).join(", ");
+  const prompt=`Review this crypto paper-trade setup. Do NOT place trades. Do NOT change Entry, Stop Loss or Take Profit. Return: 1. PROCEED, WAIT or SKIP 2. Two reasons 3. One risk warning. Symbol: ${s.sym} Timeframe: ${state.tf} Direction: ${s.dir} Entry: ${s.entry} Stop Loss: ${s.sl} Take Profit: ${s.tp} RR: 1:${s.rr.toFixed(1)} RSI: ${s.rsi.toFixed(1)} Volume: ${s.volumeRatio.toFixed(2)}x Recent OHLCV: ${recent}`;
+  try{
+    const r=await fetch("https://api.moonshot.ai/v1/chat/completions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+      body:JSON.stringify({model:"moonshot-v1-8k",messages:[{role:"user",content:prompt}],temperature:.2,max_tokens:220})
+    });
+    const d=await r.json();
+    const txt=d?.choices?.[0]?.message?.content||"No response";
+    box.innerHTML="<b>🤖 AI:</b><br>"+txt.replace(/\n/g,"<br>");
+  }catch(e){console.error(e);box.innerHTML="<b>⚠️ AI request failed.</b>";}
+}
+
+/* ================= TABS ================= */
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    tab.classList.add("active");
+    const sel=tab.dataset.tab;
+    $("signalsGrid").style.display=sel==="signals"?"grid":"none";
+    $("journalList").style.display=sel==="journal"?"flex":"none";
+    $("settingsPane").style.display=sel==="settings"?"block":"none";
+    if(sel==="journal")updateLivePrices();
+  };
+});
+
+/* ================= UI EVENTS ================= */
+$("scanBtn").onclick=()=>scan(true);
+$("jrnlBtn").onclick=()=>{document.querySelector('[data-tab="journal"]').click();};
+function toast(msg){
+  const el=$("toast"); el.textContent=msg; el.style.display="block";
+  setTimeout(()=>{el.style.display="none";},3500);
+}
+
+/* ================= DATABASE STATUS ================= */
+function updateDbStatus(){
+  const el=$("dbStatus");
+  if(!el)return;
+  if(dbEnabled()){
+    el.textContent="Supabase connected";
+    el.style.color="var(--green)";
+  }else{
+    el.textContent="Not configured — using browser storage";
+    el.style.color="var(--yellow)";
+  }
+}
+
+/* ================= INIT ================= */
+(async()=>{
+  await load();
+  updateDbStatus();
+  render();
+  await scan(true);
+  scheduleNext();
+})();
+// Live P&L refresh every 15s
+liveTimer=setInterval(updateLivePrices,LIVE_UPDATE_MS);
+</script>
+</body>
+</html>
