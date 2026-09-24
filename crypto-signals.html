@@ -894,7 +894,7 @@ const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
 const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
 const recentAlerts = {};
-let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null;
+let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0;
 let tradeSort=localStorage.getItem("cs_trade_sort")||"newest";
 let selectedRisk=Number(localStorage.getItem("cs_rr_risk")||1);
 let selectedReward=Number(localStorage.getItem("cs_rr_reward")||2);
@@ -1196,7 +1196,7 @@ function volumeRatio(candles,index,lookback=20){
 }
 
 /* ================= SIGNAL ANALYSIS ================= */
-function analyze(candles,symbol,ticker){
+function analyze(candles,symbol,ticker,rrCfgOverride=null){
   const closes=candles.map(c=>c.c),highs=candles.map(c=>c.h),lows=candles.map(c=>c.l);
   const e20=ema(closes,20),e50=ema(closes,50),e100=ema(closes,100);
   const rsiV=rsi(closes),atrV=atr(candles),macdV=macd(closes);
@@ -1248,13 +1248,13 @@ function analyze(candles,symbol,ticker){
     sl=Math.min(lows[i],lows[i-1])-atrVal*0.25;
     if(sl>=entry)sl=entry-atrVal*1.2;
     risk=entry-sl;
-    const rrCfg=selectedRR();
+    const rrCfg=rrCfgOverride||selectedRR();
     tp=entry+risk*rrCfg.ratio;
   }else{
     sl=Math.max(highs[i],highs[i-1])+atrVal*0.25;
     if(sl<=entry)sl=entry+atrVal*1.2;
     risk=sl-entry;
-    const rrCfg=selectedRR();
+    const rrCfg=rrCfgOverride||selectedRR();
     tp=entry-risk*rrCfg.ratio;
   }
   if(risk<=0)return null;
@@ -1279,6 +1279,8 @@ async function scan(manual=false){
 
   const tf=$("tfSelect").value;
   const q=$("quoteSelect").value;
+  const rrCfg=selectedRR();
+  const myScanGeneration=++scanGeneration;
   state.tf=tf;
   state.quote=q;
 
@@ -1345,7 +1347,8 @@ async function scan(manual=false){
           const signal=analyze(
             candles,
             displaySym,
-            {chg:Number(td.priceChangePercent)}
+            {chg:Number(td.priceChangePercent)},
+            rrCfg
           );
 
           if(signal){
@@ -1365,8 +1368,10 @@ async function scan(manual=false){
       results.push(...batchRes);
     }
 
+    if(myScanGeneration!==scanGeneration) return;
     state.signals=results
       .filter(s=>s&&s.dir&&s.score>=MIN_SCORE)
+      .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001)
       .sort((a,b)=>b.score-a.score);
 
     if(dbEnabled() && state.signals.length){
