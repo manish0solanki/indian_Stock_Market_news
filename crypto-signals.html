@@ -94,6 +94,12 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 }
 #liveTradesList,#archiveList{
   width:100%;
+  display:none;
+}
+#liveTradesList.panel-visible,#archiveList.panel-visible{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
 .trade-card{
   background:linear-gradient(145deg,var(--card),#101521);
@@ -136,8 +142,8 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .trade-footer .jbtns{display:flex;gap:5px}
 
 @media(min-width:900px){
-  #liveTradesList,#archiveList{
-    display:grid !important;
+  #liveTradesList.panel-visible,#archiveList.panel-visible{
+    display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
     gap:16px;
     align-items:stretch;
@@ -257,8 +263,8 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 </div>
 
 <div class="grid" id="signalsGrid"></div>
-<div class="journal-list" id="liveTradesList" style="display:none"></div>
-<div class="journal-list" id="archiveList" style="display:none"></div>
+<div class="journal-list" id="liveTradesList"></div>
+<div class="journal-list" id="archiveList"></div>
 
 <div class="settings" id="settingsPane" style="display:none">
 <div class="card">
@@ -1828,10 +1834,15 @@ document.querySelectorAll(".tab").forEach(tab=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
     tab.classList.add("active");
     const sel=tab.dataset.tab;
+
     $("signalsGrid").style.display=sel==="signals"?"grid":"none";
-    $("liveTradesList").style.display=sel==="live"?"flex":"none";
-    $("archiveList").style.display=sel==="archive"?"flex":"none";
     $("settingsPane").style.display=sel==="settings"?"block":"none";
+
+    // Use a class for Live/Archive visibility so desktop's 2-column grid
+    // does not override the tab selection.
+    $("liveTradesList").classList.toggle("panel-visible",sel==="live");
+    $("archiveList").classList.toggle("panel-visible",sel==="archive");
+
     if(sel==="live") updateLivePrices();
     if(sel==="archive") renderArchive();
   };
