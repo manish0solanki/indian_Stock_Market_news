@@ -255,7 +255,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <header>
 <div>
   <h1>⚡ CryptoSignal <span>Tracker</span></h1>
-  <div class="sub">Binance public data · USDT / BTC / INR pairs · CLOSED candles · Test/Paper mode · Minimum 1:2 RR</div>
+  <div class="sub">Binance public data · USDT / BTC / INR pairs · CLOSED candles · Test/Paper mode · Selectable risk:reward ratio</div>
 </div>
 <div class="controls">
   <select id="tfSelect">
@@ -267,6 +267,20 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="USDT" selected>USDT pairs</option>
     <option value="BTC">BTC pairs</option>
     <option value="INR">INR (converted)</option>
+  </select>
+  <select id="riskSelect" title="Risk portion of risk:reward">
+    <option value="1" selected>Risk 1</option><option value="2">Risk 2</option>
+    <option value="3">Risk 3</option><option value="4">Risk 4</option>
+    <option value="5">Risk 5</option><option value="6">Risk 6</option>
+    <option value="7">Risk 7</option><option value="8">Risk 8</option>
+    <option value="9">Risk 9</option><option value="10">Risk 10</option>
+  </select>
+  <select id="rewardSelect" title="Reward portion of risk:reward">
+    <option value="1">Reward 1</option><option value="2" selected>Reward 2</option>
+    <option value="3">Reward 3</option><option value="4">Reward 4</option>
+    <option value="5">Reward 5</option><option value="6">Reward 6</option>
+    <option value="7">Reward 7</option><option value="8">Reward 8</option>
+    <option value="9">Reward 9</option><option value="10">Reward 10</option>
   </select>
   <button id="autoBtn" class="primary">⏸ Auto: ON</button>
   <button id="autoTradeBtn">🤖 Auto Trades: OFF</button>
@@ -882,6 +896,8 @@ const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scan
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null;
 let tradeSort=localStorage.getItem("cs_trade_sort")||"newest";
+let selectedRisk=Number(localStorage.getItem("cs_rr_risk")||1);
+let selectedReward=Number(localStorage.getItem("cs_rr_reward")||2);
 const $ = id => document.getElementById(id);
 
 function loadScannerPreferences(){
@@ -890,8 +906,12 @@ function loadScannerPreferences(){
     const quote=localStorage.getItem("cs_quote");
     if(tf && ["15m","1h","4h"].includes(tf)) $("tfSelect").value=tf;
     if(quote && ["USDT","BTC","INR"].includes(quote)) $("quoteSelect").value=quote;
+    if(Number.isInteger(selectedRisk) && selectedRisk>=1 && selectedRisk<=10) $("riskSelect").value=String(selectedRisk);
+    if(Number.isInteger(selectedReward) && selectedReward>=1 && selectedReward<=10) $("rewardSelect").value=String(selectedReward);
     state.tf=$("tfSelect").value;
     state.quote=$("quoteSelect").value;
+    selectedRisk=Number($("riskSelect").value)||1;
+    selectedReward=Number($("rewardSelect").value)||2;
   }catch(e){ console.warn("Could not load scanner preferences",e); }
 }
 
@@ -899,7 +919,15 @@ function saveScannerPreferences(){
   try{
     localStorage.setItem("cs_tf",$("tfSelect").value);
     localStorage.setItem("cs_quote",$("quoteSelect").value);
+    localStorage.setItem("cs_rr_risk",String($("riskSelect").value));
+    localStorage.setItem("cs_rr_reward",String($("rewardSelect").value));
   }catch(e){ console.warn("Could not save scanner preferences",e); }
+}
+
+function selectedRR(){
+  const risk=Math.max(1,Number($("riskSelect").value)||1);
+  const reward=Math.max(1,Number($("rewardSelect").value)||2);
+  return {risk,reward,ratio:reward/risk};
 }
 
 /* ================= STORAGE ================= */
@@ -1219,11 +1247,15 @@ function analyze(candles,symbol,ticker){
   if(dir==="LONG"){
     sl=Math.min(lows[i],lows[i-1])-atrVal*0.25;
     if(sl>=entry)sl=entry-atrVal*1.2;
-    risk=entry-sl; tp=entry+risk*2;
+    risk=entry-sl;
+    const rrCfg=selectedRR();
+    tp=entry+risk*rrCfg.ratio;
   }else{
     sl=Math.max(highs[i],highs[i-1])+atrVal*0.25;
     if(sl<=entry)sl=entry+atrVal*1.2;
-    risk=sl-entry; tp=entry-risk*2;
+    risk=sl-entry;
+    const rrCfg=selectedRR();
+    tp=entry-risk*rrCfg.ratio;
   }
   if(risk<=0)return null;
   const rr=Math.abs(tp-entry)/risk;
@@ -1334,7 +1366,7 @@ async function scan(manual=false){
     }
 
     state.signals=results
-      .filter(s=>s&&s.dir&&s.rr>=2&&s.score>=MIN_SCORE)
+      .filter(s=>s&&s.dir&&s.score>=MIN_SCORE)
       .sort((a,b)=>b.score-a.score);
 
     if(dbEnabled() && state.signals.length){
@@ -1615,7 +1647,7 @@ function renderSignals(){
   g.innerHTML=state.signals.map((s,idx)=>`
     <div class="card">
       <div class="top">
-        <div><div class="sym">${s.sym}</div><div class="name">Test mode · ${state.tf}</div></div>
+        <div><div class="sym">${s.sym}</div><div class="name">Test mode · ${state.tf} · R:R ${selectedRisk}:${selectedReward}</div></div>
         <div><div class="price">${state.quote==="INR"?"₹":"$"}${fmt(s.price)}</div>
         <div class="chg">${s.chg>=0?"▲":"▼"} ${Math.abs(s.chg).toFixed(2)}%</div></div>
       </div>
@@ -2142,6 +2174,16 @@ $("tfSelect").addEventListener("change",()=>{
 });
 $("quoteSelect").addEventListener("change",()=>{
   state.quote=$("quoteSelect").value;
+  saveScannerPreferences();
+  scan(true);
+});
+$("riskSelect").addEventListener("change",()=>{
+  selectedRisk=Math.max(1,Math.min(10,Number($("riskSelect").value)||1));
+  saveScannerPreferences();
+  scan(true);
+});
+$("rewardSelect").addEventListener("change",()=>{
+  selectedReward=Math.max(1,Math.min(10,Number($("rewardSelect").value)||2));
   saveScannerPreferences();
   scan(true);
 });
