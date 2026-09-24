@@ -37,3 +37,9 @@ drop policy if exists "Users can update own crypto trades" on public.crypto_trad
 create policy "Users can update own crypto trades" on public.crypto_trades for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 drop policy if exists "Users can delete own crypto trades" on public.crypto_trades;
 create policy "Users can delete own crypto trades" on public.crypto_trades for delete to authenticated using (auth.uid() = user_id);
+
+-- Quote-aware duplicate protection
+-- Run once in Supabase SQL Editor if the older index exists:
+DROP INDEX IF EXISTS public.crypto_signals_unique_active;
+CREATE UNIQUE INDEX IF NOT EXISTS crypto_signals_unique_active
+ON public.crypto_signals(symbol, timeframe, direction, quote, status);
