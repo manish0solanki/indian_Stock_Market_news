@@ -1,5 +1,25 @@
 [
   {
+    "slug": "sbilife-stock-spotlight",
+    "title": "SBI Life Dips 0.3% on Nearly 4x Volume: Distribution Near 50-Day Average",
+    "excerpt": "PRICE ACTION: SBI Life edged lower on Monday but saw volume surge to nearly four times its daily average, suggesting meaningful institutional participation despite the modest pr...",
+    "category": "stock-spotlight",
+    "date": "2026-09-24",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "SBILIFE",
+      "SBI LIFE INSURANCE CO LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-metal-falls-1-96-percent-as-large-caps-lead-broad-decline",
     "title": "Nifty Metal Falls 1.96% as Large Caps Lead Broad Decline",
     "excerpt": "Nifty Metal declined 1.96% (260.4 points) to 13041.95, with 203 of 271 stocks declining against 67 advancing. Weakness was broad-based and large-cap-driven: the top 10 companies by market capitalization averaged -1.88%, versus -0.96% for smaller stocks. The market-cap-weighted stock-universe change was -1.71%, while the median stock change was -1.35%. Adani Enterprises fell 3.11% and Lloyds Metals And Energy dropped 3.65%.",
