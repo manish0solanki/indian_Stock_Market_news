@@ -1259,7 +1259,7 @@ function analyze(candles,symbol,ticker){
   }
   if(risk<=0)return null;
   const rr=Math.abs(tp-entry)/risk;
-  if(!Number.isFinite(rr)||rr<2)return null;
+  if(!Number.isFinite(rr)||rr<=0)return null;
   if(volRatio<MIN_VOLUME)return null;
   return {sym:symbol,name:symbol,price:price,chg:ticker.chg,dir:dir,
     entry:entry,sl:sl,tp:tp,rr:rr,
