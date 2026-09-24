@@ -24,7 +24,57 @@ function renderSignals(){var el=$("signals");var filtered=signals.filter(functio
 function renderTrades(){var el=$("trades");if(!trades.length){el.innerHTML='<div class="empty">No paper trades yet.</div>';return}var rows=trades.map(function(t){return '<tr><td><b>'+esc(t.symbol)+'</b></td><td><span class="badge '+(t.direction==="LONG"?"long":"short")+'">'+esc(t.direction)+'</span></td><td>'+crypto(t.entry_price)+'</td><td>'+crypto(t.stop_loss)+'</td><td>'+crypto(t.take_profit)+'</td><td>'+money(t.amount_inr)+'</td><td>'+esc(t.leverage)+'x</td><td>'+esc(t.status)+'</td><td style="color:'+(Number(t.pnl_inr)>=0?"var(--g)":"var(--r)")+'">'+money(t.pnl_inr)+'</td></tr>'}).join("");el.innerHTML='<div class="trade-table"><table><thead><tr><th>Symbol</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP</th><th>Amount</th><th>Leverage</th><th>Status</th><th>P&L</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
 async function loadData(){var s=await sb.from("crypto_signals").select("*").in("status",["ACTIVE","TRIGGERED"]).order("created_at",{ascending:false}).limit(50);if(s.error){console.error(s.error);$("scannerStatus").textContent="Setup required";notice("Run supabase_crypto_signals.sql in Supabase SQL Editor first.","error");renderSignals()}else{signals=s.data||[];$("scannerStatus").textContent="Connected";$("lastSignal").textContent=signals[0]?signals[0].symbol+"/"+signals[0].quote:"—";renderSignals()}var t=await sb.from("crypto_trades").select("*").order("created_at",{ascending:false}).limit(100);if(!t.error){trades=t.data||[]}renderTrades()}
 window.openTradeById=function(id){selected=signals.find(function(s){return String(s.id)===String(id);});if(!selected)return;$("tmTitle").textContent="Paper Trade — "+selected.symbol+"/"+selected.quote+" "+selected.direction;$("tmInfo").innerHTML="Pair: <b>"+esc(selected.symbol)+"/"+esc(selected.quote)+"</b> · Entry: <b>"+crypto(selected.entry_price)+"</b> · SL: <b>"+crypto(selected.stop_loss)+"</b> · TP: <b>"+crypto(selected.take_profit)+"</b> · RR: <b>1:"+crypto(selected.rr)+"</b>";$("tradeBg").classList.add("open")};function closeTradeModal(){$("tradeBg").classList.remove("open");selected=null}$("cancelTrade").onclick=closeTradeModal;
-$("saveTradeBtn").onclick=async function(){if(!selected||!user)return;var amount=Number($("tmAmount").value)||0,lev=Number($("tmLeverage").value)||1;$("saveTradeBtn").disabled=true;var row={user_id:user.id,signal_id:selected.id,symbol:selected.symbol,direction:selected.direction,timeframe:selected.timeframe,entry_price:selected.entry_price,stop_loss:selected.stop_loss,take_profit:selected.take_profit,amount_inr:amount,leverage:lev,rr:selected.rr,score:selected.score,status:"RUNNING",current_price:selected.entry_price,pnl_inr:0};var r=await sb.from("crypto_trades").insert(row);$("saveTradeBtn").disabled=false;if(r.error){notice(r.error.message,"error");return}closeTradeModal();notice("Paper trade saved.");await loadData()};
+$("saveTradeBtn").onclick=async function(){
+  if(!selected){notice("Select a signal first.","error");return}
+  $("saveTradeBtn").disabled=true;
+  try{
+    const sessionResult=await sb.auth.getSession();
+    const session=sessionResult.data&&sessionResult.data.session;
+    const currentUser=session&&session.user;
+    if(!currentUser){notice("Your login session has expired. Please sign in again.","error");return}
+    user=currentUser;
+
+    const amount=Number($("tmAmount").value);
+    const lev=Number($("tmLeverage").value);
+    if(!Number.isFinite(amount)||amount<=0){notice("Enter a paper-trade amount greater than ₹0.","error");return}
+    if(!Number.isFinite(lev)||lev<1||lev>10){notice("Leverage must be between 1x and 10x.","error");return}
+
+    const row={
+      user_id:currentUser.id,
+      signal_id:selected.id,
+      symbol:selected.symbol,
+      direction:selected.direction,
+      timeframe:selected.timeframe||"1h",
+      entry_price:Number(selected.entry_price),
+      stop_loss:Number(selected.stop_loss),
+      take_profit:Number(selected.take_profit),
+      amount_inr:amount,
+      leverage:lev,
+      rr:Number(selected.rr),
+      score:Number(selected.score),
+      status:"RUNNING",
+      current_price:Number(selected.entry_price),
+      pnl_inr:0
+    };
+
+    const result=await sb.from("crypto_trades").insert(row).select().single();
+    if(result.error){
+      console.error("Paper trade insert failed:",result.error,row);
+      notice("Could not save paper trade: "+(result.error.message||"Supabase error"),"error");
+      return
+    }
+
+    closeTradeModal();
+    notice("Paper trade saved for "+selected.symbol+"/"+selected.quote+".","ok");
+    await loadData();
+  }catch(err){
+    console.error("Paper trade error:",err);
+    notice("Could not save paper trade: "+(err.message||String(err)),"error");
+  }finally{
+    $("saveTradeBtn").disabled=false;
+  }
+};
+
 $("quoteFilter").value=selectedQuote;$("quoteFilter").onchange=function(){selectedQuote=$("quoteFilter").value;renderSignals();};
 async function checkUser(){var s=await sb.auth.getSession();user=s.data.session?s.data.session.user:null;if(user)$("userEmail").textContent=user.email||"";return !!user}
 $("loginBtn").onclick=async function(){var v=$("email").value.trim(),p=$("password").value,email=v.toLowerCase()==="admin"?"admin@tradesutra.com":v;if(!email||!p)return loginNotice("Enter email and password.");$("loginBtn").disabled=true;var r=await sb.auth.signInWithPassword({email:email,password:p});if(r.error){loginNotice(r.error.message);$("loginBtn").disabled=false;return}user=r.data.user;$("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await loadData();$("loginBtn").disabled=false};$("password").addEventListener("keydown",function(e){if(e.key==="Enter")$("loginBtn").click()});$("logoutBtn").onclick=async function(){await sb.auth.signOut();location.reload()};$("backBtn").onclick=function(){location.href="/"};$("tradeBg").onclick=function(e){if(e.target===$("tradeBg"))closeTradeModal()};(async function(){if(await checkUser()){$("loginView").classList.add("hidden");$("app").classList.remove("hidden");await loadData()}})();
