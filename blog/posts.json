@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-24-sept-2026",
+    "title": "Nifty 50 Daily Wrap — 24 Sept 2026: Drops 1.64%",
+    "excerpt": "Nifty 50 dropped 1.64% to close at 23,063.10.",
+    "category": "daily-wrap",
+    "date": "2026-09-24T17:35:22+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-selling-intensifies-to-3810-cr-as-dii-buying-extends-21-session-streak-nifty-climbs-05",
     "title": "FII Selling Intensifies to ₹3,810 Cr as DII Buying Extends 21-Session Streak; Nifty Climbs 0.5%",
     "excerpt": "FIIs sold ₹3,810 Cr today, deepening from ₹576 Cr yesterday, while DIIs bought ₹4,120 Cr extending their 21-day purchase streak. The Nifty 50 rose 117.8 points to ₹23,446.8 desp...",
