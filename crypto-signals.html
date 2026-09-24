@@ -884,6 +884,24 @@ let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=n
 let tradeSort=localStorage.getItem("cs_trade_sort")||"newest";
 const $ = id => document.getElementById(id);
 
+function loadScannerPreferences(){
+  try{
+    const tf=localStorage.getItem("cs_tf");
+    const quote=localStorage.getItem("cs_quote");
+    if(tf && ["15m","1h","4h"].includes(tf)) $("tfSelect").value=tf;
+    if(quote && ["USDT","BTC","INR"].includes(quote)) $("quoteSelect").value=quote;
+    state.tf=$("tfSelect").value;
+    state.quote=$("quoteSelect").value;
+  }catch(e){ console.warn("Could not load scanner preferences",e); }
+}
+
+function saveScannerPreferences(){
+  try{
+    localStorage.setItem("cs_tf",$("tfSelect").value);
+    localStorage.setItem("cs_quote",$("quoteSelect").value);
+  }catch(e){ console.warn("Could not save scanner preferences",e); }
+}
+
 /* ================= STORAGE ================= */
 async function load(){
   try{
@@ -2117,6 +2135,16 @@ $("autoConfidence").onchange=()=>{
 $("autoAmount").onchange=()=>{state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);localStorage.setItem("cs_auto_amount",String(state.autoAmount));};
 $("autoLeverage").onchange=()=>{state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));};
 
+$("tfSelect").addEventListener("change",()=>{
+  state.tf=$("tfSelect").value;
+  saveScannerPreferences();
+  scan(true);
+});
+$("quoteSelect").addEventListener("change",()=>{
+  state.quote=$("quoteSelect").value;
+  saveScannerPreferences();
+  scan(true);
+});
 $("scanBtn").onclick=()=>scan(true);
 $("jrnlBtn").onclick=()=>{document.querySelector('[data-tab="live"]').click();};
 function toast(msg){
@@ -2153,6 +2181,7 @@ function updateDbStatus(){
 /* ================= INIT ================= */
 (async()=>{
   await initSupabase();
+  loadScannerPreferences();
   await load();
   await loadWallet();
   updateAutoTradeButton();
