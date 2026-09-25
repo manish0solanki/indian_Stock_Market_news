@@ -2751,7 +2751,7 @@ function renderArchive(){
       <span>Completed TP/SL/manual trades will appear here.</span>
     </div>`;
   }else{
-    l.innerHTML=sortTrades(archived,archiveTradeSort).map(t=>renderTradeCard(t,state.journal.indexOf(t),true)).join("");
+    l.innerHTML=sortTrades(archived,archiveTradeSort,"archive").map(t=>renderTradeCard(t,state.journal.indexOf(t),true)).join("");
   }
 
   const count=$("archiveTabCount");
