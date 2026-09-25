@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-25T00:30:21.918Z",
+  "generated_at": "2026-09-25T06:30:21.843Z",
   "source": {
     "crude": "Snapdata / EIA",
     "fx": "Snapdata / ECB cross-rates",
@@ -89,7 +89,7 @@
   },
   "marketpulse": {
     "version": "1.0",
-    "generated_at": "2026-09-25T00:30:21.918Z",
+    "generated_at": "2026-09-25T06:30:21.843Z",
     "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
     "crude_regime": "BEARISH",
     "india_crude_pressure": "MODERATE"
@@ -650,8 +650,8 @@
       "published_duplicate_symbols": 0,
       "published_high_confidence": 19,
       "published_medium_confidence": 0,
-      "generated_at": "2026-09-25T00:30:25.088Z"
+      "generated_at": "2026-09-25T06:30:24.839Z"
     },
-    "generated_at": "2026-09-25T00:30:24.880Z"
+    "generated_at": "2026-09-25T06:30:24.754Z"
   }
 }
