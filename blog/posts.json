@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-resumes-as-dii-buying-streak-extends-to-23-sessions",
+    "title": "FII Selling Resumes as DII Buying Streak Extends to 23 Sessions",
+    "excerpt": "FIIs returned to selling with a net outflow of ₹5,027.36 Cr, while DIIs continued their record 23-session buying streak at ₹4,301.18 Cr. The Nifty 50 edged up 0.34% to ₹23,140.5...",
+    "category": "fiidii-flows",
+    "date": "2026-09-24",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "fii-return-to-net-buying-after-5-session-outflow-spell-as-dii-22-day-buying-streak-continues",
     "title": "FII Return to Net Buying After 5-Session Outflow Spell as DII 22-Day Buying Streak Continues",
     "excerpt": "FII/FPI turned net buyers at ₹1,617.45 Cr today after selling ₹3,809.99 Cr yesterday, while DII extended their 22-session buying streak with ₹2,341.46 Cr inflow. The Nifty 50 fe...",
