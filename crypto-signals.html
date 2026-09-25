@@ -2620,13 +2620,13 @@ function renderLiveList(){
     const i=state.journal.indexOf(t), live=calcLivePnL(t), q=quoteLabel(t), price=v=>q+fmt(v);
     const pnl=Number(live.pnl)||0, r=Number(live.rMultiple)||0;
     return `<tr>
-      <td><div class="live-list-pair">${escapeHtml(t.sym)}</div><div class="live-list-muted">${escapeHtml(t.quote||state.quote)} · ${escapeHtml(state.tf)}</div></td>
-      <td><span class="live-list-dir ${t.dir==="SHORT"?"short":"long"}">${escapeHtml(t.dir)}</span></td>
+      <td><div class="live-list-pair">${String(t.sym)}</div><div class="live-list-muted">${String(t.quote||state.quote)} · ${String(state.tf)}</div></td>
+      <td><span class="live-list-dir ${t.dir==="SHORT"?"short":"long"}">${String(t.dir)}</span></td>
       <td class="live-list-num">${price(t.entry)}</td><td class="live-list-num">${price(live.cp)}</td>
       <td class="live-list-num" style="color:var(--red)">${price(t.sl)}</td><td class="live-list-num" style="color:var(--green)">${price(t.tp)}</td>
       <td class="live-list-num">₹${Number(t.amt||0).toLocaleString("en-IN")}</td><td class="live-list-num">${t.lev}x</td>
       <td class="live-list-pnl" style="color:${pnl>=0?"var(--green)":"var(--red)"}">${pnl>=0?"+":""}${fmtINR(pnl)}</td>
-      <td class="live-list-r">${r>=0?"+":""}${r.toFixed(1)}R</td><td class="live-list-muted">${escapeHtml(t.date||"—")}</td>
+      <td class="live-list-r">${r>=0?"+":""}${r.toFixed(1)}R</td><td class="live-list-muted">${String(t.date||"—")}</td>
       <td><div class="live-list-actions"><button class="small primary" onclick="quickClose(${i},'tp')">🎯</button><button class="small danger" onclick="quickClose(${i},'sl')">🛑</button><button class="small" onclick="openEdit(${i})">✏️</button><button class="small danger" onclick="deleteTrade(${i})">🗑️</button></div></td>
     </tr>`;
   }).join("");
