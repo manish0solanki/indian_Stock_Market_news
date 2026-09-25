@@ -1,5 +1,26 @@
 [
   {
+    "slug": "dii-buying-extends-to-24-sessions-offsets-fii-outflows-as-nifty-edges-higher",
+    "title": "DII Buying Extends to 24 Sessions, Offsets FII Outflows as Nifty Edges Higher",
+    "excerpt": "FII net selling moderated to ₹3,693.93 Cr today while DII buying at ₹2,838.17 Cr narrowed the combined institutional outflow to ₹855.76 Cr. The Nifty 50 rose 0.34% to ₹23,140.5...",
+    "category": "fiidii-flows",
+    "date": "2026-09-25",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "nifty-50-daily-wrap-25-sept-2026",
     "title": "Nifty 50 Daily Wrap — 25 Sept 2026: Gains 0.34%",
     "excerpt": "Nifty 50 gained 0.34% to close at 23,140.50.",
