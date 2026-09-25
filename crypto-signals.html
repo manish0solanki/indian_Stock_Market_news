@@ -2399,7 +2399,7 @@ function calcClosedPnL(t){
 }
 
 /* ================= RENDER ================= */
-function render(){renderStats();renderSignals();renderCryptoLiveSummary();renderLiveTrades();renderArchive();renderWallet();}
+function render(){renderStats();renderSignals();renderCryptoLiveSummary();renderLiveTrades();renderArchive();renderLiveList();renderWallet();}
 
 function renderStats(){
   const closed=state.journal.filter(t=>t.closed);
@@ -2566,30 +2566,35 @@ function renderTradeCard(t, ri, archived=false){
     </div>`;
 }
 
-function tradeSortValue(t,sort){
-  if(sort==="pnlHigh"||sort==="pnlLow"){
-    return t.closed ? calcClosedPnL(t) : calcLivePnL(t).pnl;
-  }
-  if(sort==="capitalHigh"||sort==="capitalLow") return Number(t.amt)||0;
-  if(sort==="entryHigh"||sort==="entryLow") return Number(t.entry)||0;
-  if(sort==="symbolAZ"||sort==="symbolZA") return String(t.sym||"").toUpperCase();
-  // Use the immutable ISO creation timestamp for reliable chronological sorting.
-  // The legacy `date` field is a locale-formatted display string and is not reliable for sorting.
+function tradeSortTimestamp(t){
   const raw=t.createdAt||t.created_at||t.date||0;
-  const dt=raw instanceof Date ? raw.getTime() : new Date(raw).getTime();
-  return Number.isFinite(dt)?dt:0;
+  if(raw instanceof Date)return raw.getTime();
+  const s=String(raw||"").trim(); if(!s)return 0;
+  let ms=Date.parse(s);
+  if(Number.isFinite(ms))return ms;
+  const m=s.match(/^(\\d{1,2})[\\/\\-.](\\d{1,2})[\\/\\-.](\\d{4})(?:,?\\s+(\\d{1,2}):(\\d{2})(?::(\\d{2}))?)?/);
+  if(m)ms=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0)).getTime();
+  return Number.isFinite(ms)?ms:0;
 }
-
-function sortTrades(list,sort){
+function tradeSortValue(t,sort){
+  if(sort==="pnlHigh"||sort==="pnlLow")return Number(t.closed?calcClosedPnL(t):calcLivePnL(t).pnl)||0;
+  if(sort==="capitalHigh"||sort==="capitalLow")return Number(t.amt)||0;
+  if(sort==="entryHigh"||sort==="entryLow")return Number(t.entry)||0;
+  if(sort==="symbolAZ"||sort==="symbolZA")return String(t.sym||"").toUpperCase();
+  return tradeSortTimestamp(t);
+}
+function sortTrades(list,sort="newest"){
   const arr=list.slice();
   arr.sort((a,b)=>{
-    const av=tradeSortValue(a,sort), bv=tradeSortValue(b,sort);
+    const av=tradeSortValue(a,sort),bv=tradeSortValue(b,sort);
     if(typeof av==="string"||typeof bv==="string"){
-      const cmp=String(av).localeCompare(String(bv));
-      return sort==="symbolZA" ? -cmp : cmp;
+      const cmp=String(av).localeCompare(String(bv),undefined,{numeric:true,sensitivity:"base"});
+      return sort==="symbolZA"?-cmp:cmp;
     }
-    if(sort==="oldest"||sort==="pnlLow"||sort==="capitalLow"||sort==="entryLow") return av-bv;
-    return bv-av;
+    const low=["oldest","pnlLow","capitalLow","entryLow"].includes(sort);
+    const diff=low?av-bv:bv-av;
+    if(diff!==0)return diff;
+    return tradeSortTimestamp(a)-tradeSortTimestamp(b);
   });
   return arr;
 }
@@ -3507,7 +3512,7 @@ function selectAppTab(sel){
   $("archiveList").hidden=sel!=="archive";
 
   $("liveTradesList").classList.toggle("panel-visible",sel==="live");
-  if(sel==="liveList") renderLiveList();
+  if(sel==="liveList"){ activeTradePanel="liveList"; renderLiveList(); }
   $("archiveList").classList.toggle("panel-visible",sel==="archive");
 
   const tools=$("tradeTools");
