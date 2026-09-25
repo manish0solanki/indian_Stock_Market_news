@@ -2079,7 +2079,8 @@ async function scan(manual=false){
 
       $("scanBtn").disabled=false;
       $("scanBtn").textContent="🔍 Scan Now";
-      return;
+      scanInProgress=false;
+      return false;
     }
 
     for(let s=0;s<availablePairs.length;s+=5){
