@@ -1295,8 +1295,10 @@ async function fetchPrice(symbol, quoteOverride=null){
       const base=baseSymbolFromPair(symbol);
       const fx=await getUsdInr();
       const source=base+"USDT";
-      const r=await fetch(
-        "https://api.binance.com/api/v3/ticker/price?symbol="+source
+      const r=await fetchWithTimeout(
+        "https://api.binance.com/api/v3/ticker/price?symbol="+source,
+        {},
+        8000
       );
       if(!r.ok) return null;
 
@@ -1306,8 +1308,10 @@ async function fetchPrice(symbol, quoteOverride=null){
       return Number.isFinite(usdPrice) ? usdPrice*fx : null;
     }
 
-    const r=await fetch(
-      "https://api.binance.com/api/v3/ticker/price?symbol="+symbol
+    const r=await fetchWithTimeout(
+      "https://api.binance.com/api/v3/ticker/price?symbol="+symbol,
+      {},
+      8000
     );
     if(!r.ok) return null;
 
@@ -1315,6 +1319,7 @@ async function fetchPrice(symbol, quoteOverride=null){
     return Number(d.price);
   }catch(e){
     console.warn("Price fetch failed:",symbol,e);
+    logConnection("⚠ Live price timeout/failed · "+symbol,"warn","price-"+symbol);
     return null;
   }
 }
@@ -2260,9 +2265,18 @@ async function scan(manual=false){
 
   $("scanBtn").disabled=false;
   $("scanBtn").textContent="🔍 Scan Now";
-  render();
-  try{ await updateLivePrices(); }catch(e){ console.warn("Live price refresh:",e); }
+
+  // Release the scanner lock BEFORE the optional live-P&L refresh.
+  // A slow price request must never block the next auto-scan.
   scanInProgress=false;
+
+  render();
+  try{
+    await updateLivePrices();
+  }catch(e){
+    console.warn("Live price refresh:",e);
+    logConnection("⚠ Live price refresh failed · scanner remains available","warn","live-refresh-error");
+  }
   return true;
 }
 
