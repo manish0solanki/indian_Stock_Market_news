@@ -387,9 +387,9 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <div class="reports-panel" id="backtestPane" hidden>
   <div class="backtest-hero">
     <div>
-      <div class="eyebrow">HISTORICAL STRATEGY RESEARCH V2</div>
-      <h2>🧪 Backtest & Strategy Diagnostics</h2>
-      <p>Uses Binance closed candles and the same signal engine. V2 records direction, score, RSI, volume, MFE/MAE, holding time, exit reason, gross R, trading costs and net R so we can see <b>where</b> the strategy is failing instead of only seeing the final P&L.</p>
+      <div class="eyebrow">HISTORICAL STRATEGY RESEARCH V3</div>
+      <h2>🧪 Backtest & Strategy Diagnostics V3</h2>
+      <p>V3 keeps the same signal engine and adds <b>stop-size analysis, cost sensitivity, timeframe × direction analysis, and 70/30 out-of-sample checks</b>. The goal is to diagnose whether the apparent edge survives different risk sizes and trading-cost assumptions before changing the live scanner.</p>
     </div>
   </div>
   <div class="backtest-controls">
@@ -410,13 +410,14 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     </div>
     <div><label>Fee / side %</label><input id="btFee" type="number" min="0" max="2" step="0.01" value="0.10"></div>
     <div><label>Slippage / side %</label><input id="btSlip" type="number" min="0" max="1" step="0.01" value="0.05"></div>
-    <button class="primary" id="runBacktestBtn">🧪 Run Backtest V2</button>
+    <button class="primary" id="runBacktestBtn">🧪 Run Backtest V3</button>
     <button id="exportBacktestBtn">⬇️ Export Trades CSV</button>
   </div>
   <div class="settings-info" id="btStatus">Ready. Backtest uses <b id="btConfig">current timeframe · current quote · current R:R</b>.</div>
   <div id="btSummary"></div>
   <div id="btOverview"></div>
   <div id="btDiagnostics"></div>
+  <div id="btV3Diagnostics"></div>
   <div id="btTable"></div>
   <div id="btTrades"></div>
   <div class="backtest-note">
@@ -2460,25 +2461,25 @@ function renderBacktestResults(results,meta){
 
   const diagnostics=[];
   diagnostics.push(renderBtBreakdown("↕️ Direction",btBreakdownRows(results,"direction",[
-    Object.assign(x=>x,{label:"LONG",test:t=>t.direction==="LONG"}),
-    Object.assign(x=>x,{label:"SHORT",test:t=>t.direction==="SHORT"})
+    {label:"LONG",test:t=>t.direction==="LONG"},
+    {label:"SHORT",test:t=>t.direction==="SHORT"}
   ])));
   diagnostics.push(renderBtBreakdown("🎯 Score Buckets",btBreakdownRows(results,"score",[
-    Object.assign(x=>x,{label:"65–69",test:t=>t.score>=65&&t.score<70}),
-    Object.assign(x=>x,{label:"70–74",test:t=>t.score>=70&&t.score<75}),
-    Object.assign(x=>x,{label:"75–79",test:t=>t.score>=75&&t.score<80}),
-    Object.assign(x=>x,{label:"80+",test:t=>t.score>=80})
+    {label:"65–69",test:t=>t.score>=65&&t.score<70},
+    {label:"70–74",test:t=>t.score>=70&&t.score<75},
+    {label:"75–79",test:t=>t.score>=75&&t.score<80},
+    {label:"80+",test:t=>t.score>=80}
   ])));
   diagnostics.push(renderBtBreakdown("📊 RSI Buckets",btBreakdownRows(results,"rsi",[
-    Object.assign(x=>x,{label:"<40",test:t=>t.rsi<40}),
-    Object.assign(x=>x,{label:"40–49.9",test:t=>t.rsi>=40&&t.rsi<50}),
-    Object.assign(x=>x,{label:"50–59.9",test:t=>t.rsi>=50&&t.rsi<60}),
-    Object.assign(x=>x,{label:"60+",test:t=>t.rsi>=60})
+    {label:"<40",test:t=>t.rsi<40},
+    {label:"40–49.9",test:t=>t.rsi>=40&&t.rsi<50},
+    {label:"50–59.9",test:t=>t.rsi>=50&&t.rsi<60},
+    {label:"60+",test:t=>t.rsi>=60}
   ])));
   diagnostics.push(renderBtBreakdown("📈 Volume Buckets",btBreakdownRows(results,"volumeRatio",[
-    Object.assign(x=>x,{label:"1.2–1.49x",test:t=>t.volumeRatio>=1.2&&t.volumeRatio<1.5}),
-    Object.assign(x=>x,{label:"1.5–1.99x",test:t=>t.volumeRatio>=1.5&&t.volumeRatio<2}),
-    Object.assign(x=>x,{label:"2.0x+",test:t=>t.volumeRatio>=2})
+    {label:"1.2–1.49x",test:t=>t.volumeRatio>=1.2&&t.volumeRatio<1.5},
+    {label:"1.5–1.99x",test:t=>t.volumeRatio>=1.5&&t.volumeRatio<2},
+    {label:"2.0x+",test:t=>t.volumeRatio>=2}
   ])));
   diagnostics.push('<div class="backtest-section"><h3>💸 Cost Impact</h3><p class="backtest-note">Gross R shows the strategy before the configured round-trip fee/slippage assumption. Net R subtracts that cost on every closed trade.</p><div class="backtest-mini-grid"><div><span>Gross R</span><b class="'+btClass(s.grossR)+'">'+btR(s.grossR)+'</b></div><div><span>Estimated costs</span><b class="loss">-'+Math.abs(s.costR).toFixed(2)+'R</b></div><div><span>Net R</span><b class="'+btClass(s.netR)+'">'+btR(s.netR)+'</b></div><div><span>Round-trip assumption</span><b>'+((meta.fee+meta.slip)*2).toFixed(2)+'%</b></div></div></div>');
   $("btDiagnostics").innerHTML='<div class="backtest-diagnostic-grid">'+diagnostics.join('')+'</div>';
@@ -2497,7 +2498,154 @@ function renderBacktestResults(results,meta){
     '</tbody></table></div></div>';
 
   const tfText=meta.timeframes.length===1?meta.timeframes[0]:meta.timeframes.join(" + ");
-  $("btStatus").textContent="✓ Backtest V2 complete · "+meta.pairs+" pairs · "+meta.days+" days · "+tfText+" · "+meta.quote+" · R:R "+meta.risk+":"+meta.reward+" · fee "+meta.fee.toFixed(2)+"%/side · slippage "+meta.slip.toFixed(2)+"%/side";
+  $("btStatus").textContent="✓ Backtest V3 complete · "+meta.pairs+" pairs · "+meta.days+" days · "+tfText+" · "+meta.quote+" · R:R "+meta.risk+":"+meta.reward+" · fee "+meta.fee.toFixed(2)+"%/side · slippage "+meta.slip.toFixed(2)+"%/side";
+}
+
+function v3RiskPct(t){
+  const entry=Number(t.entry), sl=Number(t.sl);
+  if(!(entry>0)||!(sl>0))return NaN;
+  return Math.abs(entry-sl)/entry*100;
+}
+
+function v3CostR(t,roundTripPct){
+  const entry=Number(t.entry), risk=Math.abs(Number(t.entry)-Number(t.sl));
+  if(!(entry>0)||!(risk>0))return 0;
+  return (Math.max(0,Number(roundTripPct)||0)/100)*entry/risk;
+}
+
+function v3Summary(results,roundTripPctOverride=null){
+  const closed=results.filter(t=>t.status!=="OPEN"&&Number.isFinite(Number(t.grossR)));
+  const grossR=closed.reduce((s,t)=>s+(Number(t.grossR)||0),0);
+  const costR=roundTripPctOverride==null
+    ? closed.reduce((s,t)=>s+(Number(t.costR)||0),0)
+    : closed.reduce((s,t)=>s+v3CostR(t,roundTripPctOverride),0);
+  const netR=grossR-costR;
+  const wins=closed.filter(t=>(Number(t.grossR)-v3CostR(t,roundTripPctOverride==null?0:roundTripPctOverride))>0);
+  const losses=closed.filter(t=>(Number(t.grossR)-v3CostR(t,roundTripPctOverride==null?0:roundTripPctOverride))<=0);
+  const grossWin=wins.reduce((s,t)=>s+(Number(t.grossR)-v3CostR(t,roundTripPctOverride==null?0:roundTripPctOverride)),0);
+  const grossLoss=Math.abs(losses.reduce((s,t)=>s+(Number(t.grossR)-v3CostR(t,roundTripPctOverride==null?0:roundTripPctOverride)),0));
+  return {
+    total:closed.length,
+    grossR,
+    costR,
+    netR,
+    expectancy:closed.length?netR/closed.length:0,
+    winRate:closed.length?wins.length/closed.length*100:0,
+    profitFactor:grossLoss>0?grossWin/grossLoss:(grossWin>0?Infinity:0)
+  };
+}
+
+function v3BucketRows(results,groups){
+  return groups.map(g=>({label:g.label,stats:summarizeBacktest(results.filter(g.test))}));
+}
+
+function v3RiskRows(results){
+  const groups=[
+    {label:"<0.25%",test:t=>v3RiskPct(t)<0.25},
+    {label:"0.25–0.49%",test:t=>v3RiskPct(t)>=0.25&&v3RiskPct(t)<0.5},
+    {label:"0.50–0.99%",test:t=>v3RiskPct(t)>=0.5&&v3RiskPct(t)<1},
+    {label:"1.00–1.99%",test:t=>v3RiskPct(t)>=1&&v3RiskPct(t)<2},
+    {label:"2.00%+",test:t=>v3RiskPct(t)>=2}
+  ];
+  return groups.map(g=>{
+    const rows=results.filter(t=>t.status!=="OPEN"&&g.test(t));
+    const s=summarizeBacktest(rows);
+    const avgRisk=rows.length?rows.reduce((a,t)=>a+v3RiskPct(t),0)/rows.length:0;
+    return {label:g.label,stats:s,avgRisk};
+  });
+}
+
+function v3CostSensitivityRows(results){
+  return [0,0.10,0.20,0.30,0.50,0.75,1.00].map(rt=>{
+    const s=v3Summary(results,rt);
+    return {rt,stats:s};
+  });
+}
+
+function v3TimeDirectionRows(results){
+  const keys=[];
+  const map={};
+  results.forEach(t=>{
+    const key=(t.timeframe||"—")+" "+(t.direction||"—");
+    if(!map[key])map[key]=[];
+    map[key].push(t);
+  });
+  Object.keys(map).sort().forEach(k=>keys.push({label:k,stats:summarizeBacktest(map[k])}));
+  return keys;
+}
+
+function v3OosRows(results){
+  const by={};
+  results.forEach(t=>{
+    const tf=t.timeframe||"—";
+    if(!by[tf])by[tf]=[];
+    by[tf].push(t);
+  });
+  return Object.keys(by).sort().map(tf=>{
+    const arr=by[tf].filter(t=>t.status!=="OPEN"&&Number.isFinite(Number(t.signalTime))).sort((a,b)=>a.signalTime-b.signalTime);
+    const cut=Math.max(1,Math.floor(arr.length*0.70));
+    const train=arr.slice(0,cut);
+    const test=arr.slice(cut);
+    return {tf,train:v3Summary(train),test:v3Summary(test),trainCount:train.length,testCount:test.length};
+  });
+}
+
+function v3RenderTable(title,headers,rowsHtml){
+  return '<div class="backtest-section"><h3>'+title+'</h3><div class="backtest-table"><table><thead><tr>'+
+    headers.map(h=>'<th>'+h+'</th>').join('')+
+    '</tr></thead><tbody>'+rowsHtml+'</tbody></table></div></div>';
+}
+
+function renderV3Diagnostics(results,meta){
+  const root=$("btV3Diagnostics");
+  if(!root)return;
+
+  const closed=results.filter(t=>t.status!=="OPEN");
+  const riskRows=v3RiskRows(closed).map(x=>{
+    const s=x.stats;
+    return '<tr><td>'+x.label+'</td><td>'+s.total+'</td><td>'+x.avgRisk.toFixed(3)+'%</td><td>'+btPct(s.winRate)+'</td><td class="'+btClass(s.netR)+'">'+btR(s.netR)+'</td><td>'+btR(s.expectancy)+'</td><td>'+btPf(s.profitFactor)+'</td></tr>';
+  }).join('');
+
+  const costRows=v3CostSensitivityRows(closed).map(x=>{
+    const s=x.stats;
+    return '<tr><td>'+x.rt.toFixed(2)+'%</td><td>'+s.total+'</td><td>'+btPct(s.winRate)+'</td><td class="'+btClass(s.netR)+'">'+btR(s.netR)+'</td><td>'+btR(s.expectancy)+'</td><td>'+btPf(s.profitFactor)+'</td></tr>';
+  }).join('');
+
+  const tdRows=v3TimeDirectionRows(results).map(x=>{
+    const s=x.stats;
+    return '<tr><td>'+x.label+'</td><td>'+s.total+'</td><td>'+btPct(s.winRate)+'</td><td class="'+btClass(s.netR)+'">'+btR(s.netR)+'</td><td>'+btR(s.expectancy)+'</td><td>'+btPf(s.profitFactor)+'</td></tr>';
+  }).join('');
+
+  const oosRows=v3OosRows(results).map(x=>{
+    return '<tr><td>'+x.tf+'</td><td>'+x.trainCount+'</td><td>'+btPct(x.train.winRate)+'</td><td class="'+btClass(x.train.netR)+'">'+btR(x.train.netR)+'</td><td>'+x.testCount+'</td><td>'+btPct(x.test.winRate)+'</td><td class="'+btClass(x.test.netR)+'">'+btR(x.test.netR)+'</td><td>'+btR(x.test.expectancy)+'</td></tr>';
+  }).join('');
+
+  const focusGroups=[
+    {label:"4H LONG · RSI 60+ · Vol 2x+",test:t=>t.timeframe==="4h"&&t.direction==="LONG"&&Number(t.rsi)>=60&&Number(t.volumeRatio)>=2},
+    {label:"4H LONG · RSI 60+ · Vol 1.5x+",test:t=>t.timeframe==="4h"&&t.direction==="LONG"&&Number(t.rsi)>=60&&Number(t.volumeRatio)>=1.5},
+    {label:"4H LONG · RSI 60+",test:t=>t.timeframe==="4h"&&t.direction==="LONG"&&Number(t.rsi)>=60},
+    {label:"4H LONG · All",test:t=>t.timeframe==="4h"&&t.direction==="LONG"},
+    {label:"4H SHORT · All",test:t=>t.timeframe==="4h"&&t.direction==="SHORT"}
+  ];
+  const focusRows=focusGroups.map(g=>{
+    const s=summarizeBacktest(results.filter(g.test));
+    return '<tr><td>'+g.label+'</td><td>'+s.total+'</td><td>'+btPct(s.winRate)+'</td><td class="'+btClass(s.netR)+'">'+btR(s.netR)+'</td><td>'+btR(s.expectancy)+'</td><td>'+btPf(s.profitFactor)+'</td></tr>';
+  }).join('');
+
+  root.innerHTML=
+    '<div class="backtest-hero" style="margin-top:14px">'+
+      '<div class="eyebrow">V3 DIAGNOSTICS</div>'+
+      '<h2>🔬 What is actually driving the result?</h2>'+
+      '<p>These diagnostics do not change the scanner rules. They test the existing V3 result from different angles so we can separate a possible signal edge from stop-size effects, trading costs, direction, and time-period dependence.</p>'+
+    '</div>'+
+    '<div class="backtest-diagnostic-grid">'+
+      v3RenderTable("🛑 Stop-Size / Risk Buckets",["Stop Size","Trades","Avg Stop","Win Rate","Net R","Expectancy","PF"],riskRows)+
+      v3RenderTable("💸 Cost Sensitivity · Round Trip",["Round Trip Cost","Trades","Win Rate","Net R","Expectancy","PF"],costRows)+
+      v3RenderTable("↕️ Timeframe × Direction",["Group","Trades","Win Rate","Net R","Expectancy","PF"],tdRows)+
+      v3RenderTable("🧪 70/30 Time Split · Out of Sample",["TF","Train","Train WR","Train Net R","Test","Test WR","Test Net R","Test Exp."],oosRows)+
+      v3RenderTable("🎯 4H LONG Diagnostic Focus",["Filter","Trades","Win Rate","Net R","Expectancy","PF"],focusRows)+
+    '</div>'+
+    '<div class="backtest-note">V3 cost sensitivity recalculates costs from each trade’s actual entry-to-stop distance. This is a diagnostic model, not an execution simulator. A lower cost assumption can show whether costs are masking a gross edge; it does not prove those costs are achievable. Binance currently lists 0.100% maker / 0.100% taker for regular spot users, before applicable discounts or pair-specific promotions.</div>';
 }
 
 async function runBacktest(){
@@ -2505,7 +2653,7 @@ async function runBacktest(){
   if(!btn)return;
   btn.disabled=true;
   $("exportBacktestBtn").disabled=true;
-  btn.textContent="⏳ Backtesting V2...";
+  btn.textContent="⏳ Backtesting V3...";
 
   const days=Math.max(1,Number($("btDays").value)||30);
   const pairLimit=Math.max(1,Number($("btPairs").value)||25);
@@ -2549,24 +2697,26 @@ async function runBacktest(){
     }
 
     renderBacktestResults(all,{pairs:pairs.length,days,timeframes,tf:timeframes.join(" + "),quote,risk:rrCfg.risk,reward:rrCfg.reward,fee,slip});
+    renderV3Diagnostics(all,{pairs:pairs.length,days,timeframes,tf:timeframes.join(" + "),quote,risk:rrCfg.risk,reward:rrCfg.reward,fee,slip});
   }catch(e){
     console.error(e);
     $("btStatus").textContent="⚠️ Backtest failed: "+(e.message||e);
     $("btSummary").innerHTML="";
     $("btOverview").innerHTML="";
     $("btDiagnostics").innerHTML="";
+    $("btV3Diagnostics").innerHTML="";
     $("btTable").innerHTML="";
     $("btTrades").innerHTML="";
   }finally{
     btn.disabled=false;
     $("exportBacktestBtn").disabled=false;
-    btn.textContent="🧪 Run Backtest V2";
+    btn.textContent="🧪 Run Backtest V3";
   }
 }
 
 function exportBacktestCSV(){
   if(!backtestResults.length){
-    toast("ℹ️ Run Backtest V2 first.");
+    toast("ℹ️ Run Backtest V3 first.");
     return;
   }
   const head=["Timeframe","Signal Time","Pair","Direction","Score","RSI","Volume Ratio","RR","Entry","SL","TP","Exit","Exit Price","Gross R","Cost R","Net R","MFE R","MAE R","Holding Minutes","Status"];
@@ -2581,7 +2731,7 @@ function exportBacktestCSV(){
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
-  a.download="crypto-backtest-v2-"+new Date().toISOString().slice(0,10)+".csv";
+  a.download="crypto-backtest-v3-"+new Date().toISOString().slice(0,10)+".csv";
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
