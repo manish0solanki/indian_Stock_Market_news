@@ -3146,6 +3146,29 @@ body {
   }
 }
 
+
+/* Crypto Trade Dashboard */
+.crypto-dashboard{margin-bottom:14px}
+.crypto-dash-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.crypto-dash-title{font-size:13px;font-weight:700;color:var(--text)}
+.crypto-dash-link{font-size:10px;color:var(--indigo-light);text-decoration:none;font-weight:600}
+[data-theme="light"] .crypto-dash-link{color:var(--indigo)}
+.crypto-dash-badge{font-size:9px;color:var(--text-muted);font-family:var(--font-mono)}
+.crypto-dash-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.crypto-dash-metric{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;min-width:0}
+.crypto-dash-metric .v{font:700 14px var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crypto-dash-metric .l{font-size:9px;color:var(--text-muted);margin-top:3px;text-transform:uppercase}
+.crypto-dash-live{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+.crypto-dash-trade{display:grid;grid-template-columns:1.2fr .7fr .9fr;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:10px}
+.crypto-dash-trade:last-child{border-bottom:0}
+.crypto-dash-symbol{font-family:var(--font-mono);font-weight:700}
+.crypto-dash-dir{font-size:8px;font-weight:700;padding:2px 5px;border-radius:10px;width:max-content}
+.crypto-dash-dir.long{color:var(--positive);background:var(--positive-bg)}
+.crypto-dash-dir.short{color:var(--negative);background:var(--negative-bg)}
+.crypto-dash-pnl{text-align:right;font:700 10px var(--font-mono)}
+.crypto-dash-empty{padding:12px;text-align:center;color:var(--text-muted);font-size:10px;background:var(--bg);border-radius:var(--radius-sm)}
+.crypto-dash-note{margin-top:7px;color:var(--text-muted);font-size:9px;line-height:1.4}
+@media(max-width:640px){.crypto-dash-metrics{grid-template-columns:1fr 1fr}.crypto-dash-trade{grid-template-columns:1fr auto auto}}
 </style>
   <base target="_blank">
 </head>
@@ -3502,6 +3525,25 @@ body {
 
     <!-- LEFT COLUMN: All Data Widgets (30%) -->
     <div class="left-col">
+
+      <!-- Crypto Paper Trade Dashboard -->
+      <div class="widget-card crypto-dashboard" id="cryptoTradeDashboard">
+        <div class="crypto-dash-head">
+          <div>
+            <div class="crypto-dash-title">⚡ Crypto Trade Dashboard</div>
+            <div class="crypto-dash-badge" id="cryptoDashStatus">Checking account…</div>
+          </div>
+          <a class="crypto-dash-link" href="/crypto-signals.html">Open Scanner →</a>
+        </div>
+        <div class="crypto-dash-metrics">
+          <div class="crypto-dash-metric"><div class="v" id="cryptoDashLivePnl">—</div><div class="l">Live P&L</div></div>
+          <div class="crypto-dash-metric"><div class="v" id="cryptoDashOpen">—</div><div class="l">Open Trades</div></div>
+          <div class="crypto-dash-metric"><div class="v" id="cryptoDashWinRate">—</div><div class="l">Win Rate</div></div>
+          <div class="crypto-dash-metric"><div class="v" id="cryptoDashToday">—</div><div class="l">Today P&L</div></div>
+        </div>
+        <div class="crypto-dash-live" id="cryptoDashTrades"></div>
+        <div class="crypto-dash-note">Paper trades only · live prices refresh automatically.</div>
+      </div>
 
       <!-- 1. Market Snapshot -->
       <div class="widget-card" id="marketSnapshotSection">
@@ -8142,6 +8184,77 @@ contactForm.addEventListener('submit', async (e) => {
   }
 });
 
+
+/* ─── Crypto Paper Trade Dashboard ─── */
+let cryptoDashTimer=null;
+const CRYPTO_DASH_BINANCE='https://api.binance.com/api/v3/ticker/price?symbol=';
+function cryptoDashMoney(n){
+  const v=Number(n)||0;
+  return (v>=0?'+':'-')+'₹'+Math.abs(v).toLocaleString('en-IN',{maximumFractionDigits:0});
+}
+function cryptoDashClass(n){return Number(n)>=0?'positive':'negative';}
+function cryptoDashSymbol(t){return String(t.pair||t.symbol||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();}
+async function loadCryptoTradeDashboard(){
+  const status=document.getElementById('cryptoDashStatus');
+  if(!status)return;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    const user=session?.user;
+    if(!user){
+      status.textContent='Log in to view your paper trades';
+      set('cryptoDashLivePnl','—');set('cryptoDashOpen','—');set('cryptoDashWinRate','—');set('cryptoDashToday','—');
+      set('cryptoDashTrades','<div class="crypto-dash-empty">Login to see your live trades and P&L.</div>');
+      return;
+    }
+    const {data,error}=await supabaseClient.from('crypto_trades')
+      .select('id,pair,symbol,direction,entry_price,stop_loss,take_profit,amount_inr,leverage,status,current_price,close_price,pnl_inr,created_at,closed_at')
+      .eq('user_id',user.id).order('created_at',{ascending:false}).limit(100);
+    if(error)throw error;
+    const rows=Array.isArray(data)?data:[];
+    const open=rows.filter(t=>!['TP_HIT','SL_HIT','MANUAL_CLOSE'].includes(String(t.status||'').toUpperCase()));
+    const closed=rows.filter(t=>['TP_HIT','SL_HIT','MANUAL_CLOSE'].includes(String(t.status||'').toUpperCase()));
+    const wins=closed.filter(t=>Number(t.pnl_inr)>0).length;
+    const winRate=closed.length?Math.round(wins/closed.length*100):null;
+    const todayKey=new Date().toLocaleDateString('en-CA');
+    const todayPnl=closed.filter(t=>{const d=t.closed_at?new Date(t.closed_at):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===todayKey;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
+    let livePnl=0;
+    const enriched=await Promise.all(open.slice(0,12).map(async t=>{
+      const entry=Number(t.entry_price)||0, amt=Number(t.amount_inr)||0, lev=Number(t.leverage)||1;
+      let cp=Number(t.current_price)||entry;
+      const symbol=cryptoDashSymbol(t);
+      if(symbol){try{const res=await fetch(CRYPTO_DASH_BINANCE+encodeURIComponent(symbol),{cache:'no-store'});if(res.ok){const q=await res.json();if(Number.isFinite(Number(q.price)))cp=Number(q.price);}}catch(e){}}
+      const move=String(t.direction).toUpperCase()==='SHORT'?(entry-cp)/entry:(cp-entry)/entry;
+      const pnl=amt*lev*move; livePnl+=Number.isFinite(pnl)?pnl:0;
+      return {...t,cp,pnl};
+    }));
+    set('cryptoDashLivePnl',cryptoDashMoney(livePnl));
+    set('cryptoDashOpen',String(open.length));
+    set('cryptoDashWinRate',winRate==null?'—':winRate+'%');
+    set('cryptoDashToday',cryptoDashMoney(todayPnl));
+    const pnlEl=document.getElementById('cryptoDashLivePnl');if(pnlEl)pnlEl.style.color=livePnl>=0?'var(--positive)':'var(--negative)';
+    const todayEl=document.getElementById('cryptoDashToday');if(todayEl)todayEl.style.color=todayPnl>=0?'var(--positive)':'var(--negative)';
+    status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    const box=document.getElementById('cryptoDashTrades');
+    if(!open.length){box.innerHTML='<div class="crypto-dash-empty">No open paper trades.</div>';return;}
+    box.innerHTML=enriched.map(t=>{
+      const dir=String(t.direction||'').toUpperCase();
+      const pnl=Number(t.pnl)||0;
+      return '<div class="crypto-dash-trade"><div><div class="crypto-dash-symbol">'+escapeHtml(String(t.pair||t.symbol||'—'))+'</div><span class="crypto-dash-dir '+(dir==='SHORT'?'short':'long')+'">'+escapeHtml(dir||'—')+'</span></div><div style="font-family:var(--font-mono);font-size:9px">₹'+Number(t.cp||0).toLocaleString('en-IN',{maximumFractionDigits:6})+'</div><div class="crypto-dash-pnl" style="color:'+(pnl>=0?'var(--positive)':'var(--negative)')+'">'+cryptoDashMoney(pnl)+'</div></div>';
+    }).join('');
+  }catch(e){
+    console.error('[Crypto Dashboard]',e);
+    status.textContent='Dashboard unavailable';
+    set('cryptoDashTrades','<div class="crypto-dash-empty">Could not load crypto trade data.</div>');
+  }
+}
+function initCryptoTradeDashboard(){
+  loadCryptoTradeDashboard();
+  if(cryptoDashTimer)clearInterval(cryptoDashTimer);
+  cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);
+  supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));
+}
+
 /* ─── Live Timer ─── */
 setInterval(() => {
   const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
@@ -8154,6 +8267,7 @@ setInterval(() => {
 /* ─── Init ─── */
 async function init() {
   await initConfig();
+  initCryptoTradeDashboard();
   initVoiceSearch();
   await Promise.all([
     loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines(),
