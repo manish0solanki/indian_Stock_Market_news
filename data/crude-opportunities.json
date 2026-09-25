@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-25T15:01:04.421Z",
+  "generated_at": "2026-09-25T16:01:04.147Z",
   "feed": {
     "name": "MarketPulse Crude Opportunities",
     "version": "1.0",
@@ -40,7 +40,7 @@
       "risk_reward_target_1": 1,
       "risk_reward_target_2": 2,
       "crude_direction": "BEARISH",
-      "crude_impact": -7.15,
+      "crude_impact": -7.21,
       "crude_sensitivity": 0.65,
       "crude_regime": "BEARISH",
       "india_crude_pressure": "MODERATE",
@@ -70,7 +70,7 @@
       "trigger_data_quality": "NORMAL",
       "opportunity_quality": "NORMAL",
       "quality_flags": [],
-      "generated_at": "2026-09-25T15:01:04.421Z",
+      "generated_at": "2026-09-25T16:01:04.147Z",
       "scanner_version": "1.0",
       "signal_engine_version": "1.1",
       "news_engine_version": "1.1",
