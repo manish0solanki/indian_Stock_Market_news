@@ -3452,7 +3452,7 @@ document.querySelectorAll(".tab").forEach(tab=>{
   tab.addEventListener("click",()=>selectAppTab(tab.dataset.tab));
 });
 
-$("tradeSort").value=liveTradeSort;
+$("tradeSort").value=activeTradePanel==="archive"?archiveTradeSort:liveTradeSort;
 $("tradeSort").addEventListener("change",()=>{
   const value=$("tradeSort").value;
   if(activeTradePanel==="archive") {
