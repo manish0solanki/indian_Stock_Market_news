@@ -109,6 +109,17 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .backtest-table th,.backtest-table td{padding:9px;border-bottom:1px solid var(--border);text-align:left;font-size:11px}
 .backtest-table th{color:var(--muted);font-size:10px;text-transform:uppercase}
 .backtest-note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:12px}
+.backtest-section{margin-top:14px}
+.backtest-section h3{font-size:14px;margin:0 0 8px}
+.backtest-section h3 .mono{font-size:10px;font-weight:400}
+.backtest-diagnostic-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.backtest-diagnostic-grid .backtest-section{margin-top:0}
+.backtest-mini-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}
+.backtest-mini-grid>div{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px}
+.backtest-mini-grid span{display:block;font-size:9px;color:var(--muted);margin-bottom:4px}
+.backtest-mini-grid b{font-size:13px}
+@media(max-width:899px){.backtest-diagnostic-grid{grid-template-columns:1fr}.backtest-mini-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.backtest-mini-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:899px){.backtest-controls{grid-template-columns:1fr 1fr}.backtest-controls button{grid-column:1/-1}.backtest-summary{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.backtest-controls{grid-template-columns:1fr}.backtest-controls button{grid-column:auto}.backtest-summary{grid-template-columns:1fr 1fr}.backtest-hero{padding:14px}}@media(max-width:899px){.wallet-actions{grid-template-columns:1fr}.wallet-metrics,.report-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.wallet-panel,.reports-panel{padding:0 12px 20px}.wallet-hero{display:block}.wallet-invested{margin-top:14px}.wallet-row{display:grid;grid-template-columns:1fr}.wallet-metrics,.report-grid{grid-template-columns:1fr 1fr}}
 
@@ -376,27 +387,40 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <div class="reports-panel" id="backtestPane" hidden>
   <div class="backtest-hero">
     <div>
-      <div class="eyebrow">HISTORICAL STRATEGY TEST</div>
-      <h2>🧪 Test the current signal engine</h2>
-      <p>Uses Binance closed candles, the same EMA/RSI/MACD/volume rules, your selected R:R, and no future candles when generating a signal.</p>
+      <div class="eyebrow">HISTORICAL STRATEGY RESEARCH V2</div>
+      <h2>🧪 Backtest & Strategy Diagnostics</h2>
+      <p>Uses Binance closed candles and the same signal engine. V2 records direction, score, RSI, volume, MFE/MAE, holding time, exit reason, gross R, trading costs and net R so we can see <b>where</b> the strategy is failing instead of only seeing the final P&L.</p>
     </div>
   </div>
   <div class="backtest-controls">
     <div><label>History</label>
       <select id="btDays"><option value="7">7 days</option><option value="14">14 days</option><option value="30" selected>30 days</option></select>
     </div>
+    <div><label>Timeframe</label>
+      <select id="btTf">
+        <option value="current" selected>Current scanner TF</option>
+        <option value="15m">15m</option>
+        <option value="1h">1H</option>
+        <option value="4h">4H</option>
+        <option value="ALL">Compare 15m + 1H + 4H</option>
+      </select>
+    </div>
     <div><label>Pairs</label>
       <select id="btPairs"><option value="5">5 pairs</option><option value="10">10 pairs</option><option value="25" selected>All 25 tracked coins</option></select>
     </div>
     <div><label>Fee / side %</label><input id="btFee" type="number" min="0" max="2" step="0.01" value="0.10"></div>
     <div><label>Slippage / side %</label><input id="btSlip" type="number" min="0" max="1" step="0.01" value="0.05"></div>
-    <button class="primary" id="runBacktestBtn">🧪 Run Backtest</button>
+    <button class="primary" id="runBacktestBtn">🧪 Run Backtest V2</button>
+    <button id="exportBacktestBtn">⬇️ Export Trades CSV</button>
   </div>
   <div class="settings-info" id="btStatus">Ready. Backtest uses <b id="btConfig">current timeframe · current quote · current R:R</b>.</div>
   <div id="btSummary"></div>
+  <div id="btOverview"></div>
+  <div id="btDiagnostics"></div>
   <div id="btTable"></div>
+  <div id="btTrades"></div>
   <div class="backtest-note">
-    ⚠️ This is a historical simulation, not a guarantee. If a candle touches both SL and TP, the test counts it as SL first because OHLC data does not reveal the intrabar order. Signals are generated only from candles already closed at that point. End-of-test open trades are marked OPEN and excluded from win-rate/profit-factor calculations.
+    ⚠️ Research simulation only. If a candle touches both SL and TP, the test counts SL first because OHLC data cannot reveal intrabar order. Signals use only candles available before entry. End-of-test open trades are excluded from win-rate/profit-factor calculations. Fee/slippage are configurable assumptions; Binance's current regular spot schedule lists 0.100% maker / 0.100% taker, but actual fees can vary by account, pair and discounts. 
   </div>
 </div>
 
@@ -2201,8 +2225,10 @@ function exportReportCSV(){
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="crypto-paper-trade-report-"+r.from+"-to-"+r.to+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-/* ================= HISTORICAL BACKTEST ================= */
+/* ================= HISTORICAL BACKTEST V2 ================= */
 const BT_INTERVAL_MS={"15m":15*60*1000,"1h":60*60*1000,"4h":4*60*60*1000};
+let backtestResults=[];
+let backtestMeta=null;
 
 async function fetchHistoricalKlines(symbol,tf,days){
   const intervalMs=BT_INTERVAL_MS[tf]||60*60*1000;
@@ -2216,11 +2242,8 @@ async function fetchHistoricalKlines(symbol,tf,days){
 
   while(cursor<end && guard<20){
     const url="https://api.binance.com/api/v3/klines?symbol="+
-      encodeURIComponent(symbol)+
-      "&interval="+encodeURIComponent(tf)+
-      "&startTime="+cursor+
-      "&endTime="+end+
-      "&limit=1500";
+      encodeURIComponent(symbol)+"&interval="+encodeURIComponent(tf)+
+      "&startTime="+cursor+"&endTime="+end+"&limit=1500";
     const r=await fetch(url);
     if(!r.ok) throw new Error(symbol+" historical HTTP "+r.status);
     const raw=await r.json();
@@ -2245,53 +2268,68 @@ function historicalChange(candles,i,tf){
   const intervalMs=BT_INTERVAL_MS[tf]||60*60*1000;
   const bars=Math.max(1,Math.round(24*60*60*1000/intervalMs));
   const j=i-bars;
-  if(j<0||candles[j].c<=0)return 0;
+  if(j<0||!candles[j]||candles[j].c<=0)return 0;
   return ((candles[i].c-candles[j].c)/candles[j].c)*100;
 }
 
-function simulateBacktestTrade(signal,candles,startIndex,feePct,slipPct){
+function simulateBacktestTrade(signal,candles,startIndex,tf,feePct,slipPct){
   const entry=Number(signal.entry);
   const risk=Math.abs(entry-Number(signal.sl));
-  if(!Number.isFinite(entry)||entry<=0||!Number.isFinite(risk)||risk<=0){
-    return null;
-  }
+  if(!Number.isFinite(entry)||entry<=0||!Number.isFinite(risk)||risk<=0)return null;
 
   const feeRate=Math.max(0,Number(feePct)||0)/100;
   const slipRate=Math.max(0,Number(slipPct)||0)/100;
   const direction=signal.dir;
   let exitPrice=null,status="OPEN",exitIndex=null;
+  let mfeR=0,maeR=0;
 
   for(let j=startIndex;j<candles.length;j++){
     const bar=candles[j];
+    const favorable=direction==="LONG"?(bar.h-entry):(entry-bar.l);
+    const adverse=direction==="LONG"?(bar.l-entry):(entry-bar.h);
+    mfeR=Math.max(mfeR,favorable/risk);
+    maeR=Math.min(maeR,adverse/risk);
+
     const hitTP=direction==="LONG"?bar.h>=signal.tp:bar.l<=signal.tp;
     const hitSL=direction==="LONG"?bar.l<=signal.sl:bar.h>=signal.sl;
 
     if(hitSL&&hitTP){
-      // Conservative assumption when OHLC cannot reveal which was hit first.
       status="SL";exitPrice=signal.sl;exitIndex=j;break;
     }
     if(hitSL){status="SL";exitPrice=signal.sl;exitIndex=j;break;}
     if(hitTP){status="TP";exitPrice=signal.tp;exitIndex=j;break;}
   }
 
-  if(status==="OPEN")return {
-    symbol:signal.sym,direction,score:signal.score,rr:signal.rr,
-    entry,sl:signal.sl,tp:signal.tp,signalTime:signal.time,
-    status:"OPEN",r:null,exitPrice:candles[candles.length-1]?.c||entry,
-    exitTime:null,barsHeld:candles.length-startIndex
-  };
-
-  const move=direction==="LONG"?(exitPrice-entry):(entry-exitPrice);
+  const lastIndex=candles.length-1;
+  const usedExitIndex=exitIndex==null?lastIndex:exitIndex;
+  const finalPrice=exitPrice==null?(candles[lastIndex]?.c||entry):exitPrice;
+  const move=direction==="LONG"?(finalPrice-entry):(entry-finalPrice);
   const grossR=move/risk;
-  const costR=((feeRate*2)+(slipRate*2))*entry/risk;
+  const roundTripCostPct=(feeRate*2)+(slipRate*2);
+  const costR=roundTripCostPct*entry/risk;
   const netR=grossR-costR;
+  const barsHeld=Math.max(1,usedExitIndex-startIndex+1);
+  const holdingMinutes=(barsHeld*(BT_INTERVAL_MS[tf]||60*60*1000))/60000;
 
   return {
-    symbol:signal.sym,direction,score:signal.score,rr:signal.rr,
-    entry,sl:signal.sl,tp:signal.tp,signalTime:signal.time,
-    status,r:netR,grossR,exitPrice,
-    exitTime:candles[exitIndex]?.t||null,
-    barsHeld:exitIndex-startIndex+1
+    symbol:signal.sym,
+    direction,
+    score:Number(signal.score)||0,
+    rsi:Number(signal.rsi)||0,
+    volumeRatio:Number(signal.volumeRatio)||0,
+    rr:Number(signal.rr)||0,
+    entry,sl:Number(signal.sl),tp:Number(signal.tp),
+    signalTime:candles[Math.max(0,startIndex-1)]?.t||signal.time||null,
+    status,
+    grossR,
+    costR,
+    r:netR,
+    exitPrice:finalPrice,
+    exitTime:exitIndex==null?null:candles[exitIndex]?.t||null,
+    barsHeld,
+    holdingMinutes,
+    mfeR,
+    maeR
   };
 }
 
@@ -2299,30 +2337,20 @@ function runBacktestForPair(candles,symbol,tf,rrCfg,feePct,slipPct){
   const results=[];
   let activeUntil=-1;
 
-  // Start after enough history for EMA100 + RSI/ATR/volume.
   for(let i=120;i<candles.length-1;i++){
     if(i<=activeUntil)continue;
 
     const hist=candles.slice(0,i+1);
-    const sig=analyze(
-      hist,
-      symbol,
-      {chg:historicalChange(candles,i,tf)},
-      rrCfg
-    );
-
+    const sig=analyze(hist,symbol,{chg:historicalChange(candles,i,tf)},rrCfg);
     if(!sig||!sig.dir||sig.score<MIN_SCORE)continue;
 
     sig.time=candles[i].t;
-    const result=simulateBacktestTrade(sig,candles,i+1,feePct,slipPct);
+    const result=simulateBacktestTrade(sig,candles,i+1,tf,feePct,slipPct);
     if(!result)continue;
 
     results.push(result);
-    if(result.status!=="OPEN"){
-      activeUntil=(i+1)+(result.barsHeld||1)-1;
-    }else{
-      activeUntil=candles.length-1;
-    }
+    if(result.status==="OPEN")activeUntil=candles.length-1;
+    else activeUntil=(i+1)+(result.barsHeld||1)-1;
   }
   return results;
 }
@@ -2334,66 +2362,155 @@ function summarizeBacktest(results){
   const grossWin=wins.reduce((s,x)=>s+x.r,0);
   const grossLoss=Math.abs(losses.reduce((s,x)=>s+x.r,0));
   const netR=closed.reduce((s,x)=>s+x.r,0);
-  const avgWin=wins.length?grossWin/wins.length:0;
-  const avgLoss=losses.length?grossLoss/losses.length:0;
+  const grossR=closed.reduce((s,x)=>s+x.grossR,0);
+  const costR=closed.reduce((s,x)=>s+x.costR,0);
   const expectancy=closed.length?netR/closed.length:0;
   const profitFactor=grossLoss>0?grossWin/grossLoss:(grossWin>0?Infinity:0);
+  const avgWin=wins.length?wins.reduce((s,x)=>s+x.r,0)/wins.length:0;
+  const avgLoss=losses.length?Math.abs(losses.reduce((s,x)=>s+x.r,0))/losses.length:0;
+  const avgGrossWin=wins.length?wins.reduce((s,x)=>s+x.grossR,0)/wins.length:0;
+  const avgGrossLoss=losses.length?Math.abs(losses.reduce((s,x)=>s+x.grossR,0))/losses.length:0;
+  const avgHolding=closed.length?closed.reduce((s,x)=>s+x.holdingMinutes,0)/closed.length:0;
+  const avgMFE=results.length?results.reduce((s,x)=>s+(Number(x.mfeR)||0),0)/results.length:0;
+  const avgMAE=results.length?results.reduce((s,x)=>s+(Number(x.maeR)||0),0)/results.length:0;
 
   let equity=0,peak=0,maxDD=0;
   for(const t of closed){
-    equity+=t.r;
-    peak=Math.max(peak,equity);
-    maxDD=Math.min(maxDD,equity-peak);
+    equity+=t.r; peak=Math.max(peak,equity); maxDD=Math.min(maxDD,equity-peak);
   }
 
   return {
     total:results.length,closed:closed.length,open:results.length-closed.length,
     wins:wins.length,losses:losses.length,
     winRate:closed.length?wins.length/closed.length*100:0,
-    netR,grossWin,grossLoss,avgWin,avgLoss,expectancy,profitFactor,maxDD
+    netR,grossR,costR,grossWin,grossLoss,avgWin,avgLoss,
+    avgGrossWin,avgGrossLoss,expectancy,profitFactor,maxDD,
+    avgHolding,avgMFE,avgMAE,
+    tp:results.filter(x=>x.status==="TP").length,
+    sl:results.filter(x=>x.status==="SL").length
   };
 }
 
+function btPf(v){
+  return Number.isFinite(v)?v.toFixed(2):"∞";
+}
+function btR(v){
+  const n=Number(v)||0;
+  return (n>=0?"+":"")+n.toFixed(2)+"R";
+}
+function btPct(v){
+  return (Number(v)||0).toFixed(1)+"%";
+}
+function btMinutes(v){
+  const m=Math.round(Number(v)||0);
+  if(m<60)return m+"m";
+  const h=m/60;
+  if(h<48)return h.toFixed(1)+"h";
+  return (h/24).toFixed(1)+"d";
+}
+function btClass(v){return Number(v)>=0?"profit":"loss";}
+
+function btBreakdownRows(results,field,groups){
+  return groups.map(g=>{
+    const rows=results.filter(t=>g.test(t));
+    const s=summarizeBacktest(rows);
+    return {label:g.label,stats:s};
+  });
+}
+
+function renderBtBreakdown(title,rows){
+  return '<div class="backtest-section"><h3>'+title+'</h3>'+
+    '<div class="backtest-table"><table><thead><tr><th>Bucket</th><th>Trades</th><th>Win Rate</th><th>Net R</th><th>Expectancy</th><th>PF</th><th>Avg Win</th><th>Avg Loss</th></tr></thead><tbody>'+
+    rows.map(x=>'<tr><td>'+x.label+'</td><td>'+x.stats.total+'</td><td>'+btPct(x.stats.winRate)+'</td><td class="'+btClass(x.stats.netR)+'">'+btR(x.stats.netR)+'</td><td class="'+btClass(x.stats.expectancy)+'">'+btR(x.stats.expectancy)+'</td><td>'+btPf(x.stats.profitFactor)+'</td><td>'+btR(x.stats.avgWin)+'</td><td>-'+Math.abs(x.stats.avgLoss).toFixed(2)+'R</td></tr>').join('')+
+    '</tbody></table></div></div>';
+}
+
 function renderBacktestResults(results,meta){
+  backtestResults=results.slice();
+  backtestMeta=meta;
   const s=summarizeBacktest(results);
   const b=$("btSummary");
-  const pf=Number.isFinite(s.profitFactor)?s.profitFactor.toFixed(2):"∞";
   if(b)b.innerHTML='<div class="backtest-summary">'+
     '<div><span>Trades</span><b>'+s.total+'</b></div>'+
-    '<div><span>Win Rate</span><b>'+s.winRate.toFixed(1)+'%</b></div>'+
-    '<div><span>Net R</span><b class="'+(s.netR>=0?"profit":"loss")+'">'+(s.netR>=0?"+":"")+s.netR.toFixed(2)+'R</b></div>'+
-    '<div><span>Expectancy</span><b class="'+(s.expectancy>=0?"profit":"loss")+'">'+(s.expectancy>=0?"+":"")+s.expectancy.toFixed(3)+'R</b></div>'+
-    '<div><span>Profit Factor</span><b>'+pf+'</b></div>'+
+    '<div><span>Win Rate</span><b>'+btPct(s.winRate)+'</b></div>'+
+    '<div><span>Net R</span><b class="'+btClass(s.netR)+'">'+btR(s.netR)+'</b></div>'+
+    '<div><span>Expectancy</span><b class="'+btClass(s.expectancy)+'">'+btR(s.expectancy)+'</b></div>'+
+    '<div><span>Profit Factor</span><b>'+btPf(s.profitFactor)+'</b></div>'+
     '<div><span>Max Drawdown</span><b class="loss">'+s.maxDD.toFixed(2)+'R</b></div>'+
+    '<div><span>Gross R</span><b class="'+btClass(s.grossR)+'">'+btR(s.grossR)+'</b></div>'+
+    '<div><span>Costs</span><b class="loss">-'+Math.abs(s.costR).toFixed(2)+'R</b></div>'+
+    '<div><span>Avg Win</span><b>'+btR(s.avgWin)+'</b></div>'+
+    '<div><span>Avg Loss</span><b>-'+Math.abs(s.avgLoss).toFixed(2)+'R</b></div>'+
+    '<div><span>Avg MFE</span><b>'+btR(s.avgMFE)+'</b></div>'+
+    '<div><span>Avg MAE</span><b>'+btR(s.avgMAE)+'</b></div>'+
   '</div>';
 
-  const by={};
+  const overviewGroups={};
   results.forEach(t=>{
-    if(!by[t.symbol])by[t.symbol]=[];
-    by[t.symbol].push(t);
+    const key=t.timeframe||meta.tf;
+    if(!overviewGroups[key])overviewGroups[key]=[];
+    overviewGroups[key].push(t);
   });
+  const overviewRows=Object.keys(overviewGroups).sort().map(tf=>{
+    const x=summarizeBacktest(overviewGroups[tf]);
+    return '<tr><td>'+tf+'</td><td>'+x.total+'</td><td>'+x.wins+'</td><td>'+x.losses+'</td><td>'+x.open+'</td><td>'+btPct(x.winRate)+'</td><td class="'+btClass(x.netR)+'">'+btR(x.netR)+'</td><td>'+btR(x.expectancy)+'</td><td>'+btPf(x.profitFactor)+'</td><td>'+x.maxDD.toFixed(2)+'R</td></tr>';
+  }).join('');
+  $("btOverview").innerHTML='<div class="backtest-section"><h3>⏱ Timeframe / Exit Overview</h3><div class="backtest-table"><table><thead><tr><th>TF</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Open</th><th>Win Rate</th><th>Net R</th><th>Expectancy</th><th>PF</th><th>Max DD</th></tr></thead><tbody>'+overviewRows+'</tbody></table></div>'+
+    '<div class="backtest-mini-grid"><div><span>TP exits</span><b>'+s.tp+'</b></div><div><span>SL exits</span><b>'+s.sl+'</b></div><div><span>Open at test end</span><b>'+s.open+'</b></div><div><span>Avg holding</span><b>'+btMinutes(s.avgHolding)+'</b></div><div><span>Avg gross win</span><b>'+btR(s.avgGrossWin)+'</b></div><div><span>Avg gross loss</span><b>-'+Math.abs(s.avgGrossLoss).toFixed(2)+'R</b></div></div></div>';
+
+  const diagnostics=[];
+  diagnostics.push(renderBtBreakdown("↕️ Direction",btBreakdownRows(results,"direction",[
+    Object.assign(x=>x,{label:"LONG",test:t=>t.direction==="LONG"}),
+    Object.assign(x=>x,{label:"SHORT",test:t=>t.direction==="SHORT"})
+  ])));
+  diagnostics.push(renderBtBreakdown("🎯 Score Buckets",btBreakdownRows(results,"score",[
+    Object.assign(x=>x,{label:"65–69",test:t=>t.score>=65&&t.score<70}),
+    Object.assign(x=>x,{label:"70–74",test:t=>t.score>=70&&t.score<75}),
+    Object.assign(x=>x,{label:"75–79",test:t=>t.score>=75&&t.score<80}),
+    Object.assign(x=>x,{label:"80+",test:t=>t.score>=80})
+  ])));
+  diagnostics.push(renderBtBreakdown("📊 RSI Buckets",btBreakdownRows(results,"rsi",[
+    Object.assign(x=>x,{label:"<40",test:t=>t.rsi<40}),
+    Object.assign(x=>x,{label:"40–49.9",test:t=>t.rsi>=40&&t.rsi<50}),
+    Object.assign(x=>x,{label:"50–59.9",test:t=>t.rsi>=50&&t.rsi<60}),
+    Object.assign(x=>x,{label:"60+",test:t=>t.rsi>=60})
+  ])));
+  diagnostics.push(renderBtBreakdown("📈 Volume Buckets",btBreakdownRows(results,"volumeRatio",[
+    Object.assign(x=>x,{label:"1.2–1.49x",test:t=>t.volumeRatio>=1.2&&t.volumeRatio<1.5}),
+    Object.assign(x=>x,{label:"1.5–1.99x",test:t=>t.volumeRatio>=1.5&&t.volumeRatio<2}),
+    Object.assign(x=>x,{label:"2.0x+",test:t=>t.volumeRatio>=2})
+  ])));
+  diagnostics.push('<div class="backtest-section"><h3>💸 Cost Impact</h3><p class="backtest-note">Gross R shows the strategy before the configured round-trip fee/slippage assumption. Net R subtracts that cost on every closed trade.</p><div class="backtest-mini-grid"><div><span>Gross R</span><b class="'+btClass(s.grossR)+'">'+btR(s.grossR)+'</b></div><div><span>Estimated costs</span><b class="loss">-'+Math.abs(s.costR).toFixed(2)+'R</b></div><div><span>Net R</span><b class="'+btClass(s.netR)+'">'+btR(s.netR)+'</b></div><div><span>Round-trip assumption</span><b>'+((meta.fee+meta.slip)*2).toFixed(2)+'%</b></div></div></div>');
+  $("btDiagnostics").innerHTML='<div class="backtest-diagnostic-grid">'+diagnostics.join('')+'</div>';
+
+  const by={};
+  results.forEach(t=>{if(!by[t.symbol])by[t.symbol]=[];by[t.symbol].push(t);});
   const rows=Object.keys(by).sort().map(sym=>{
     const x=summarizeBacktest(by[sym]);
-    const pf2=Number.isFinite(x.profitFactor)?x.profitFactor.toFixed(2):"∞";
-    return '<tr><td>'+sym+'</td><td>'+x.total+'</td><td>'+x.wins+'</td><td>'+x.losses+'</td><td>'+x.winRate.toFixed(1)+'%</td><td class="'+(x.netR>=0?"profit":"loss")+'">'+(x.netR>=0?"+":"")+x.netR.toFixed(2)+'R</td><td>'+x.expectancy.toFixed(3)+'R</td><td>'+pf2+'</td><td>'+x.maxDD.toFixed(2)+'R</td></tr>';
+    return '<tr><td>'+sym+'</td><td>'+x.total+'</td><td>'+x.wins+'</td><td>'+x.losses+'</td><td>'+x.open+'</td><td>'+btPct(x.winRate)+'</td><td class="'+btClass(x.netR)+'">'+btR(x.netR)+'</td><td>'+btR(x.expectancy)+'</td><td>'+btPf(x.profitFactor)+'</td><td>'+x.maxDD.toFixed(2)+'R</td><td>'+btMinutes(x.avgHolding)+'</td></tr>';
   }).join('');
+  $("btTable").innerHTML='<div class="backtest-section"><h3>🪙 Per-Pair Performance</h3><div class="backtest-table"><table><thead><tr><th>Pair</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Open</th><th>Win Rate</th><th>Net R</th><th>Expectancy</th><th>PF</th><th>Max DD</th><th>Avg Hold</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 
-  if($("btTable"))$("btTable").innerHTML=rows
-    ? '<div class="backtest-table"><table><thead><tr><th>Pair</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Net R</th><th>Expectancy</th><th>PF</th><th>Max DD</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
-    : '<div class="empty">No historical setups matched the current rules.</div>';
+  const recent=results.slice().sort((a,b)=>(b.signalTime||0)-(a.signalTime||0)).slice(0,300);
+  $("btTrades").innerHTML='<div class="backtest-section"><h3>🔎 Trade-Level Sample <span class="mono">(latest '+recent.length+'; CSV export contains all '+results.length+')</span></h3><div class="backtest-table"><table><thead><tr><th>Time</th><th>Pair</th><th>Dir</th><th>Score</th><th>RSI</th><th>Vol</th><th>Exit</th><th>Gross R</th><th>Cost R</th><th>Net R</th><th>MFE</th><th>MAE</th><th>Hold</th></tr></thead><tbody>'+
+    recent.map(t=>'<tr><td>'+new Date(t.signalTime).toLocaleString()+'</td><td>'+t.symbol+'</td><td>'+t.direction+'</td><td>'+t.score.toFixed(0)+'</td><td>'+t.rsi.toFixed(1)+'</td><td>'+t.volumeRatio.toFixed(2)+'x</td><td>'+t.status+'</td><td>'+btR(t.grossR)+'</td><td>-'+Math.abs(t.costR).toFixed(2)+'R</td><td class="'+btClass(t.r)+'">'+btR(t.r)+'</td><td>'+btR(t.mfeR)+'</td><td>'+btR(t.maeR)+'</td><td>'+btMinutes(t.holdingMinutes)+'</td></tr>').join('')+
+    '</tbody></table></div></div>';
 
-  $("btStatus").innerHTML='✓ Backtest complete · '+meta.pairs+' pairs · '+meta.days+' days · '+meta.tf+' · '+meta.quote+' · R:R '+meta.risk+':'+meta.reward+' · fee '+meta.fee.toFixed(2)+'%/side · slippage '+meta.slip.toFixed(2)+'%/side';
+  const tfText=meta.timeframes.length===1?meta.timeframes[0]:meta.timeframes.join(" + ");
+  $("btStatus").textContent="✓ Backtest V2 complete · "+meta.pairs+" pairs · "+meta.days+" days · "+tfText+" · "+meta.quote+" · R:R "+meta.risk+":"+meta.reward+" · fee "+meta.fee.toFixed(2)+"%/side · slippage "+meta.slip.toFixed(2)+"%/side";
 }
 
 async function runBacktest(){
   const btn=$("runBacktestBtn");
   if(!btn)return;
   btn.disabled=true;
-  btn.textContent="⏳ Backtesting...";
+  $("exportBacktestBtn").disabled=true;
+  btn.textContent="⏳ Backtesting V2...";
 
   const days=Math.max(1,Number($("btDays").value)||30);
   const pairLimit=Math.max(1,Number($("btPairs").value)||25);
-  const tf=$("tfSelect").value;
+  const tfChoice=$("btTf").value;
+  const timeframes=tfChoice==="ALL"?["15m","1h","4h"]:[tfChoice==="current"?$("tfSelect").value:tfChoice];
   const quote=$("quoteSelect").value;
   const rrCfg=selectedRR();
   const fee=Math.max(0,Number($("btFee").value)||0);
@@ -2404,44 +2521,69 @@ async function runBacktest(){
     if(pairLimit<pairs.length)pairs=pairs.slice(0,pairLimit);
     const fx=quote==="INR"?await getUsdInr():1;
     const all=[];
-    let done=0;
 
-    $("btConfig").textContent=tf+" · "+quote+" · R:R "+rrCfg.risk+":"+rrCfg.reward;
+    $("btConfig").textContent=timeframes.join(" + ")+" · "+quote+" · R:R "+rrCfg.risk+":"+rrCfg.reward;
 
-    for(let i=0;i<pairs.length;i+=5){
-      const batch=pairs.slice(i,i+5);
-      const batchResults=await Promise.all(batch.map(async sourceSym=>{
-        try{
-          const raw=await fetchHistoricalKlines(sourceSym,tf,days);
-          let candles=raw;
-          if(quote==="INR"){
-            candles=raw.map(c=>({t:c.t,o:c.o*fx,h:c.h*fx,l:c.l*fx,c:c.c*fx,v:c.v}));
+    for(const tf of timeframes){
+      let done=0;
+      for(let i=0;i<pairs.length;i+=5){
+        const batch=pairs.slice(i,i+5);
+        const batchResults=await Promise.all(batch.map(async sourceSym=>{
+          try{
+            const raw=await fetchHistoricalKlines(sourceSym,tf,days);
+            let candles=raw;
+            if(quote==="INR"){
+              candles=raw.map(c=>({t:c.t,o:c.o*fx,h:c.h*fx,l:c.l*fx,c:c.c*fx,v:c.v}));
+            }
+            const displaySym=displayPairFromSource(sourceSym);
+            return runBacktestForPair(candles,displaySym,tf,rrCfg,fee,slip);
+          }catch(e){
+            console.warn("Backtest failed",sourceSym,tf,e);
+            return [];
           }
-          const displaySym=displayPairFromSource(sourceSym);
-          return runBacktestForPair(candles,displaySym,tf,rrCfg,fee,slip);
-        }catch(e){
-          console.warn("Backtest failed",sourceSym,e);
-          return [];
-        }
-      }));
-      batchResults.forEach(x=>all.push(...x));
-      done+=batch.length;
-      $("btStatus").textContent="⏳ Backtesting "+done+"/"+pairs.length+" pairs...";
+        }));
+        batchResults.forEach(x=>x.forEach(t=>{t.timeframe=tf;all.push(t);}));
+        done+=batch.length;
+        $("btStatus").textContent="⏳ Backtesting "+tf+" · "+done+"/"+pairs.length+" pairs...";
+      }
     }
 
-    renderBacktestResults(all,{
-      pairs:pairs.length,days,tf,quote,
-      risk:rrCfg.risk,reward:rrCfg.reward,fee,slip
-    });
+    renderBacktestResults(all,{pairs:pairs.length,days,timeframes,tf:timeframes.join(" + "),quote,risk:rrCfg.risk,reward:rrCfg.reward,fee,slip});
   }catch(e){
     console.error(e);
     $("btStatus").textContent="⚠️ Backtest failed: "+(e.message||e);
     $("btSummary").innerHTML="";
+    $("btOverview").innerHTML="";
+    $("btDiagnostics").innerHTML="";
     $("btTable").innerHTML="";
+    $("btTrades").innerHTML="";
   }finally{
     btn.disabled=false;
-    btn.textContent="🧪 Run Backtest";
+    $("exportBacktestBtn").disabled=false;
+    btn.textContent="🧪 Run Backtest V2";
   }
+}
+
+function exportBacktestCSV(){
+  if(!backtestResults.length){
+    toast("ℹ️ Run Backtest V2 first.");
+    return;
+  }
+  const head=["Timeframe","Signal Time","Pair","Direction","Score","RSI","Volume Ratio","RR","Entry","SL","TP","Exit","Exit Price","Gross R","Cost R","Net R","MFE R","MAE R","Holding Minutes","Status"];
+  const rows=[head];
+  backtestResults.forEach(t=>rows.push([
+    t.timeframe||backtestMeta?.tf||"",
+    t.signalTime?new Date(t.signalTime).toISOString():"",
+    t.symbol,t.direction,t.score,t.rsi,t.volumeRatio,t.rr,t.entry,t.sl,t.tp,t.status,t.exitPrice,
+    t.grossR,t.costR,t.r,t.mfeR,t.maeR,t.holdingMinutes,t.status
+  ]));
+  const csv=rows.map(row=>row.map(v=>'"'+String(v==null?"":v).replaceAll('"','""')+'"').join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="crypto-backtest-v2-"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
 function selectAppTab(sel){
@@ -2488,6 +2630,7 @@ $("withdrawBtn").onclick=withdrawWalletMoney;
 $("generateReportBtn").onclick=generateReport;
 $("exportReportBtn").onclick=exportReportCSV;
 $("runBacktestBtn").onclick=runBacktest;
+$("exportBacktestBtn").onclick=exportBacktestCSV;
 
 $("homeBtn").onclick=()=>{ window.location.href="https://tradesutra-chi.vercel.app/"; };
 $("autoTradeBtn").onclick=async()=>{
