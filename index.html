@@ -8200,24 +8200,90 @@ async function loadCryptoTradeDashboard(){
   const status=document.getElementById('cryptoDashStatus');if(!status)return;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   try{
-    const {data:{session}}=await supabaseClient.auth.getSession();const user=session?.user;
-    if(!user){status.textContent='Log in to view your paper-trade stats';['cryptoDashLivePnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));return;}
-    const {data,error}=await supabaseClient.from('crypto_trades').select('pair,symbol,quote,direction,entry_price,amount_inr,leverage,status,current_price,pnl_inr,closed_at,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(500);
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    const user=session?.user;
+    if(!user){
+      status.textContent='Log in to view your paper-trade stats';
+      ['cryptoDashLivePnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));
+      return;
+    }
+
+    // Use the same crypto_trades rows and the same P&L math as CryptoSignal Tracker.
+    const {data,error}=await supabaseClient.from('crypto_trades')
+      .select('id,pair,symbol,quote,direction,entry_price,amount_inr,leverage,status,current_price,close_price,pnl_inr,closed_at,created_at')
+      .eq('user_id',user.id)
+      .order('created_at',{ascending:false})
+      .limit(500);
     if(error)throw error;
-    const rows=Array.isArray(data)?data:[], closedStatus=t=>['TP_HIT','SL_HIT','MANUAL_CLOSE','CANCELLED'].includes(String(t.status||'').toUpperCase());
-    const open=rows.filter(t=>!closedStatus(t)),closed=rows.filter(closedStatus);
-    const wins=closed.filter(t=>Number(t.pnl_inr)>0).length;
+
+    const rows=Array.isArray(data)?data:[];
+    const isClosed=t=>['TP_HIT','SL_HIT','MANUAL_CLOSE','CANCELLED'].includes(String(t.status||'').toUpperCase());
+
+    // Exact closed-trade P&L logic used by CryptoSignal Tracker.
+    const closedPnl=t=>{
+      const entry=Number(t.entry_price)||0;
+      const close=Number(t.close_price);
+      const amt=Number(t.amount_inr)||0;
+      const lev=Number(t.leverage)||1;
+      if(Number.isFinite(close)&&close>0&&entry>0){
+        const move=String(t.direction||'').toUpperCase()==='LONG'
+          ? (close-entry)/entry
+          : (entry-close)/entry;
+        return amt*lev*move;
+      }
+      const status=String(t.status||'').toUpperCase();
+      if(status==='TP_HIT'){
+        const tp=Number(t.take_profit);
+        return Number.isFinite(tp)&&entry>0 ? amt*lev*(Math.abs(tp-entry)/entry) : Number(t.pnl_inr)||0;
+      }
+      if(status==='SL_HIT'){
+        const sl=Number(t.stop_loss);
+        return Number.isFinite(sl)&&entry>0 ? -amt*lev*(Math.abs(entry-sl)/entry) : Number(t.pnl_inr)||0;
+      }
+      return Number(t.pnl_inr)||0;
+    };
+
+    // Live P&L must use a fresh market price, not the stale pnl_inr stored in Supabase.
+    const open=rows.filter(t=>!isClosed(t));
+    const liveValues=await Promise.all(open.map(async t=>{
+      const cp=await cryptoDashPrice(t);
+      const entry=Number(t.entry_price)||0;
+      const amt=Number(t.amount_inr)||0;
+      const lev=Number(t.leverage)||1;
+      const dir=String(t.direction||'').toUpperCase();
+      const move=entry>0 ? (dir==='LONG' ? (cp-entry)/entry : (entry-cp)/entry) : 0;
+      return amt*lev*move;
+    }));
+    const runningPnl=liveValues.reduce((s,v)=>s+(Number(v)||0),0);
+
+    const closed=rows.filter(isClosed);
+    const bookedPnl=closed.reduce((s,t)=>s+closedPnl(t),0);
+    const wins=closed.filter(t=>closedPnl(t)>0).length;
     const winRate=closed.length?Math.round(wins/closed.length*100):null;
+
     const today=new Date().toLocaleDateString('en-CA');
-    const todayPnl=closed.filter(t=>{const d=t.closed_at&&new Date(t.closed_at);return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
-    // Use the same persisted P&L that CryptoSignal Tracker writes to crypto_trades.
-    // This keeps the homepage number identical to the scanner instead of recalculating
-    // from a separately-timed Binance price request.
-    const livePnl=open.reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
-    set('cryptoDashLivePnl',cryptoDashMoney(livePnl));set('cryptoDashOpen',String(open.length));set('cryptoDashWinRate',winRate==null?'—':winRate+'%');set('cryptoDashToday',cryptoDashMoney(todayPnl));
-    ['cryptoDashLivePnl','cryptoDashToday'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=(id==='cryptoDashLivePnl'?livePnl:todayPnl)>=0?'var(--positive)':'var(--negative)';});
-    status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  }catch(e){console.error('[Crypto Dashboard]',e);status.textContent='Dashboard unavailable';}
+    const todayPnl=closed.filter(t=>{
+      const d=t.closed_at?new Date(t.closed_at):null;
+      return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;
+    }).reduce((s,t)=>s+closedPnl(t),0);
+
+    const totalPnl=bookedPnl+runningPnl;
+
+    set('cryptoDashLivePnl',cryptoDashMoney(runningPnl));
+    set('cryptoDashOpen',String(open.length));
+    set('cryptoDashWinRate',winRate==null?'—':winRate+'%');
+    set('cryptoDashToday',cryptoDashMoney(todayPnl));
+
+    ['cryptoDashLivePnl','cryptoDashToday'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.style.color=(id==='cryptoDashLivePnl'?runningPnl:todayPnl)>=0?'var(--positive)':'var(--negative)';
+    });
+
+    status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit')};
+  }catch(e){
+    console.error('[Crypto Dashboard]',e);
+    status.textContent='Dashboard unavailable';
+  }
 }
 function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTimer)clearInterval(cryptoDashTimer);cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));}
 
