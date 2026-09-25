@@ -2546,7 +2546,7 @@ function tradeSortValue(t,sort){
 function sortTrades(list,sort){
   const arr=list.slice();
   arr.sort((a,b)=>{
-    const av=tradeSortValue(a), bv=tradeSortValue(b);
+    const av=tradeSortValue(a,sort), bv=tradeSortValue(b,sort);
     if(typeof av==="string"||typeof bv==="string"){
       const cmp=String(av).localeCompare(String(bv));
       return sort==="symbolZA" ? -cmp : cmp;
