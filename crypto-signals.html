@@ -2642,8 +2642,10 @@ function renderTradeCard(t, ri, archived=false){
     </div>`;
 }
 
-function tradeSortTimestamp(t){
-  const raw=t.createdAt||t.created_at||t.date||0;
+function tradeSortTimestamp(t,mode="open"){
+  const raw=mode==="close"
+    ? (t.closedAt||t.closed_at||t.closeDate||t.closed_date||t.closeTime||0)
+    : (t.createdAt||t.created_at||t.date||0);
   if(raw instanceof Date)return raw.getTime();
   const s=String(raw||"").trim(); if(!s)return 0;
   let ms=Date.parse(s);
@@ -2652,17 +2654,20 @@ function tradeSortTimestamp(t){
   if(m)ms=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0)).getTime();
   return Number.isFinite(ms)?ms:0;
 }
-function tradeSortValue(t,sort){
+function tradeSortValue(t,sort,mode="live"){
+  if(mode==="archive" && (sort==="newest"||sort==="oldest")){
+    return tradeSortTimestamp(t,"close");
+  }
   if(sort==="pnlHigh"||sort==="pnlLow")return Number(t.closed?calcClosedPnL(t):calcLivePnL(t).pnl)||0;
   if(sort==="capitalHigh"||sort==="capitalLow")return Number(t.amt)||0;
   if(sort==="entryHigh"||sort==="entryLow")return Number(t.entry)||0;
   if(sort==="symbolAZ"||sort==="symbolZA")return String(t.sym||"").toUpperCase();
-  return tradeSortTimestamp(t);
+  return tradeSortTimestamp(t,"open");
 }
-function sortTrades(list,sort="newest"){
+function sortTrades(list,sort="newest",mode="live"){
   const arr=list.slice();
   arr.sort((a,b)=>{
-    const av=tradeSortValue(a,sort),bv=tradeSortValue(b,sort);
+    const av=tradeSortValue(a,sort,mode),bv=tradeSortValue(b,sort,mode);
     if(typeof av==="string"||typeof bv==="string"){
       const cmp=String(av).localeCompare(String(bv),undefined,{numeric:true,sensitivity:"base"});
       return sort==="symbolZA"?-cmp:cmp;
@@ -2670,7 +2675,7 @@ function sortTrades(list,sort="newest"){
     const low=["oldest","pnlLow","capitalLow","entryLow"].includes(sort);
     const diff=low?av-bv:bv-av;
     if(diff!==0)return diff;
-    return tradeSortTimestamp(a)-tradeSortTimestamp(b);
+    return tradeSortTimestamp(a,mode==="archive"?"close":"open")-tradeSortTimestamp(b,mode==="archive"?"close":"open");
   });
   return arr;
 }
