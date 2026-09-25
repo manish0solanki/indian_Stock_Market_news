@@ -279,6 +279,10 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .crypto-live-summary{margin:0 20px 12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
 .crypto-live-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;margin-bottom:7px}.crypto-live-summary-head span{font-size:9px;color:var(--muted);font-family:monospace}.crypto-live-summary-list{display:flex;flex-direction:column}.crypto-live-row{display:grid;grid-template-columns:1.4fr .65fr .9fr 1fr;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:10px}.crypto-live-row:first-child{border-top:0}.crypto-live-pair{font-family:monospace;font-weight:800}.crypto-live-dir{font-size:8px;font-weight:800;padding:2px 5px;border-radius:10px;width:max-content}.crypto-live-dir.long{color:var(--green);background:rgba(22,199,132,.12)}.crypto-live-dir.short{color:var(--red);background:rgba(234,57,67,.12)}.crypto-live-current{font-family:monospace;color:var(--muted);text-align:right}.crypto-live-pnl{font-family:monospace;font-weight:800;text-align:right}.crypto-live-empty{text-align:center;color:var(--muted);font-size:10px;padding:10px}.crypto-live-total{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}.crypto-live-total b{font-family:monospace;font-size:12px}.crypto-live-pnl.profit,.crypto-live-total .profit{color:var(--green)}.crypto-live-pnl.loss,.crypto-live-total .loss{color:var(--red)}
 @media(max-width:600px){.crypto-live-summary{margin:0 10px 10px;padding:11px}.crypto-live-row{grid-template-columns:1.25fr .55fr 1fr 1fr}.crypto-live-current{font-size:9px}}
+
+/* ================= LIVE TRADE LIST ================= */
+.live-list-panel{width:100%;margin-top:2px}.live-list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 10px;padding:0 2px;font-size:12px}.live-list-toolbar>div{display:flex;align-items:center;gap:8px}.live-list-toolbar>div>b{font-size:14px}.live-list-toolbar>div>span{color:var(--muted);font-size:10px}.live-list-toolbar label{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px}.live-list-toolbar select{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:600 10px var(--font-body)}.live-list-wrap{width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--card)}.live-list-table{width:100%;min-width:1180px;border-collapse:collapse}.live-list-table th{padding:10px 9px;text-align:left;font-size:8px;letter-spacing:.5px;color:var(--muted);background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}.live-list-table td{padding:10px 9px;border-bottom:1px solid var(--border);font-size:10px;white-space:nowrap;vertical-align:middle}.live-list-table tbody tr:last-child td{border-bottom:0}.live-list-table tbody tr:hover{background:rgba(255,255,255,.025)}.live-list-pair{font:800 11px monospace}.live-list-num{font:600 10px monospace}.live-list-muted{font-size:9px;color:var(--muted)}.live-list-dir{display:inline-flex;padding:3px 7px;border-radius:20px;font-size:8px;font-weight:800}.live-list-dir.long{color:var(--green);background:rgba(22,199,132,.10);border:1px solid rgba(22,199,132,.25)}.live-list-dir.short{color:var(--red);background:rgba(234,57,67,.10);border:1px solid rgba(234,57,67,.25)}.live-list-pnl{font:800 10px monospace}.live-list-r{font:700 9px monospace;color:var(--muted)}.live-list-actions{display:flex;gap:4px}.live-list-actions button{font-size:9px;padding:5px 7px}.live-list-empty{padding:24px;text-align:center;color:var(--muted);font-size:11px}
+@media(max-width:700px){.live-list-toolbar{align-items:flex-start;flex-direction:column}.live-list-wrap{border-radius:10px}}
 </style>
 <base target="_blank">
 
@@ -342,6 +346,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <div class="tabs">
   <div class="tab active" data-tab="signals">📶 Signals</div>
   <div class="tab" data-tab="live">🟢 Live Trades <span id="liveTabCount"></span></div>
+  <div class="tab" data-tab="liveList">📋 Live List <span id="liveListTabCount"></span></div>
   <div class="tab" data-tab="archive">🗄️ Archive <span id="archiveTabCount"></span></div>
   <div class="tab" data-tab="wallet">💰 Wallet <span id="walletBalanceTab"></span></div>
   <div class="tab" data-tab="reports">📊 Reports</div>
@@ -369,6 +374,21 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <div class="crypto-live-summary" id="cryptoLiveSummary">
   <div class="crypto-live-summary-head"><b>Live Trade Snapshot</b><span id="cryptoLiveSummaryTime">—</span></div>
   <div class="crypto-live-summary-list" id="cryptoLiveSummaryList"></div>
+</div>
+<div class="live-list-panel" id="liveListPane" hidden>
+  <div class="live-list-toolbar">
+    <div><b>All Live Trades</b><span id="liveListSummary"></span></div>
+    <label>Sort <select id="liveListSort">
+      <option value="newest">New → Old</option><option value="oldest">Old → New</option>
+      <option value="pnlHigh">P&L High → Low</option><option value="pnlLow">P&L Low → High</option>
+      <option value="capitalHigh">Capital High → Low</option><option value="capitalLow">Capital Low → High</option>
+      <option value="entryHigh">Entry High → Low</option><option value="entryLow">Entry Low → High</option>
+      <option value="symbolAZ">Symbol A → Z</option><option value="symbolZA">Symbol Z → A</option>
+    </select></label>
+  </div>
+  <div class="live-list-wrap"><table class="live-list-table"><thead><tr>
+    <th>PAIR</th><th>DIR</th><th>ENTRY</th><th>CURRENT</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>CAPITAL</th><th>LEV.</th><th>LIVE P&L</th><th>R</th><th>OPENED</th><th>ACTIONS</th>
+  </tr></thead><tbody id="liveListBody"></tbody></table></div>
 </div>
 <div class="journal-list" id="liveTradesList" hidden></div>
 <div class="journal-list" id="archiveList" hidden></div>
@@ -2347,6 +2367,7 @@ async function updateLivePrices(){
   }
   renderLiveTrades();
   renderArchive();
+  renderLiveList();
   renderCryptoLiveSummary();
 }
 function calcLivePnL(t){
@@ -2585,6 +2606,30 @@ function renderCryptoLiveSummary(){
     return '<div class="crypto-live-row"><div class="crypto-live-pair">'+escapeHtml(String(t.sym||"—"))+'</div><div><span class="crypto-live-dir '+(dir==="SHORT"?"short":"long")+'">'+dir+'</span></div><div class="crypto-live-current">'+fmtPrice(live.cp,t.quote||state.quote)+'</div><div class="crypto-live-pnl '+(pnl>=0?"profit":"loss")+'">'+(pnl>=0?"+":"")+fmtINR(pnl)+'</div></div>';
   }).join('');
   list.innerHTML += '<div class="crypto-live-total"><span>Total Live P&L · '+open.length+' trades</span><b class="'+(total>=0?"profit":"loss")+'">'+(total>=0?"+":"")+fmtINR(total)+'</b></div>';
+}
+
+function renderLiveList(){
+  const body=$("liveListBody"); if(!body)return;
+  const open=state.journal.filter(t=>!t.closed);
+  const summary=$("liveListSummary");
+  const total=open.reduce((s,t)=>s+calcLivePnL(t).pnl,0);
+  if(summary)summary.textContent=`· ${open.length} trades · Live P&L ${total>=0?"+":""}${fmtINR(total)}`;
+  if(!open.length){body.innerHTML='<tr><td colspan="12" class="live-list-empty">No live paper trades.</td></tr>';return;}
+  const sort=$("liveListSort")?.value||localStorage.getItem("cs_live_list_sort")||"newest";
+  body.innerHTML=sortTrades(open,sort).map(t=>{
+    const i=state.journal.indexOf(t), live=calcLivePnL(t), q=quoteLabel(t), price=v=>q+fmt(v);
+    const pnl=Number(live.pnl)||0, r=Number(live.rMultiple)||0;
+    return `<tr>
+      <td><div class="live-list-pair">${escapeHtml(t.sym)}</div><div class="live-list-muted">${escapeHtml(t.quote||state.quote)} · ${escapeHtml(state.tf)}</div></td>
+      <td><span class="live-list-dir ${t.dir==="SHORT"?"short":"long"}">${escapeHtml(t.dir)}</span></td>
+      <td class="live-list-num">${price(t.entry)}</td><td class="live-list-num">${price(live.cp)}</td>
+      <td class="live-list-num" style="color:var(--red)">${price(t.sl)}</td><td class="live-list-num" style="color:var(--green)">${price(t.tp)}</td>
+      <td class="live-list-num">₹${Number(t.amt||0).toLocaleString("en-IN")}</td><td class="live-list-num">${t.lev}x</td>
+      <td class="live-list-pnl" style="color:${pnl>=0?"var(--green)":"var(--red)"}">${pnl>=0?"+":""}${fmtINR(pnl)}</td>
+      <td class="live-list-r">${r>=0?"+":""}${r.toFixed(1)}R</td><td class="live-list-muted">${escapeHtml(t.date||"—")}</td>
+      <td><div class="live-list-actions"><button class="small primary" onclick="quickClose(${i},'tp')">🎯</button><button class="small danger" onclick="quickClose(${i},'sl')">🛑</button><button class="small" onclick="openEdit(${i})">✏️</button><button class="small danger" onclick="deleteTrade(${i})">🗑️</button></div></td>
+    </tr>`;
+  }).join("");
 }
 
 function renderLiveTrades(){
@@ -3453,6 +3498,7 @@ function selectAppTab(sel){
   /* Use the HTML hidden property rather than relying on inline display.
      This is more reliable across Android browsers and responsive CSS. */
   $("signalsGrid").hidden=sel!=="signals";
+  $("liveListPane").hidden=sel!=="liveList";
   $("settingsPane").hidden=sel!=="settings";
   $("walletPane").hidden=sel!=="wallet";
   $("reportsPane").hidden=sel!=="reports";
@@ -3461,6 +3507,7 @@ function selectAppTab(sel){
   $("archiveList").hidden=sel!=="archive";
 
   $("liveTradesList").classList.toggle("panel-visible",sel==="live");
+  if(sel==="liveList") renderLiveList();
   $("archiveList").classList.toggle("panel-visible",sel==="archive");
 
   const tools=$("tradeTools");
