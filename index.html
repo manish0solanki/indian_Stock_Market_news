@@ -3528,21 +3528,14 @@ body {
 
       <!-- Crypto Paper Trade Dashboard -->
       <div class="widget-card crypto-dashboard" id="cryptoTradeDashboard">
-        <div class="crypto-dash-head">
-          <div>
-            <div class="crypto-dash-title">⚡ Crypto Trade Dashboard</div>
-            <div class="crypto-dash-badge" id="cryptoDashStatus">Checking account…</div>
-          </div>
-          <a class="crypto-dash-link" href="/crypto-signals.html">Open Scanner →</a>
-        </div>
+        <div class="crypto-dash-head"><div><div class="crypto-dash-title">⚡ Crypto Trade Dashboard</div><div class="crypto-dash-badge" id="cryptoDashStatus">Checking account…</div></div><a class="crypto-dash-link" href="/crypto-signals.html">Open Scanner →</a></div>
         <div class="crypto-dash-metrics">
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashLivePnl">—</div><div class="l">Live P&L</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashOpen">—</div><div class="l">Open Trades</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashWinRate">—</div><div class="l">Win Rate</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashToday">—</div><div class="l">Today P&L</div></div>
         </div>
-        <div class="crypto-dash-live" id="cryptoDashTrades"></div>
-        <div class="crypto-dash-note">Paper trades only · live prices refresh automatically.</div>
+        <div class="crypto-dash-note">Paper trades only · values use the same trade data and P&L calculation as the CryptoSignal Tracker.</div>
       </div>
 
       <!-- 1. Market Snapshot -->
@@ -8187,73 +8180,44 @@ contactForm.addEventListener('submit', async (e) => {
 
 /* ─── Crypto Paper Trade Dashboard ─── */
 let cryptoDashTimer=null;
-const CRYPTO_DASH_BINANCE='https://api.binance.com/api/v3/ticker/price?symbol=';
-function cryptoDashMoney(n){
-  const v=Number(n)||0;
-  return (v>=0?'+':'-')+'₹'+Math.abs(v).toLocaleString('en-IN',{maximumFractionDigits:0});
+function cryptoDashMoney(n){const v=Number(n)||0;return (v>=0?'+':'-')+'₹'+Math.abs(v).toLocaleString('en-IN',{maximumFractionDigits:2});}
+async function cryptoDashPrice(t){
+  const pair=String(t.pair||'').toUpperCase();
+  const quote=String(t.quote||'USDT').toUpperCase();
+  let symbol=pair;
+  if(!symbol) symbol=String(t.symbol||'').toUpperCase()+quote;
+  if(quote==='INR'||symbol.endsWith('INR')){
+    const base=symbol.replace(/INR$/,'');
+    const [pr,fx]=await Promise.all([fetch('https://api.binance.com/api/v3/ticker/price?symbol='+encodeURIComponent(base+'USDT'),{cache:'no-store'}),fetch('https://open.er-api.com/v6/latest/USD',{cache:'no-store'})]);
+    if(!pr.ok||!fx.ok)return Number(t.current_price)||Number(t.entry_price)||0;
+    const pd=await pr.json(),fd=await fx.json();return Number(pd.price)*Number(fd?.rates?.INR);
+  }
+  const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
+  if(!r.ok)return Number(t.current_price)||Number(t.entry_price)||0;
+  const d=await r.json();return Number(d.price)||Number(t.current_price)||Number(t.entry_price)||0;
 }
-function cryptoDashClass(n){return Number(n)>=0?'positive':'negative';}
-function cryptoDashSymbol(t){return String(t.pair||t.symbol||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();}
 async function loadCryptoTradeDashboard(){
-  const status=document.getElementById('cryptoDashStatus');
-  if(!status)return;
+  const status=document.getElementById('cryptoDashStatus');if(!status)return;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   try{
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    const user=session?.user;
-    if(!user){
-      status.textContent='Log in to view your paper trades';
-      set('cryptoDashLivePnl','—');set('cryptoDashOpen','—');set('cryptoDashWinRate','—');set('cryptoDashToday','—');
-      set('cryptoDashTrades','<div class="crypto-dash-empty">Login to see your live trades and P&L.</div>');
-      return;
-    }
-    const {data,error}=await supabaseClient.from('crypto_trades')
-      .select('id,pair,symbol,direction,entry_price,stop_loss,take_profit,amount_inr,leverage,status,current_price,close_price,pnl_inr,created_at,closed_at')
-      .eq('user_id',user.id).order('created_at',{ascending:false}).limit(100);
+    const {data:{session}}=await supabaseClient.auth.getSession();const user=session?.user;
+    if(!user){status.textContent='Log in to view your paper-trade stats';['cryptoDashLivePnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));return;}
+    const {data,error}=await supabaseClient.from('crypto_trades').select('pair,symbol,quote,direction,entry_price,amount_inr,leverage,status,current_price,pnl_inr,closed_at,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(500);
     if(error)throw error;
-    const rows=Array.isArray(data)?data:[];
-    const open=rows.filter(t=>!['TP_HIT','SL_HIT','MANUAL_CLOSE'].includes(String(t.status||'').toUpperCase()));
-    const closed=rows.filter(t=>['TP_HIT','SL_HIT','MANUAL_CLOSE'].includes(String(t.status||'').toUpperCase()));
+    const rows=Array.isArray(data)?data:[], closedStatus=t=>['TP_HIT','SL_HIT','MANUAL_CLOSE','CANCELLED'].includes(String(t.status||'').toUpperCase());
+    const open=rows.filter(t=>!closedStatus(t)),closed=rows.filter(closedStatus);
     const wins=closed.filter(t=>Number(t.pnl_inr)>0).length;
     const winRate=closed.length?Math.round(wins/closed.length*100):null;
-    const todayKey=new Date().toLocaleDateString('en-CA');
-    const todayPnl=closed.filter(t=>{const d=t.closed_at?new Date(t.closed_at):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===todayKey;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
-    let livePnl=0;
-    const enriched=await Promise.all(open.slice(0,12).map(async t=>{
-      const entry=Number(t.entry_price)||0, amt=Number(t.amount_inr)||0, lev=Number(t.leverage)||1;
-      let cp=Number(t.current_price)||entry;
-      const symbol=cryptoDashSymbol(t);
-      if(symbol){try{const res=await fetch(CRYPTO_DASH_BINANCE+encodeURIComponent(symbol),{cache:'no-store'});if(res.ok){const q=await res.json();if(Number.isFinite(Number(q.price)))cp=Number(q.price);}}catch(e){}}
-      const move=String(t.direction).toUpperCase()==='SHORT'?(entry-cp)/entry:(cp-entry)/entry;
-      const pnl=amt*lev*move; livePnl+=Number.isFinite(pnl)?pnl:0;
-      return {...t,cp,pnl};
-    }));
-    set('cryptoDashLivePnl',cryptoDashMoney(livePnl));
-    set('cryptoDashOpen',String(open.length));
-    set('cryptoDashWinRate',winRate==null?'—':winRate+'%');
-    set('cryptoDashToday',cryptoDashMoney(todayPnl));
-    const pnlEl=document.getElementById('cryptoDashLivePnl');if(pnlEl)pnlEl.style.color=livePnl>=0?'var(--positive)':'var(--negative)';
-    const todayEl=document.getElementById('cryptoDashToday');if(todayEl)todayEl.style.color=todayPnl>=0?'var(--positive)':'var(--negative)';
+    const today=new Date().toLocaleDateString('en-CA');
+    const todayPnl=closed.filter(t=>{const d=t.closed_at&&new Date(t.closed_at);return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
+    const priced=await Promise.all(open.map(async t=>{const cp=await cryptoDashPrice(t);const entry=Number(t.entry_price)||0,amt=Number(t.amount_inr)||0,lev=Number(t.leverage)||1;const move=String(t.direction).toUpperCase()==='SHORT'?(entry-cp)/entry:(cp-entry)/entry;return amt*lev*move;}));
+    const livePnl=priced.reduce((s,v)=>s+(Number.isFinite(v)?v:0),0);
+    set('cryptoDashLivePnl',cryptoDashMoney(livePnl));set('cryptoDashOpen',String(open.length));set('cryptoDashWinRate',winRate==null?'—':winRate+'%');set('cryptoDashToday',cryptoDashMoney(todayPnl));
+    ['cryptoDashLivePnl','cryptoDashToday'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=(id==='cryptoDashLivePnl'?livePnl:todayPnl)>=0?'var(--positive)':'var(--negative)';});
     status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    const box=document.getElementById('cryptoDashTrades');
-    if(!open.length){box.innerHTML='<div class="crypto-dash-empty">No open paper trades.</div>';return;}
-    box.innerHTML=enriched.map(t=>{
-      const dir=String(t.direction||'').toUpperCase();
-      const pnl=Number(t.pnl)||0;
-      return '<div class="crypto-dash-trade"><div><div class="crypto-dash-symbol">'+escapeHtml(String(t.pair||t.symbol||'—'))+'</div><span class="crypto-dash-dir '+(dir==='SHORT'?'short':'long')+'">'+escapeHtml(dir||'—')+'</span></div><div style="font-family:var(--font-mono);font-size:9px">₹'+Number(t.cp||0).toLocaleString('en-IN',{maximumFractionDigits:6})+'</div><div class="crypto-dash-pnl" style="color:'+(pnl>=0?'var(--positive)':'var(--negative)')+'">'+cryptoDashMoney(pnl)+'</div></div>';
-    }).join('');
-  }catch(e){
-    console.error('[Crypto Dashboard]',e);
-    status.textContent='Dashboard unavailable';
-    set('cryptoDashTrades','<div class="crypto-dash-empty">Could not load crypto trade data.</div>');
-  }
+  }catch(e){console.error('[Crypto Dashboard]',e);status.textContent='Dashboard unavailable';}
 }
-function initCryptoTradeDashboard(){
-  loadCryptoTradeDashboard();
-  if(cryptoDashTimer)clearInterval(cryptoDashTimer);
-  cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);
-  supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));
-}
+function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTimer)clearInterval(cryptoDashTimer);cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));}
 
 /* ─── Live Timer ─── */
 setInterval(() => {
