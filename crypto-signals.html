@@ -279,13 +279,14 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<base target="_blank">
 </head>
 <body>
 
 <header>
 <div>
   <h1>⚡ CryptoSignal <span>Tracker</span> <small style="font-size:.55em;color:var(--green)">V4</small></h1>
-  <div class="sub">V4 default · 4H LONG · EMA20 pullback · RSI ≥60 · Volume ≥1.5x · 1%–3% stop · selectable R:R · Paper/Test mode</div>
+  <div class="sub">V5 · LONG + SHORT · EMA20 pullback/reclaim · RSI/volume confirmation · 0.8%–4% stop · selectable R:R · Paper/Test mode</div>
 </div>
 <div class="controls">
   <select id="tfSelect">
@@ -344,7 +345,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 </div>
 
 <div class="trade-tools" id="tradeTools" style="display:none">
-  <label for="tradeSort">Sort trades:</label>
+  <label for="tradeSort">Sort current tab:</label>
   <select id="tradeSort">
     <option value="newest">New → Old</option>
     <option value="oldest">Old → New</option>
@@ -456,7 +457,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     🎯 Running paper trades close automatically when live price reaches TP or SL.<br>
     💰 Trade capital, TP profit and SL loss are always in INR; Entry/SL/TP prices use the symbol quote currency.<br>
     🔔 Notifications require this page to remain open.<br>
-    ⚠️ Score is a setup score, not a win probability.<br>
+    ⚠️ Score is a setup score, not a win probability. Live price must remain safely inside the SL/TP corridor.<br>
     🎯 Minimum score: 65 · Winner must lead by 10+<br>
     📏 EMA20 distance: ATR-based (adapts to each coin)<br>
     ⏳ Alert cooldown: 5 min per symbol+direction
@@ -496,8 +497,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <div style="display:flex;gap:10px;margin-top:18px">
     <button class="primary" style="flex:1" onclick="saveTrade()">💾 Save Paper Trade</button>
     <button style="flex:1" onclick="closeModal()">Cancel</button>
-  </div>
-</div>
+  </div></div>
 </div>
 
 <!-- EDIT TRADE MODAL -->
@@ -759,6 +759,7 @@ function dbTradeToUI(t){
     date:t.created_at?new Date(t.created_at).toLocaleString():"",
     createdAt:t.created_at||null,
     closedAt:t.closed_at||null,
+    closedDate:t.closed_at?new Date(t.closed_at).toLocaleString():"",
     notes:""
   };
 }
@@ -962,19 +963,64 @@ const MIN_SCORE = 65;
 const MIN_SPREAD = 10;
 const MIN_VOLUME = 1.2;
 
+/* ================= SETUP CONFIDENCE =================
+   IMPORTANT: setup score and confidence are different things.
+   Score = checklist points used to qualify a setup.
+   Confidence = a separate 0-95 setup-quality estimate. It is NOT
+   a statistical probability of winning and must be calibrated by
+   backtesting before being interpreted as a win probability.
+*/
+function clampNum(v, lo, hi){ return Math.min(hi, Math.max(lo, Number(v)||0)); }
+
+function calculateSetupConfidence({dir, score, rsiValue, volumeRatio, price, e20, e50, e100, atrValue, hist, prevHist, rr}){
+  let confidence = 55 + clampNum(score,0,100) * 0.25;
+
+  // Trend separation: stronger EMA stacking gets more confidence.
+  const trendSpread = dir === "LONG"
+    ? ((e20-e50)/e50 + (e50-e100)/e100) * 100
+    : ((e50-e20)/e50 + (e100-e50)/e100) * 100;
+  confidence += clampNum(trendSpread * 1.5, 0, 5);
+
+  // RSI quality: reward the middle of the valid zone, not an extreme.
+  const rsiIdeal = dir === "LONG" ? 63 : 37;
+  const rsiDistance = Math.abs(Number(rsiValue)-rsiIdeal);
+  confidence += clampNum(3 - rsiDistance * 0.12, 0, 3);
+
+  // Volume strength: 1.2x is only the minimum confirmation.
+  confidence += clampNum((Number(volumeRatio)-1.2) * 1.7, 0, 3);
+
+  // MACD strength relative to ATR.
+  if(Number.isFinite(hist) && Number.isFinite(atrValue) && atrValue>0){
+    const macdStrength = Math.abs(hist) / atrValue;
+    confidence += clampNum(macdStrength * 2.0, 0, 2);
+  }
+
+  // Momentum acceleration in the expected direction.
+  if(Number.isFinite(hist) && Number.isFinite(prevHist)){    const momentumOk = dir === "LONG" ? hist >= prevHist : hist <= prevHist;
+    if(momentumOk) confidence += 1.5;
+  }
+
+  // Reward-to-risk quality.
+  confidence += clampNum((Number(rr)-2) * 1.0, 0, 1.5);
+
+  return Math.round(clampNum(confidence, 50, 95));
+}
+
 /* ================= STRATEGY V4 =================
    Evidence-led paper strategy:
-   4H, USDT, LONG only, strong EMA trend, EMA20 pullback/reclaim,
-   RSI >= 60, volume >= 1.5x, score >= 75, 1%–3% stop, 1:2 RR.
+   1H/4H, USDT, LONG + SHORT, strong EMA trend, EMA20 pullback/reclaim,
+   direction-aware RSI, volume >= 1.2x, score >= 70, 0.8%–4% stop, selectable RR.
    The older analyze() engine remains available for historical V3 research.
 */
-const V4_MODE = true;
-const V4_TIMEFRAME = "4h";
-const V4_MIN_SCORE = 75;
-const V4_MIN_RSI = 60;
-const V4_MIN_VOLUME = 1.5;
-const V4_MIN_STOP_PCT = 0.01;
-const V4_MAX_STOP_PCT = 0.03;
+const V5_MODE = true;
+const V5_TIMEFRAME_DEFAULT = "1h";  // 1H recommended for balance
+const V5_TIMEFRAME_ALT = "4h";      // 4H for fewer but stronger signals
+const V5_MIN_SCORE = 70;
+const V5_MIN_RSI = 55;
+const V5_MAX_RSI = 78;
+const V5_MIN_VOLUME = 1.2;
+const V5_MIN_STOP_PCT = 0.008;
+const V5_MAX_STOP_PCT = 0.04;
 const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
@@ -982,7 +1028,9 @@ const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0;
-let tradeSort=localStorage.getItem("cs_trade_sort")||"newest";
+let liveTradeSort=localStorage.getItem("cs_live_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
+let archiveTradeSort=localStorage.getItem("cs_archive_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
+let activeTradePanel="live";
 let selectedRisk=Number(localStorage.getItem("cs_rr_risk")||1);
 let selectedReward=Number(localStorage.getItem("cs_rr_reward")||2);
 const $ = id => document.getElementById(id);
@@ -1447,7 +1495,6 @@ function analyzeV4(candles,symbol,ticker,rrCfgOverride=null){
     sl=price-minRisk;
     risk=minRisk;
   }
-
   if(risk>maxRisk) return null;
 
   const rrCfg=rrCfgOverride||selectedRR();
@@ -1468,6 +1515,477 @@ function analyzeV4(candles,symbol,ticker,rrCfgOverride=null){
   };
 }
 
+
+/* ================= STRATEGY V5 ENGINE =================
+   V5 LONG + SHORT
+   IMPORTANT: Existing LONG rules are preserved. SHORT is the exact
+   bearish mirror of the same setup:
+   - same EMA trend structure
+   - same 1 ATR EMA20 pullback zone
+   - same EMA20 reclaim requirement, mirrored below EMA20
+   - same volume threshold
+   - same score threshold
+   - same 0.8%–4% stop range
+   - same selectable R:R
+   - RSI and candle/MACD conditions are mirrored for SHORT
+*/
+function analyzeV5(candles, symbol, ticker, rrCfgOverride=null) {
+  const closes = candles.map(c => Number(c.c));
+  const highs = candles.map(c => Number(c.h));
+  const lows = candles.map(c => Number(c.l));
+
+  if (candles.length < 110) return null;
+
+  const e20 = ema(closes, 20);
+  const e50 = ema(closes, 50);
+  const e100 = ema(closes, 100);
+  const rsiV = rsi(closes);
+  const atrV = atr(candles);
+  const macdV = macd(closes);
+
+  const i = closes.length - 1;
+  const p = i - 1;
+  const price = closes[i];
+
+  if (i < 4 || !Number.isFinite(price) || !Number.isFinite(e20[i]) ||
+      !Number.isFinite(e50[i]) || !Number.isFinite(e100[i]) ||
+      !Number.isFinite(rsiV[i]) || !Number.isFinite(atrV[i])) {
+    return null;
+  }
+
+  const cur = candles[i];
+  const prev = candles[p];
+  const volRatio = volumeRatio(candles, i);
+  const hist = macdV.hist[i];
+  const prevHist = macdV.hist[p];
+
+  /* ================= LONG SETUP ================= */
+  const longStrongTrend = e20[i] > e50[i] && e50[i] > e100[i];
+  const longModerateTrend = e20[i] > e50[i];
+
+  const longEma20Zone = e20[i] + atrV[i] * 1.0;
+  const longRecentLow = Math.min(
+    lows[i],
+    lows[p],
+    lows[i-2] || lows[p]
+  );
+  const longNearEMA20 = longRecentLow <= longEma20Zone;
+
+  const longReclaim = price > e20[i];
+  const longRsiOk = rsiV[i] >= V5_MIN_RSI && rsiV[i] <= V5_MAX_RSI;
+  const longVolumeOk = volRatio >= V5_MIN_VOLUME;
+  const longMacdOk = Number.isFinite(hist) && hist > 0;
+  const longMomentumOk =
+    Number.isFinite(hist) &&
+    Number.isFinite(prevHist) &&
+    hist >= prevHist;
+  const longBullish = Number(cur.c) > Number(cur.o);
+
+  let longScore = 0;
+  const longReasons = [];
+
+  if (longStrongTrend) {
+    longScore += 30;
+    longReasons.push("EMA20>50>100");
+  } else if (longModerateTrend) {
+    longScore += 20;
+    longReasons.push("EMA20>EMA50");
+  }
+
+  if (longNearEMA20) {
+    longScore += 20;
+    longReasons.push("EMA20 zone");
+  }
+
+  if (longReclaim) {
+    longScore += 10;
+    longReasons.push("EMA20 reclaim");
+  }
+
+  if (longRsiOk) {
+    longScore += 15;
+    longReasons.push("RSI " + rsiV[i].toFixed(0));
+  }
+
+  if (longVolumeOk) {
+    longScore += 10;
+    longReasons.push("Vol " + volRatio.toFixed(1) + "x");
+  }
+
+  if (longBullish) {
+    longScore += 5;
+    longReasons.push("Bull candle");
+  }
+
+  if (longMacdOk) {
+    longScore += 5;
+    longReasons.push("MACD+");
+  }
+
+  if (longMomentumOk) {
+    longScore += 5;
+    longReasons.push("Momentum↑");
+  }
+
+  const longTrendOk = longStrongTrend || longModerateTrend;
+  const longPullbackOk =
+    longNearEMA20 ||
+    (price > e20[i] && price < e20[i] + atrV[i] * 0.5);
+
+  const longValid =
+    longTrendOk &&
+    longPullbackOk &&
+    longReclaim &&
+    longRsiOk &&
+    longVolumeOk &&
+    longScore >= V5_MIN_SCORE;
+
+  /* ================= SHORT SETUP =================
+     Exact bearish mirror of LONG.
+     RSI is mirrored around 50:
+       LONG: 55–78
+       SHORT: 22–45
+     This prevents the SHORT side from treating an already deeply
+     oversold market as a fresh short setup.
+  */
+  const shortStrongTrend = e20[i] < e50[i] && e50[i] < e100[i];
+  const shortModerateTrend = e20[i] < e50[i];
+
+  const shortEma20Zone = e20[i] - atrV[i] * 1.0;
+  const shortRecentHigh = Math.max(
+    highs[i],
+    highs[p],
+    highs[i-2] || highs[p]
+  );
+  const shortNearEMA20 = shortRecentHigh >= shortEma20Zone;
+
+  const shortReclaim = price < e20[i];
+
+  const shortMinRsi = 100 - V5_MAX_RSI; // 22
+  const shortMaxRsi = 100 - V5_MIN_RSI; // 45
+  const shortRsiOk =
+    rsiV[i] >= shortMinRsi &&
+    rsiV[i] <= shortMaxRsi;
+
+  const shortVolumeOk = volRatio >= V5_MIN_VOLUME;
+  const shortMacdOk = Number.isFinite(hist) && hist < 0;
+  const shortMomentumOk =
+    Number.isFinite(hist) &&
+    Number.isFinite(prevHist) &&
+    hist <= prevHist;
+  const shortBearish = Number(cur.c) < Number(cur.o);
+
+  let shortScore = 0;
+  const shortReasons = [];
+
+  if (shortStrongTrend) {
+    shortScore += 30;
+    shortReasons.push("EMA20<50<100");
+  } else if (shortModerateTrend) {
+    shortScore += 20;
+    shortReasons.push("EMA20<EMA50");
+  }
+
+  if (shortNearEMA20) {
+    shortScore += 20;
+    shortReasons.push("EMA20 zone");
+  }
+
+  if (shortReclaim) {
+    shortScore += 10;
+    shortReasons.push("EMA20 rejection");
+  }
+
+  if (shortRsiOk) {
+    shortScore += 15;
+    shortReasons.push("RSI " + rsiV[i].toFixed(0));
+  }
+
+  if (shortVolumeOk) {
+    shortScore += 10;
+    shortReasons.push("Vol " + volRatio.toFixed(1) + "x");
+  }
+
+  if (shortBearish) {
+    shortScore += 5;
+    shortReasons.push("Bear candle");
+  }
+
+  if (shortMacdOk) {
+    shortScore += 5;
+    shortReasons.push("MACD-");
+  }
+
+  if (shortMomentumOk) {
+    shortScore += 5;
+    shortReasons.push("Momentum↓");
+  }
+
+  const shortTrendOk = shortStrongTrend || shortModerateTrend;
+  const shortPullbackOk =
+    shortNearEMA20 ||
+    (price < e20[i] && price > e20[i] - atrV[i] * 0.5);
+
+  const shortValid =
+    shortTrendOk &&
+    shortPullbackOk &&
+    shortReclaim &&
+    shortRsiOk &&
+    shortVolumeOk &&
+    shortScore >= V5_MIN_SCORE;
+
+  /* ================= DIRECTION SELECTION =================
+     Keep the existing LONG behaviour. If both somehow qualify,
+     choose the higher-scoring setup. A tie is rejected rather than
+     inventing a direction.
+  */
+  let dir = null;
+  let score = 0;
+  let reasons = [];
+
+  if (longValid && !shortValid) {
+    dir = "LONG";
+    score = longScore;
+    reasons = longReasons;
+  } else if (shortValid && !longValid) {
+    dir = "SHORT";
+    score = shortScore;
+    reasons = shortReasons;
+  } else if (longValid && shortValid) {
+    if (longScore > shortScore) {
+      dir = "LONG";
+      score = longScore;
+      reasons = longReasons;
+    } else if (shortScore > longScore) {
+      dir = "SHORT";
+      score = shortScore;
+      reasons = shortReasons;
+    } else {
+      return {
+        sym: symbol,
+        name: symbol,
+        price,
+        chg: Number(ticker?.chg || 0),
+        dir: null,
+        score: longScore,
+        conf: longScore,
+        rsi: rsiV[i],
+        atr: atrV[i],
+        volumeRatio: volRatio,
+        v5: true,
+        candles
+      };
+    }
+  }
+
+  if (!dir) {
+    return {
+      sym: symbol,
+      name: symbol,
+      price,
+      chg: Number(ticker?.chg || 0),
+      dir: null,
+      score: Math.max(longScore, shortScore),
+      conf: Math.max(longScore, shortScore),
+      rsi: rsiV[i],
+      atr: atrV[i],
+      volumeRatio: volRatio,
+      longScore,
+      shortScore,
+      v5: true,
+      candles
+    };
+  }
+
+  /* ================= DIRECTION-AWARE STOP / TARGET ================= */
+  const rrCfg = rrCfgOverride || selectedRR();
+  const rrRatio = Math.max(0.1, Number(rrCfg.ratio) || 2);
+
+  let sl;
+  let risk;
+  let tp;
+
+  if (dir === "LONG") {
+    const swingLow = Math.min(
+      lows[i],
+      lows[p],
+      lows[i-2] || lows[p],
+      lows[i-3] || lows[p]
+    );
+
+    sl = swingLow - atrV[i] * 0.30;
+    risk = price - sl;
+
+    if (!Number.isFinite(risk) || risk <= 0) return null;
+
+    const minRisk = price * V5_MIN_STOP_PCT;
+    const maxRisk = price * V5_MAX_STOP_PCT;
+
+    if (risk < minRisk) {
+      sl = price - minRisk;
+      risk = minRisk;
+    }
+
+    if (risk > maxRisk) return null;
+
+    tp = price + risk * rrRatio;
+  } else {
+    const swingHigh = Math.max(
+      highs[i],
+      highs[p],
+      highs[i-2] || highs[p],
+      highs[i-3] || highs[p]
+    );
+
+    sl = swingHigh + atrV[i] * 0.30;
+    risk = sl - price;
+
+    if (!Number.isFinite(risk) || risk <= 0) return null;
+
+    const minRisk = price * V5_MIN_STOP_PCT;
+    const maxRisk = price * V5_MAX_STOP_PCT;
+
+    if (risk < minRisk) {
+      sl = price + minRisk;
+      risk = minRisk;
+    }
+
+    if (risk > maxRisk) return null;
+
+    tp = price - risk * rrRatio;
+  }
+
+  const rr = Math.abs(tp - price) / risk;
+
+  if (!Number.isFinite(rr) || rr <= 0) return null;
+
+  const confidence = calculateSetupConfidence({
+    dir,
+    score,
+    rsiValue: rsiV[i],
+    volumeRatio: volRatio,
+    price,
+    e20: e20[i],
+    e50: e50[i],
+    e100: e100[i],
+    atrValue: atrV[i],
+    hist,
+    prevHist,
+    rr
+  }) + ((dir === "LONG" && longBullish) || (dir === "SHORT" && shortBearish) ? 0.5 : 0);
+
+  return {
+    sym: symbol,
+    name: symbol,
+    price,
+    chg: Number(ticker?.chg || 0),
+    dir,
+    entry: price,
+    sl,
+    tp,
+    rr,
+    score: Math.min(100, score),
+    // Confidence is displayed in 5-point steps: 50, 55, 60 ... 95.
+    conf: Math.min(95, Math.max(50, Math.round(confidence / 5) * 5)),
+    reasons,
+    rsi: rsiV[i],
+    atr: atrV[i],
+    volumeRatio: volRatio,
+    stopPct: risk / price,
+    v5: true,
+    candles,
+    longScore,
+    shortScore
+  };
+}
+
+/* ================= SIGNAL DEDUPLICATION ================= */
+function signalFingerprint(s){
+  const structuralReasons=(Array.isArray(s.reasons)?s.reasons:[])
+    .map(x=>String(x)
+      .replace(/RSI\s*[-+]?\d+(?:\.\d+)?/gi,"RSI")
+      .replace(/Vol\s*[-+]?\d+(?:\.\d+)?x/gi,"Vol")
+      .trim())
+    .join("|");
+
+  const rr=Number(s.rr);
+  const stop=Number(s.stopPct);
+  return [
+    String(s.dir||""),
+    Math.round(Number(s.score)||0),
+    Math.round(Number(s.conf)||0),
+    Number.isFinite(rr)?rr.toFixed(1):"",
+    Number.isFinite(stop)?(stop*100).toFixed(1):"",
+    structuralReasons
+  ].join("::");
+}
+
+function dedupeEquivalentSignals(list){
+  const groups=new Map();
+
+  for(const s of list){
+    const key=signalFingerprint(s);
+    const existing=groups.get(key);
+    if(!existing){ groups.set(key,s); continue; }
+
+    // Keep only one representative of an effectively identical setup.
+    const scoreA=Number(s.score)||0, scoreB=Number(existing.score)||0;
+    const confA=Number(s.conf)||0, confB=Number(existing.conf)||0;
+    const volA=Number(s.volumeRatio)||0, volB=Number(existing.volumeRatio)||0;
+    const stopA=Number(s.stopPct), stopB=Number(existing.stopPct);
+
+    if(
+      scoreA>scoreB ||
+      (scoreA===scoreB && confA>confB) ||
+      (scoreA===scoreB && confA===confB && volA>volB) ||
+      (scoreA===scoreB && confA===confB && volA===volB &&
+       Number.isFinite(stopA) && Number.isFinite(stopB) && stopA<stopB)
+    ){
+      groups.set(key,s);
+    }
+  }
+
+  return Array.from(groups.values());
+}
+
+/* ================= LIVE LEVEL VALIDATION =================
+   Reject stale/unsafe signals where the live market price is already
+   too close to the calculated SL/TP, or has drifted too far from the
+   price used to calculate the setup.
+   This prevents cards where CURRENT / SL / TP appear effectively the same.
+*/
+const V5_MIN_LIVE_LEVEL_GAP_RISK = 0.15; // keep live price >=15% of risk away from SL/TP
+const V5_MAX_ENTRY_DRIFT_RISK = 0.75;    // reject stale setup if live price moved >75% of risk from entry
+
+function isLiveSignalTradable(signal,currentPrice){
+  const entry=Number(signal?.entry);
+  const sl=Number(signal?.sl);
+  const tp=Number(signal?.tp);
+  const cp=Number(currentPrice);
+
+  if(![entry,sl,tp,cp].every(Number.isFinite)) return false;
+
+  const risk=Math.abs(entry-sl);
+  if(risk<=0) return false;
+
+  const minGap=risk*V5_MIN_LIVE_LEVEL_GAP_RISK;
+
+  if(signal.dir==="LONG"){
+    // Current price must remain safely between SL and TP.
+    if(cp<=sl+minGap || cp>=tp-minGap) return false;
+  }else if(signal.dir==="SHORT"){
+    if(cp>=sl-minGap || cp<=tp+minGap) return false;
+  }else{
+    return false;
+  }
+
+  // If the market has already travelled most of the planned risk distance,
+  // the original closed-candle setup is stale. Wait for a fresh setup.
+  if(Math.abs(cp-entry)>risk*V5_MAX_ENTRY_DRIFT_RISK) return false;
+
+  return true;
+}
+
 /* ================= SCANNER ================= */
 async function scan(manual=false){
   $("scanBtn").disabled=true;
@@ -1477,11 +1995,10 @@ async function scan(manual=false){
 
   const prevSigs=new Set(state.signals.map(s=>s.sym+"_"+s.dir));
   state.signals=[];
-
   const tf=$("tfSelect").value;
   const q=$("quoteSelect").value;
   const rrCfg=selectedRR();
-  const useV4=V4_MODE && tf===V4_TIMEFRAME;
+  const useV5=V5_MODE && (tf===V5_TIMEFRAME_DEFAULT || tf===V5_TIMEFRAME_ALT);
   const myScanGeneration=++scanGeneration;
   state.tf=tf;
   state.quote=q;
@@ -1546,8 +2063,8 @@ async function scan(manual=false){
           ok++;
 
           const displaySym=displayPairFromSource(sourceSym);
-          const signal=useV4
-            ? analyzeV4(
+          const signal=useV5
+            ? analyzeV5(
                 candles,
                 displaySym,
                 {chg:Number(td.priceChangePercent)},
@@ -1563,7 +2080,17 @@ async function scan(manual=false){
           if(signal){
             signal.sourcePair=sourceSym;
             signal.quote=q;
+
+            // Binance ticker is the live/current price. The strategy levels
+            // were calculated from the latest closed candle, so reject the
+            // setup if the live price has already reached/approached SL or TP
+            // or drifted too far from the original setup price.
+            if(useV5 && !isLiveSignalTradable(signal,price)){
+              return null;
+            }
+
             signal.price=price;
+            signal.currentPrice=price;
           }
 
           return signal;
@@ -1579,17 +2106,22 @@ async function scan(manual=false){
 
     if(myScanGeneration!==scanGeneration) return;
     state.signals=results
-      .filter(s=>s&&s.dir&&s.score>=(useV4?V4_MIN_SCORE:MIN_SCORE))
-      .filter(s=>!useV4 || (
-        s.v4===true &&
-        s.dir==="LONG" &&
-        Number(s.rsi)>=V4_MIN_RSI &&
-        Number(s.volumeRatio)>=V4_MIN_VOLUME &&
-        Number(s.stopPct)>=V4_MIN_STOP_PCT &&
-        Number(s.stopPct)<=V4_MAX_STOP_PCT
+      .filter(s=>s&&s.dir&&s.score>=(useV5?V5_MIN_SCORE:MIN_SCORE))
+      .filter(s=>!useV5 || (
+        s.v5===true &&
+        (s.dir==="LONG" || s.dir==="SHORT") &&
+        Number(s.volumeRatio)>=V5_MIN_VOLUME &&
+        Number(s.stopPct)>=V5_MIN_STOP_PCT &&
+        Number(s.stopPct)<=V5_MAX_STOP_PCT
       ))
-      .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001)
-      .sort((a,b)=>b.score-a.score);
+      .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001);
+
+    state.signals=dedupeEquivalentSignals(state.signals)
+      .sort((a,b)=>{
+        const scoreDiff=(Number(b.score)||0)-(Number(a.score)||0);
+        if(scoreDiff) return scoreDiff;
+        return (Number(b.conf)||0)-(Number(a.conf)||0);
+      });
 
     if(dbEnabled() && state.signals.length){
       dbSaveSignals(state.signals);
@@ -1703,10 +2235,12 @@ $("quoteSelect").onchange=()=>{if(state.auto)scheduleNext();scan(true);};
 /* ================= FORMAT ================= */
 function fmt(n){
   if(!Number.isFinite(n))return "—";
-  if(n>=100)return n.toFixed(1);
-  if(n>=1)return n.toFixed(3);
-  if(n<0.000001)return n.toExponential(2);
-  return n.toFixed(6);
+  const a=Math.abs(n);
+  if(a>=100)return n.toFixed(1);
+  if(a>=1)return n.toFixed(3);
+  if(a>=0.001)return n.toFixed(6);
+  if(a>=0.000000001)return n.toFixed(10).replace(/0+$/,"").replace(/\.$/,"");
+  return n.toExponential(4);
 }
 function fmtINR(n){
   if(!Number.isFinite(n))return "—";
@@ -1727,7 +2261,7 @@ async function takeSignalAsPaperTrade(s){
   const trade={
     sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
-    status:"running",date:new Date().toLocaleString(),notes:""
+    status:"running",date:new Date().toLocaleString(),createdAt:new Date().toISOString(),closedAt:null,notes:""
   };
   return await saveTradeToWallet(trade,s);
 }
@@ -1784,6 +2318,8 @@ async function updateLivePrices(){
       t.closed=true;
       t.status=hitTP?"tp":"sl";
       t.closePrice=cp;
+      t.closedAt=new Date().toISOString();
+      t.date=t.date||new Date().toLocaleString();
       t.pnl=calcClosedPnL(t);
       if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
       toast(hitTP
@@ -1957,8 +2493,7 @@ function renderTradeCard(t, ri, archived=false){
        <button class="small danger" onclick="deleteTrade(${ri})">🗑️</button>`
     : `<button class="small primary" onclick="quickClose(${ri},'tp')">🎯 TP</button>
        <button class="small danger" onclick="quickClose(${ri},'sl')">🛑 SL</button>
-       <button class="small" onclick="openEdit(${ri})">✏️ Edit</button>
-       <button class="small danger" onclick="deleteTrade(${ri})">🗑️</button>`;
+       <button class="small" onclick="openEdit(${ri})">✏️ Edit</button>       <button class="small danger" onclick="deleteTrade(${ri})">🗑️</button>`;
 
   return `
     <div class="trade-card ${archived?"archived":"active-trade"}">
@@ -1989,14 +2524,15 @@ function renderTradeCard(t, ri, archived=false){
       ${progressHtml}
 
       <div class="trade-footer">
-        <span>🕐 ${t.date}</span>
+        <span>${archived
+          ? `🕐 Opened: ${t.date || "—"} · Closed: ${t.closedAt ? new Date(t.closedAt).toLocaleString() : (t.closedDate || "Not recorded")}`
+          : `🕐 Opened: ${t.date || "—"}`}</span>
         <div class="jbtns">${actionButtons}</div>
       </div>
     </div>`;
 }
 
-function tradeSortValue(t){
-  const sort=tradeSort;
+function tradeSortValue(t,sort){
   if(sort==="pnlHigh"||sort==="pnlLow"){
     return t.closed ? calcClosedPnL(t) : calcLivePnL(t).pnl;
   }
@@ -2007,9 +2543,8 @@ function tradeSortValue(t){
   return Number.isFinite(dt)?dt:0;
 }
 
-function sortTrades(list){
+function sortTrades(list,sort){
   const arr=list.slice();
-  const sort=tradeSort;
   arr.sort((a,b)=>{
     const av=tradeSortValue(a), bv=tradeSortValue(b);
     if(typeof av==="string"||typeof bv==="string"){
@@ -2035,7 +2570,7 @@ function renderLiveTrades(){
       <span>Open a paper trade from Signals or enable Auto Trades.</span>
     </div>`;
   }else{
-    l.innerHTML=sortTrades(live).map(t=>renderTradeCard(t,state.journal.indexOf(t),false)).join("");
+    l.innerHTML=sortTrades(live,liveTradeSort).map(t=>renderTradeCard(t,state.journal.indexOf(t),false)).join("");
   }
 
   const count=$("liveTabCount");
@@ -2055,7 +2590,7 @@ function renderArchive(){
       <span>Completed TP/SL/manual trades will appear here.</span>
     </div>`;
   }else{
-    l.innerHTML=sortTrades(archived).map(t=>renderTradeCard(t,state.journal.indexOf(t),true)).join("");
+    l.innerHTML=sortTrades(archived,archiveTradeSort).map(t=>renderTradeCard(t,state.journal.indexOf(t),true)).join("");
   }
 
   const count=$("archiveTabCount");
@@ -2156,6 +2691,7 @@ async function quickClose(idx,result){
   t.closed=true; t.status=result;
   t.pnl=calcClosedPnL(t);
   t.closePrice=state.livePrices[t.sym]||t.entry;
+  t.closedAt=new Date().toISOString();
 
   if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
 
@@ -2196,11 +2732,13 @@ async function saveEdit(){
   if(st==="tp"||st==="sl"||st==="manual"){
     t.closed=true;
     t.closePrice=Number($("emClose").value)||null;
+    t.closedAt=t.closedAt||new Date().toISOString();
     t.pnl=calcClosedPnL(t);
   }else{
     t.closed=false;
     t.pnl=0;
     t.closePrice=null;
+    t.closedAt=null;
   }
 
   if(dbEnabled()){
@@ -2455,7 +2993,6 @@ function simulateBacktestTrade(signal,candles,startIndex,tf,feePct,slipPct){
   const netR=grossR-costR;
   const barsHeld=Math.max(1,usedExitIndex-startIndex+1);
   const holdingMinutes=(barsHeld*(BT_INTERVAL_MS[tf]||60*60*1000))/60000;
-
   return {
     symbol:signal.sym,
     direction,
@@ -2899,6 +3436,11 @@ function selectAppTab(sel){
   const tools=$("tradeTools");
   if(tools) tools.style.display=(sel==="live"||sel==="archive")?"flex":"none";
 
+  if(sel==="live"||sel==="archive") {
+    activeTradePanel=sel;
+    $("tradeSort").value=sel==="live"?liveTradeSort:archiveTradeSort;
+  }
+
   if(sel==="live") updateLivePrices();
   if(sel==="archive") renderArchive();
   if(sel==="wallet") renderWallet();
@@ -2910,12 +3452,18 @@ document.querySelectorAll(".tab").forEach(tab=>{
   tab.addEventListener("click",()=>selectAppTab(tab.dataset.tab));
 });
 
-$("tradeSort").value=tradeSort;
+$("tradeSort").value=liveTradeSort;
 $("tradeSort").addEventListener("change",()=>{
-  tradeSort=$("tradeSort").value;
-  localStorage.setItem("cs_trade_sort",tradeSort);
-  renderLiveTrades();
-  renderArchive();
+  const value=$("tradeSort").value;
+  if(activeTradePanel==="archive") {
+    archiveTradeSort=value;
+    localStorage.setItem("cs_archive_trade_sort",archiveTradeSort);
+    renderArchive();
+  } else {
+    liveTradeSort=value;
+    localStorage.setItem("cs_live_trade_sort",liveTradeSort);
+    renderLiveTrades();
+  }
 });
 
 /* ================= UI EVENTS ================= */
@@ -2944,7 +3492,6 @@ $("autoConfidence").onchange=()=>{
 };
 $("autoAmount").onchange=()=>{state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);localStorage.setItem("cs_auto_amount",String(state.autoAmount));};
 $("autoLeverage").onchange=()=>{state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));};
-
 $("tfSelect").addEventListener("change",()=>{
   state.tf=$("tfSelect").value;
   saveScannerPreferences();
