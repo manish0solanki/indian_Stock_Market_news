@@ -594,59 +594,38 @@ function dbEnabled(){
 }
 
 async function initSupabase(){
-  if(!dbEnabled()){
-    currentUser = null;
-    return false;
-  }
-
+  if(!dbEnabled()){ currentUser=null; return false; }
   try{
-    supabaseClient = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY,
-      {
-        auth:{
-          persistSession:true,
-          autoRefreshToken:true,
-          detectSessionInUrl:true
-        }
-      }
-    );
-
-    const {data,error}=await supabaseClient.auth.getSession();
-
-    if(error){
-      console.error("Supabase session error:",error);
-      currentUser=null;
-      return false;
-    }
-
-    currentUser=data?.session?.user||null;
-
-    supabaseClient.auth.onAuthStateChange((_event,session)=>{
-      currentUser=session?.user||null;
-      updateDbStatus();
+    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
     });
-
+    // Never let a stalled Supabase auth request prevent the scanner from starting.
+    const sessionPromise=supabaseClient.auth.getSession();
+    const timeout=new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},error:new Error("Supabase auth timeout")}),6000));
+    const {data,error}=await Promise.race([sessionPromise,timeout]);
+    if(error) console.warn("Supabase session:",error.message);
+    currentUser=data?.session?.user||null;
+    supabaseClient.auth.onAuthStateChange((_event,session)=>{
+      currentUser=session?.user||null; updateDbStatus();
+    });
     return true;
   }catch(e){
-    console.error("Supabase initialization failed:",e);
+    console.warn("Supabase initialization failed; continuing without blocking scanner:",e);
     currentUser=null;
     return false;
   }
 }
 
 async function getAccessToken(){
-  if(!supabaseClient) return null;
-
-  const {data,error}=await supabaseClient.auth.getSession();
-
-  if(error){
-    console.error("Supabase session error:",error);
-    return null;
-  }
-
-  currentUser=data?.session?.user||null;
-  return data?.session?.access_token||null;
+  if(!supabaseClient)return null;
+  try{
+    const p=supabaseClient.auth.getSession();
+    const timeout=new Promise(resolve=>setTimeout(()=>resolve({data:{session:null},error:new Error("Supabase auth timeout")}),5000));
+    const {data,error}=await Promise.race([p,timeout]);
+    if(error){console.warn("Supabase session:",error.message);return null;}
+    currentUser=data?.session?.user||null;
+    return data?.session?.access_token||null;
+  }catch(e){console.warn("Supabase token read failed:",e);return null;}
 }
 
 async function requireLogin(){
@@ -836,8 +815,10 @@ async function settleWalletTrade(t){
   return {ok:!result.error,error:result.error||null};
 }
 async function loadWallet(){
-  if(dbEnabled()) state.walletTx=await dbLoadWalletTx();
-  else state.walletTx=JSON.parse(localStorage.getItem("cs_wallet_tx")||"[]");
+  if(dbEnabled()){
+    const result=await Promise.race([dbLoadWalletTx(),new Promise(resolve=>setTimeout(()=>resolve([]),7000))]);
+    state.walletTx=Array.isArray(result)?result:[];
+  }else state.walletTx=JSON.parse(localStorage.getItem("cs_wallet_tx")||"[]");
 }
 function walletSaveLocal(){ if(!dbEnabled()) localStorage.setItem("cs_wallet_tx",JSON.stringify(state.walletTx)); }
 function renderWallet(){
@@ -1109,9 +1090,12 @@ async function load(){
     state.autoTrades = localStorage.getItem("cs_auto_trades")==="1";
 
     if(dbEnabled()){
-      state.walletTx = await dbLoadWalletTx();
-      const trades = await dbLoadTrades();
-      state.journal = trades.map(dbTradeToUI);
+      // Database reads are optional at startup; never leave the scanner stuck on "Starting...".
+      const walletP=Promise.race([dbLoadWalletTx(),new Promise(resolve=>setTimeout(()=>resolve([]),7000))]);
+      const tradesP=Promise.race([dbLoadTrades(),new Promise(resolve=>setTimeout(()=>resolve([]),7000))]);
+      const [wallet,trades]=await Promise.all([walletP,tradesP]);
+      state.walletTx=Array.isArray(wallet)?wallet:[];
+      state.journal=Array.isArray(trades)?trades.map(dbTradeToUI):[];
     }else{
       // Temporary fallback for testing before Supabase is configured.
       state.journal = JSON.parse(localStorage.getItem("cs_journal")||"[]");
@@ -1188,7 +1172,7 @@ async function getExchangeInfo(){
     return exchangeInfoCache;
   }
 
-  const r=await fetch("https://api.binance.com/api/v3/exchangeInfo");
+  const r=await fetchWithTimeout("https://api.binance.com/api/v3/exchangeInfo",{},12000);
   if(!r.ok) throw new Error("Binance exchangeInfo HTTP "+r.status);
 
   const d=await r.json();
@@ -1208,7 +1192,7 @@ async function getUsdInr(){
     return usdInrRate;
   }
 
-  const r=await fetch("https://open.er-api.com/v6/latest/USD");
+  const r=await fetchWithTimeout("https://open.er-api.com/v6/latest/USD",{},8000);
   if(!r.ok) throw new Error("USD/INR service HTTP "+r.status);
 
   const d=await r.json();
@@ -1264,11 +1248,19 @@ function baseSymbolFromPair(pair){
   return p;
 }
 
+/* ================= NETWORK SAFETY ================= */
+async function fetchWithTimeout(url,options={},ms=12000){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),ms);
+  try{return await fetch(url,{...options,signal:controller.signal});}
+  finally{clearTimeout(timer);}
+}
+
 /* ================= BINANCE DATA ================= */
 
 async function fetchKlines(symbol,tf){
   const url=`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${tf}&limit=160`;
-  const r=await fetch(url);
+  const r=await fetchWithTimeout(url,{},12000);
   if(!r.ok) throw new Error("Binance HTTP "+r.status);
   const raw=await r.json();
   if(!Array.isArray(raw)||raw.length<120) throw new Error("Not enough candles");
@@ -2067,7 +2059,7 @@ async function scan(manual=false){
         try{
           const [rawCandles,tickerR]=await Promise.all([
             fetchKlines(sourceSym,tf),
-            fetch("https://api.binance.com/api/v3/ticker/24hr?symbol="+sourceSym)
+            fetchWithTimeout("https://api.binance.com/api/v3/ticker/24hr?symbol="+sourceSym,{},12000)
           ]);
 
           if(!tickerR.ok) throw new Error("Ticker failed");
