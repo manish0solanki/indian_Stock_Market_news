@@ -283,6 +283,9 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 /* ================= LIVE TRADE LIST ================= */
 .live-list-panel{width:100%;margin-top:2px}.live-list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 10px;padding:0 2px;font-size:12px}.live-list-toolbar>div{display:flex;align-items:center;gap:8px}.live-list-toolbar>div>b{font-size:14px}.live-list-toolbar>div>span{color:var(--muted);font-size:10px}.live-list-toolbar label{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px}.live-list-toolbar select{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:600 10px var(--font-body)}.live-list-wrap{width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--card)}.live-list-table{width:100%;min-width:1180px;border-collapse:collapse}.live-list-table th{padding:10px 9px;text-align:left;font-size:8px;letter-spacing:.5px;color:var(--muted);background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}.live-list-table td{padding:10px 9px;border-bottom:1px solid var(--border);font-size:10px;white-space:nowrap;vertical-align:middle}.live-list-table tbody tr:last-child td{border-bottom:0}.live-list-table tbody tr:hover{background:rgba(255,255,255,.025)}.live-list-pair{font:800 11px monospace}.live-list-num{font:600 10px monospace}.live-list-muted{font-size:9px;color:var(--muted)}.live-list-dir{display:inline-flex;padding:3px 7px;border-radius:20px;font-size:8px;font-weight:800}.live-list-dir.long{color:var(--green);background:rgba(22,199,132,.10);border:1px solid rgba(22,199,132,.25)}.live-list-dir.short{color:var(--red);background:rgba(234,57,67,.10);border:1px solid rgba(234,57,67,.25)}.live-list-pnl{font:800 10px monospace}.live-list-r{font:700 9px monospace;color:var(--muted)}.live-list-actions{display:flex;gap:4px}.live-list-actions button{font-size:9px;padding:5px 7px}.live-list-empty{padding:24px;text-align:center;color:var(--muted);font-size:11px}
 @media(max-width:700px){.live-list-toolbar{align-items:flex-start;flex-direction:column}.live-list-wrap{border-radius:10px}}
+
+/* ================= CONNECTION LOG ================= */
+.connection-log{margin:28px 20px 20px;background:#0b0f18;border:1px solid var(--border);border-radius:12px;overflow:hidden}.connection-log-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card2);font-size:11px}.connection-log-head b{font-size:12px}.connection-log-head span{color:var(--muted);font-size:9px}.connection-log-body{max-height:190px;overflow:auto;padding:7px 10px;font:10px/1.55 monospace}.connection-log-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.035)}.connection-log-time{color:var(--muted);min-width:58px}.connection-log-ok{color:var(--green)}.connection-log-warn{color:var(--yellow)}.connection-log-error{color:var(--red)}.connection-log-info{color:var(--text)}.connection-log-clear{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:9px}.connection-log-empty{color:var(--muted);padding:10px 0}
 </style>
 <base target="_blank">
 
@@ -594,7 +597,8 @@ function dbEnabled(){
 }
 
 async function initSupabase(){
-  if(!dbEnabled()){ currentUser=null; return false; }
+  logConnection("→ Connecting: Supabase authentication","info","supabase-auth");
+  if(!dbEnabled()){ logConnection("ℹ Supabase not configured; using browser storage","warn","supabase-disabled"); currentUser=null; return false; }
   try{
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
@@ -605,11 +609,13 @@ async function initSupabase(){
     const {data,error}=await Promise.race([sessionPromise,timeout]);
     if(error) console.warn("Supabase session:",error.message);
     currentUser=data?.session?.user||null;
+    logConnection(currentUser?"✓ Supabase session restored":"✓ Supabase reachable · no active session","ok","supabase-session");
     supabaseClient.auth.onAuthStateChange((_event,session)=>{
       currentUser=session?.user||null; updateDbStatus();
     });
     return true;
   }catch(e){
+    logConnection("✕ Supabase initialization failed: "+e.message,"error","supabase-init-fail");
     console.warn("Supabase initialization failed; continuing without blocking scanner:",e);
     currentUser=null;
     return false;
@@ -1249,11 +1255,20 @@ function baseSymbolFromPair(pair){
 }
 
 /* ================= NETWORK SAFETY ================= */
-async function fetchWithTimeout(url,options={},ms=12000){
+async async function fetchWithTimeout(url,options={},ms=12000){
+  const host=connectionHost(url);
+  logConnection("→ Connecting: "+host+" "+String(url).replace(/^https?:\/\/[^/]+/,""),"info","request:"+url);
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),ms);
-  try{return await fetch(url,{...options,signal:controller.signal});}
-  finally{clearTimeout(timer);}
+  try{
+    const response=await fetch(url,{...options,signal:controller.signal});
+    if(response.ok) logConnection("✓ Connected: "+host+" · HTTP "+response.status,"ok","ok:"+url);
+    else logConnection("⚠ "+host+" · HTTP "+response.status,"warn","http:"+url);
+    return response;
+  }catch(e){
+    logConnection("✕ Failed: "+host+" · "+(e.name==="AbortError"?"Timeout":e.message),"error","fail:"+url);
+    throw e;
+  }finally{clearTimeout(timer);}
 }
 
 /* ================= BINANCE DATA ================= */
@@ -2008,7 +2023,8 @@ function isLiveSignalTradable(signal,currentPrice){
 }
 
 /* ================= SCANNER ================= */
-async function scan(manual=false){
+async async async function scan(manual=false){
+  logConnection("→ Scanner starting · quote "+$("quoteSelect").value+" · timeframe "+$("tfSelect").value,"info","scan-start");
   $("scanBtn").disabled=true;
   $("scanBtn").textContent="⏳ Scanning...";
   $("connDot").className="dot on";
@@ -2029,10 +2045,14 @@ async function scan(manual=false){
   const results=[];
 
   try{
+    logConnection("→ Binance: discovering available "+q+" pairs","info","pairs-"+q);
     availablePairs=await getAvailablePairs(q);
+    logConnection("✓ Binance: "+availablePairs.length+" supported pairs found","ok","pairs-result-"+q);
 
     if(q==="INR"){
+      logConnection("→ Connecting: USD/INR conversion service","info","fx-start");
       fx=await getUsdInr();
+      logConnection("✓ USD/INR rate loaded: "+fx,"ok","fx-result");
     }
 
     if(!availablePairs.length){
@@ -2044,7 +2064,8 @@ async function scan(manual=false){
       render();
 
       if(manual){
-        toast("⚠️ No supported Binance pairs found for "+q+".");
+        logConnection("✕ No supported Binance pairs found for "+q,"error","no-pairs-"+q);
+      toast("⚠️ No supported Binance pairs found for "+q+".");
       }
 
       $("scanBtn").disabled=false;
@@ -2150,8 +2171,8 @@ async function scan(manual=false){
 
     if(state.autoTrades){ await autoTradeFromSignals(); }
 
+    logConnection("✓ Scanner finished · "+ok+" market requests OK · "+fail+" failed · "+state.signals.length+" valid signals","ok","scan-finished");
     state.scanTime=new Date();
-    state.scans++;
     $("scanCount").textContent=state.scans;
 
     const threshold=Math.max(1,Math.ceil(availablePairs.length*.75));
@@ -2215,6 +2236,7 @@ async function scan(manual=false){
 
   }catch(e){
     console.error(e);
+    logConnection("✕ Scanner error: "+(e?.message||e),"error","scan-error");
 
     $("connDot").className="dot off";
     $("connTxt").textContent="⚠️ Market data check failed";
@@ -3619,6 +3641,29 @@ function updateDbStatus(){
   }
 }
 
+
+/* ================= CONNECTION LOGGER ================= */
+const connectionLogSeen=new Map();
+function logConnection(message,type="info",key=null){
+  const body=document.getElementById("connectionLogBody");
+  const status=document.getElementById("connectionLogStatus");
+  const now=new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  const k=key||message;
+  const prev=connectionLogSeen.get(k)||0;
+  connectionLogSeen.set(k,prev+1);
+  if(body){
+    if(body.querySelector(".connection-log-empty"))body.innerHTML="";
+    const row=document.createElement("div"); row.className="connection-log-row connection-log-"+type;
+    row.innerHTML='<span class="connection-log-time">'+now+'</span><span>'+String(message).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))+(prev>0?" <span style=\"opacity:.6\">×"+(prev+1)+"</span>":"")+'</span>';
+    body.appendChild(row);
+    while(body.children.length>80)body.removeChild(body.firstChild);
+    body.scrollTop=body.scrollHeight;
+  }
+  if(status)status.textContent=message;
+}
+function connectionHost(url){try{return new URL(url,location.href).host}catch(e){return String(url).split("/").slice(0,3).join("/");}}
+$("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear();const b=$("connectionLogBody");if(b)b.innerHTML='<div class="connection-log-empty">Log cleared.</div>';});
+
 /* ================= INIT ================= */
 (async()=>{
   // Startup must never depend on one optional service or render block.
@@ -3648,5 +3693,10 @@ function updateDbStatus(){
 // Live P&L refresh every 15s
 liveTimer=setInterval(updateLivePrices,LIVE_UPDATE_MS);
 </script>
+
+<div class="connection-log" id="connectionLog">
+  <div class="connection-log-head"><b>🔌 Connection Log</b><div><span id="connectionLogStatus">Waiting for scanner…</span> <button class="connection-log-clear" id="clearConnectionLog">Clear</button></div></div>
+  <div class="connection-log-body" id="connectionLogBody"><div class="connection-log-empty">No connection attempts yet.</div></div>
+</div>
 </body>
 </html>
