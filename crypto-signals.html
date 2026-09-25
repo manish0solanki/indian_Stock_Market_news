@@ -3621,18 +3621,29 @@ function updateDbStatus(){
 
 /* ================= INIT ================= */
 (async()=>{
-  await initSupabase();
-  loadScannerPreferences();
-  await load();
-  await loadWallet();
-  updateAutoTradeButton();
-  updateDbStatus();
-  render();
-  renderLiveTrades();
-  renderArchive();
-  selectAppTab("signals");
-  await scan(true);
-  scheduleNext();
+  // Startup must never depend on one optional service or render block.
+  try{ await initSupabase(); }catch(e){ console.warn("Startup Supabase skipped:",e); }
+  try{ loadScannerPreferences(); }catch(e){ console.warn("Startup preferences skipped:",e); }
+  try{ await load(); }catch(e){ console.warn("Startup trade load skipped:",e); state.journal=[]; state.walletTx=[]; }
+  try{ await loadWallet(); }catch(e){ console.warn("Startup wallet load skipped:",e); }
+  try{ updateAutoTradeButton(); }catch(e){}
+  try{ updateDbStatus(); }catch(e){}
+  try{ render(); }catch(e){ console.error("Initial render failed:",e); }
+  try{ renderLiveTrades(); }catch(e){ console.error("Live render failed:",e); }
+  try{ renderArchive(); }catch(e){ console.error("Archive render failed:",e); }
+  try{ selectAppTab("signals"); }catch(e){ console.error("Tab init failed:",e); }
+
+  // Always start the market scan, even if an optional UI/database step failed.
+  try{
+    await scan(true);
+  }catch(e){
+    console.error("Initial scan failed:",e);
+    const dot=$("connDot"), txt=$("connTxt");
+    if(dot)dot.className="dot off";
+    if(txt)txt.textContent="⚠️ Scan failed — tap Scan Now to retry";
+    const btn=$("scanBtn");if(btn){btn.disabled=false;btn.textContent="🔍 Scan Now";}
+  }
+  try{ scheduleNext(); }catch(e){ console.error("Auto-scan scheduling failed:",e); }
 })();
 // Live P&L refresh every 15s
 liveTimer=setInterval(updateLivePrices,LIVE_UPDATE_MS);
