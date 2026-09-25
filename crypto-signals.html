@@ -284,8 +284,8 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 
 <header>
 <div>
-  <h1>⚡ CryptoSignal <span>Tracker</span></h1>
-  <div class="sub">Binance public data · USDT / BTC / INR pairs · CLOSED candles · Test/Paper mode · Selectable risk:reward ratio</div>
+  <h1>⚡ CryptoSignal <span>Tracker</span> <small style="font-size:.55em;color:var(--green)">V4</small></h1>
+  <div class="sub">V4 ACTIVE · 4H LONG · EMA20 pullback · RSI ≥60 · Volume ≥1.5x · 1%–3% stop · 1:2 RR · Paper/Test mode</div>
 </div>
 <div class="controls">
   <select id="tfSelect">
@@ -961,6 +961,22 @@ const COINS = ["BTC","ETH","SOL","BNB","XRP","ADA","DOGE","AVAX","LINK","MATIC",
 const MIN_SCORE = 65;
 const MIN_SPREAD = 10;
 const MIN_VOLUME = 1.2;
+
+/* ================= STRATEGY V4 =================
+   Evidence-led paper strategy:
+   4H, USDT, LONG only, strong EMA trend, EMA20 pullback/reclaim,
+   RSI >= 60, volume >= 1.5x, score >= 75, 1%–3% stop, 1:2 RR.
+   The older analyze() engine remains available for historical V3 research.
+*/
+const V4_MODE = true;
+const V4_TIMEFRAME = "4h";
+const V4_QUOTE = "USDT";
+const V4_MIN_SCORE = 75;
+const V4_MIN_RSI = 60;
+const V4_MIN_VOLUME = 1.5;
+const V4_MIN_STOP_PCT = 0.01;
+const V4_MAX_STOP_PCT = 0.03;
+const V4_RR = 2;
 const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
@@ -1340,6 +1356,118 @@ function analyze(candles,symbol,ticker,rrCfgOverride=null){
     reasons:reasons,rsi:rsiVal,atr:atrVal,volumeRatio:volRatio,candles:candles};
 }
 
+/* ================= STRATEGY V4 ENGINE ================= */
+function analyzeV4(candles,symbol,ticker){
+  const closes=candles.map(c=>Number(c.c));
+  const highs=candles.map(c=>Number(c.h));
+  const lows=candles.map(c=>Number(c.l));
+
+  if(candles.length<110) return null;
+
+  const e20=ema(closes,20);
+  const e50=ema(closes,50);
+  const e100=ema(closes,100);
+  const rsiV=rsi(closes);
+  const atrV=atr(candles);
+  const macdV=macd(closes);
+
+  const i=closes.length-1;
+  const p=i-1;
+  const price=closes[i];
+
+  if(i<4 ||
+     !Number.isFinite(price) ||
+     !Number.isFinite(e20[i]) ||
+     !Number.isFinite(e50[i]) ||
+     !Number.isFinite(e100[i]) ||
+     !Number.isFinite(e20[p]) ||
+     !Number.isFinite(rsiV[i]) ||
+     !Number.isFinite(atrV[i])){
+    return null;
+  }
+
+  const cur=candles[i];
+  const prev=candles[p];
+  const volRatio=volumeRatio(candles,i);
+  const hist=macdV.hist[i];
+  const prevHist=macdV.hist[p];
+
+  /* Core V4 conditions */
+  const strongTrend=e20[i]>e50[i] && e50[i]>e100[i];
+
+  /* Previous candle must have pulled into the EMA20 area.
+     Current closed candle must reclaim/close above EMA20. */
+  const pullbackLow=Number(prev.l)<=e20[p]+atrV[p]*0.75;
+  const reclaim=price>e20[i];
+  const bullish=Number(cur.c)>Number(cur.o);
+
+  const rsiOk=rsiV[i]>=V4_MIN_RSI;
+  const volumeOk=volRatio>=V4_MIN_VOLUME;
+  const macdOk=Number.isFinite(hist)&&hist>0;
+  const momentumOk=Number.isFinite(hist)&&Number.isFinite(prevHist)&&hist>=prevHist;
+
+  let score=0;
+  const reasons=[];
+
+  if(strongTrend){score+=30;reasons.push("EMA20>50>100");}
+  if(pullbackLow){score+=20;reasons.push("EMA20 pullback");}
+  if(reclaim){score+=10;reasons.push("EMA20 reclaim");}
+  if(rsiOk){score+=15;reasons.push("RSI "+rsiV[i].toFixed(0));}
+  if(volumeOk){score+=15;reasons.push("Vol "+volRatio.toFixed(1)+"x");}
+  if(bullish){score+=5;reasons.push("Bull candle");}
+  if(macdOk){score+=3;reasons.push("MACD+");}
+  if(momentumOk){score+=2;reasons.push("Momentum↑");}
+
+  if(!strongTrend || !pullbackLow || !reclaim ||
+     !rsiOk || !volumeOk || !bullish ||
+     score<V4_MIN_SCORE){
+    return {
+      sym:symbol,name:symbol,price,chg:Number(ticker?.chg||0),dir:null,
+      score,conf:score,rsi:rsiV[i],atr:atrV[i],volumeRatio:volRatio,
+      v4:true,candles:candles
+    };
+  }
+
+  /* Swing-low stop from the recent structure, with a floor that avoids
+     the ultra-tight stops that dominated the previous test. */
+  const swingLow=Math.min(
+    lows[i],
+    lows[i-1],
+    lows[i-2],
+    lows[i-3]
+  );
+
+  let sl=swingLow-atrV[i]*0.25;
+  let risk=price-sl;
+
+  if(!Number.isFinite(risk)||risk<=0) return null;
+
+  const minRisk=price*V4_MIN_STOP_PCT;
+  const maxRisk=price*V4_MAX_STOP_PCT;
+
+  if(risk<minRisk){
+    sl=price-minRisk;
+    risk=minRisk;
+  }
+
+  if(risk>maxRisk) return null;
+
+  const tp=price+risk*V4_RR;
+
+  return {
+    sym:symbol,name:symbol,price,chg:Number(ticker?.chg||0),
+    dir:"LONG",
+    entry:price,sl,tp,rr:V4_RR,
+    score:Math.min(100,score),
+    conf:Math.min(100,score),
+    reasons,
+    rsi:rsiV[i],atr:atrV[i],volumeRatio:volRatio,
+    stopPct:risk/price,
+    v4:true,
+    candles:candles
+  };
+}
+
 /* ================= SCANNER ================= */
 async function scan(manual=false){
   $("scanBtn").disabled=true;
@@ -1350,9 +1478,22 @@ async function scan(manual=false){
   const prevSigs=new Set(state.signals.map(s=>s.sym+"_"+s.dir));
   state.signals=[];
 
-  const tf=$("tfSelect").value;
-  const q=$("quoteSelect").value;
-  const rrCfg=selectedRR();
+  /* V4 is intentionally locked to the tested live configuration. */
+  if(V4_MODE){
+    $("tfSelect").value=V4_TIMEFRAME;
+    $("quoteSelect").value=V4_QUOTE;
+    $("riskSelect").value="1";
+    $("rewardSelect").value="2";
+    selectedRisk=1;
+    selectedReward=2;
+    saveScannerPreferences();
+  }
+
+  const tf=V4_MODE ? V4_TIMEFRAME : $("tfSelect").value;
+  const q=V4_MODE ? V4_QUOTE : $("quoteSelect").value;
+  const rrCfg=V4_MODE
+    ? {risk:1,reward:2,ratio:2}
+    : selectedRR();
   const myScanGeneration=++scanGeneration;
   state.tf=tf;
   state.quote=q;
@@ -1417,12 +1558,18 @@ async function scan(manual=false){
           ok++;
 
           const displaySym=displayPairFromSource(sourceSym);
-          const signal=analyze(
-            candles,
-            displaySym,
-            {chg:Number(td.priceChangePercent)},
-            rrCfg
-          );
+          const signal=V4_MODE
+            ? analyzeV4(
+                candles,
+                displaySym,
+                {chg:Number(td.priceChangePercent)}
+              )
+            : analyze(
+                candles,
+                displaySym,
+                {chg:Number(td.priceChangePercent)},
+                rrCfg
+              );
 
           if(signal){
             signal.sourcePair=sourceSym;
@@ -1443,8 +1590,17 @@ async function scan(manual=false){
 
     if(myScanGeneration!==scanGeneration) return;
     state.signals=results
-      .filter(s=>s&&s.dir&&s.score>=MIN_SCORE)
-      .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001)
+      .filter(s=>s&&s.dir&&s.score>=(V4_MODE?V4_MIN_SCORE:MIN_SCORE))
+      .filter(s=>!V4_MODE || (
+        s.v4===true &&
+        s.dir==="LONG" &&
+        Math.abs(Number(s.rr)-V4_RR)<0.000001 &&
+        Number(s.rsi)>=V4_MIN_RSI &&
+        Number(s.volumeRatio)>=V4_MIN_VOLUME &&
+        Number(s.stopPct)>=V4_MIN_STOP_PCT &&
+        Number(s.stopPct)<=V4_MAX_STOP_PCT
+      ))
+      .filter(s=>V4_MODE ? true : Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001)
       .sort((a,b)=>b.score-a.score);
 
     if(dbEnabled() && state.signals.length){
@@ -2858,6 +3014,17 @@ function updateDbStatus(){
 (async()=>{
   await initSupabase();
   loadScannerPreferences();
+  if(V4_MODE){
+    $("tfSelect").value=V4_TIMEFRAME;
+    $("quoteSelect").value=V4_QUOTE;
+    $("riskSelect").value="1";
+    $("rewardSelect").value="2";
+    selectedRisk=1;
+    selectedReward=2;
+    saveScannerPreferences();
+    state.tf=V4_TIMEFRAME;
+    state.quote=V4_QUOTE;
+  }
   await load();
   await loadWallet();
   updateAutoTradeButton();
