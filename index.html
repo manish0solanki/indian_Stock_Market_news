@@ -8210,8 +8210,10 @@ async function loadCryptoTradeDashboard(){
     const winRate=closed.length?Math.round(wins/closed.length*100):null;
     const today=new Date().toLocaleDateString('en-CA');
     const todayPnl=closed.filter(t=>{const d=t.closed_at&&new Date(t.closed_at);return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
-    const priced=await Promise.all(open.map(async t=>{const cp=await cryptoDashPrice(t);const entry=Number(t.entry_price)||0,amt=Number(t.amount_inr)||0,lev=Number(t.leverage)||1;const move=String(t.direction).toUpperCase()==='SHORT'?(entry-cp)/entry:(cp-entry)/entry;return amt*lev*move;}));
-    const livePnl=priced.reduce((s,v)=>s+(Number.isFinite(v)?v:0),0);
+    // Use the same persisted P&L that CryptoSignal Tracker writes to crypto_trades.
+    // This keeps the homepage number identical to the scanner instead of recalculating
+    // from a separately-timed Binance price request.
+    const livePnl=open.reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
     set('cryptoDashLivePnl',cryptoDashMoney(livePnl));set('cryptoDashOpen',String(open.length));set('cryptoDashWinRate',winRate==null?'—':winRate+'%');set('cryptoDashToday',cryptoDashMoney(todayPnl));
     ['cryptoDashLivePnl','cryptoDashToday'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=(id==='cryptoDashLivePnl'?livePnl:todayPnl)>=0?'var(--positive)':'var(--negative)';});
     status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
