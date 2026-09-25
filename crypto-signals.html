@@ -576,6 +576,10 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 
 <div class="toast" id="toast"></div>
 
+<div class="connection-log" id="connectionLog">
+  <div class="connection-log-head"><b>🔌 Connection Log</b><div><span id="connectionLogStatus">Waiting for scanner…</span> <button class="connection-log-clear" id="clearConnectionLog">Clear</button></div></div>
+  <div class="connection-log-body" id="connectionLogBody"><div class="connection-log-empty">No connection attempts yet.</div></div>
+</div>
 <script>
 /* ================= CONFIG ================= */
 
@@ -1255,7 +1259,7 @@ function baseSymbolFromPair(pair){
 }
 
 /* ================= NETWORK SAFETY ================= */
-async async function fetchWithTimeout(url,options={},ms=12000){
+async async async function fetchWithTimeout(url,options={},ms=12000){
   const host=connectionHost(url);
   logConnection("→ Connecting: "+host+" "+String(url).replace(/^https?:\/\/[^/]+/,""),"info","request:"+url);
   const controller=new AbortController();
@@ -3694,9 +3698,6 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
 liveTimer=setInterval(updateLivePrices,LIVE_UPDATE_MS);
 </script>
 
-<div class="connection-log" id="connectionLog">
-  <div class="connection-log-head"><b>🔌 Connection Log</b><div><span id="connectionLogStatus">Waiting for scanner…</span> <button class="connection-log-clear" id="clearConnectionLog">Clear</button></div></div>
-  <div class="connection-log-body" id="connectionLogBody"><div class="connection-log-empty">No connection attempts yet.</div></div>
-</div>
+
 </body>
 </html>
