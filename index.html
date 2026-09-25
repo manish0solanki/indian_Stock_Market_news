@@ -8279,7 +8279,7 @@ async function loadCryptoTradeDashboard(){
       if(el)el.style.color=(id==='cryptoDashLivePnl'?runningPnl:todayPnl)>=0?'var(--positive)':'var(--negative)';
     });
 
-    status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit')};
+    status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
     console.error('[Crypto Dashboard]',e);
     status.textContent='Dashboard unavailable';
