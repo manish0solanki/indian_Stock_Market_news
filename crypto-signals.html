@@ -274,6 +274,11 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   .box .row{grid-template-columns:1fr}
   #tradeCalc{grid-template-columns:1fr!important}
 }
+
+/* Compact live trade snapshot */
+.crypto-live-summary{margin:0 20px 12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.crypto-live-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;margin-bottom:7px}.crypto-live-summary-head span{font-size:9px;color:var(--muted);font-family:monospace}.crypto-live-summary-list{display:flex;flex-direction:column}.crypto-live-row{display:grid;grid-template-columns:1.4fr .65fr .9fr 1fr;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:10px}.crypto-live-row:first-child{border-top:0}.crypto-live-pair{font-family:monospace;font-weight:800}.crypto-live-dir{font-size:8px;font-weight:800;padding:2px 5px;border-radius:10px;width:max-content}.crypto-live-dir.long{color:var(--green);background:rgba(22,199,132,.12)}.crypto-live-dir.short{color:var(--red);background:rgba(234,57,67,.12)}.crypto-live-current{font-family:monospace;color:var(--muted);text-align:right}.crypto-live-pnl{font-family:monospace;font-weight:800;text-align:right}.crypto-live-empty{text-align:center;color:var(--muted);font-size:10px;padding:10px}.crypto-live-total{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}.crypto-live-total b{font-family:monospace;font-size:12px}.crypto-live-pnl.profit,.crypto-live-total .profit{color:var(--green)}.crypto-live-pnl.loss,.crypto-live-total .loss{color:var(--red)}
+@media(max-width:600px){.crypto-live-summary{margin:0 10px 10px;padding:11px}.crypto-live-row{grid-template-columns:1.25fr .55fr 1fr 1fr}.crypto-live-current{font-size:9px}}
 </style>
 <base target="_blank">
 
@@ -361,6 +366,10 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 </div>
 
 <div class="grid" id="signalsGrid"></div>
+<div class="crypto-live-summary" id="cryptoLiveSummary">
+  <div class="crypto-live-summary-head"><b>Live Trade Snapshot</b><span id="cryptoLiveSummaryTime">—</span></div>
+  <div class="crypto-live-summary-list" id="cryptoLiveSummaryList"></div>
+</div>
 <div class="journal-list" id="liveTradesList" hidden></div>
 <div class="journal-list" id="archiveList" hidden></div>
 
@@ -2338,6 +2347,7 @@ async function updateLivePrices(){
   }
   renderLiveTrades();
   renderArchive();
+  renderCryptoLiveSummary();
 }
 function calcLivePnL(t){
   const cp=state.livePrices[t.sym]||t.entry;
@@ -2368,7 +2378,7 @@ function calcClosedPnL(t){
 }
 
 /* ================= RENDER ================= */
-function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();renderWallet();}
+function render(){renderStats();renderSignals();renderCryptoLiveSummary();renderLiveTrades();renderArchive();renderWallet();}
 
 function renderStats(){
   const closed=state.journal.filter(t=>t.closed);
@@ -2558,6 +2568,20 @@ function sortTrades(list,sort){
     return bv-av;
   });
   return arr;
+}
+
+function renderCryptoLiveSummary(){
+  const list=$("cryptoLiveSummaryList"); if(!list)return;
+  const open=state.journal.filter(t=>!t.closed);
+  const time=$("cryptoLiveSummaryTime"); if(time)time.textContent=new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  if(!open.length){list.innerHTML='<div class="crypto-live-empty">No open paper trades</div>';return;}
+  let total=0;
+  list.innerHTML=open.map(t=>{
+    const live=calcLivePnL(t); total+=Number(live.pnl)||0;
+    const dir=t.dir==="SHORT"?"SHORT":"LONG"; const pnl=Number(live.pnl)||0;
+    return '<div class="crypto-live-row"><div class="crypto-live-pair">'+escapeHtml(String(t.sym||"—"))+'</div><div><span class="crypto-live-dir '+(dir==="SHORT"?"short":"long")+'">'+dir+'</span></div><div class="crypto-live-current">'+fmtPrice(live.cp,t.quote||state.quote)+'</div><div class="crypto-live-pnl '+(pnl>=0?"profit":"loss")+'">'+(pnl>=0?"+":"")+fmtINR(pnl)+'</div></div>';
+  }).join('');
+  list.innerHTML += '<div class="crypto-live-total"><span>Total Live P&L · '+open.length+' trades</span><b class="'+(total>=0?"profit":"loss")+'">'+(total>=0?"+":"")+fmtINR(total)+'</b></div>';
 }
 
 function renderLiveTrades(){
