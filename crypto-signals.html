@@ -2442,6 +2442,9 @@ async function updateLivePrices(){
   renderArchive();
   renderLiveList();
   renderCryptoLiveSummary();
+  // Stats (including Today's P&L) must refresh whenever live prices or
+  // automatic TP/SL closures are processed, not only after a market scan.
+  renderStats();
 }
 function calcLivePnL(t){
   const cp=state.livePrices[t.sym]||t.entry;
