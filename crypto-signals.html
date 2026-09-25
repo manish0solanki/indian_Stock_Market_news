@@ -1047,7 +1047,7 @@ const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
 const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
 const recentAlerts = {};
-let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0;
+let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0, scanInProgress=false;
 let liveTradeSort=localStorage.getItem("cs_live_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
 let archiveTradeSort=localStorage.getItem("cs_archive_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
 let activeTradePanel="live";
@@ -2028,6 +2028,11 @@ function isLiveSignalTradable(signal,currentPrice){
 
 /* ================= SCANNER ================= */
 async function scan(manual=false){
+  if(scanInProgress){
+    logConnection("ℹ Scan skipped — previous scan is still running","warn","scan-overlap");
+    return false;
+  }
+  scanInProgress=true;
   logConnection("→ Scanner starting · quote "+$("quoteSelect").value+" · timeframe "+$("tfSelect").value,"info","scan-start");
   $("scanBtn").disabled=true;
   $("scanBtn").textContent="⏳ Scanning...";
@@ -2150,7 +2155,9 @@ async function scan(manual=false){
       results.push(...batchRes);
     }
 
-    if(myScanGeneration!==scanGeneration) return;
+    if(myScanGeneration!==scanGeneration) { scanInProgress=false; return false; }
+    state.scans++;
+    $("scanCount").textContent=state.scans;
     state.signals=results
       .filter(s=>s&&s.dir&&s.score>=(useV5?V5_MIN_SCORE:MIN_SCORE))
       .filter(s=>!useV5 || (
@@ -2253,7 +2260,9 @@ async function scan(manual=false){
   $("scanBtn").disabled=false;
   $("scanBtn").textContent="🔍 Scan Now";
   render();
-  updateLivePrices();
+  try{ await updateLivePrices(); }catch(e){ console.warn("Live price refresh:",e); }
+  scanInProgress=false;
+  return true;
 }
 
 /* ================= AUTO SCAN ================= */
@@ -2262,12 +2271,24 @@ function scheduleNext(){
   if(!state.auto){$("nextScan").textContent="paused";return;}
   const sec=Math.max(30,Number($("scanInterval").value)||60);
   nextScanAt=Date.now()+sec*1000;
-  autoTimer=setTimeout(async()=>{await scan();scheduleNext();},sec*1000);
+  $("nextScan").textContent=sec+"s";
+  autoTimer=setTimeout(async()=>{
+    if(!state.auto){return;}
+    try{
+      logConnection("⏰ Auto-scan triggered","info","auto-scan");
+      await scan(false);
+    }catch(e){
+      console.error("Auto-scan:",e);
+      logConnection("✕ Auto-scan error: "+(e?.message||e),"error","auto-scan-error");
+    }finally{
+      if(state.auto) scheduleNext();
+    }
+  },sec*1000);
   countdownTimer=setInterval(()=>{
-    const left=Math.max(0,Math.round((nextScanAt-Date.now())/1000));
+    const left=Math.max(0,Math.ceil((nextScanAt-Date.now())/1000));
     $("nextScan").textContent=left+"s";
     if(left<=0)clearInterval(countdownTimer);
-  },1000);
+  },500);
 }
 $("autoBtn").onclick=()=>{
   state.auto=!state.auto;
@@ -2338,7 +2359,26 @@ function updateAutoTradeButton(){
   b.textContent=state.autoTrades?"🤖 Auto Trades: ON":"🤖 Auto Trades: OFF";
   b.className=state.autoTrades?"primary":"";
 }
-async function autoTradeFromSignals(){ if(state.autoTrades) await takeAllQualifiedTrades(); }
+async function autoTradeFromSignals(){
+  if(!state.autoTrades)return 0;
+  logConnection("🤖 Auto Trades checking "+state.signals.length+" signals at ≥"+state.autoConfidence+"% confidence","info","auto-trade-check");
+  try{
+    const result=await Promise.race([
+      takeAllQualifiedTrades(),
+      new Promise(resolve=>setTimeout(()=>resolve(-1),10000))
+    ]);
+    if(result===-1){
+      logConnection("⚠ Auto Trade check timed out — scanner will continue","warn","auto-trade-timeout");
+      return 0;
+    }
+    logConnection("✓ Auto Trade check complete · "+result+" paper trades opened","ok","auto-trade-result");
+    return result;
+  }catch(e){
+    logConnection("✕ Auto Trade error: "+(e?.message||e),"error","auto-trade-error");
+    console.error("Auto Trade:",e);
+    return 0;
+  }
+}
 
 /* ================= LIVE P&L ENGINE ================= */
 
@@ -3581,8 +3621,10 @@ $("autoTradeBtn").onclick=async()=>{
   updateAutoTradeButton();
   if(state.autoTrades){
     toast("🤖 Auto Paper Trades ON — threshold "+state.autoConfidence+"%");
-    await takeAllQualifiedTrades();
-  }else toast("⏸ Auto Paper Trades OFF");
+    await autoTradeFromSignals();
+  }else{
+    toast("⏸ Auto Paper Trades OFF");
+  }
 };
 $("takeAllBtn").onclick=async()=>{ await takeAllQualifiedTrades(); };
 $("autoConfidence").onchange=()=>{
