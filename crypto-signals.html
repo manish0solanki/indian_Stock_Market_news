@@ -2539,7 +2539,10 @@ function tradeSortValue(t,sort){
   if(sort==="capitalHigh"||sort==="capitalLow") return Number(t.amt)||0;
   if(sort==="entryHigh"||sort==="entryLow") return Number(t.entry)||0;
   if(sort==="symbolAZ"||sort==="symbolZA") return String(t.sym||"").toUpperCase();
-  const dt=new Date(t.date||t.created_at||0).getTime();
+  // Use the immutable ISO creation timestamp for reliable chronological sorting.
+  // The legacy `date` field is a locale-formatted display string and is not reliable for sorting.
+  const raw=t.createdAt||t.created_at||t.date||0;
+  const dt=raw instanceof Date ? raw.getTime() : new Date(raw).getTime();
   return Number.isFinite(dt)?dt:0;
 }
 
