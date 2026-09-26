@@ -2992,21 +2992,35 @@ function dateOnly(v){
 function tradeCloseDate(t){
   return dateOnly(t.closedAt||t.closeDate||t.date||t.createdAt);
 }
+let tradeLedgerSort={key:"date",dir:"desc"};
+
+function sortTradeLedgerRows(rows,key,dir){
+  const sign=dir==="asc"?1:-1;
+  return rows.slice().sort((a,b)=>{
+    let av,bv;
+    if(key==="date"){av=a.date.getTime();bv=b.date.getTime();}
+    else if(key==="trade"){av=String(a.pair||"").toUpperCase();bv=String(b.pair||"").toUpperCase();}
+    else if(key==="event"){av=String(a.label||"").toUpperCase();bv=String(b.label||"").toUpperCase();}
+    else if(key==="change"){av=a.amount;bv=b.amount;}
+    else if(key==="before"){av=a.before;bv=b.before;}
+    else if(key==="left"){av=a.after;bv=b.after;}
+    else if(key==="note"){av=String(a.note||"").toUpperCase();bv=String(b.note||"").toUpperCase();}
+    else if(key==="status"){av=String(a.status||"").toUpperCase();bv=String(b.status||"").toUpperCase();}
+    else {av=a.date.getTime();bv=b.date.getTime();}
+    if(av<bv)return -1*sign;
+    if(av>bv)return 1*sign;
+    return a.date.getTime()-b.date.getTime();
+  });
+}
+
 function renderTradeLedger(from,to){
   const root=$("tradeLedger");
   if(!root)return;
 
-  // Build the ledger from the actual wallet transaction stream.
-  // This is deliberately NOT derived from daily aggregates.
-  const allTx=state.walletTx.slice().sort((a,b)=>{
-    const da=new Date(a.created_at||0).getTime(), db=new Date(b.created_at||0).getTime();
-    return da-db;
-  });
-
+  const allTx=state.walletTx.slice().sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
   const start=new Date(from+"T00:00:00");
   const end=new Date(to+"T23:59:59.999");
 
-  // Balance immediately before the selected report period.
   let running=allTx
     .filter(x=>new Date(x.created_at||0)<start)
     .reduce((s,x)=>s+(Number(x.amount_inr)||0),0);
@@ -3028,16 +3042,11 @@ function renderTradeLedger(from,to){
     const isClose=type==="TRADE_CREDIT";
 
     rows.push({
-      date:dt,
-      type,
-      amount,
-      before,
-      after:running,
-      trade,
-      pair:trade?.sym||"—",
-      dir:trade?.dir||"",
+      date:dt,type,amount,before,after:running,
+      trade,pair:trade?.sym||"—",dir:trade?.dir||"",
       note:x.note||"",
-      label:isOpen?"TRADE OPEN":isClose?"TRADE CLOSE":type.replaceAll("_"," ")
+      label:isOpen?"TRADE OPEN":isClose?"TRADE CLOSE":type.replaceAll("_"," "),
+      status:isClose&&trade?(trade.status||"CLOSED").toUpperCase():isOpen?"OPENED":type.replaceAll("_"," ")
     });
   }
 
@@ -3046,14 +3055,15 @@ function renderTradeLedger(from,to){
     return;
   }
 
-  const htmlRows=rows.map(r=>{
+  const sorted=sortTradeLedgerRows(rows,tradeLedgerSort.key,tradeLedgerSort.dir);
+  const arrow=k=>tradeLedgerSort.key===k?(tradeLedgerSort.dir==="asc"?" ▲":" ▼"):" ↕";
+  const head=(k,label)=>'<th class="ledger-sort" data-ledger-sort="'+k+'" style="cursor:pointer;user-select:none">'+label+'<span style="opacity:.55;font-size:10px">'+arrow(k)+'</span></th>';
+
+  const htmlRows=sorted.map(r=>{
     const positive=r.amount>=0;
     const amountText=(positive?"+":"")+fmtINR(r.amount);
     const pair=r.trade?escapeHtml(r.pair):"—";
     const direction=r.dir?'<span style="opacity:.65">'+escapeHtml(r.dir)+'</span>':"";
-    const status=r.type==="TRADE_CREDIT" && r.trade
-      ? escapeHtml((r.trade.status||"CLOSED").toUpperCase())
-      : r.type==="TRADE_DEBIT" ? "OPENED" : escapeHtml(r.type.replaceAll("_"," "));
     return '<tr>'+
       '<td>'+escapeHtml(r.date.toLocaleString("en-IN"))+'</td>'+
       '<td><b>'+pair+'</b><br>'+direction+'</td>'+
@@ -3062,20 +3072,37 @@ function renderTradeLedger(from,to){
       '<td>'+fmtINR(r.before)+'</td>'+
       '<td><b>'+fmtINR(r.after)+'</b></td>'+
       '<td>'+escapeHtml(r.note||"")+'</td>'+
-      '<td>'+status+'</td>'+
+      '<td>'+escapeHtml(r.status)+'</td>'+
     '</tr>';
   }).join("");
 
   root.innerHTML=
     '<div class="report-table-wrap">'+
-      '<div style="padding:16px 16px 8px">'+
-        '<h3 style="margin:0 0 5px">💰 Trade-by-Trade Capital Ledger</h3>'+
-        '<div style="opacity:.75;font-size:12px">Every wallet transaction is shown in chronological order. <b>Capital Left</b> is the actual wallet balance immediately after that transaction.</div>'+
+      '<div style="padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'+
+        '<div><h3 style="margin:0 0 5px">💰 Trade-by-Trade Capital Ledger</h3>'+
+        '<div style="opacity:.75;font-size:12px">Click any column heading to sort. Text: A–Z / Z–A. Numbers: Low–High / High–Low. Date: Old–New / New–Old.</div></div>'+
+        '<button type="button" class="btn" id="ledgerResetSort">↩ Reset Sort</button>'+
       '</div>'+
       '<div style="overflow-x:auto"><table><thead><tr>'+
-        '<th>DATE & TIME</th><th>TRADE</th><th>EVENT</th><th>CHANGE</th><th>CAPITAL BEFORE</th><th>CAPITAL LEFT</th><th>NOTE</th><th>STATUS</th>'+
+        head("date","DATE & TIME")+head("trade","TRADE")+head("event","EVENT")+head("change","CHANGE")+head("before","CAPITAL BEFORE")+head("left","CAPITAL LEFT")+head("note","NOTE")+head("status","STATUS")+
       '</tr></thead><tbody>'+htmlRows+'</tbody></table></div>'+
     '</div>';
+
+  root.querySelectorAll("[data-ledger-sort]").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const key=th.dataset.ledgerSort;
+      if(tradeLedgerSort.key===key) tradeLedgerSort.dir=tradeLedgerSort.dir==="asc"?"desc":"asc";
+      else{
+        tradeLedgerSort.key=key;
+        tradeLedgerSort.dir=key==="date"?"desc":"asc";
+      }
+      renderTradeLedger(from,to);
+    });
+  });
+  root.querySelector("#ledgerResetSort")?.addEventListener("click",()=>{
+    tradeLedgerSort={key:"date",dir:"desc"};
+    renderTradeLedger(from,to);
+  });
 }
 
 function generateReport(){
