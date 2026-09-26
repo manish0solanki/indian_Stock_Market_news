@@ -3179,13 +3179,23 @@ function generateReport(){
   });
   const closedCapital=closedInRange.reduce((s,t)=>s+Number(t.amt||0),0);
   const realized=closedInRange.reduce((s,t)=>s+calcClosedPnL(t),0);
+  const grossRealized=closedInRange.reduce((s,t)=>s+(Number(t.grossPnl)||0),0);
+  const binanceFees=closedInRange.reduce((s,t)=>s+(Number(t.totalFees)||0),0);
+  const tds=closedInRange.reduce((s,t)=>s+(Number(t.tds)||0),0);
+  const estimatedTax=closedInRange.reduce((s,t)=>s+(Number(t.estimatedTax)||0),0);
+  const afterTaxPnl=grossRealized-binanceFees-estimatedTax;
   const wins=closedInRange.filter(t=>calcClosedPnL(t)>0).length;
   const roi=closedCapital>0?(realized/closedCapital)*100:0;
 
   if($("reportSummary")) $("reportSummary").innerHTML='<div class="report-grid">'+
     '<div><span>Money Added</span><b>'+fmtINR(deposits)+'</b></div>'+
     '<div><span>Capital Reserved</span><b>'+fmtINR(reserved)+'</b></div>'+
-    '<div><span>Realized P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
+    '<div><span>Gross P&L</span><b class="'+(grossRealized>=0?"profit":"loss")+'">'+(grossRealized>=0?"+":"")+fmtINR(grossRealized)+'</b></div>'+
+    '<div><span>Binance Fees</span><b class="loss">-'+fmtINR(binanceFees)+'</b></div>'+
+    '<div><span>India TDS (1% est.)</span><b class="loss">-'+fmtINR(tds)+'</b></div>'+
+    '<div><span>Est. VDA Tax</span><b class="loss">-'+fmtINR(estimatedTax)+'</b></div>'+
+    '<div><span>Net Cash P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
+    '<div><span>After-Tax P&L (est.)</span><b class="'+(afterTaxPnl>=0?"profit":"loss")+'">'+(afterTaxPnl>=0?"+":"")+fmtINR(afterTaxPnl)+'</b></div>'+
     '<div><span>Realized ROI</span><b class="'+(roi>=0?"profit":"loss")+'">'+roi.toFixed(2)+'%</b></div>'+
     '<div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div>'+
     '<div><span>Current Wallet</span><b>'+fmtINR(walletBalance())+'</b></div>'+
@@ -3196,7 +3206,7 @@ function generateReport(){
   const byDay={};
   tx.forEach(x=>{
     const day=dateOnly(x.created_at);
-    if(!byDay[day])byDay[day]={deposit:0,withdraw:0,reserved:0,returned:0,pnl:0,closedCapital:0};
+    if(!byDay[day])byDay[day]={deposit:0,withdraw:0,reserved:0,returned:0,pnl:0,gross:0,fees:0,tds:0,tax:0,closedCapital:0};
     const a=Number(x.amount_inr||0);
     if(x.txn_type==="DEPOSIT")byDay[day].deposit+=a;
     if(x.txn_type==="WITHDRAWAL")byDay[day].withdraw+=Math.abs(a);
@@ -3207,27 +3217,31 @@ function generateReport(){
     const day=tradeCloseDate(t);
     if(!byDay[day])byDay[day]={deposit:0,withdraw:0,reserved:0,returned:0,pnl:0,closedCapital:0};
     byDay[day].pnl+=calcClosedPnL(t);
+    byDay[day].gross+=Number(t.grossPnl)||0;
+    byDay[day].fees+=Number(t.totalFees)||0;
+    byDay[day].tds+=Number(t.tds)||0;
+    byDay[day].tax+=Number(t.estimatedTax)||0;
     byDay[day].closedCapital+=Number(t.amt||0);
   });
 
   const days=Object.keys(byDay).sort().reverse();
   if($("reportTable")) $("reportTable").innerHTML=days.length
-    ? '<div class="report-table-wrap"><table><thead><tr><th>Date</th><th>Added</th><th>Capital Reserved</th><th>Returned</th><th>Realized P&L</th><th>Withdrawn</th></tr></thead><tbody>'+
+    ? '<div class="report-table-wrap"><table><thead><tr><th>Date</th><th>Added</th><th>Capital Reserved</th><th>Returned</th><th>Gross P&L</th><th>Binance Fees</th><th>TDS</th><th>Est. VDA Tax</th><th>Net Cash P&L</th><th>Withdrawn</th></tr></thead><tbody>'+
       days.map(day=>{
         const x=byDay[day];
-        return '<tr><td>'+day+'</td><td>'+fmtINR(x.deposit)+'</td><td>'+fmtINR(x.reserved)+'</td><td>'+fmtINR(x.returned)+'</td><td class="'+(x.pnl>=0?"profit":"loss")+'">'+(x.pnl>=0?"+":"")+fmtINR(x.pnl)+'</td><td>'+fmtINR(x.withdraw)+'</td></tr>';
+        return '<tr><td>'+day+'</td><td>'+fmtINR(x.deposit)+'</td><td>'+fmtINR(x.reserved)+'</td><td>'+fmtINR(x.returned)+'</td><td>'+fmtINR(x.gross)+'</td><td class="loss">-'+fmtINR(x.fees)+'</td><td class="loss">-'+fmtINR(x.tds)+'</td><td class="loss">-'+fmtINR(x.tax)+'</td><td class="'+(x.pnl>=0?"profit":"loss")+'">'+(x.pnl>=0?"+":"")+fmtINR(x.pnl)+'</td><td>'+fmtINR(x.withdraw)+'</td></tr>';
       }).join('')+
       '</tbody></table></div>'
     : '<div class="empty">No wallet or closed-trade activity in this date range.</div>';
 
   renderTradeLedger(from,to);
-  return {from,to,deposits,withdrawals,reserved,returned,realized,roi,days,byDay,closedCapital,closedInRange};
+  return {from,to,deposits,withdrawals,reserved,returned,realized,grossRealized,binanceFees,tds,estimatedTax,afterTaxPnl,roi,days,byDay,closedCapital,closedInRange};
 }
 function exportReportCSV(){
   const r=generateReport();
-  const lines=[["Date","Added INR","Capital Reserved INR","Returned INR","Realized P&L INR","Withdrawn INR"]];
-  r.days.forEach(day=>{const x=r.byDay[day];lines.push([day,x.deposit,x.reserved,x.returned,x.pnl,x.withdraw]);});
-  lines.push([]);lines.push(["Summary","Value"]);lines.push(["Added",r.deposits],["Capital Reserved",r.reserved],["Realized P&L",r.realized],["Realized ROI %",r.roi.toFixed(2)],["Withdrawn",r.withdrawals],["Ending Wallet",walletBalance()]);
+  const lines=[["Date","Added INR","Capital Reserved INR","Returned INR","Gross P&L INR","Binance Fees INR","India TDS INR","Estimated VDA Tax INR","Net Cash P&L INR","Withdrawn INR"]];
+  r.days.forEach(day=>{const x=r.byDay[day];lines.push([day,x.deposit,x.reserved,x.returned,x.gross,-x.fees,-x.tds,-x.tax,x.pnl,x.withdraw]);});
+  lines.push([]);lines.push(["Summary","Value"]);lines.push(["Added",r.deposits],["Capital Reserved",r.reserved],["Gross P&L",r.grossRealized],["Binance Fees",-r.binanceFees],["India TDS",-r.tds],["Estimated VDA Tax",-r.estimatedTax],["Net Cash P&L",r.realized],["Estimated After-Tax P&L",r.afterTaxPnl],["Realized ROI %",r.roi.toFixed(2)],["Withdrawn",r.withdrawals],["Ending Wallet",walletBalance()]);
   const csv=lines.map(row=>row.map(v=>'"'+String(v==null?"":v).replaceAll('"','""')+'"').join(",")).join("\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="crypto-paper-trade-report-"+r.from+"-to-"+r.to+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
