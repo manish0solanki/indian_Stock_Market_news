@@ -3093,10 +3093,13 @@ function renderTradeLedger(from,to){
     const type=String(x.txn_type||"").toUpperCase();
     const isOpen=type==="TRADE_DEBIT";
     const isClose=type==="TRADE_CREDIT";
+    const openDate=trade?.createdAt||trade?.created_at||trade?.date||null;
+    const closeDate=trade?.closedAt||trade?.closed_at||trade?.closeDate||trade?.closed_date||null;
 
     rows.push({
       date:dt,type,amount,before,after:running,
       trade,pair:trade?.sym||"—",dir:trade?.dir||"",
+      openDate,closeDate,
       note:x.note||"",
       label:isOpen?"TRADE OPEN":isClose?"TRADE CLOSE":type.replaceAll("_"," "),
       status:isClose&&trade?(trade.status||"CLOSED").toUpperCase():isOpen?"OPENED":type.replaceAll("_"," ")
@@ -3118,7 +3121,8 @@ function renderTradeLedger(from,to){
     const pair=r.trade?escapeHtml(r.pair):"—";
     const direction=r.dir?'<span style="opacity:.65">'+escapeHtml(r.dir)+'</span>':"";
     return '<tr>'+
-      '<td>'+escapeHtml(r.date.toLocaleString("en-IN"))+'</td>'+
+      '<td>'+((r.openDate&&new Date(r.openDate).toString()!=="Invalid Date")?escapeHtml(new Date(r.openDate).toLocaleString("en-IN")):"—")+'</td>'+
+      '<td>'+((r.closeDate&&new Date(r.closeDate).toString()!=="Invalid Date")?escapeHtml(new Date(r.closeDate).toLocaleString("en-IN")):"—")+'</td>'+
       '<td><b>'+pair+'</b><br>'+direction+'</td>'+
       '<td>'+escapeHtml(r.label)+'</td>'+
       '<td class="'+(positive?"profit":"loss")+'">'+amountText+'</td>'+
@@ -3137,7 +3141,7 @@ function renderTradeLedger(from,to){
         '<button type="button" class="btn" id="ledgerResetSort">↩ Reset Sort</button>'+
       '</div>'+
       '<div style="overflow-x:auto"><table><thead><tr>'+
-        head("date","DATE & TIME")+head("trade","TRADE")+head("event","EVENT")+head("change","CHANGE")+head("before","CAPITAL BEFORE")+head("left","CAPITAL LEFT")+head("note","NOTE")+head("status","STATUS")+
+        head("openDate","OPEN DATE & TIME")+head("closeDate","CLOSE DATE & TIME")+head("trade","TRADE")+head("event","EVENT")+head("change","CHANGE")+head("before","CAPITAL BEFORE")+head("left","CAPITAL LEFT")+head("note","NOTE")+head("status","STATUS")+
       '</tr></thead><tbody>'+htmlRows+'</tbody></table></div>'+
     '</div>';
 
