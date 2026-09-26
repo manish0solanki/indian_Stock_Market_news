@@ -415,7 +415,9 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <div><label>To</label><input id="reportTo" type="date"></div>
     <button class="primary" id="generateReportBtn">📊 Generate Report</button><button id="exportReportBtn">⬇️ CSV</button>
   </div>
-  <div id="reportSummary"></div><div id="reportTable"></div>
+  <div id="reportSummary"></div>
+  <div id="reportTable"></div>
+  <div id="tradeLedger" style="margin-top:18px"></div>
 </div>
 <div class="reports-panel" id="backtestPane" hidden>
   <div class="backtest-hero">
@@ -2990,6 +2992,82 @@ function dateOnly(v){
 function tradeCloseDate(t){
   return dateOnly(t.closedAt||t.closeDate||t.date||t.createdAt);
 }
+function renderTradeLedger(from,to){
+  const root=$("tradeLedger");
+  if(!root)return;
+
+  const tx=state.walletTx.slice().sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
+  let running=0;
+  const beforeById=new Map();
+  const afterById=new Map();
+  const debitByTrade=new Map();
+  const creditByTrade=new Map();
+
+  for(const x of tx){
+    const amt=Number(x.amount_inr)||0;
+    const before=running;
+    running+=amt;
+    const tid=x.trade_id||null;
+
+    if(tid){
+      if(x.txn_type==="TRADE_DEBIT"){
+        debitByTrade.set(String(tid),{...x,before,after:running});
+      }else if(x.txn_type==="TRADE_CREDIT"){
+        creditByTrade.set(String(tid),{...x,before,after:running});
+      }
+    }
+  }
+
+  const trades=state.journal
+    .filter(t=>{
+      const opened=dateOnly(t.createdAt||t.date);
+      const closed=tradeCloseDate(t);
+      return (opened&&opened>=from&&opened<=to)||(closed&&closed>=from&&closed<=to);
+    })
+    .slice()
+    .sort((a,b)=>new Date(a.createdAt||a.date||0)-new Date(b.createdAt||b.date||0));
+
+  if(!trades.length){
+    root.innerHTML='<div class="report-table-wrap"><div class="empty"><b>Trade-by-Trade Capital Report</b><br><span>No trades in the selected date range.</span></div></div>';
+    return;
+  }
+
+  const rows=trades.map(t=>{
+    const d=t.id?debitByTrade.get(String(t.id)):null;
+    const cr=t.id?creditByTrade.get(String(t.id)):null;
+    const pnl=t.closed?calcClosedPnL(t):0;
+    const openedBalance=d?d.after:null;
+    const finalBalance=cr?cr.after:(d?d.after:null);
+    const returned=cr?Number(cr.amount_inr)||0:0;
+    const used=d?Math.abs(Number(d.amount_inr)||0):Number(t.amt)||0;
+    const openTime=t.createdAt||t.date||"";
+    const closeTime=t.closedAt||"";
+    const status=t.closed?(t.status||"CLOSED").toUpperCase():"OPEN";
+    const pnlClass=pnl>=0?"profit":"loss";
+
+    return '<tr>'+
+      '<td>'+escapeHtml(openTime?new Date(openTime).toLocaleString("en-IN"):"—")+'</td>'+
+      '<td><b>'+escapeHtml(t.sym||"—")+'</b><br><span style="opacity:.65">'+escapeHtml(t.dir||"—")+'</span></td>'+
+      '<td>'+fmtINR(d?d.before:NaN)+'</td>'+
+      '<td>'+fmtINR(used)+'</td>'+
+      '<td>'+escapeHtml(closeTime?new Date(closeTime).toLocaleString("en-IN"):"OPEN")+'</td>'+
+      '<td class="'+pnlClass+'">'+(t.closed?(pnl>=0?"+":"")+fmtINR(pnl):"—")+'</td>'+
+      '<td>'+fmtINR(returned)+'</td>'+
+      '<td><b>'+fmtINR(finalBalance)+'</b></td>'+
+      '<td>'+status+'</td>'+
+    '</tr>';
+  }).join("");
+
+  root.innerHTML=
+    '<div class="report-table-wrap">'+
+      '<div style="padding:16px 16px 8px"><h3 style="margin:0 0 5px">💰 Trade-by-Trade Capital Ledger</h3>'+
+      '<div style="opacity:.7;font-size:12px">Capital left is the available wallet balance immediately after the trade opens, or after its capital + P&L is returned when it closes.</div></div>'+
+      '<div style="overflow-x:auto"><table><thead><tr>'+
+      '<th>OPENED</th><th>TRADE</th><th>CAPITAL BEFORE</th><th>CAPITAL USED</th><th>CLOSED</th><th>REALIZED P&L</th><th>CAPITAL RETURNED</th><th>CAPITAL LEFT</th><th>STATUS</th>'+
+      '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '</div>';
+}
+
 function generateReport(){
   const from=$("reportFrom")?.value||dateOnly(Date.now()-30*86400000);
   const to=$("reportTo")?.value||dateOnly(Date.now());
@@ -3058,6 +3136,7 @@ function generateReport(){
       '</tbody></table></div>'
     : '<div class="empty">No wallet or closed-trade activity in this date range.</div>';
 
+  renderTradeLedger(from,to);
   return {from,to,deposits,withdrawals,reserved,returned,realized,roi,days,byDay,closedCapital,closedInRange};
 }
 function exportReportCSV(){
@@ -3710,6 +3789,10 @@ function updateDbStatus(){
   }
 }
 
+
+function escapeHtml(v){
+  return String(v==null?"":v).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+}
 
 /* ================= CONNECTION LOGGER ================= */
 const connectionLogSeen=new Map();
