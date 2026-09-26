@@ -480,6 +480,14 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="1">1x</option><option value="2">2x</option>
     <option value="3">3x</option><option value="5" selected>5x</option>
   </select>
+  <label>Binance fee profile (Spot)</label>
+  <select id="binanceFeeMode">
+    <option value="taker">Regular Spot — Taker 0.10% / side</option>
+    <option value="maker">Regular Spot — Maker 0.10% / side</option>
+    <option value="taker_bnb">Regular Spot — Taker + BNB 0.075% / side</option>
+    <option value="maker_bnb">Regular Spot — Maker + BNB 0.075% / side</option>
+  </select>
+  <div class="settings-info">💸 Binance fee is charged on both entry and exit. Default: Regular Spot Taker at 0.10% per side. BNB mode uses 0.075% per side.<br>⚠️ Spread/slippage, Indian taxes/TDS and withdrawal/network fees are separate from Binance trading commission and are not included here.</div>
   <div class="settings-info">
     💾 Storage: <span id="dbStatus">Checking database...</span><br>
     👤 Account: <span id="accountStatus">Checking login...</span><br>
@@ -492,6 +500,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     💰 Trade capital, TP profit and SL loss are always in INR; Entry/SL/TP prices use the symbol quote currency.<br>
     🔔 Notifications require this page to remain open.<br>
     ⚠️ Score is a setup score, not a win probability. Live price must remain safely inside the SL/TP corridor.<br>
+    💸 P&L is shown net of Binance Spot entry + exit trading fees.<br>
     🎯 Minimum score: 65 · Winner must lead by 10+<br>
     📏 EMA20 distance: ATR-based (adapts to each coin)<br>
     ⏳ Alert cooldown: 5 min per symbol+direction
@@ -527,6 +536,11 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <div class="lvl tp"><div class="k">Final after TP</div><div class="val" id="calcTPFinal">₹0</div></div>
     <div class="lvl sl"><div class="k">Loss if SL Hits</div><div class="val" id="calcSLLoss">-₹0</div></div>
     <div class="lvl sl"><div class="k">Final after SL</div><div class="val" id="calcSLFinal">₹0</div></div>
+    <div class="lvl"><div class="k">Binance Entry Fee</div><div class="val" id="calcEntryFee">-₹0</div></div>
+    <div class="lvl"><div class="k">Binance Exit Fee @ TP</div><div class="val" id="calcTPFee">-₹0</div></div>
+    <div class="lvl"><div class="k">Net after TP + Fees</div><div class="val" id="calcTPNet">₹0</div></div>
+    <div class="lvl"><div class="k">Binance Exit Fee @ SL</div><div class="val" id="calcSLFee">-₹0</div></div>
+    <div class="lvl"><div class="k">Net after SL + Fees</div><div class="val" id="calcSLNet">₹0</div></div>
   </div>
   <div style="display:flex;gap:10px;margin-top:18px">
     <button class="primary" style="flex:1" onclick="saveTrade()">💾 Save Paper Trade</button>
@@ -780,7 +794,9 @@ function dbTradeToUI(t){
     createdAt:t.created_at||null,
     closedAt:t.closed_at||null,
     closedDate:t.closed_at?new Date(t.closed_at).toLocaleString():"",
-    notes:""
+    feeMode:(()=>{try{return t.notes?JSON.parse(t.notes).feeMode||"taker":"taker"}catch(e){return "taker"}})(),
+    feeRate:(()=>{try{return Number(JSON.parse(t.notes||"{}").feeRate)||0.001}catch(e){return 0.001}})(),
+    notes:t.notes||""
   };
 }
 
@@ -822,8 +838,9 @@ async function settleWalletTrade(t){
   if(!dbEnabled()||!t.id) return {ok:true};
   if(!await walletHasTransaction(t.id,"TRADE_DEBIT")) return {ok:true};
   if(await walletHasTransaction(t.id,"TRADE_CREDIT")) return {ok:true};
-  const returned=Math.max(0,Number(t.amt||0)+Number(t.pnl||0));
-  const result=await dbWalletTransaction("TRADE_CREDIT",returned,t.id,"Trade closed - capital returned + realized P&L");
+  const netPnl=calcClosedPnL(t);
+  const returned=Math.max(0,Number(t.amt||0)+Number(netPnl||0));
+  const result=await dbWalletTransaction("TRADE_CREDIT",returned,t.id,"Trade closed - capital returned + NET realized P&L after Binance fees");
   return {ok:!result.error,error:result.error||null};
 }
 async function loadWallet(){
@@ -896,7 +913,7 @@ async function dbSaveTrade(t,signal){
     status:"RUNNING",
     current_price:Number(t.entry),
     pnl_inr:0,
-    notes:""
+    notes:JSON.stringify({feeMode:t.feeMode||state.binanceFeeMode||"taker",feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")})
   };
 
   const result=await dbRequest(
@@ -940,7 +957,7 @@ async function dbUpdateTrade(t){
     current_price:Number(t.currentPrice)||Number(t.entry),
     close_price:t.closePrice==null?null:Number(t.closePrice),
     pnl_inr:Number(t.pnl)||0,
-    notes:""
+    notes:JSON.stringify({feeMode:t.feeMode||state.binanceFeeMode||"taker",feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")})
   };
 
   row.closed_at=t.closed
@@ -1047,7 +1064,7 @@ const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
-const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5 };
+const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker" };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0, scanInProgress=false;
 let liveTradeSort=localStorage.getItem("cs_live_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
@@ -1099,6 +1116,8 @@ async function load(){
     if(aa) { state.autoAmount=aa; $("autoAmount").value=String(aa); }
     const al = Number(localStorage.getItem("cs_auto_leverage"));
     if(al) { state.autoLeverage=al; $("autoLeverage").value=String(al); }
+    state.binanceFeeMode = localStorage.getItem("cs_binance_fee_mode") || "taker";
+    if($("binanceFeeMode")) $("binanceFeeMode").value=state.binanceFeeMode;
     state.autoTrades = localStorage.getItem("cs_auto_trades")==="1";
 
     if(dbEnabled()){
@@ -1136,6 +1155,8 @@ function saveSettings(){
   localStorage.setItem("cs_auto_confidence",String(state.autoConfidence));
   localStorage.setItem("cs_auto_amount",String(state.autoAmount));
   localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));
+  state.binanceFeeMode = $("binanceFeeMode")?.value || "taker";
+  localStorage.setItem("cs_binance_fee_mode",state.binanceFeeMode);
   localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");
   $("saveMsg").style.display="block";
   setTimeout(()=>{$("saveMsg").style.display="none";},1500);
@@ -2346,7 +2367,8 @@ async function takeSignalAsPaperTrade(s){
   const trade={
     sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
-    status:"running",date:new Date().toLocaleString(),createdAt:new Date().toISOString(),closedAt:null,notes:""
+    status:"running",date:new Date().toLocaleString(),createdAt:new Date().toISOString(),closedAt:null,notes:"",
+    feeMode:state.binanceFeeMode||"taker",feeRate:binanceFeeRate(state.binanceFeeMode||"taker")
   };
   return await saveTradeToWallet(trade,s);
 }
@@ -2448,32 +2470,32 @@ async function updateLivePrices(){
   // automatic TP/SL closures are processed, not only after a market scan.
   renderStats();
 }
-function calcLivePnL(t){
-  const cp=state.livePrices[t.sym]||t.entry;
-  const riskPct=Math.abs(t.entry-t.sl)/t.entry;
-  let move;
-  if(t.dir==="LONG")move=(cp-t.entry)/t.entry;
-  else move=(t.entry-cp)/t.entry;
-  const pnl=Number(t.amt||0)*Number(t.lev||1)*move;
-  const rMultiple=riskPct>0?move/riskPct:0;
-  return {pnl,cp,rMultiple};
+function binanceFeeRate(mode){
+  return (mode==="maker_bnb"||mode==="taker_bnb") ? 0.00075 : 0.001;
 }
-
+function tradeFeeRate(t){
+  const r=Number(t?.feeRate);
+  return Number.isFinite(r)&&r>=0 ? r : binanceFeeRate(t?.feeMode||state.binanceFeeMode||"taker");
+}
+function calcTradeCosts(t,price){
+  const entry=Number(t.entry)||0, cp=Number(price)||entry, position=Math.max(0,Number(t.amt||0)*Number(t.lev||1));
+  if(!(entry>0)||!(cp>0)||!(position>0)) return {entryFee:0,exitFee:0,totalFees:0,rate:tradeFeeRate(t)};
+  const rate=tradeFeeRate(t), entryFee=position*rate, exitFee=position*(cp/entry)*rate;
+  return {entryFee,exitFee,totalFees:entryFee+exitFee,rate};
+}
+function calcLivePnL(t){
+  const cp=state.livePrices[t.sym]||t.entry, riskPct=Math.abs(t.entry-t.sl)/t.entry;
+  const move=t.dir==="LONG"?(cp-t.entry)/t.entry:(t.entry-cp)/t.entry;
+  const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move, costs=calcTradeCosts(t,cp);
+  return {pnl:grossPnl-costs.totalFees,grossPnl,entryFee:costs.entryFee,exitFee:costs.exitFee,totalFees:costs.totalFees,cp,rMultiple:riskPct>0?move/riskPct:0,feeRate:costs.rate};
+}
 function calcClosedPnL(t){
-  const close=Number(t.closePrice);
-  if(Number.isFinite(close)&&close>0){
-    const move=t.dir==="LONG"?(close-t.entry)/t.entry:(t.entry-close)/t.entry;
-    return t.amt*t.lev*move;
-  }
-  if(t.status==="tp"){
-    const rewardPct=Math.abs(t.tp-t.entry)/t.entry;
-    return t.amt*t.lev*rewardPct;
-  }
-  if(t.status==="sl"){
-    const riskPct=Math.abs(t.entry-t.sl)/t.entry;
-    return -t.amt*t.lev*riskPct;
-  }
-  return t.pnl||0;
+  const close=Number(t.closePrice), fallback=t.status==="tp"?Number(t.tp):t.status==="sl"?Number(t.sl):Number(t.entry);
+  const exit=Number.isFinite(close)&&close>0?close:fallback;
+  const move=t.dir==="LONG"?(exit-t.entry)/t.entry:(t.entry-exit)/t.entry;
+  const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move, costs=calcTradeCosts(t,exit);
+  t.grossPnl=grossPnl;t.entryFee=costs.entryFee;t.exitFee=costs.exitFee;t.totalFees=costs.totalFees;t.netPnl=grossPnl-costs.totalFees;
+  return t.netPnl;
 }
 
 /* ================= RENDER ================= */
@@ -2484,7 +2506,11 @@ function renderStats(){
   const wins=closed.filter(t=>calcClosedPnL(t)>0).length;
   const total=closed.length;
   const bookedPnl=closed.reduce((s,t)=>s+calcClosedPnL(t),0);
-  const runningPnl=state.journal.filter(t=>!t.closed).reduce((s,t)=>s+calcLivePnL(t).pnl,0);
+  const running=state.journal.filter(t=>!t.closed).map(t=>calcLivePnL(t));
+  const runningPnl=running.reduce((s,x)=>s+(x.pnl||0),0);
+  const grossBooked=closed.reduce((s,t)=>s+(Number(t.grossPnl)||0),0);
+  const grossRunning=running.reduce((s,x)=>s+(Number(x.grossPnl)||0),0);
+  const totalFees=closed.reduce((s,t)=>s+(Number(t.totalFees)||0),0)+running.reduce((s,x)=>s+(Number(x.totalFees)||0),0);
   const pnl=bookedPnl+runningPnl;
   const todayKey=new Date().toLocaleDateString("en-CA");
   const todayPnl=closed.filter(t=>{const d=t.closedAt?new Date(t.closedAt):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString("en-CA")===todayKey;}).reduce((s,t)=>s+calcClosedPnL(t),0);
@@ -2500,7 +2526,9 @@ function renderStats(){
     <div class="stat"><div class="v" style="color:${bookedPnl>=0?'var(--green)':'var(--red)'}">${bookedPnl>=0?"+":""}${fmtINR(bookedPnl)}</div><div class="l">Booked P&L</div></div>
     <div class="stat"><div class="v" style="color:${runningPnl>=0?'var(--green)':'var(--red)'}">${runningPnl>=0?"+":""}${fmtINR(runningPnl)}</div><div class="l">Running P&L</div></div>
     <div class="stat"><div class="v" style="color:${todayPnl>=0?'var(--green)':'var(--red)'}">${todayPnl>=0?"+":""}${fmtINR(todayPnl)}</div><div class="l">Today's P&L</div></div>
-    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="l">Total P&L</div></div>
+    <div class="stat"><div class="v" style="color:${grossBooked+grossRunning>=0?'var(--green)':'var(--red)'}">${grossBooked+grossRunning>=0?"+":""}${fmtINR(grossBooked+grossRunning)}</div><div class="l">Gross P&L</div></div>
+    <div class="stat"><div class="v" style="color:var(--red)">-${fmtINR(totalFees)}</div><div class="l">Binance Fees</div></div>
+    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="l">Net P&L</div></div>
     <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
 }
 
@@ -2579,17 +2607,14 @@ function renderTradeCard(t, ri, archived=false){
   }
 
   if(t.closed){
-    const pnl=calcClosedPnL(t);
+    const pnl=calcClosedPnL(t), gross=Number(t.grossPnl)||0, fees=Number(t.totalFees)||0;
     const statusText=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":"MANUAL CLOSE";
     statusBadge=`<span class="trade-status ${t.status==="tp"?"status-tp":t.status==="sl"?"status-sl":"status-manual"}">${statusText}</span>`;
-    pnlHtml=`<div class="trade-pnl ${pnl>=0?"profit":"loss"}">${pnl>=0?"+":""}${fmtINR(pnl)}</div>`;
+    pnlHtml=`<div class="trade-pnl ${pnl>=0?"profit":"loss"}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="trade-live-price">Gross ${gross>=0?"+":""}${fmtINR(gross)} · Binance fees -${fmtINR(fees)}</div>`;
   }else{
-    const live=calcLivePnL(t);
-    const rTxt=live.rMultiple>=0?`+${live.rMultiple.toFixed(1)}R`:`${live.rMultiple.toFixed(1)}R`;
+    const live=calcLivePnL(t), rTxt=live.rMultiple>=0?`+${live.rMultiple.toFixed(1)}R`:`${live.rMultiple.toFixed(1)}R`;
     statusBadge='<span class="trade-status status-running">● RUNNING</span>';
-    pnlHtml=`
-      <div class="trade-pnl ${live.pnl>=0?"profit":"loss"}">${live.pnl>=0?"+":""}${fmtINR(live.pnl)}</div>
-      <div class="trade-live-price">${rTxt}</div>`;
+    pnlHtml=`<div class="trade-pnl ${live.pnl>=0?"profit":"loss"}">${live.pnl>=0?"+":""}${fmtINR(live.pnl)}</div><div class="trade-live-price">Gross ${live.grossPnl>=0?"+":""}${fmtINR(live.grossPnl)} · Est. fees -${fmtINR(live.totalFees)} · ${rTxt}</div>`;
 
     const range=Math.abs(t.tp-t.sl);
     const fromSL=Math.abs(live.cp-t.sl);
@@ -2790,19 +2815,20 @@ function updateTradeCalculator(){
       ? Math.abs(s.tp-s.entry)/s.entry
       : 0;
 
-  const tpProfit=position*rewardPct;
-  const slLoss=position*riskPct;
-
-  $("calcPosition").textContent=fmtINR(position);
-  $("calcCapital").textContent=fmtINR(amount);
-  $("calcTPProfit").textContent="+"+fmtINR(tpProfit);
-  $("calcTPFinal").textContent=fmtINR(amount+tpProfit);
-  $("calcSLLoss").textContent="-"+fmtINR(slLoss);
-  $("calcSLFinal").textContent=fmtINR(Math.max(0,amount-slLoss));
+  const tpProfit=position*rewardPct, slLoss=position*riskPct;
+  const feeRate=binanceFeeRate($("binanceFeeMode")?.value||state.binanceFeeMode||"taker");
+  const entryFee=position*feeRate, tpExitFee=position*((s.tp||s.entry)/s.entry)*feeRate, slExitFee=position*((s.sl||s.entry)/s.entry)*feeRate;
+  const tpNet=tpProfit-entryFee-tpExitFee, slNet=-slLoss-entryFee-slExitFee;
+  $("calcPosition").textContent=fmtINR(position); $("calcCapital").textContent=fmtINR(amount);
+  $("calcTPProfit").textContent="+"+fmtINR(tpProfit); $("calcTPFinal").textContent=fmtINR(Math.max(0,amount+tpNet));
+  $("calcSLLoss").textContent="-"+fmtINR(slLoss); $("calcSLFinal").textContent=fmtINR(Math.max(0,amount+slNet));
+  $("calcEntryFee").textContent="-"+fmtINR(entryFee); $("calcTPFee").textContent="-"+fmtINR(tpExitFee);
+  $("calcTPNet").textContent=(tpNet>=0?"+":"")+fmtINR(tpNet); $("calcSLFee").textContent="-"+fmtINR(slExitFee); $("calcSLNet").textContent=fmtINR(Math.max(0,amount+slNet));
 }
 
 $("tmAmt").addEventListener("input",updateTradeCalculator);
 $("tmLev").addEventListener("change",updateTradeCalculator);
+$("binanceFeeMode")?.addEventListener("change",updateTradeCalculator);
 
 
 async function saveTradeToWallet(trade,signal){
@@ -2838,7 +2864,9 @@ async function saveTrade(){
     date:new Date().toLocaleString(),
     createdAt:new Date().toISOString(),
     closedAt:null,
-    notes:""
+    notes:"",
+    feeMode:state.binanceFeeMode||"taker",
+    feeRate:binanceFeeRate(state.binanceFeeMode||"taker")
   };
 
   const opened=await saveTradeToWallet(trade,s);
