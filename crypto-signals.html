@@ -2996,75 +2996,85 @@ function renderTradeLedger(from,to){
   const root=$("tradeLedger");
   if(!root)return;
 
-  const tx=state.walletTx.slice().sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
-  let running=0;
-  const beforeById=new Map();
-  const afterById=new Map();
-  const debitByTrade=new Map();
-  const creditByTrade=new Map();
+  // Build the ledger from the actual wallet transaction stream.
+  // This is deliberately NOT derived from daily aggregates.
+  const allTx=state.walletTx.slice().sort((a,b)=>{
+    const da=new Date(a.created_at||0).getTime(), db=new Date(b.created_at||0).getTime();
+    return da-db;
+  });
 
-  for(const x of tx){
-    const amt=Number(x.amount_inr)||0;
+  const start=new Date(from+"T00:00:00");
+  const end=new Date(to+"T23:59:59.999");
+
+  // Balance immediately before the selected report period.
+  let running=allTx
+    .filter(x=>new Date(x.created_at||0)<start)
+    .reduce((s,x)=>s+(Number(x.amount_inr)||0),0);
+
+  const trades=new Map(state.journal.map(t=>[String(t.id),t]));
+  const rows=[];
+
+  for(const x of allTx){
+    const dt=new Date(x.created_at||0);
+    if(dt<start || dt>end) continue;
+
+    const amount=Number(x.amount_inr)||0;
     const before=running;
-    running+=amt;
-    const tid=x.trade_id||null;
+    running+=amount;
 
-    if(tid){
-      if(x.txn_type==="TRADE_DEBIT"){
-        debitByTrade.set(String(tid),{...x,before,after:running});
-      }else if(x.txn_type==="TRADE_CREDIT"){
-        creditByTrade.set(String(tid),{...x,before,after:running});
-      }
-    }
+    const trade=x.trade_id?trades.get(String(x.trade_id)):null;
+    const type=String(x.txn_type||"").toUpperCase();
+    const isOpen=type==="TRADE_DEBIT";
+    const isClose=type==="TRADE_CREDIT";
+
+    rows.push({
+      date:dt,
+      type,
+      amount,
+      before,
+      after:running,
+      trade,
+      pair:trade?.sym||"—",
+      dir:trade?.dir||"",
+      note:x.note||"",
+      label:isOpen?"TRADE OPEN":isClose?"TRADE CLOSE":type.replaceAll("_"," ")
+    });
   }
 
-  const trades=state.journal
-    .filter(t=>{
-      const opened=dateOnly(t.createdAt||t.date);
-      const closed=tradeCloseDate(t);
-      return (opened&&opened>=from&&opened<=to)||(closed&&closed>=from&&closed<=to);
-    })
-    .slice()
-    .sort((a,b)=>new Date(a.createdAt||a.date||0)-new Date(b.createdAt||b.date||0));
-
-  if(!trades.length){
-    root.innerHTML='<div class="report-table-wrap"><div class="empty"><b>Trade-by-Trade Capital Report</b><br><span>No trades in the selected date range.</span></div></div>';
+  if(!rows.length){
+    root.innerHTML='<div class="report-table-wrap"><div class="empty"><b>💰 Trade-by-Trade Capital Ledger</b><br><span>No wallet transactions in the selected date range.</span></div></div>';
     return;
   }
 
-  const rows=trades.map(t=>{
-    const d=t.id?debitByTrade.get(String(t.id)):null;
-    const cr=t.id?creditByTrade.get(String(t.id)):null;
-    const pnl=t.closed?calcClosedPnL(t):0;
-    const openedBalance=d?d.after:null;
-    const finalBalance=cr?cr.after:(d?d.after:null);
-    const returned=cr?Number(cr.amount_inr)||0:0;
-    const used=d?Math.abs(Number(d.amount_inr)||0):Number(t.amt)||0;
-    const openTime=t.createdAt||t.date||"";
-    const closeTime=t.closedAt||"";
-    const status=t.closed?(t.status||"CLOSED").toUpperCase():"OPEN";
-    const pnlClass=pnl>=0?"profit":"loss";
-
+  const htmlRows=rows.map(r=>{
+    const positive=r.amount>=0;
+    const amountText=(positive?"+":"")+fmtINR(r.amount);
+    const pair=r.trade?escapeHtml(r.pair):"—";
+    const direction=r.dir?'<span style="opacity:.65">'+escapeHtml(r.dir)+'</span>':"";
+    const status=r.type==="TRADE_CREDIT" && r.trade
+      ? escapeHtml((r.trade.status||"CLOSED").toUpperCase())
+      : r.type==="TRADE_DEBIT" ? "OPENED" : escapeHtml(r.type.replaceAll("_"," "));
     return '<tr>'+
-      '<td>'+escapeHtml(openTime?new Date(openTime).toLocaleString("en-IN"):"—")+'</td>'+
-      '<td><b>'+escapeHtml(t.sym||"—")+'</b><br><span style="opacity:.65">'+escapeHtml(t.dir||"—")+'</span></td>'+
-      '<td>'+fmtINR(d?d.before:NaN)+'</td>'+
-      '<td>'+fmtINR(used)+'</td>'+
-      '<td>'+escapeHtml(closeTime?new Date(closeTime).toLocaleString("en-IN"):"OPEN")+'</td>'+
-      '<td class="'+pnlClass+'">'+(t.closed?(pnl>=0?"+":"")+fmtINR(pnl):"—")+'</td>'+
-      '<td>'+fmtINR(returned)+'</td>'+
-      '<td><b>'+fmtINR(finalBalance)+'</b></td>'+
+      '<td>'+escapeHtml(r.date.toLocaleString("en-IN"))+'</td>'+
+      '<td><b>'+pair+'</b><br>'+direction+'</td>'+
+      '<td>'+escapeHtml(r.label)+'</td>'+
+      '<td class="'+(positive?"profit":"loss")+'">'+amountText+'</td>'+
+      '<td>'+fmtINR(r.before)+'</td>'+
+      '<td><b>'+fmtINR(r.after)+'</b></td>'+
+      '<td>'+escapeHtml(r.note||"")+'</td>'+
       '<td>'+status+'</td>'+
     '</tr>';
   }).join("");
 
   root.innerHTML=
     '<div class="report-table-wrap">'+
-      '<div style="padding:16px 16px 8px"><h3 style="margin:0 0 5px">💰 Trade-by-Trade Capital Ledger</h3>'+
-      '<div style="opacity:.7;font-size:12px">Capital left is the available wallet balance immediately after the trade opens, or after its capital + P&L is returned when it closes.</div></div>'+
+      '<div style="padding:16px 16px 8px">'+
+        '<h3 style="margin:0 0 5px">💰 Trade-by-Trade Capital Ledger</h3>'+
+        '<div style="opacity:.75;font-size:12px">Every wallet transaction is shown in chronological order. <b>Capital Left</b> is the actual wallet balance immediately after that transaction.</div>'+
+      '</div>'+
       '<div style="overflow-x:auto"><table><thead><tr>'+
-      '<th>OPENED</th><th>TRADE</th><th>CAPITAL BEFORE</th><th>CAPITAL USED</th><th>CLOSED</th><th>REALIZED P&L</th><th>CAPITAL RETURNED</th><th>CAPITAL LEFT</th><th>STATUS</th>'+
-      '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+        '<th>DATE & TIME</th><th>TRADE</th><th>EVENT</th><th>CHANGE</th><th>CAPITAL BEFORE</th><th>CAPITAL LEFT</th><th>NOTE</th><th>STATUS</th>'+
+      '</tr></thead><tbody>'+htmlRows+'</tbody></table></div>'+
     '</div>';
 }
 
