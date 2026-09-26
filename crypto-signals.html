@@ -1064,7 +1064,7 @@ const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
-const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker" };
+const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker", inrPerQuote:null };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0, scanInProgress=false;
 let liveTradeSort=localStorage.getItem("cs_live_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
@@ -2421,9 +2421,18 @@ async function autoTradeFromSignals(){
 
 /* ================= LIVE P&L ENGINE ================= */
 
+async function refreshINRConversion(){
+  try{
+    if(state.quote==="INR"){state.inrPerQuote=1;return;}
+    const fx=await getUsdInr();
+    if(state.quote==="USDT"){state.inrPerQuote=fx;return;}
+    if(state.quote==="BTC"){const btc=await fetchPrice("BTCUSDT","USDT");if(Number.isFinite(btc)&&btc>0)state.inrPerQuote=btc*fx;}
+  }catch(e){console.warn("INR conversion failed",e);}
+}
 async function updateLivePrices(){
   const openTrades=state.journal.filter(t=>!t.closed);
   const syms=[...new Set(openTrades.map(t=>t.sym))];
+  await refreshINRConversion();
   if(!syms.length){ renderLiveTrades(); renderArchive(); return; }
 
   await Promise.all(syms.map(async sym=>{
@@ -2473,6 +2482,15 @@ async function updateLivePrices(){
 function binanceFeeRate(mode){
   return (mode==="maker_bnb"||mode==="taker_bnb") ? 0.00075 : 0.001;
 }
+const INDIA_TDS_RATE=0.01;
+const INDIA_VDA_TAX_RATE=0.312;
+function indiaTradeTaxCosts(t,exitPrice){
+  const position=Math.max(0,Number(t.amt||0)*Number(t.lev||1));
+  const entry=Number(t.entry)||0, exit=Number(exitPrice)||entry;
+  const consideration=entry>0?position*(exit/entry):0;
+  const grossGain=t.dir==="LONG"?position*((exit-entry)/entry):position*((entry-exit)/entry);
+  return {consideration,tds:consideration*INDIA_TDS_RATE,taxableGain:Math.max(0,grossGain),estimatedTax:Math.max(0,grossGain)*INDIA_VDA_TAX_RATE};
+}
 function tradeFeeRate(t){
   const r=Number(t?.feeRate);
   return Number.isFinite(r)&&r>=0 ? r : binanceFeeRate(t?.feeMode||state.binanceFeeMode||"taker");
@@ -2487,14 +2505,14 @@ function calcLivePnL(t){
   const cp=state.livePrices[t.sym]||t.entry, riskPct=Math.abs(t.entry-t.sl)/t.entry;
   const move=t.dir==="LONG"?(cp-t.entry)/t.entry:(t.entry-cp)/t.entry;
   const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move, costs=calcTradeCosts(t,cp);
-  return {pnl:grossPnl-costs.totalFees,grossPnl,entryFee:costs.entryFee,exitFee:costs.exitFee,totalFees:costs.totalFees,cp,rMultiple:riskPct>0?move/riskPct:0,feeRate:costs.rate};
+  const taxes=indiaTradeTaxCosts(t,cp); return {pnl:grossPnl-costs.totalFees-taxes.tds,grossPnl,entryFee:costs.entryFee,exitFee:costs.exitFee,totalFees:costs.totalFees,tds:taxes.tds,estimatedTax:taxes.estimatedTax,taxableGain:taxes.taxableGain,consideration:taxes.consideration,cp,rMultiple:riskPct>0?move/riskPct:0,feeRate:costs.rate};
 }
 function calcClosedPnL(t){
   const close=Number(t.closePrice), fallback=t.status==="tp"?Number(t.tp):t.status==="sl"?Number(t.sl):Number(t.entry);
   const exit=Number.isFinite(close)&&close>0?close:fallback;
   const move=t.dir==="LONG"?(exit-t.entry)/t.entry:(t.entry-exit)/t.entry;
   const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move, costs=calcTradeCosts(t,exit);
-  t.grossPnl=grossPnl;t.entryFee=costs.entryFee;t.exitFee=costs.exitFee;t.totalFees=costs.totalFees;t.netPnl=grossPnl-costs.totalFees;
+  t.grossPnl=grossPnl;t.entryFee=costs.entryFee;t.exitFee=costs.exitFee;t.totalFees=costs.totalFees;const taxes=indiaTradeTaxCosts(t,exit);t.tds=taxes.tds;t.estimatedTax=taxes.estimatedTax;t.taxableGain=taxes.taxableGain;t.consideration=taxes.consideration;t.netPnl=grossPnl-costs.totalFees-taxes.tds;
   return t.netPnl;
 }
 
@@ -2721,6 +2739,7 @@ function renderCryptoLiveSummary(){
   list.innerHTML += '<div class="crypto-live-total"><span>Total Live P&L · '+open.length+' trades</span><b class="'+(total>=0?"profit":"loss")+'">'+(total>=0?"+":"")+fmtINR(total)+'</b></div>';
 }
 
+function liveListINR(v){const n=Number(v),r=Number(state.inrPerQuote);return Number.isFinite(n)&&n>0&&Number.isFinite(r)&&r>0?fmtINR(n*r):"₹—";}
 function renderLiveList(){
   const body=$("liveListBody"); if(!body)return;
   const open=state.journal.filter(t=>!t.closed);
@@ -2730,7 +2749,7 @@ function renderLiveList(){
   if(!open.length){body.innerHTML='<tr><td colspan="12" class="live-list-empty">No live paper trades.</td></tr>';return;}
   const sort=$("liveListSort")?.value||localStorage.getItem("cs_live_list_sort")||"newest";
   body.innerHTML=sortTrades(open,sort).map(t=>{
-    const i=state.journal.indexOf(t), live=calcLivePnL(t), q=quoteLabel(t), price=v=>q+fmt(v);
+    const i=state.journal.indexOf(t), live=calcLivePnL(t), price=v=>liveListINR(v);
     const pnl=Number(live.pnl)||0, r=Number(live.rMultiple)||0;
     return `<tr>
       <td><div class="live-list-pair">${String(t.sym)}</div><div class="live-list-muted">${String(t.quote||state.quote)} · ${String(state.tf)}</div></td>
