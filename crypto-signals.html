@@ -840,7 +840,7 @@ async function settleWalletTrade(t){
   if(await walletHasTransaction(t.id,"TRADE_CREDIT")) return {ok:true};
   const netPnl=calcClosedPnL(t);
   const returned=Math.max(0,Number(t.amt||0)+Number(netPnl||0));
-  const result=await dbWalletTransaction("TRADE_CREDIT",returned,t.id,"Trade closed - capital returned + NET realized P&L after Binance fees");
+  const result=await dbWalletTransaction("TRADE_CREDIT",returned,t.id,"Trade closed - capital returned + NET trading P&L after Binance fees");
   return {ok:!result.error,error:result.error||null};
 }
 async function loadWallet(){
@@ -2482,14 +2482,26 @@ async function updateLivePrices(){
 function binanceFeeRate(mode){
   return (mode==="maker_bnb"||mode==="taker_bnb") ? 0.00075 : 0.001;
 }
-const INDIA_TDS_RATE=0.01;
-const INDIA_VDA_TAX_RATE=0.312;
+const INDIA_VDA_TAX_RATE=0.30;
+const INDIA_CESS_RATE=0.04;
 function indiaTradeTaxCosts(t,exitPrice){
   const position=Math.max(0,Number(t.amt||0)*Number(t.lev||1));
   const entry=Number(t.entry)||0, exit=Number(exitPrice)||entry;
-  const consideration=entry>0?position*(exit/entry):0;
-  const grossGain=t.dir==="LONG"?position*((exit-entry)/entry):position*((entry-exit)/entry);
-  return {consideration,tds:consideration*INDIA_TDS_RATE,taxableGain:Math.max(0,grossGain),estimatedTax:Math.max(0,grossGain)*INDIA_VDA_TAX_RATE};
+  const grossPnl=t.dir==="LONG"?position*((exit-entry)/entry):position*((entry-exit)/entry);
+  const costs=calcTradeCosts(t,exit);
+  const netTradingPnl=grossPnl-costs.totalFees;
+  const taxableGain=Math.max(0,netTradingPnl);
+  const vdaTax=taxableGain*INDIA_VDA_TAX_RATE;
+  const cess=vdaTax*INDIA_CESS_RATE;
+  return {
+    grossPnl,
+    totalFees:costs.totalFees,
+    netTradingPnl,
+    taxableGain,
+    vdaTax,
+    cess,
+    estimatedTax:vdaTax+cess
+  };
 }
 function tradeFeeRate(t){
   const r=Number(t?.feeRate);
@@ -2505,14 +2517,40 @@ function calcLivePnL(t){
   const cp=state.livePrices[t.sym]||t.entry, riskPct=Math.abs(t.entry-t.sl)/t.entry;
   const move=t.dir==="LONG"?(cp-t.entry)/t.entry:(t.entry-cp)/t.entry;
   const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move, costs=calcTradeCosts(t,cp);
-  const taxes=indiaTradeTaxCosts(t,cp); return {pnl:grossPnl-costs.totalFees-taxes.tds,grossPnl,entryFee:costs.entryFee,exitFee:costs.exitFee,totalFees:costs.totalFees,tds:taxes.tds,estimatedTax:taxes.estimatedTax,taxableGain:taxes.taxableGain,consideration:taxes.consideration,cp,rMultiple:riskPct>0?move/riskPct:0,feeRate:costs.rate};
+  const netTradingPnl=grossPnl-costs.totalFees;
+  const taxes=indiaTradeTaxCosts(t,cp);
+  return {
+    pnl:netTradingPnl,
+    grossPnl,
+    entryFee:costs.entryFee,
+    exitFee:costs.exitFee,
+    totalFees:costs.totalFees,
+    estimatedVdaTax:taxes.vdaTax,
+    estimatedCess:taxes.cess,
+    estimatedTax:taxes.estimatedTax,
+    taxableGain:taxes.taxableGain,
+    cp,
+    rMultiple:riskPct>0?move/riskPct:0,
+    feeRate:costs.rate
+  };
 }
 function calcClosedPnL(t){
   const close=Number(t.closePrice), fallback=t.status==="tp"?Number(t.tp):t.status==="sl"?Number(t.sl):Number(t.entry);
   const exit=Number.isFinite(close)&&close>0?close:fallback;
   const move=t.dir==="LONG"?(exit-t.entry)/t.entry:(t.entry-exit)/t.entry;
   const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move, costs=calcTradeCosts(t,exit);
-  t.grossPnl=grossPnl;t.entryFee=costs.entryFee;t.exitFee=costs.exitFee;t.totalFees=costs.totalFees;const taxes=indiaTradeTaxCosts(t,exit);t.tds=taxes.tds;t.estimatedTax=taxes.estimatedTax;t.taxableGain=taxes.taxableGain;t.consideration=taxes.consideration;t.netPnl=grossPnl-costs.totalFees-taxes.tds;
+  const netTradingPnl=grossPnl-costs.totalFees;
+  const taxes=indiaTradeTaxCosts(t,exit);
+  t.grossPnl=grossPnl;
+  t.entryFee=costs.entryFee;
+  t.exitFee=costs.exitFee;
+  t.totalFees=costs.totalFees;
+  t.taxableGain=taxes.taxableGain;
+  t.estimatedVdaTax=taxes.vdaTax;
+  t.estimatedCess=taxes.cess;
+  t.estimatedTax=taxes.estimatedTax;
+  t.netPnl=netTradingPnl;
+  t.tds=0;
   return t.netPnl;
 }
 
@@ -2625,10 +2663,11 @@ function renderTradeCard(t, ri, archived=false){
   }
 
   if(t.closed){
-    const pnl=calcClosedPnL(t), gross=Number(t.grossPnl)||0, fees=Number(t.totalFees)||0;
+    const pnl=calcClosedPnL(t), gross=Number(t.grossPnl)||0, fees=Number(t.totalFees)||0, vda=Number(t.estimatedVdaTax)||0, cess=Number(t.estimatedCess)||0;
+    const afterTax=pnl-vda-cess;
     const statusText=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":"MANUAL CLOSE";
     statusBadge=`<span class="trade-status ${t.status==="tp"?"status-tp":t.status==="sl"?"status-sl":"status-manual"}">${statusText}</span>`;
-    pnlHtml=`<div class="trade-pnl ${pnl>=0?"profit":"loss"}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="trade-live-price">Gross ${gross>=0?"+":""}${fmtINR(gross)} · Binance fees -${fmtINR(fees)}</div>`;
+    pnlHtml=`<div class="trade-pnl ${pnl>=0?"profit":"loss"}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="trade-live-price">Gross ${gross>=0?"+":""}${fmtINR(gross)} · Binance fees -${fmtINR(fees)} · Est. VDA tax -${fmtINR(vda+cess)} · After-tax ${afterTax>=0?"+":""}${fmtINR(afterTax)}</div>`;
   }else{
     const live=calcLivePnL(t), rTxt=live.rMultiple>=0?`+${live.rMultiple.toFixed(1)}R`:`${live.rMultiple.toFixed(1)}R`;
     statusBadge='<span class="trade-status status-running">● RUNNING</span>';
@@ -3163,87 +3202,134 @@ function generateReport(){
     return d>=from&&d<=to;
   });
 
-  const deposits=tx.filter(x=>x.txn_type==="DEPOSIT")
-    .reduce((s,x)=>s+Number(x.amount_inr||0),0);
-  const withdrawals=Math.abs(tx.filter(x=>x.txn_type==="WITHDRAWAL")
-    .reduce((s,x)=>s+Number(x.amount_inr||0),0));
-  const reserved=tx.filter(x=>x.txn_type==="TRADE_DEBIT")
-    .reduce((s,x)=>s+Math.abs(Number(x.amount_inr||0)),0);
-  const returned=tx.filter(x=>x.txn_type==="TRADE_CREDIT")
-    .reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const deposits=tx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const withdrawals=Math.abs(tx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0));
+  const reserved=tx.filter(x=>x.txn_type==="TRADE_DEBIT").reduce((s,x)=>s+Math.abs(Number(x.amount_inr||0)),0);
+  const returned=tx.filter(x=>x.txn_type==="TRADE_CREDIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
 
   const closed=state.journal.filter(t=>t.closed);
   const closedInRange=closed.filter(t=>{
     const d=tradeCloseDate(t);
     return d>=from&&d<=to;
   });
+
+  // Trading P&L = gross P&L minus actual Binance trading fees.
+  // VDA tax is shown separately as an estimate; it is NOT deducted from
+  // wallet capital because the app is not actually paying the tax here.
   const closedCapital=closedInRange.reduce((s,t)=>s+Number(t.amt||0),0);
-  const realized=closedInRange.reduce((s,t)=>s+calcClosedPnL(t),0);
   const grossRealized=closedInRange.reduce((s,t)=>s+(Number(t.grossPnl)||0),0);
   const binanceFees=closedInRange.reduce((s,t)=>s+(Number(t.totalFees)||0),0);
-  const tds=closedInRange.reduce((s,t)=>s+(Number(t.tds)||0),0);
-  const estimatedTax=closedInRange.reduce((s,t)=>s+(Number(t.estimatedTax)||0),0);
-  const afterTaxPnl=grossRealized-binanceFees-estimatedTax;
+  const realized=grossRealized-binanceFees;
+  const taxableVdaIncome=closedInRange.reduce((s,t)=>s+Math.max(0,Number(t.netPnl)||0),0);
+  const vdaTax=taxableVdaIncome*INDIA_VDA_TAX_RATE;
+  const vdaCess=vdaTax*INDIA_CESS_RATE;
+  const estimatedTax=vdaTax+vdaCess;
+  const afterTaxPnl=realized-estimatedTax;
   const wins=closedInRange.filter(t=>calcClosedPnL(t)>0).length;
   const roi=closedCapital>0?(realized/closedCapital)*100:0;
+
+  const allTx=state.walletTx.slice().sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
+  let runningCapital=0;
+  const capitalByDay={};
+  allTx.forEach(x=>{
+    runningCapital+=Number(x.amount_inr||0);
+    const day=dateOnly(x.created_at);
+    if(day) capitalByDay[day]=runningCapital;
+  });
+
+  const availableToTrade=walletBalance();
+  const openCapital=walletInvested();
+  const totalPaperCapital=availableToTrade+openCapital;
 
   if($("reportSummary")) $("reportSummary").innerHTML='<div class="report-grid">'+
     '<div><span>Money Added</span><b>'+fmtINR(deposits)+'</b></div>'+
     '<div><span>Capital Reserved</span><b>'+fmtINR(reserved)+'</b></div>'+
     '<div><span>Gross P&L</span><b class="'+(grossRealized>=0?"profit":"loss")+'">'+(grossRealized>=0?"+":"")+fmtINR(grossRealized)+'</b></div>'+
     '<div><span>Binance Fees</span><b class="loss">-'+fmtINR(binanceFees)+'</b></div>'+
-    '<div><span>India TDS (1% est.)</span><b class="loss">-'+fmtINR(tds)+'</b></div>'+
-    '<div><span>Est. VDA Tax</span><b class="loss">-'+fmtINR(estimatedTax)+'</b></div>'+
-    '<div><span>Net Cash P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
-    '<div><span>After-Tax P&L (est.)</span><b class="'+(afterTaxPnl>=0?"profit":"loss")+'">'+(afterTaxPnl>=0?"+":"")+fmtINR(afterTaxPnl)+'</b></div>'+
+    '<div><span>Net Trading P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
+    '<div><span>Estimated VDA Tax (30%)</span><b class="loss">-'+fmtINR(vdaTax)+'</b></div>'+
+    '<div><span>Estimated Cess (4%)</span><b class="loss">-'+fmtINR(vdaCess)+'</b></div>'+
+    '<div><span>Estimated Total VDA Tax</span><b class="loss">-'+fmtINR(estimatedTax)+'</b></div>'+
+    '<div><span>Estimated After-Tax P&L</span><b class="'+(afterTaxPnl>=0?"profit":"loss")+'">'+(afterTaxPnl>=0?"+":"")+fmtINR(afterTaxPnl)+'</b></div>'+
     '<div><span>Realized ROI</span><b class="'+(roi>=0?"profit":"loss")+'">'+roi.toFixed(2)+'%</b></div>'+
     '<div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div>'+
-    '<div><span>Current Wallet</span><b>'+fmtINR(walletBalance())+'</b></div>'+
-    '<div><span>Open Capital</span><b>'+fmtINR(walletInvested())+'</b></div>'+
+    '<div><span>Capital Left to Trade</span><b>'+fmtINR(availableToTrade)+'</b></div>'+
+    '<div><span>Open Capital Reserved</span><b>'+fmtINR(openCapital)+'</b></div>'+
+    '<div><span>Total Paper Capital</span><b>'+fmtINR(totalPaperCapital)+'</b></div>'+
     '<div><span>Closed Win Rate</span><b>'+(closedInRange.length?Math.round(wins/closedInRange.length*100):0)+'%</b></div>'+
   '</div>';
 
   const byDay={};
   tx.forEach(x=>{
     const day=dateOnly(x.created_at);
-    if(!byDay[day])byDay[day]={deposit:0,withdraw:0,reserved:0,returned:0,pnl:0,gross:0,fees:0,tds:0,tax:0,closedCapital:0};
+    if(!byDay[day])byDay[day]={deposit:0,withdraw:0,reserved:0,returned:0,gross:0,fees:0,net:0,tax:0,closedCapital:0,capitalLeft:capitalByDay[day]??0};
     const a=Number(x.amount_inr||0);
     if(x.txn_type==="DEPOSIT")byDay[day].deposit+=a;
     if(x.txn_type==="WITHDRAWAL")byDay[day].withdraw+=Math.abs(a);
     if(x.txn_type==="TRADE_DEBIT")byDay[day].reserved+=Math.abs(a);
     if(x.txn_type==="TRADE_CREDIT")byDay[day].returned+=a;
+    byDay[day].capitalLeft=capitalByDay[day]??byDay[day].capitalLeft;
   });
   closedInRange.forEach(t=>{
     const day=tradeCloseDate(t);
-    if(!byDay[day])byDay[day]={deposit:0,withdraw:0,reserved:0,returned:0,pnl:0,closedCapital:0};
-    byDay[day].pnl+=calcClosedPnL(t);
-    byDay[day].gross+=Number(t.grossPnl)||0;
-    byDay[day].fees+=Number(t.totalFees)||0;
-    byDay[day].tds+=Number(t.tds)||0;
-    byDay[day].tax+=Number(t.estimatedTax)||0;
+    if(!byDay[day])byDay[day]={deposit:0,withdraw:0,reserved:0,returned:0,gross:0,fees:0,net:0,tax:0,closedCapital:0,capitalLeft:capitalByDay[day]??0};
+    const gross=Number(t.grossPnl)||0;
+    const fees=Number(t.totalFees)||0;
+    const net=gross-fees;
+    byDay[day].gross+=gross;
+    byDay[day].fees+=fees;
+    byDay[day].net+=net;
+    byDay[day].tax+=Math.max(0,net)*INDIA_VDA_TAX_RATE*(1+INDIA_CESS_RATE);
     byDay[day].closedCapital+=Number(t.amt||0);
+    byDay[day].capitalLeft=capitalByDay[day]??byDay[day].capitalLeft;
   });
 
   const days=Object.keys(byDay).sort().reverse();
   if($("reportTable")) $("reportTable").innerHTML=days.length
-    ? '<div class="report-table-wrap"><table><thead><tr><th>Date</th><th>Added</th><th>Capital Reserved</th><th>Returned</th><th>Gross P&L</th><th>Binance Fees</th><th>TDS</th><th>Est. VDA Tax</th><th>Net Cash P&L</th><th>Withdrawn</th></tr></thead><tbody>'+
+    ? '<div class="report-table-wrap"><table><thead><tr><th>Date</th><th>Added</th><th>Capital Reserved</th><th>Returned</th><th>Gross P&L</th><th>Binance Fees</th><th>Net Trading P&L</th><th>Est. VDA Tax</th><th>Capital Left to Trade</th><th>Withdrawn</th></tr></thead><tbody>'+
       days.map(day=>{
         const x=byDay[day];
-        return '<tr><td>'+day+'</td><td>'+fmtINR(x.deposit)+'</td><td>'+fmtINR(x.reserved)+'</td><td>'+fmtINR(x.returned)+'</td><td>'+fmtINR(x.gross)+'</td><td class="loss">-'+fmtINR(x.fees)+'</td><td class="loss">-'+fmtINR(x.tds)+'</td><td class="loss">-'+fmtINR(x.tax)+'</td><td class="'+(x.pnl>=0?"profit":"loss")+'">'+(x.pnl>=0?"+":"")+fmtINR(x.pnl)+'</td><td>'+fmtINR(x.withdraw)+'</td></tr>';
+        return '<tr><td>'+day+'</td><td>'+fmtINR(x.deposit)+'</td><td>'+fmtINR(x.reserved)+'</td><td>'+fmtINR(x.returned)+'</td><td>'+fmtINR(x.gross)+'</td><td class="loss">-'+fmtINR(x.fees)+'</td><td class="'+(x.net>=0?"profit":"loss")+'">'+(x.net>=0?"+":"")+fmtINR(x.net)+'</td><td class="loss">-'+fmtINR(x.tax)+'</td><td><b>'+fmtINR(x.capitalLeft)+'</b></td><td>'+fmtINR(x.withdraw)+'</td></tr>';
       }).join('')+
       '</tbody></table></div>'
     : '<div class="empty">No wallet or closed-trade activity in this date range.</div>';
 
   renderTradeLedger(from,to);
-  return {from,to,deposits,withdrawals,reserved,returned,realized,grossRealized,binanceFees,tds,estimatedTax,afterTaxPnl,roi,days,byDay,closedCapital,closedInRange};
+  return {from,to,deposits,withdrawals,reserved,returned,realized,grossRealized,binanceFees,taxableVdaIncome,vdaTax,vdaCess,estimatedTax,afterTaxPnl,roi,days,byDay,closedCapital,closedInRange,availableToTrade,openCapital,totalPaperCapital};
 }
 function exportReportCSV(){
   const r=generateReport();
-  const lines=[["Date","Added INR","Capital Reserved INR","Returned INR","Gross P&L INR","Binance Fees INR","India TDS INR","Estimated VDA Tax INR","Net Cash P&L INR","Withdrawn INR"]];
-  r.days.forEach(day=>{const x=r.byDay[day];lines.push([day,x.deposit,x.reserved,x.returned,x.gross,-x.fees,-x.tds,-x.tax,x.pnl,x.withdraw]);});
-  lines.push([]);lines.push(["Summary","Value"]);lines.push(["Added",r.deposits],["Capital Reserved",r.reserved],["Gross P&L",r.grossRealized],["Binance Fees",-r.binanceFees],["India TDS",-r.tds],["Estimated VDA Tax",-r.estimatedTax],["Net Cash P&L",r.realized],["Estimated After-Tax P&L",r.afterTaxPnl],["Realized ROI %",r.roi.toFixed(2)],["Withdrawn",r.withdrawals],["Ending Wallet",walletBalance()]);
+  const lines=[["Date","Added INR","Capital Reserved INR","Returned INR","Gross P&L INR","Binance Fees INR","Net Trading P&L INR","Estimated VDA Tax INR","Capital Left to Trade INR","Withdrawn INR"]];
+  r.days.forEach(day=>{
+    const x=r.byDay[day];
+    lines.push([day,x.deposit,x.reserved,x.returned,x.gross,-x.fees,x.net,-x.tax,x.capitalLeft,x.withdraw]);
+  });
+  lines.push([]);
+  lines.push(["Summary","Value"]);
+  lines.push(
+    ["Added",r.deposits],
+    ["Capital Reserved",r.reserved],
+    ["Gross P&L",r.grossRealized],
+    ["Binance Fees",-r.binanceFees],
+    ["Net Trading P&L",r.realized],
+    ["Taxable VDA Income (app estimate)",r.taxableVdaIncome],
+    ["Estimated VDA Tax @30%",-r.vdaTax],
+    ["Estimated Cess @4%",-r.vdaCess],
+    ["Estimated Total VDA Tax",-r.estimatedTax],
+    ["Estimated After-Tax P&L",r.afterTaxPnl],
+    ["Realized ROI %",r.roi.toFixed(2)],
+    ["Withdrawn",r.withdrawals],
+    ["Capital Left to Trade",r.availableToTrade],
+    ["Open Capital Reserved",r.openCapital],
+    ["Total Paper Capital",r.totalPaperCapital]
+  );
   const csv=lines.map(row=>row.map(v=>'"'+String(v==null?"":v).replaceAll('"','""')+'"').join(",")).join("\n");
-  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="crypto-paper-trade-report-"+r.from+"-to-"+r.to+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="crypto-paper-trade-report-"+r.from+"-to-"+r.to+".csv";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
 /* ================= HISTORICAL BACKTEST V2 ================= */
