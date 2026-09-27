@@ -2746,21 +2746,48 @@ function calcClosedPnL(t){
 function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();renderLiveList();renderWallet();}
 
 function getCapitalSnapshot(){
+  /*
+   * ACCOUNTING RULE:
+   * Paper equity is based on actual capital contributed plus trading P&L.
+   * The wallet transaction ledger is only a cash/reservation ledger; it must
+   * never be allowed to create profit by adding reserved capital to cash.
+   */
   const openTrades=state.journal.filter(t=>!t.closed);
   const running=openTrades.map(t=>calcLivePnL(t));
   const unrealizedPnl=running.reduce((s,x)=>s+(Number(x.pnl)||0),0);
+
   const availableCash=walletBalance();
   const openCapital=walletInvested();
-  const paperEquity=availableCash+openCapital+unrealizedPnl;
-  const totalDeposits=state.walletTx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
-  const totalWithdrawals=Math.abs(state.walletTx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0));
+
+  const totalDeposits=state.walletTx.filter(x=>x.txn_type==="DEPOSIT")
+    .reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const totalWithdrawals=Math.abs(state.walletTx.filter(x=>x.txn_type==="WITHDRAWAL")
+    .reduce((s,x)=>s+Number(x.amount_inr||0),0));
   const netCapitalAdded=totalDeposits-totalWithdrawals;
+
   const allClosed=state.journal.filter(t=>t.closed);
   const realizedPnl=allClosed.reduce((s,t)=>s+calcClosedPnL(t),0);
+
+  // TRUE trading P&L = realized + unrealized.
+  // This is independent of how many times trade capital was recycled.
   const totalPnl=realizedPnl+unrealizedPnl;
-  const equityPnl=paperEquity-netCapitalAdded;
-  const totalFees=allClosed.reduce((s,t)=>s+(Number(t.totalFees)||0),0)+state.journal.filter(t=>!t.closed).reduce((s,t)=>s+(Number(calcLivePnL(t).totalFees)||0),0);
-  return {availableCash,openCapital,unrealizedPnl,paperEquity,totalDeposits,totalWithdrawals,netCapitalAdded,realizedPnl,totalPnl:equityPnl,equityPnl,totalFees};
+  const paperEquity=netCapitalAdded+totalPnl;
+  const equityPnl=totalPnl;
+
+  // Diagnostic only: this exposes historical wallet-ledger inconsistencies.
+  const ledgerEquity=availableCash+openCapital+unrealizedPnl;
+  const accountingGap=ledgerEquity-paperEquity;
+
+  const totalFees=allClosed.reduce((s,t)=>s+(Number(t.totalFees)||0),0)
+    +state.journal.filter(t=>!t.closed)
+      .reduce((s,t)=>s+(Number(calcLivePnL(t).totalFees)||0),0);
+
+  return {
+    availableCash,openCapital,unrealizedPnl,paperEquity,
+    totalDeposits,totalWithdrawals,netCapitalAdded,
+    realizedPnl,totalPnl,equityPnl,totalFees,
+    ledgerEquity,accountingGap
+  };
 }
 
 function renderStats(){
@@ -3439,7 +3466,7 @@ function renderReportInsights(closedInRange,from,to){
   const overallPnl=snapshot.equityPnl;
 
   if($("reportSummary")) $("reportSummary").innerHTML=
-    '<div class="settings-info" style="margin-bottom:12px"><b>How to read:</b> Available Cash + Open Capital + Current Open P&L = Total Paper Equity. Total P&L = Total Paper Equity - Net Capital Added. The cards are a current snapshot; the daily table follows the selected date range.</div>'+
+    '<div class="settings-info" style="margin-bottom:12px"><b>How to read:</b> True Paper Equity = Net Capital Added + Realized Trading P&L + Current Open P&L. Trade capital is recycled between cash and open positions and is never counted as profit. The daily table follows the selected date range.</div>'+
     '<div class="report-section-title" style="margin:14px 0 8px"><h3 style="margin:0">📅 Selected Period · '+from+' to '+to+'</h3><div class="settings-info" style="margin-top:4px">These figures are calculated only from activity in the selected date range.</div></div>'+
     '<div class="report-grid">'+
     '<div><span>Money Added (Period)</span><b>'+fmtINR(deposits)+'</b></div>'+
@@ -3455,10 +3482,12 @@ function renderReportInsights(closedInRange,from,to){
     '<div><span>Available Cash Now</span><b>'+fmtINR(availableToTrade)+'</b></div>'+
     '<div><span>Open Capital Now</span><b>'+fmtINR(openCapital)+'</b></div>'+
     '<div><span>Current Open P&L</span><b class="'+(snapshot.unrealizedPnl>=0?"profit":"loss")+'">'+(snapshot.unrealizedPnl>=0?"+":"")+fmtINR(snapshot.unrealizedPnl)+'</b></div>'+
-    '<div><span>Total Paper Equity</span><b>'+fmtINR(totalPaperCapital)+'</b></div>'+
+    '<div><span>True Paper Equity</span><b>'+fmtINR(totalPaperCapital)+'</b></div>'+
     '<div><span>Total P&L Since Deposits</span><b class="'+(overallPnl>=0?"profit":"loss")+'">'+(overallPnl>=0?"+":"")+fmtINR(overallPnl)+'</b></div>'+
     '<div><span>Gross P&L (All Time)</span><b class="'+((overallPnl+snapshot.totalFees)>=0?"profit":"loss")+'">'+((overallPnl+snapshot.totalFees)>=0?"+":"")+fmtINR(overallPnl+snapshot.totalFees)+'</b></div>'+
     '<div><span>Binance Fees (All Time)</span><b class="loss">-'+fmtINR(snapshot.totalFees)+'</b></div>'+
+    '<div><span>Ledger Cash + Open Position</span><b>'+fmtINR(snapshot.ledgerEquity)+'</b></div>'+
+    '<div><span>Ledger Accounting Gap</span><b class="'+(Math.abs(snapshot.accountingGap)<0.01?"profit":"loss")+'">'+(snapshot.accountingGap>=0?"+":"")+fmtINR(snapshot.accountingGap)+'</b></div>'+
     '<div><span>Closed Win Rate (Period)</span><b>'+(closedInRange.length?Math.round(wins/closedInRange.length*100):0)+'%</b></div>'+
     '</div>';
 
