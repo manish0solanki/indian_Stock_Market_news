@@ -3530,7 +3530,7 @@ body {
       <div class="widget-card crypto-dashboard" id="cryptoTradeDashboard">
         <div class="crypto-dash-head"><div><div class="crypto-dash-title">⚡ Crypto Trade Dashboard</div><div class="crypto-dash-badge" id="cryptoDashStatus">Checking account…</div></div><a class="crypto-dash-link" href="/crypto-signals.html">Open Scanner →</a></div>
         <div class="crypto-dash-metrics">
-          <div class="crypto-dash-metric"><div class="v" id="cryptoDashLivePnl">—</div><div class="l">Live P&L</div></div>
+          <div class="crypto-dash-metric"><div class="v" id="cryptoDashTotalPnl">—</div><div class="l">Total P&L</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashOpen">—</div><div class="l">Open Trades</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashWinRate">—</div><div class="l">Win Rate</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashToday">—</div><div class="l">Today P&L</div></div>
@@ -8200,91 +8200,33 @@ async function loadCryptoTradeDashboard(){
   const status=document.getElementById('cryptoDashStatus');if(!status)return;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   try{
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    const user=session?.user;
-    if(!user){
-      status.textContent='Log in to view your paper-trade stats';
-      ['cryptoDashLivePnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));
-      return;
-    }
-
-    // Use the same crypto_trades rows and the same P&L math as CryptoSignal Tracker.
-    const {data,error}=await supabaseClient.from('crypto_trades')
-      .select('id,pair,symbol,quote,direction,entry_price,amount_inr,leverage,status,current_price,close_price,pnl_inr,closed_at,created_at')
-      .eq('user_id',user.id)
-      .order('created_at',{ascending:false})
-      .limit(500);
-    if(error)throw error;
-
-    const rows=Array.isArray(data)?data:[];
-    const isClosed=t=>['TP_HIT','SL_HIT','MANUAL_CLOSE','CANCELLED'].includes(String(t.status||'').toUpperCase());
-
-    // Exact closed-trade P&L logic used by CryptoSignal Tracker.
-    const closedPnl=t=>{
-      const entry=Number(t.entry_price)||0;
-      const close=Number(t.close_price);
-      const amt=Number(t.amount_inr)||0;
-      const lev=Number(t.leverage)||1;
-      if(Number.isFinite(close)&&close>0&&entry>0){
-        const move=String(t.direction||'').toUpperCase()==='LONG'
-          ? (close-entry)/entry
-          : (entry-close)/entry;
-        return amt*lev*move;
-      }
-      const status=String(t.status||'').toUpperCase();
-      if(status==='TP_HIT'){
-        const tp=Number(t.take_profit);
-        return Number.isFinite(tp)&&entry>0 ? amt*lev*(Math.abs(tp-entry)/entry) : Number(t.pnl_inr)||0;
-      }
-      if(status==='SL_HIT'){
-        const sl=Number(t.stop_loss);
-        return Number.isFinite(sl)&&entry>0 ? -amt*lev*(Math.abs(entry-sl)/entry) : Number(t.pnl_inr)||0;
-      }
-      return Number(t.pnl_inr)||0;
-    };
-
-    // Live P&L must use a fresh market price, not the stale pnl_inr stored in Supabase.
-    const open=rows.filter(t=>!isClosed(t));
-    const liveValues=await Promise.all(open.map(async t=>{
-      const cp=await cryptoDashPrice(t);
-      const entry=Number(t.entry_price)||0;
-      const amt=Number(t.amount_inr)||0;
-      const lev=Number(t.leverage)||1;
-      const dir=String(t.direction||'').toUpperCase();
-      const move=entry>0 ? (dir==='LONG' ? (cp-entry)/entry : (entry-cp)/entry) : 0;
-      return amt*lev*move;
-    }));
-    const runningPnl=liveValues.reduce((s,v)=>s+(Number(v)||0),0);
-
-    const closed=rows.filter(isClosed);
-    const bookedPnl=closed.reduce((s,t)=>s+closedPnl(t),0);
-    const wins=closed.filter(t=>closedPnl(t)>0).length;
-    const winRate=closed.length?Math.round(wins/closed.length*100):null;
-
+    const {data:{session}}=await supabaseClient.auth.getSession(),user=session?.user;
+    if(!user){status.textContent='Log in to view your paper-trade stats';['cryptoDashTotalPnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));return;}
+    const [{data,error},{data:walletData,error:walletError}]=await Promise.all([
+      supabaseClient.from('crypto_trades').select('id,pair,symbol,quote,direction,entry_price,amount_inr,leverage,status,current_price,close_price,pnl_inr,closed_at,created_at,notes').eq('user_id',user.id).order('created_at',{ascending:false}).limit(500),
+      supabaseClient.from('crypto_wallet_transactions').select('txn_type,amount_inr,trade_id,created_at').eq('user_id',user.id).order('created_at',{ascending:true}).limit(2000)
+    ]);
+    if(error)throw error;if(walletError)throw walletError;
+    const rows=Array.isArray(data)?data:[],wallet=Array.isArray(walletData)?walletData:[];
+    const isClosed=t=>['TP_HIT','SL_HIT','MANUAL_CLOSE','CANCELLED','KILL_SWITCH'].includes(String(t.status||'').toUpperCase());
+    const feeRate=t=>{let n=0;try{n=Number(JSON.parse(t.notes||'{}').feeRate)}catch(e){}return Number.isFinite(n)&&n>=0?n:0.001;};
+    const tradeCosts=(t,price)=>{const entry=Number(t.entry_price)||0,cp=Number(price)||entry,position=Math.max(0,Number(t.amount_inr||0)*Number(t.leverage||1));if(!(entry>0)||!(cp>0)||!(position>0))return 0;const rate=feeRate(t);return position*rate+position*(cp/entry)*rate;};
+    const calcLiveNet=t=>{const cp=Number(t.current_price)||Number(t.entry_price)||0,entry=Number(t.entry_price)||0,amt=Number(t.amount_inr)||0,lev=Number(t.leverage)||1,dir=String(t.direction||'').toUpperCase(),move=entry>0?(dir==='LONG'?(cp-entry)/entry:(entry-cp)/entry):0;return amt*lev*move-tradeCosts(t,cp);};
+    const open=rows.filter(t=>!isClosed(t)),closed=rows.filter(isClosed);
+    const runningNetPnl=open.reduce((s,t)=>s+calcLiveNet(t),0);
+    const wins=closed.filter(t=>Number(t.pnl_inr)>0).length,winRate=closed.length?Math.round(wins/closed.length*100):null;
     const today=new Date().toLocaleDateString('en-CA');
-    const todayPnl=closed.filter(t=>{
-      const d=t.closed_at?new Date(t.closed_at):null;
-      return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;
-    }).reduce((s,t)=>s+closedPnl(t),0);
-
-    const totalPnl=bookedPnl+runningPnl;
-
-    set('cryptoDashLivePnl',cryptoDashMoney(runningPnl));
-    set('cryptoDashOpen',String(open.length));
-    set('cryptoDashWinRate',winRate==null?'—':winRate+'%');
-    set('cryptoDashToday',cryptoDashMoney(todayPnl));
-
-    ['cryptoDashLivePnl','cryptoDashToday'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el)el.style.color=(id==='cryptoDashLivePnl'?runningPnl:todayPnl)>=0?'var(--positive)':'var(--negative)';
-    });
-
+    const todayPnl=closed.filter(t=>{const d=t.closed_at?new Date(t.closed_at):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
+    const walletBalance=wallet.reduce((s,t)=>s+(Number(t.amount_inr)||0),0);
+    const openCapital=open.reduce((s,t)=>s+(Number(t.amount_inr)||0),0);
+    const netCapitalAdded=wallet.filter(t=>['DEPOSIT','WITHDRAWAL'].includes(String(t.txn_type||'').toUpperCase())).reduce((s,t)=>s+(Number(t.amount_inr)||0),0);
+    const totalEquity=walletBalance+openCapital+runningNetPnl,totalPnl=totalEquity-netCapitalAdded;
+    set('cryptoDashTotalPnl',cryptoDashMoney(totalPnl));set('cryptoDashOpen',String(open.length));set('cryptoDashWinRate',winRate==null?'—':winRate+'%');set('cryptoDashToday',cryptoDashMoney(todayPnl));
+    ['cryptoDashTotalPnl','cryptoDashToday'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=(id==='cryptoDashTotalPnl'?totalPnl:todayPnl)>=0?'var(--positive)':'var(--negative)';});
     status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  }catch(e){
-    console.error('[Crypto Dashboard]',e);
-    status.textContent='Dashboard unavailable';
-  }
+  }catch(e){console.error('[Crypto Dashboard]',e);status.textContent='Dashboard unavailable';}
 }
+
 function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTimer)clearInterval(cryptoDashTimer);cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));}
 
 /* ─── Live Timer ─── */
