@@ -3087,101 +3087,23 @@ function sortTradeLedgerRows(rows,key,dir){
 }
 
 function renderTradeLedger(from,to){
-  const root=$("tradeLedger");
-  if(!root)return;
-
-  const allTx=state.walletTx.slice().sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
-  const start=new Date(from+"T00:00:00");
-  const end=new Date(to+"T23:59:59.999");
-
-  let running=allTx
-    .filter(x=>new Date(x.created_at||0)<start)
-    .reduce((s,x)=>s+(Number(x.amount_inr)||0),0);
-
-  const trades=new Map(state.journal.map(t=>[String(t.id),t]));
-  const rows=[];
-
-  for(const x of allTx){
-    const dt=new Date(x.created_at||0);
-    if(dt<start || dt>end) continue;
-
-    const amount=Number(x.amount_inr)||0;
-    const before=running;
-    running+=amount;
-
-    const trade=x.trade_id?trades.get(String(x.trade_id)):null;
-    const type=String(x.txn_type||"").toUpperCase();
-    const isOpen=type==="TRADE_DEBIT";
-    const isClose=type==="TRADE_CREDIT";
-    const openDate=trade?.createdAt||trade?.created_at||trade?.date||null;
-    const closeDate=trade?.closedAt||trade?.closed_at||trade?.closeDate||trade?.closed_date||null;
-
-    rows.push({
-      date:dt,type,amount,before,after:running,
-      trade,pair:trade?.sym||"—",dir:trade?.dir||"",
-      openDate,closeDate,
-      note:x.note||"",
-      label:isOpen?"TRADE OPEN":isClose?"TRADE CLOSE":type.replaceAll("_"," "),
-      status:isClose&&trade?(trade.status||"CLOSED").toUpperCase():isOpen?"OPENED":type.replaceAll("_"," ")
-    });
-  }
-
-  if(!rows.length){
-    root.innerHTML='<div class="report-table-wrap"><div class="empty"><b>💰 Trade-by-Trade Capital Ledger</b><br><span>No wallet transactions in the selected date range.</span></div></div>';
-    return;
-  }
-
-  const sorted=sortTradeLedgerRows(rows,tradeLedgerSort.key,tradeLedgerSort.dir);
+  const root=$("tradeLedger");if(!root)return;
+  const start=new Date(from+"T00:00:00"),end=new Date(to+"T23:59:59.999");
+  const trades=state.journal.filter(t=>{const o=t.createdAt||t.created_at||t.date,cl=t.closedAt||t.closed_at||t.closeDate,od=o?new Date(o):null,cd=cl?new Date(cl):null;return(od&&!Number.isNaN(od.getTime())&&od>=start&&od<=end)||(cd&&!Number.isNaN(cd.getTime())&&cd>=start&&cd<=end);}).map(t=>{
+    const closed=!!t.closed,openDate=t.createdAt||t.created_at||t.date||null,closeDate=t.closedAt||t.closed_at||t.closeDate||null,live=closed?null:calcLivePnL(t);
+    return {t,openDate,closeDate,pair:t.sym||t.pair||"—",dir:t.dir||t.direction||"—",entry:Number(t.entry)||Number(t.entry_price)||0,current:closed?Number(t.closePrice||t.close_price||t.entry):Number(state.livePrices[t.sym]||t.currentPrice||t.current_price||t.entry),sl:Number(t.sl||t.stop_loss)||0,tp:Number(t.tp||t.take_profit)||0,gross:closed?Number(t.grossPnl||0):Number(live?.grossPnl||0),fees:closed?Number(t.totalFees||0):Number(live?.totalFees||0),pnl:closed?Number(calcClosedPnL(t)||0):Number(live?.pnl||0),status:closed?(String(t.status||"CLOSED").toUpperCase()):"OPEN"};
+  });
+  if(!trades.length){root.innerHTML='<div class="report-table-wrap"><div class="empty"><b>📋 Trade-by-Trade Report</b><br><span>No trades opened or closed in the selected date range.</span></div></div>';return;}
+  const key=tradeLedgerSort.key,dir=tradeLedgerSort.dir==="asc"?1:-1;
+  trades.sort((a,b)=>{let av,bv;if(key==="openDate"){av=new Date(a.openDate||0).getTime();bv=new Date(b.openDate||0).getTime();}else if(key==="closeDate"){av=new Date(a.closeDate||0).getTime();bv=new Date(b.closeDate||0).getTime();}else if(key==="trade"){av=a.pair.toUpperCase();bv=b.pair.toUpperCase();}else if(key==="pnl"){av=a.pnl;bv=b.pnl;}else if(key==="gross"){av=a.gross;bv=b.gross;}else if(key==="fees"){av=a.fees;bv=b.fees;}else if(key==="entry"){av=a.entry;bv=b.entry;}else if(key==="status"){av=a.status;bv=b.status;}else{av=0;bv=0;}if(av<bv)return -1*dir;if(av>bv)return 1*dir;return 0;});
   const arrow=k=>tradeLedgerSort.key===k?(tradeLedgerSort.dir==="asc"?" ▲":" ▼"):" ↕";
   const head=(k,label)=>'<th class="ledger-sort" data-ledger-sort="'+k+'" style="cursor:pointer;user-select:none">'+label+'<span style="opacity:.55;font-size:10px">'+arrow(k)+'</span></th>';
-
-  const htmlRows=sorted.map(r=>{
-    const positive=r.amount>=0;
-    const amountText=(positive?"+":"")+fmtINR(r.amount);
-    const pair=r.trade?escapeHtml(r.pair):"—";
-    const direction=r.dir?'<span style="opacity:.65">'+escapeHtml(r.dir)+'</span>':"";
-    return '<tr>'+
-      '<td>'+((r.openDate&&new Date(r.openDate).toString()!=="Invalid Date")?escapeHtml(new Date(r.openDate).toLocaleString("en-IN")):"—")+'</td>'+
-      '<td>'+((r.closeDate&&new Date(r.closeDate).toString()!=="Invalid Date")?escapeHtml(new Date(r.closeDate).toLocaleString("en-IN")):"—")+'</td>'+
-      '<td><b>'+pair+'</b><br>'+direction+'</td>'+
-      '<td>'+escapeHtml(r.label)+'</td>'+
-      '<td class="'+(positive?"profit":"loss")+'">'+amountText+'</td>'+
-      '<td>'+fmtINR(r.before)+'</td>'+
-      '<td><b>'+fmtINR(r.after)+'</b></td>'+
-      '<td>'+escapeHtml(r.note||"")+'</td>'+
-      '<td>'+escapeHtml(r.status)+'</td>'+
-    '</tr>';
-  }).join("");
-
-  root.innerHTML=
-    '<div class="report-table-wrap">'+
-      '<div style="padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'+
-        '<div><h3 style="margin:0 0 5px">💰 Trade-by-Trade Capital Ledger</h3>'+
-        '<div style="opacity:.75;font-size:12px">Click any column heading to sort. Text: A–Z / Z–A. Numbers: Low–High / High–Low. Date: Old–New / New–Old.</div></div>'+
-        '<button type="button" class="btn" id="ledgerResetSort">↩ Reset Sort</button>'+
-      '</div>'+
-      '<div style="overflow-x:auto"><table><thead><tr>'+
-        head("openDate","OPEN DATE & TIME")+head("closeDate","CLOSE DATE & TIME")+head("trade","TRADE")+head("event","EVENT")+head("change","CHANGE")+head("before","CAPITAL BEFORE")+head("left","CAPITAL LEFT")+head("note","NOTE")+head("status","STATUS")+
-      '</tr></thead><tbody>'+htmlRows+'</tbody></table></div>'+
-    '</div>';
-
-  root.querySelectorAll("[data-ledger-sort]").forEach(th=>{
-    th.addEventListener("click",()=>{
-      const key=th.dataset.ledgerSort;
-      if(tradeLedgerSort.key===key) tradeLedgerSort.dir=tradeLedgerSort.dir==="asc"?"desc":"asc";
-      else{
-        tradeLedgerSort.key=key;
-        tradeLedgerSort.dir=key==="date"?"desc":"asc";
-      }
-      renderTradeLedger(from,to);
-    });
-  });
-  root.querySelector("#ledgerResetSort")?.addEventListener("click",()=>{
-    tradeLedgerSort={key:"date",dir:"desc"};
-    renderTradeLedger(from,to);
-  });
+  const fmtDate=v=>v?escapeHtml(new Date(v).toLocaleString("en-IN")):"—";
+  const rows=trades.map(r=>'<tr><td>'+fmtDate(r.openDate)+'</td><td>'+fmtDate(r.closeDate)+'</td><td><b>'+escapeHtml(r.pair)+'</b><br><span style="opacity:.65">'+escapeHtml(String(r.dir))+'</span></td><td>'+fmtPrice(r.entry)+'</td><td>'+fmtPrice(r.current)+'</td><td>'+fmtPrice(r.sl)+'</td><td>'+fmtPrice(r.tp)+'</td><td class="'+(r.gross>=0?"profit":"loss")+'">'+(r.gross>=0?"+":"")+fmtINR(r.gross)+'</td><td class="loss">-'+fmtINR(r.fees)+'</td><td class="'+(r.pnl>=0?"profit":"loss")+'"><b>'+(r.pnl>=0?"+":"")+fmtINR(r.pnl)+'</b></td><td>'+escapeHtml(r.status)+'</td></tr>').join("");
+  root.innerHTML='<div class="report-table-wrap"><div style="padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0 0 5px">📋 Trade-by-Trade Report</h3><div style="opacity:.75;font-size:12px">'+trades.length+' trade'+(trades.length===1?"":"s")+' in '+from+' to '+to+'. Open trades show current P&L; closed trades show final P&L.</div></div><button type="button" class="btn" id="ledgerResetSort">↩ Reset Sort</button></div><div style="overflow-x:auto"><table><thead><tr>'+head("openDate","OPEN DATE & TIME")+head("closeDate","CLOSE DATE & TIME")+head("trade","TRADE")+head("entry","ENTRY")+head("current","CURRENT/CLOSE")+head("sl","STOP LOSS")+head("tp","TAKE PROFIT")+head("gross","GROSS P&L")+head("fees","BINANCE FEES")+head("pnl","NET P&L")+head("status","STATUS")+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  root.querySelectorAll("[data-ledger-sort]").forEach(th=>th.addEventListener("click",()=>{const k=th.dataset.ledgerSort;if(tradeLedgerSort.key===k)tradeLedgerSort.dir=tradeLedgerSort.dir==="asc"?"desc":"asc";else{tradeLedgerSort.key=k;tradeLedgerSort.dir=(k==="pnl"||k==="gross"||k==="fees"||k==="entry")?"desc":"asc";}renderTradeLedger(from,to);}));
+  root.querySelector("#ledgerResetSort")?.addEventListener("click",()=>{tradeLedgerSort={key:"openDate",dir:"desc"};renderTradeLedger(from,to);});
 }
-
 function renderReportInsights(closedInRange,from,to){
   const root=$("reportInsights");if(!root)return;
   const days=Math.max(1,Math.floor((new Date(to+"T23:59:59")-new Date(from+"T00:00:00"))/86400000)+1);
