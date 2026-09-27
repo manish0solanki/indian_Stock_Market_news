@@ -851,8 +851,34 @@ async function dbLoadWalletTx(){
   if(result.error){ console.warn("Wallet load failed:",result.error.message); return []; }
   return Array.isArray(result.data)?result.data:[];
 }
-function walletBalance(){ return state.walletTx.reduce((s,x)=>s+Number(x.amount_inr||0),0); }
-function walletInvested(){ return state.journal.filter(t=>!t.closed).reduce((s,t)=>s+Number(t.amt||0),0); }
+function walletLedgerBalance(){
+  return state.walletTx.reduce((s,x)=>s+Number(x.amount_inr||0),0);
+}
+function walletInvested(){
+  return state.journal.filter(t=>!t.closed).reduce((s,t)=>s+Number(t.amt||0),0);
+}
+function walletTradingPnl(){
+  const realized=state.journal.filter(t=>t.closed)
+    .reduce((s,t)=>s+Number(calcClosedPnL(t)||0),0);
+  const unrealized=state.journal.filter(t=>!t.closed)
+    .reduce((s,t)=>s+Number(calcLivePnL(t).pnl||0),0);
+  return realized+unrealized;
+}
+function walletPaperEquity(){
+  const deposits=state.walletTx.filter(x=>x.txn_type==="DEPOSIT")
+    .reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const withdrawals=Math.abs(state.walletTx.filter(x=>x.txn_type==="WITHDRAWAL")
+    .reduce((s,x)=>s+Number(x.amount_inr||0),0));
+  return deposits-withdrawals+walletTradingPnl();
+}
+function walletAvailableCash(){
+  return walletPaperEquity()-walletInvested()-state.journal.filter(t=>!t.closed)
+    .reduce((s,t)=>s+Number(calcLivePnL(t).pnl||0),0);
+}
+function walletBalance(){
+  // Wallet reservations use true available cash, not the historical raw ledger.
+  return walletAvailableCash();
+}
 async function dbWalletTransaction(type,amount,tradeId=null,note=""){
   if(!dbEnabled()) return {data:null,error:new Error("Wallet database is not configured")};
   const token=await requireLogin();
@@ -892,16 +918,24 @@ async function loadWallet(){
 }
 function walletSaveLocal(){ if(!dbEnabled()) localStorage.setItem("cs_wallet_tx",JSON.stringify(state.walletTx)); }
 function renderWallet(){
-  const bal=walletBalance(), invested=walletInvested();
+  const equity=walletPaperEquity();
+  const invested=walletInvested();
+  const available=walletAvailableCash();
   const deposits=state.walletTx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
   const withdrawals=Math.abs(state.walletTx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0));
-  const debits=Math.abs(state.walletTx.filter(x=>x.txn_type==="TRADE_DEBIT").reduce((s,x)=>s+Number(x.amount_inr||0),0));
-  const credits=state.walletTx.filter(x=>x.txn_type==="TRADE_CREDIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
-  const realized=credits-debits;
-  if($("walletBalance")) $("walletBalance").textContent=fmtINR(bal);
+  const realized=state.journal.filter(t=>t.closed).reduce((s,t)=>s+Number(calcClosedPnL(t)||0),0);
+  const ledger=walletLedgerBalance();
+
+  if($("walletBalance")) $("walletBalance").textContent=fmtINR(equity);
   if($("walletInvested")) $("walletInvested").textContent=fmtINR(invested);
-  if($("walletBalanceTab")) $("walletBalanceTab").textContent=bal?" · "+fmtINR(bal):"";
-  if($("walletMetrics")) $("walletMetrics").innerHTML='<div><span>Total Added</span><b>'+fmtINR(deposits)+'</b></div><div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div><div><span>Open Capital</span><b>'+fmtINR(invested)+'</b></div><div><span>Realized P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>';
+  if($("walletBalanceTab")) $("walletBalanceTab").textContent=equity?" · "+fmtINR(equity):"";
+  if($("walletMetrics")) $("walletMetrics").innerHTML=
+    '<div><span>Total Added</span><b>'+fmtINR(deposits)+'</b></div>'+
+    '<div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div>'+
+    '<div><span>Available Cash</span><b class="'+(available>=0?"profit":"loss")+'">'+fmtINR(available)+'</b></div>'+
+    '<div><span>Open Capital</span><b>'+fmtINR(invested)+'</b></div>'+
+    '<div><span>Realized P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
+    '<div><span>Legacy Ledger Cash</span><b>'+fmtINR(ledger)+'</b></div>';
   const h=$("walletHistory");
   if(h){
     const rows=state.walletTx.slice().reverse().slice(0,30);
@@ -2756,7 +2790,7 @@ function getCapitalSnapshot(){
   const running=openTrades.map(t=>calcLivePnL(t));
   const unrealizedPnl=running.reduce((s,x)=>s+(Number(x.pnl)||0),0);
 
-  const availableCash=walletBalance();
+  const availableCash=walletAvailableCash();
   const openCapital=walletInvested();
 
   const totalDeposits=state.walletTx.filter(x=>x.txn_type==="DEPOSIT")
