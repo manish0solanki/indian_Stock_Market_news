@@ -18,6 +18,9 @@ header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;alig
 h1{font-size:20px} h1 span{color:var(--yellow)}
 .sub{color:var(--muted);font-size:12px;margin-top:2px}
 .controls{display:flex;gap:8px;flex-wrap:wrap}
+.multi-select{min-width:170px;max-width:260px}
+#pairSelect,#currencySelect{min-width:180px;max-width:280px;min-height:38px}
+@media(max-width:600px){#pairSelect,#currencySelect{width:100%;max-width:none;min-height:44px}.multi-select{width:100%}}
 select,button,input{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px}
 button{cursor:pointer} button:hover{border-color:var(--blue)}
 button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
@@ -307,6 +310,13 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="BTC">BTC pairs</option>
     <option value="INR">INR (converted)</option>
   </select>
+  <select id="scanModeSelect" title="Choose what the scanner should scan">
+    <option value="all" selected>All tracked pairs</option>
+    <option value="pairs">Select pairs</option>
+    <option value="currencies">Select currencies</option>
+  </select>
+  <select id="pairSelect" multiple size="1" title="Select one or more crypto pairs" hidden></select>
+  <select id="currencySelect" multiple size="1" title="Select one or more cryptocurrencies" hidden></select>
   <select id="riskSelect" title="Risk portion of risk:reward">
     <option value="1" selected>Risk 1</option><option value="2">Risk 2</option>
     <option value="3">Risk 3</option><option value="4">Risk 4</option>
@@ -1074,14 +1084,22 @@ function loadScannerPreferences(){
   try{
     const tf=localStorage.getItem("cs_tf");
     const quote=localStorage.getItem("cs_quote");
+    const scanMode=localStorage.getItem("cs_scan_mode");
+    const selectedPairs=JSON.parse(localStorage.getItem("cs_selected_pairs")||"[]");
+    const selectedCurrencies=JSON.parse(localStorage.getItem("cs_selected_currencies")||"[]");
     if(tf && ["15m","1h","4h"].includes(tf)) $("tfSelect").value=tf;
     if(quote && ["USDT","BTC","INR"].includes(quote)) $("quoteSelect").value=quote;
+    if(scanMode && ["all","pairs","currencies"].includes(scanMode)) $("scanModeSelect").value=scanMode;
     if(Number.isInteger(selectedRisk) && selectedRisk>=1 && selectedRisk<=10) $("riskSelect").value=String(selectedRisk);
     if(Number.isInteger(selectedReward) && selectedReward>=1 && selectedReward<=10) $("rewardSelect").value=String(selectedReward);
     state.tf=$("tfSelect").value;
     state.quote=$("quoteSelect").value;
     selectedRisk=Number($("riskSelect").value)||1;
     selectedReward=Number($("rewardSelect").value)||2;
+    populateUniverseOptions(window.__availableScannerPairs||[]);
+    if(selectedPairs.length) setMultiSelectValues("pairSelect",selectedPairs);
+    if(selectedCurrencies.length) setMultiSelectValues("currencySelect",selectedCurrencies);
+    updateUniverseSelectorVisibility();
   }catch(e){ console.warn("Could not load scanner preferences",e); }
 }
 
@@ -1089,9 +1107,57 @@ function saveScannerPreferences(){
   try{
     localStorage.setItem("cs_tf",$("tfSelect").value);
     localStorage.setItem("cs_quote",$("quoteSelect").value);
+    localStorage.setItem("cs_scan_mode",$("scanModeSelect").value);
+    localStorage.setItem("cs_selected_pairs",JSON.stringify(getMultiSelectValues("pairSelect")));
+    localStorage.setItem("cs_selected_currencies",JSON.stringify(getMultiSelectValues("currencySelect")));
     localStorage.setItem("cs_rr_risk",String($("riskSelect").value));
     localStorage.setItem("cs_rr_reward",String($("rewardSelect").value));
   }catch(e){ console.warn("Could not save scanner preferences",e); }
+}
+
+function getMultiSelectValues(id){
+  const el=$(id);
+  return el ? Array.from(el.selectedOptions).map(o=>o.value) : [];
+}
+function setMultiSelectValues(id,values){
+  const el=$(id);
+  if(!el)return;
+  const set=new Set(values||[]);
+  Array.from(el.options).forEach(o=>o.selected=set.has(o.value));
+}
+function updateUniverseSelectorVisibility(){
+  const mode=$("scanModeSelect")?.value||"all";
+  const pairEl=$("pairSelect"), currencyEl=$("currencySelect");
+  if(pairEl) pairEl.hidden=mode!=="pairs";
+  if(currencyEl) currencyEl.hidden=mode!=="currencies";
+}
+function populateUniverseOptions(pairs){
+  window.__availableScannerPairs=pairs||[];
+  const pairEl=$("pairSelect"), currencyEl=$("currencySelect");
+  if(pairEl){
+    const old=getMultiSelectValues("pairSelect");
+    pairEl.innerHTML=(pairs||[]).map(p=>'<option value="'+p+'">'+p+'</option>').join("");
+    setMultiSelectValues("pairSelect",old);
+  }
+  if(currencyEl){
+    const old=getMultiSelectValues("currencySelect");
+    const currencies=[...new Set((pairs||[]).map(baseSymbolFromPair))].sort();
+    currencyEl.innerHTML=currencies.map(x=>'<option value="'+x+'">'+x+'</option>').join("");
+    setMultiSelectValues("currencySelect",old);
+  }
+  updateUniverseSelectorVisibility();
+}
+function selectedScanTargets(pairs){
+  const mode=$("scanModeSelect")?.value||"all";
+  if(mode==="pairs"){
+    const selected=getMultiSelectValues("pairSelect");
+    return selected.length ? pairs.filter(p=>selected.includes(p)) : [];
+  }
+  if(mode==="currencies"){
+    const selected=new Set(getMultiSelectValues("currencySelect"));
+    return pairs.filter(p=>selected.has(baseSymbolFromPair(p)));
+  }
+  return pairs;
 }
 
 function selectedRR(){
@@ -2080,7 +2146,22 @@ async function scan(manual=false){
   try{
     logConnection("→ Binance: discovering available "+q+" pairs","info","pairs-"+q);
     availablePairs=await getAvailablePairs(q);
+    populateUniverseOptions(availablePairs);
     logConnection("✓ Binance: "+availablePairs.length+" supported pairs found","ok","pairs-result-"+q);
+
+    const scanTargets=selectedScanTargets(availablePairs);
+    if($("scanModeSelect").value!=="all"){
+      logConnection("→ Selected universe: "+scanTargets.length+" market"+(scanTargets.length===1?"":"s"),"info","selected-universe");
+      if(!scanTargets.length){
+        $("connDot").className="dot off";
+        $("connTxt").textContent="⚠️ Select at least one "+($("scanModeSelect").value==="pairs"?"pair":"currency");
+        toast("⚠️ Select at least one "+($("scanModeSelect").value==="pairs"?"pair":"currency")+".");
+        $("scanBtn").disabled=false;
+        $("scanBtn").textContent="🔍 Scan Now";
+        scanInProgress=false;
+        return false;
+      }
+    }
 
     if(q==="INR"){
       logConnection("→ Connecting: USD/INR conversion service","info","fx-start");
@@ -2107,8 +2188,8 @@ async function scan(manual=false){
       return false;
     }
 
-    for(let s=0;s<availablePairs.length;s+=5){
-      const batch=availablePairs.slice(s,s+5);
+    for(let s=0;s<scanTargets.length;s+=5){
+      const batch=scanTargets.slice(s,s+5);
 
       const batchRes=await Promise.all(batch.map(async sourceSym=>{
         try{
@@ -2211,17 +2292,17 @@ async function scan(manual=false){
     state.scanTime=new Date();
     $("scanCount").textContent=state.scans;
 
-    const threshold=Math.max(1,Math.ceil(availablePairs.length*.75));
+    const threshold=Math.max(1,Math.ceil(scanTargets.length*.75));
 
     if(ok>=threshold){
       $("connDot").className="dot on";
       $("connTxt").textContent=
         q==="INR"
-          ? "Connected ("+ok+"/"+availablePairs.length+") · INR converted"
-          : "Connected ("+ok+"/"+availablePairs.length+")";
+          ? "Connected ("+ok+"/"+scanTargets.length+") · INR converted"
+          : "Connected ("+ok+"/"+scanTargets.length+")";
     }else{
       $("connDot").className="dot off";
-      $("connTxt").textContent="⚠️ "+ok+"/"+availablePairs.length+" pairs";
+      $("connTxt").textContent="⚠️ "+ok+"/"+scanTargets.length+" selected markets";
     }
 
     const newSigs=state.signals.filter(s=>{
@@ -2332,7 +2413,15 @@ $("autoBtn").onclick=()=>{
   else{clearTimeout(autoTimer);clearInterval(countdownTimer);$("nextScan").textContent="paused";toast("⏸ Auto-scan paused");}
 };
 $("tfSelect").onchange=()=>{if(state.auto)scheduleNext();scan(true);};
-$("quoteSelect").onchange=()=>{if(state.auto)scheduleNext();scan(true);};
+$("quoteSelect").onchange=()=>{saveScannerPreferences();if(state.auto)scheduleNext();scan(true);};
+$("scanModeSelect").onchange=()=>{
+  updateUniverseSelectorVisibility();
+  saveScannerPreferences();
+  if(state.auto)scheduleNext();
+  if($("scanModeSelect").value==="all"){ scan(true); }
+};
+$("pairSelect").onchange=()=>{saveScannerPreferences();};
+$("currencySelect").onchange=()=>{saveScannerPreferences();};
 
 /* ================= FORMAT ================= */
 function fmt(n){
@@ -3943,7 +4032,7 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
 (async()=>{
   // Startup must never depend on one optional service or render block.
   try{ await initSupabase(); }catch(e){ console.warn("Startup Supabase skipped:",e); }
-  try{ loadScannerPreferences(); }catch(e){ console.warn("Startup preferences skipped:",e); }
+  try{ loadScannerPreferences(); updateUniverseSelectorVisibility(); }catch(e){ console.warn("Startup preferences skipped:",e); }
   try{ await load(); }catch(e){ console.warn("Startup trade load skipped:",e); state.journal=[]; state.walletTx=[]; }
   try{ await loadWallet(); }catch(e){ console.warn("Startup wallet load skipped:",e); }
   try{ updateAutoTradeButton(); updateKillSwitchButton(); }catch(e){}
