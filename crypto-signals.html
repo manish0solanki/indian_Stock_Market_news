@@ -2525,6 +2525,23 @@ function calcClosedPnL(t){
 /* ================= RENDER ================= */
 function render(){renderStats();renderSignals();renderCryptoLiveSummary();renderLiveTrades();renderArchive();renderLiveList();renderWallet();}
 
+function getCapitalSnapshot(){
+  const openTrades=state.journal.filter(t=>!t.closed);
+  const running=openTrades.map(t=>calcLivePnL(t));
+  const unrealizedPnl=running.reduce((s,x)=>s+(Number(x.pnl)||0),0);
+  const availableCash=walletBalance();
+  const openCapital=walletInvested();
+  const paperEquity=availableCash+openCapital+unrealizedPnl;
+  const totalDeposits=state.walletTx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0);
+  const totalWithdrawals=Math.abs(state.walletTx.filter(x=>x.txn_type==="WITHDRAWAL").reduce((s,x)=>s+Number(x.amount_inr||0),0));
+  const netCapitalAdded=totalDeposits-totalWithdrawals;
+  const allClosed=state.journal.filter(t=>t.closed);
+  const realizedPnl=allClosed.reduce((s,t)=>s+calcClosedPnL(t),0);
+  const totalPnl=realizedPnl+unrealizedPnl;
+  const equityPnl=paperEquity-netCapitalAdded;
+  return {availableCash,openCapital,unrealizedPnl,paperEquity,totalDeposits,totalWithdrawals,netCapitalAdded,realizedPnl,totalPnl,equityPnl};
+}
+
 function renderStats(){
   const closed=state.journal.filter(t=>t.closed);
   const wins=closed.filter(t=>calcClosedPnL(t)>0).length;
@@ -2552,7 +2569,7 @@ function renderStats(){
     <div class="stat"><div class="v" style="color:${todayPnl>=0?'var(--green)':'var(--red)'}">${todayPnl>=0?"+":""}${fmtINR(todayPnl)}</div><div class="l">Today's P&L</div></div>
     <div class="stat"><div class="v" style="color:${grossBooked+grossRunning>=0?'var(--green)':'var(--red)'}">${grossBooked+grossRunning>=0?"+":""}${fmtINR(grossBooked+grossRunning)}</div><div class="l">Gross P&L</div></div>
     <div class="stat"><div class="v" style="color:var(--red)">-${fmtINR(totalFees)}</div><div class="l">Binance Fees</div></div>
-    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="l">Net P&L</div></div>
+    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="l">Total P&L</div></div>
     <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
 }
 
@@ -3201,22 +3218,28 @@ function generateReport(){
     if(day) capitalByDay[day]=runningCapital;
   });
 
-  const availableToTrade=walletBalance();
-  const openCapital=walletInvested();
-  const totalPaperCapital=availableToTrade+openCapital;
+  const snapshot=getCapitalSnapshot();
+  const availableToTrade=snapshot.availableCash;
+  const openCapital=snapshot.openCapital;
+  const totalPaperCapital=snapshot.paperEquity;
+  const overallPnl=snapshot.equityPnl;
 
-  if($("reportSummary")) $("reportSummary").innerHTML='<div class="report-grid">'+
-    '<div><span>Money Added</span><b>'+fmtINR(deposits)+'</b></div>'+
-    '<div><span>Capital Reserved</span><b>'+fmtINR(reserved)+'</b></div>'+
-    '<div><span>Gross P&L</span><b class="'+(grossRealized>=0?"profit":"loss")+'">'+(grossRealized>=0?"+":"")+fmtINR(grossRealized)+'</b></div>'+
-    '<div><span>Binance Fees</span><b class="loss">-'+fmtINR(binanceFees)+'</b></div>'+
-    '<div><span>Net Trading P&L</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
-    '<div><span>Realized ROI</span><b class="'+(roi>=0?"profit":"loss")+'">'+roi.toFixed(2)+'%</b></div>'+
-    '<div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div>'+
-    '<div><span>Capital Left to Trade</span><b>'+fmtINR(availableToTrade)+'</b></div>'+
-    '<div><span>Open Capital Reserved</span><b>'+fmtINR(openCapital)+'</b></div>'+
-    '<div><span>Total Paper Capital</span><b>'+fmtINR(totalPaperCapital)+'</b></div>'+
-    '<div><span>Closed Win Rate</span><b>'+(closedInRange.length?Math.round(wins/closedInRange.length*100):0)+'%</b></div>'+
+  if($("reportSummary")) $("reportSummary").innerHTML=
+    '<div class="settings-info" style="margin-bottom:12px"><b>How to read:</b> Available Cash + Open Capital + Current Open P&L = Total Paper Equity. Total P&L = Total Paper Equity - Net Capital Added. The cards are a current snapshot; the daily table follows the selected date range.</div>'+
+    '<div class="report-grid">'+
+    '<div><span>Money Added (Period)</span><b>'+fmtINR(deposits)+'</b></div>'+
+    '<div><span>Cumulative Capital Reserved</span><b>'+fmtINR(reserved)+'</b></div>'+
+    '<div><span>Closed P&L (Period)</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
+    '<div><span>Binance Fees (Period)</span><b class="loss">-'+fmtINR(binanceFees)+'</b></div>'+
+    '<div><span>Net Trading P&L (Period)</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
+    '<div><span>Realized ROI (Period)</span><b class="'+(roi>=0?"profit":"loss")+'">'+roi.toFixed(2)+'%</b></div>'+
+    '<div><span>Net Capital Added (All Time)</span><b>'+fmtINR(snapshot.netCapitalAdded)+'</b></div>'+
+    '<div><span>Available Cash Now</span><b>'+fmtINR(availableToTrade)+'</b></div>'+
+    '<div><span>Open Capital Now</span><b>'+fmtINR(openCapital)+'</b></div>'+
+    '<div><span>Current Open P&L</span><b class="'+(snapshot.unrealizedPnl>=0?"profit":"loss")+'">'+(snapshot.unrealizedPnl>=0?"+":"")+fmtINR(snapshot.unrealizedPnl)+'</b></div>'+
+    '<div><span>Total Paper Equity</span><b>'+fmtINR(totalPaperCapital)+'</b></div>'+
+    '<div><span>Total P&L Since Deposits</span><b class="'+(overallPnl>=0?"profit":"loss")+'">'+(overallPnl>=0?"+":"")+fmtINR(overallPnl)+'</b></div>'+
+    '<div><span>Closed Win Rate (Period)</span><b>'+(closedInRange.length?Math.round(wins/closedInRange.length*100):0)+'%</b></div>'+
   '</div>';
 
   const byDay={};
@@ -3248,7 +3271,7 @@ function generateReport(){
     ? '<div class="report-table-wrap"><table><thead><tr><th>Date</th><th>Added</th><th>Capital Reserved</th><th>Returned</th><th>Gross P&L</th><th>Binance Fees</th><th>Net Trading P&L</th><th>Capital Left to Trade</th><th>Withdrawn</th></tr></thead><tbody>'+
       days.map(day=>{
         const x=byDay[day];
-        return '<tr><td>'+day+'</td><td>'+fmtINR(x.deposit)+'</td><td>'+fmtINR(x.reserved)+'</td><td>'+fmtINR(x.returned)+'</td><td>'+fmtINR(x.gross)+'</td><td class="loss">-'+fmtINR(x.fees)+'</td><td class="'+(x.net>=0?"profit":"loss")+'">'+(x.net>=0?"+":"")+fmtINR(x.net)+'</td><td class="loss">-'+fmtINR(x.tax)+'</td><td><b>'+fmtINR(x.capitalLeft)+'</b></td><td>'+fmtINR(x.withdraw)+'</td></tr>';
+        return '<tr><td>'+day+'</td><td>'+fmtINR(x.deposit)+'</td><td>'+fmtINR(x.reserved)+'</td><td>'+fmtINR(x.returned)+'</td><td>'+fmtINR(x.gross)+'</td><td class="loss">-'+fmtINR(x.fees)+'</td><td class="'+(x.net>=0?"profit":"loss")+'">'+(x.net>=0?"+":"")+fmtINR(x.net)+'</td><td><b>'+fmtINR(x.capitalLeft)+'</b></td><td>'+fmtINR(x.withdraw)+'</td></tr>';
       }).join('')+
       '</tbody></table></div>'
     : '<div class="empty">No wallet or closed-trade activity in this date range.</div>';
@@ -3265,17 +3288,21 @@ function exportReportCSV(){
   });
   lines.push([]);
   lines.push(["Summary","Value"]);
+  const snapshot=getCapitalSnapshot();
   lines.push(
-    ["Added",r.deposits],
-    ["Capital Reserved",r.reserved],
-    ["Gross P&L",r.grossRealized],
-    ["Binance Fees",-r.binanceFees],
-    ["Net Trading P&L",r.realized],
-    ["Realized ROI %",r.roi.toFixed(2)],
-    ["Withdrawn",r.withdrawals],
-    ["Capital Left to Trade",r.availableToTrade],
-    ["Open Capital Reserved",r.openCapital],
-    ["Total Paper Capital",r.totalPaperCapital]
+    ["Money Added (Selected Period)",r.deposits],
+    ["Cumulative Capital Reserved (Selected Period)",r.reserved],
+    ["Gross P&L (Selected Period)",r.grossRealized],
+    ["Binance Fees (Selected Period)",-r.binanceFees],
+    ["Net Trading P&L (Selected Period)",r.realized],
+    ["Realized ROI % (Selected Period)",r.roi.toFixed(2)],
+    ["Withdrawn (Selected Period)",r.withdrawals],
+    ["Net Capital Added (All Time)",snapshot.netCapitalAdded],
+    ["Available Cash Now",snapshot.availableCash],
+    ["Open Capital Now",snapshot.openCapital],
+    ["Current Open P&L",snapshot.unrealizedPnl],
+    ["Total Paper Equity",snapshot.paperEquity],
+    ["Total P&L Since Deposits",snapshot.equityPnl]
   );
   const csv=lines.map(row=>row.map(v=>'"'+String(v==null?"":v).replaceAll('"','""')+'"').join(",")).join("\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
