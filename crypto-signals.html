@@ -2367,7 +2367,7 @@ function fmtINR(n){
 function activeTradeExists(signal){
   return state.journal.some(t=>!t.closed&&t.sym===signal.sym&&t.dir===signal.dir);
 }
-function signalConfidence(s){ return Number(s?.conf ?? s?.score ?? 0); }
+function signalConfidence(s){ return Number(s?.conf ?? s?.confidence ?? s?.score ?? 0); }
 
 async function takeSignalAsPaperTrade(s){
   if(!s||!s.dir||activeTradeExists(s)) return false;
@@ -2386,14 +2386,31 @@ function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(stat
   state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);
   state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);
 
-  const qualified=state.signals.filter(s=>s.dir&&signalConfidence(s)>=state.autoConfidence&&!activeTradeExists(s));
+  const thresholdMatches=state.signals.filter(s=>s.dir&&signalConfidence(s)>=state.autoConfidence);
+  const duplicateBlocked=thresholdMatches.filter(s=>activeTradeExists(s));
+  const qualified=thresholdMatches.filter(s=>!activeTradeExists(s));
   if(!qualified.length){
-    toast("ℹ️ No new signals meet the "+state.autoConfidence+"% confidence threshold.");
+    if(!thresholdMatches.length){
+      const best=state.signals.reduce((m,s)=>Math.max(m,signalConfidence(s)),0);
+      toast("ℹ️ No signal meets "+state.autoConfidence+"%. Best visible signal: "+best+"%.");
+      logConnection("ℹ Auto Trade blocked: no signal reached "+state.autoConfidence+"% · best="+best+"%","info","auto-trade-check");
+    }else{
+      toast("ℹ️ "+thresholdMatches.length+" signal"+(thresholdMatches.length===1?"":"s")+" meet "+state.autoConfidence+"%, but "+duplicateBlocked.length+" already have an open trade.");
+      logConnection("ℹ Auto Trade blocked: "+thresholdMatches.length+" qualified, "+duplicateBlocked.length+" already open","info","auto-trade-check");
+    }
     return 0;
   }
 
-  let taken=0;
-  for(const s of qualified){ if(await takeSignalAsPaperTrade(s)) taken++; }
+  let taken=0,failedWallet=0;
+  for(const s of qualified){
+    if(walletBalance()+0.000001<Number(state.autoAmount)){ failedWallet++; continue; }
+    if(await takeSignalAsPaperTrade(s)) taken++;
+  }
+  if(!taken && failedWallet){
+    toast("⚠️ Qualified signal found, but Auto Trade amount "+fmtINR(state.autoAmount)+" exceeds available wallet "+fmtINR(walletBalance())+".");
+    logConnection("⚠ Auto Trade blocked by wallet: need "+fmtINR(state.autoAmount)+" · available "+fmtINR(walletBalance()),"warn","auto-trade-wallet");
+    return 0;
+  }
   render();
   toast(taken
     ? "✓ "+taken+" paper trade"+(taken===1?"":"s")+" opened at ≥"+state.autoConfidence+"% confidence."
