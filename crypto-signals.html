@@ -18,9 +18,14 @@ header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;alig
 h1{font-size:20px} h1 span{color:var(--yellow)}
 .sub{color:var(--muted);font-size:12px;margin-top:2px}
 .controls{display:flex;gap:8px;flex-wrap:wrap}
-.multi-select{min-width:170px;max-width:260px}
-#pairSelect,#currencySelect{min-width:180px;max-width:280px;min-height:38px}
-@media(max-width:600px){#pairSelect,#currencySelect{width:100%;max-width:none;min-height:44px}.multi-select{width:100%}}
+.check-selector{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px;min-width:240px;max-width:420px}
+.check-selector-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;margin-bottom:7px}
+.check-selector-head span{display:flex;gap:4px}
+.check-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height:180px;overflow-y:auto}
+.check-item{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:6px 7px;font-size:10px;cursor:pointer;user-select:none}
+.check-item:hover{border-color:var(--blue)}
+.check-item input{width:auto;margin:0;padding:0;accent-color:var(--blue)}
+@media(max-width:600px){.check-selector{width:100%;max-width:none;min-width:0}.check-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:220px}}
 select,button,input{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px}
 button{cursor:pointer} button:hover{border-color:var(--blue)}
 button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
@@ -315,8 +320,20 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="pairs">Select pairs</option>
     <option value="currencies">Select currencies</option>
   </select>
-  <select id="pairSelect" multiple size="1" title="Select one or more crypto pairs" hidden></select>
-  <select id="currencySelect" multiple size="1" title="Select one or more cryptocurrencies" hidden></select>
+  <div id="pairSelectorPanel" class="check-selector" hidden>
+    <div class="check-selector-head"><b>Select Pairs</b><span>
+      <button type="button" class="small" id="selectAllPairs">Select All</button>
+      <button type="button" class="small" id="clearAllPairs">Clear</button>
+    </span></div>
+    <div id="pairSelect" class="check-grid"></div>
+  </div>
+  <div id="currencySelectorPanel" class="check-selector" hidden>
+    <div class="check-selector-head"><b>Select Cryptocurrencies</b><span>
+      <button type="button" class="small" id="selectAllCurrencies">Select All</button>
+      <button type="button" class="small" id="clearAllCurrencies">Clear</button>
+    </span></div>
+    <div id="currencySelect" class="check-grid"></div>
+  </div>
   <select id="riskSelect" title="Risk portion of risk:reward">
     <option value="1" selected>Risk 1</option><option value="2">Risk 2</option>
     <option value="3">Risk 3</option><option value="4">Risk 4</option>
@@ -1097,8 +1114,8 @@ function loadScannerPreferences(){
     selectedRisk=Number($("riskSelect").value)||1;
     selectedReward=Number($("rewardSelect").value)||2;
     populateUniverseOptions(window.__availableScannerPairs||[]);
-    if(selectedPairs.length) setMultiSelectValues("pairSelect",selectedPairs);
-    if(selectedCurrencies.length) setMultiSelectValues("currencySelect",selectedCurrencies);
+    if(selectedPairs.length) setCheckedValues("pairSelect",selectedPairs);
+    if(selectedCurrencies.length) setCheckedValues("currencySelect",selectedCurrencies);
     updateUniverseSelectorVisibility();
   }catch(e){ console.warn("Could not load scanner preferences",e); }
 }
@@ -1108,53 +1125,58 @@ function saveScannerPreferences(){
     localStorage.setItem("cs_tf",$("tfSelect").value);
     localStorage.setItem("cs_quote",$("quoteSelect").value);
     localStorage.setItem("cs_scan_mode",$("scanModeSelect").value);
-    localStorage.setItem("cs_selected_pairs",JSON.stringify(getMultiSelectValues("pairSelect")));
-    localStorage.setItem("cs_selected_currencies",JSON.stringify(getMultiSelectValues("currencySelect")));
+    localStorage.setItem("cs_selected_pairs",JSON.stringify(getCheckedValues("pairSelect")));
+    localStorage.setItem("cs_selected_currencies",JSON.stringify(getCheckedValues("currencySelect")));
     localStorage.setItem("cs_rr_risk",String($("riskSelect").value));
     localStorage.setItem("cs_rr_reward",String($("rewardSelect").value));
   }catch(e){ console.warn("Could not save scanner preferences",e); }
 }
 
-function getMultiSelectValues(id){
+function getCheckedValues(id){
   const el=$(id);
-  return el ? Array.from(el.selectedOptions).map(o=>o.value) : [];
+  return el ? Array.from(el.querySelectorAll('input[type="checkbox"]:checked')).map(x=>x.value) : [];
 }
-function setMultiSelectValues(id,values){
+function setCheckedValues(id,values){
   const el=$(id);
   if(!el)return;
   const set=new Set(values||[]);
-  Array.from(el.options).forEach(o=>o.selected=set.has(o.value));
+  el.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=set.has(x.value));
+}
+function setAllChecked(id,checked){
+  const el=$(id);
+  if(!el)return;
+  el.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=checked);
 }
 function updateUniverseSelectorVisibility(){
   const mode=$("scanModeSelect")?.value||"all";
-  const pairEl=$("pairSelect"), currencyEl=$("currencySelect");
-  if(pairEl) pairEl.hidden=mode!=="pairs";
-  if(currencyEl) currencyEl.hidden=mode!=="currencies";
+  const pairPanel=$("pairSelectorPanel"), currencyPanel=$("currencySelectorPanel");
+  if(pairPanel) pairPanel.hidden=mode!=="pairs";
+  if(currencyPanel) currencyPanel.hidden=mode!=="currencies";
 }
 function populateUniverseOptions(pairs){
   window.__availableScannerPairs=pairs||[];
   const pairEl=$("pairSelect"), currencyEl=$("currencySelect");
   if(pairEl){
-    const old=getMultiSelectValues("pairSelect");
-    pairEl.innerHTML=(pairs||[]).map(p=>'<option value="'+p+'">'+p+'</option>').join("");
-    setMultiSelectValues("pairSelect",old);
+    const old=getCheckedValues("pairSelect");
+    pairEl.innerHTML=(pairs||[]).map(p=>'<label class="check-item"><input type="checkbox" value="'+p+'"><span>'+p+'</span></label>').join("");
+    setCheckedValues("pairSelect",old);
   }
   if(currencyEl){
-    const old=getMultiSelectValues("currencySelect");
+    const old=getCheckedValues("currencySelect");
     const currencies=[...new Set((pairs||[]).map(baseSymbolFromPair))].sort();
-    currencyEl.innerHTML=currencies.map(x=>'<option value="'+x+'">'+x+'</option>').join("");
-    setMultiSelectValues("currencySelect",old);
+    currencyEl.innerHTML=currencies.map(x=>'<label class="check-item"><input type="checkbox" value="'+x+'"><span>'+x+'</span></label>').join("");
+    setCheckedValues("currencySelect",old);
   }
   updateUniverseSelectorVisibility();
 }
 function selectedScanTargets(pairs){
   const mode=$("scanModeSelect")?.value||"all";
   if(mode==="pairs"){
-    const selected=getMultiSelectValues("pairSelect");
+    const selected=getCheckedValues("pairSelect");
     return selected.length ? pairs.filter(p=>selected.includes(p)) : [];
   }
   if(mode==="currencies"){
-    const selected=new Set(getMultiSelectValues("currencySelect"));
+    const selected=new Set(getCheckedValues("currencySelect"));
     return pairs.filter(p=>selected.has(baseSymbolFromPair(p)));
   }
   return pairs;
@@ -2420,8 +2442,12 @@ $("scanModeSelect").onchange=()=>{
   if(state.auto)scheduleNext();
   if($("scanModeSelect").value==="all"){ scan(true); }
 };
-$("pairSelect").onchange=()=>{saveScannerPreferences();};
-$("currencySelect").onchange=()=>{saveScannerPreferences();};
+$("pairSelect").addEventListener("change",()=>saveScannerPreferences());
+$("currencySelect").addEventListener("change",()=>saveScannerPreferences());
+$("selectAllPairs").onclick=()=>{setAllChecked("pairSelect",true);saveScannerPreferences();};
+$("clearAllPairs").onclick=()=>{setAllChecked("pairSelect",false);saveScannerPreferences();};
+$("selectAllCurrencies").onclick=()=>{setAllChecked("currencySelect",true);saveScannerPreferences();};
+$("clearAllCurrencies").onclick=()=>{setAllChecked("currencySelect",false);saveScannerPreferences();};
 
 /* ================= FORMAT ================= */
 function fmt(n){
