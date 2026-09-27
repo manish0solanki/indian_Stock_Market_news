@@ -2398,6 +2398,7 @@ function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(stat
   return taken;
 }
 
+async function closeAllTradesFromKillSwitch(){state.autoTrades=false;localStorage.setItem("cs_auto_trades","0");await updateLivePrices();let closed=0,failed=0;for(const t of state.journal.filter(x=>!x.closed)){const cp=Number(state.livePrices[t.sym]||t.currentPrice);if(!Number.isFinite(cp)||cp<=0){failed++;continue;}t.closed=true;t.status="kill_switch";t.closePrice=cp;t.currentPrice=cp;t.closedAt=new Date().toISOString();t.pnl=calcClosedPnL(t);if(dbEnabled()){await dbUpdateTrade(t);await settleWalletTrade(t);}else save();closed++;}if(dbEnabled())await loadWallet();render();renderWallet();return {closed,failed};}
 function updateAutoTradeButton(){
   const b=$("autoTradeBtn"); if(!b)return;
   b.textContent=state.autoTrades?"🤖 Auto Trades: ON":"🤖 Auto Trades: OFF";
@@ -2544,39 +2545,12 @@ function getCapitalSnapshot(){
   const realizedPnl=allClosed.reduce((s,t)=>s+calcClosedPnL(t),0);
   const totalPnl=realizedPnl+unrealizedPnl;
   const equityPnl=paperEquity-netCapitalAdded;
-  return {availableCash,openCapital,unrealizedPnl,paperEquity,totalDeposits,totalWithdrawals,netCapitalAdded,realizedPnl,totalPnl,equityPnl};
+  const totalFees=allClosed.reduce((s,t)=>s+(Number(t.totalFees)||0),0)+state.journal.filter(t=>!t.closed).reduce((s,t)=>s+(Number(calcLivePnL(t).totalFees)||0),0);
+  return {availableCash,openCapital,unrealizedPnl,paperEquity,totalDeposits,totalWithdrawals,netCapitalAdded,realizedPnl,totalPnl:equityPnl,equityPnl,totalFees};
 }
 
-function renderStats(){
-  const closed=state.journal.filter(t=>t.closed);
-  const wins=closed.filter(t=>calcClosedPnL(t)>0).length;
-  const total=closed.length;
-  const bookedPnl=closed.reduce((s,t)=>s+calcClosedPnL(t),0);
-  const running=state.journal.filter(t=>!t.closed).map(t=>calcLivePnL(t));
-  const runningPnl=running.reduce((s,x)=>s+(x.pnl||0),0);
-  const grossBooked=closed.reduce((s,t)=>s+(Number(t.grossPnl)||0),0);
-  const grossRunning=running.reduce((s,x)=>s+(Number(x.grossPnl)||0),0);
-  const totalFees=closed.reduce((s,t)=>s+(Number(t.totalFees)||0),0)+running.reduce((s,x)=>s+(Number(x.totalFees)||0),0);
-  const pnl=bookedPnl+runningPnl;
-  const todayKey=new Date().toLocaleDateString("en-CA");
-  const todayPnl=closed.filter(t=>{const d=t.closedAt?new Date(t.closedAt):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString("en-CA")===todayKey;}).reduce((s,t)=>s+calcClosedPnL(t),0);
-  const wr=total?Math.round(wins/total*100):0;
-  const heat=state.signals.length;
-  const heatClass=heat>MAX_HEAT?"heat-warn":"heat-ok";
-  $("heatStat").innerHTML=`🌡 Heat: <b class="${heatClass}">${heat}/${MAX_HEAT}</b>`;
-  $("statsBar").innerHTML=`
-    <div class="stat"><div class="v" style="color:var(--blue)">${state.signals.length}</div><div class="l">Active Signals</div></div>
-    <div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div>
-    <div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Live Trades</div></div>
-    <div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div>
-    <div class="stat"><div class="v" style="color:${bookedPnl>=0?'var(--green)':'var(--red)'}">${bookedPnl>=0?"+":""}${fmtINR(bookedPnl)}</div><div class="l">Booked P&L</div></div>
-    <div class="stat"><div class="v" style="color:${runningPnl>=0?'var(--green)':'var(--red)'}">${runningPnl>=0?"+":""}${fmtINR(runningPnl)}</div><div class="l">Running P&L</div></div>
-    <div class="stat"><div class="v" style="color:${todayPnl>=0?'var(--green)':'var(--red)'}">${todayPnl>=0?"+":""}${fmtINR(todayPnl)}</div><div class="l">Today's P&L</div></div>
-    <div class="stat"><div class="v" style="color:${grossBooked+grossRunning>=0?'var(--green)':'var(--red)'}">${grossBooked+grossRunning>=0?"+":""}${fmtINR(grossBooked+grossRunning)}</div><div class="l">Gross P&L</div></div>
-    <div class="stat"><div class="v" style="color:var(--red)">-${fmtINR(totalFees)}</div><div class="l">Binance Fees</div></div>
-    <div class="stat"><div class="v" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="l">Total P&L</div></div>
-    <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
-}
+function renderStats(){const closed=state.journal.filter(t=>t.closed),wins=closed.filter(t=>calcClosedPnL(t)>0).length,total=closed.length,s=getCapitalSnapshot(),profit=s.equityPnl,gross=profit+s.totalFees,fees=s.totalFees,wr=total?Math.round(wins/total*100):0,heat=state.signals.length,heatClass=heat>MAX_HEAT?"heat-warn":"heat-ok";$("heatStat").innerHTML=`🌡 Heat: <b class="${heatClass}">${heat}/${MAX_HEAT}</b>`;$("statsBar").innerHTML=`<div class="stat"><div class="v" style="color:var(--blue)">${state.signals.length}</div><div class="l">Active Signals</div></div><div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div><div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Live Trades</div></div><div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div><div class="stat"><div class="v" style="color:${profit>=0?'var(--green)':'var(--red)'}">${profit>=0?"+":""}${fmtINR(profit)}</div><div class="l">Profit Since First Deposit</div></div><div class="stat"><div class="v" style="color:${gross>=0?'var(--green)':'var(--red)'}">${gross>=0?"+":""}${fmtINR(gross)}</div><div class="l">Gross P&L Since Deposit</div></div><div class="stat"><div class="v" style="color:var(--red)">-${fmtINR(fees)}</div><div class="l">Binance Fees</div></div><div class="stat"><div class="v" style="color:${profit>=0?'var(--green)':'var(--red)'}">${profit>=0?"+":""}${fmtINR(profit)}</div><div class="l">Total P&L Since Deposit</div></div><div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;}
+
 
 function renderSignals(){
   const g=$("signalsGrid");
@@ -3241,10 +3215,10 @@ function renderReportInsights(closedInRange,from,to){
     '<div class="report-grid">'+
     '<div><span>Money Added (Period)</span><b>'+fmtINR(deposits)+'</b></div>'+
     '<div><span>Cumulative Capital Reserved</span><b>'+fmtINR(reserved)+'</b></div>'+
-    '<div><span>Closed P&L (Period)</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
-    '<div><span>Binance Fees (Period)</span><b class="loss">-'+fmtINR(binanceFees)+'</b></div>'+
-    '<div><span>Net Trading P&L (Period)</span><b class="'+(realized>=0?"profit":"loss")+'">'+(realized>=0?"+":"")+fmtINR(realized)+'</b></div>'+
-    '<div><span>Realized ROI (Period)</span><b class="'+(roi>=0?"profit":"loss")+'">'+roi.toFixed(2)+'%</b></div>'+
+    '<div><span>Profit Since First Deposit</span><b class="'+(overallPnl>=0?"profit":"loss")+'">'+(overallPnl>=0?"+":"")+fmtINR(overallPnl)+'</b></div>'+
+    '<div><span>Gross P&L Since First Deposit</span><b class="'+(overallPnl+snapshot.totalFees>=0?"profit":"loss")+'">'+(overallPnl+snapshot.totalFees>=0?"+":"")+fmtINR(overallPnl+snapshot.totalFees)+'</b></div>'+
+    '<div><span>Binance Fees (All Time)</span><b class="loss">-'+fmtINR(snapshot.totalFees)+'</b></div>'+
+    '<div><span>Total P&L Since First Deposit</span><b class="'+(overallPnl>=0?"profit":"loss")+'">'+(overallPnl>=0?"+":"")+fmtINR(overallPnl)+'</b></div>'+
     '<div><span>Net Capital Added (All Time)</span><b>'+fmtINR(snapshot.netCapitalAdded)+'</b></div>'+
     '<div><span>Available Cash Now</span><b>'+fmtINR(availableToTrade)+'</b></div>'+
     '<div><span>Open Capital Now</span><b>'+fmtINR(openCapital)+'</b></div>'+
@@ -3291,7 +3265,7 @@ function renderReportInsights(closedInRange,from,to){
     : '<div class="empty">No wallet or closed-trade activity in this date range.</div>';
 
   renderTradeLedger(from,to);
-  return {from,to,deposits,withdrawals,reserved,returned,realized,grossRealized,binanceFees,roi,days,byDay,closedCapital,closedInRange,availableToTrade,openCapital,totalPaperCapital};
+  return {from,to,deposits,withdrawals,reserved,returned,realized,grossRealized,binanceFees,roi,days,byDay,closedCapital,closedInRange,availableToTrade,openCapital,totalPaperCapital,overallPnl:snapshot.equityPnl,totalFees:snapshot.totalFees};
 }
 function exportReportCSV(){
   const r=generateReport();
@@ -3896,7 +3870,7 @@ $("runBacktestBtn").onclick=runBacktest;
 $("exportBacktestBtn").onclick=exportBacktestCSV;
 
 $("homeBtn").onclick=()=>{ window.location.href="https://tradesutra-chi.vercel.app/"; };
-$("killSwitchBtn").onclick=()=>{state.autoKillSwitch=!state.autoKillSwitch;localStorage.setItem("cs_auto_kill_switch",state.autoKillSwitch?"1":"0");if(state.autoKillSwitch){state.autoTrades=false;localStorage.setItem("cs_auto_trades","0");updateAutoTradeButton();toast("🛑 Kill Switch ON — automatic entries blocked.");}else toast("🟢 Kill Switch OFF.");updateKillSwitchButton();};$("autoScheduleMode").onchange=()=>{$("autoCustomSchedule").hidden=$("autoScheduleMode").value!=="custom";};$("autoSelectAllDays").onclick=()=>document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=true);$("autoSelectDefaultDays").onclick=()=>document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=true);$("autoTradeBtn").onclick=async()=>{
+$("killSwitchBtn").onclick=async()=>{if(state.autoKillSwitch){state.autoKillSwitch=false;localStorage.setItem("cs_auto_kill_switch","0");updateKillSwitchButton();toast("🟢 Kill Switch OFF — Auto Trades remain OFF until enabled.");return;}state.autoKillSwitch=true;localStorage.setItem("cs_auto_kill_switch","1");updateKillSwitchButton();const result=await closeAllTradesFromKillSwitch();toast(result.failed?"🛑 Kill Switch ON — "+result.closed+" closed; "+result.failed+" could not be closed because price was unavailable.":"🛑 Kill Switch ON — "+result.closed+" open trades closed at latest Binance prices. Auto Trades stopped.");};$("autoScheduleMode").onchange=()=>{$("autoCustomSchedule").hidden=$("autoScheduleMode").value!=="custom";};$("autoSelectAllDays").onclick=()=>document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=true);$("autoSelectDefaultDays").onclick=()=>document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=true);$("autoTradeBtn").onclick=async()=>{
   state.autoTrades=!state.autoTrades;
   localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");
   updateAutoTradeButton();
