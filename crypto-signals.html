@@ -2190,32 +2190,294 @@ function isLiveSignalTradable(signal,currentPrice){
 }
 
 /* ================= SCANNER ================= */
+async function scanSingleQuote(manual=false){
+  if(scanInProgress){
+    logConnection("ℹ Scan skipped — previous scan is still running","warn","scan-overlap");
+    return false;
+  }
+  scanInProgress=true;
+  logConnection("→ Scanner starting · quote "+$("quoteSelect").value+" · timeframe "+$("tfSelect").value,"info","scan-start");
+  $("scanBtn").disabled=true;
+  $("scanBtn").textContent="⏳ Scanning...";
+  $("connDot").className="dot on";
+  $("connTxt").textContent="Checking Binance markets...";
+
+  const prevSigs=new Set(state.signals.map(s=>s.sym+"_"+s.dir));
+  if(!window.__quoteBatch) state.signals=[];
+  const tf=$("tfSelect").value;
+  const q=$("quoteSelect").value;
+  const rrCfg=selectedRR();
+  const useV5=V5_MODE && (tf===V5_TIMEFRAME_DEFAULT || tf===V5_TIMEFRAME_ALT);
+  const myScanGeneration=++scanGeneration;
+  state.tf=tf;
+  state.quote=q;
+
+  let ok=0,fail=0;
+  let fx=1;
+  const results=[];
+
+  try{
+    logConnection("→ Binance: discovering available "+q+" pairs","info","pairs-"+q);
+    availablePairs=await getAvailablePairs(q);
+    populateUniverseOptions(availablePairs);
+    logConnection("✓ Binance: "+availablePairs.length+" supported pairs found","ok","pairs-result-"+q);
+
+    const scanTargets=selectedScanTargets(availablePairs);
+    if($("scanModeSelect").value!=="all"){
+      logConnection("→ Selected universe: "+scanTargets.length+" market"+(scanTargets.length===1?"":"s"),"info","selected-universe");
+      if(!scanTargets.length){
+        $("connDot").className="dot off";
+        $("connTxt").textContent="⚠️ Select at least one "+($("scanModeSelect").value==="pairs"?"pair":"currency");
+        toast("⚠️ Select at least one "+($("scanModeSelect").value==="pairs"?"pair":"currency")+".");
+        $("scanBtn").disabled=false;
+        $("scanBtn").textContent="🔍 Scan Now";
+        scanInProgress=false;
+        return false;
+      }
+    }
+
+    if(q==="INR"){
+      logConnection("→ Connecting: USD/INR conversion service","info","fx-start");
+      fx=await getUsdInr();
+      logConnection("✓ USD/INR rate loaded: "+fx,"ok","fx-result");
+    }
+
+    if(!availablePairs.length){
+      $("connDot").className="dot off";
+      $("connTxt").textContent="⚠️ No supported pairs";
+      state.scanTime=new Date();
+      state.scans++;
+      $("scanCount").textContent=state.scans;
+      render();
+
+      if(manual){
+        logConnection("✕ No supported Binance pairs found for "+q,"error","no-pairs-"+q);
+      toast("⚠️ No supported Binance pairs found for "+q+".");
+      }
+
+      $("scanBtn").disabled=false;
+      $("scanBtn").textContent="🔍 Scan Now";
+      scanInProgress=false;
+      return false;
+    }
+
+    for(let s=0;s<scanTargets.length;s+=5){
+      const batch=scanTargets.slice(s,s+5);
+
+      const batchRes=await Promise.all(batch.map(async sourceSym=>{
+        try{
+          const [rawCandles,tickerR]=await Promise.all([
+            fetchKlines(sourceSym,tf),
+            fetchWithTimeout("https://api.binance.com/api/v3/ticker/24hr?symbol="+sourceSym,{},12000)
+          ]);
+
+          if(!tickerR.ok) throw new Error("Ticker failed");
+
+          const td=await tickerR.json();
+
+          let candles=rawCandles;
+          let price=Number(td.lastPrice);
+
+          if(q==="INR"){
+            candles=rawCandles.map(c=>({
+              t:c.t,
+              o:c.o*fx,
+              h:c.h*fx,
+              l:c.l*fx,
+              c:c.c*fx,
+              v:c.v
+            }));
+            price=price*fx;
+          }
+
+          ok++;
+
+          const displaySym=displayPairFromSource(sourceSym);
+          const signal=useV5
+            ? analyzeV5(
+                candles,
+                displaySym,
+                {chg:Number(td.priceChangePercent)},
+                rrCfg
+              )
+            : analyze(
+                candles,
+                displaySym,
+                {chg:Number(td.priceChangePercent)},
+                rrCfg
+              );
+
+          if(signal){
+            signal.sourcePair=sourceSym;
+            signal.quote=q;
+
+            // Binance ticker is the live/current price. The strategy levels
+            // were calculated from the latest closed candle, so reject the
+            // setup if the live price has already reached/approached SL or TP
+            // or drifted too far from the original setup price.
+            if(useV5 && !isLiveSignalTradable(signal,price)){
+              return null;
+            }
+
+            signal.price=price;
+            signal.currentPrice=price;
+          }
+
+          return signal;
+        }catch(e){
+          fail++;
+          console.warn(sourceSym,e);
+          return null;
+        }
+      }));
+
+      results.push(...batchRes);
+    }
+
+    if(myScanGeneration!==scanGeneration) { scanInProgress=false; return false; }
+    state.scans++;
+    $("scanCount").textContent=state.scans;
+    const filteredSignals=results
+      .filter(s=>s&&s.dir&&s.score>=(useV5?V5_MIN_SCORE:MIN_SCORE))
+      .filter(s=>!useV5 || (
+        s.v5===true &&
+        (s.dir==="LONG" || s.dir==="SHORT") &&
+        Number(s.volumeRatio)>=V5_MIN_VOLUME &&
+        Number(s.stopPct)>=V5_MIN_STOP_PCT &&
+        Number(s.stopPct)<=V5_MAX_STOP_PCT
+      ))
+      .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001);
+
+    const sortedSignals=dedupeEquivalentSignals(filteredSignals)
+      .sort((a,b)=>{
+        const scoreDiff=(Number(b.score)||0)-(Number(a.score)||0);
+        if(scoreDiff) return scoreDiff;
+        return (Number(b.conf)||0)-(Number(a.conf)||0);
+      });
+
+    if(dbEnabled() && state.signals.length){
+      dbSaveSignals(state.signals);
+    }
+
+    if(state.autoTrades){ await autoTradeFromSignals(); }
+
+    logConnection("✓ Scanner finished · "+ok+" market requests OK · "+fail+" failed · "+state.signals.length+" valid signals","ok","scan-finished");
+    state.scanTime=new Date();
+    $("scanCount").textContent=state.scans;
+
+    const threshold=Math.max(1,Math.ceil(scanTargets.length*.75));
+
+    if(ok>=threshold){
+      $("connDot").className="dot on";
+      $("connTxt").textContent=
+        q==="INR"
+          ? "Connected ("+ok+"/"+scanTargets.length+") · INR converted"
+          : "Connected ("+ok+"/"+scanTargets.length+")";
+    }else{
+      $("connDot").className="dot off";
+      $("connTxt").textContent="⚠️ "+ok+"/"+scanTargets.length+" selected markets";
+    }
+
+    const newSigs=state.signals.filter(s=>{
+      const key=s.sym+"_"+s.dir;
+
+      if(prevSigs.has(key)) return false;
+
+      const last=recentAlerts[key];
+
+      if(last && Date.now()-last<ALERT_COOLDOWN){
+        return false;
+      }
+
+      recentAlerts[key]=Date.now();
+      return true;
+    });
+
+    if(newSigs.length && state.scans>1){
+      const s=newSigs[0];
+      const cur=pairCurrency();
+
+      const msg=
+        s.dir+" "+s.sym+
+        " @ "+cur+fmt(s.price)+
+        " → TP "+cur+fmt(s.tp)+
+        " / SL "+cur+fmt(s.sl)+
+        " (1:"+s.rr.toFixed(1)+") Score "+s.score;
+
+      beep();
+      notify("⚡ New Crypto Signal",msg);
+
+      $("lastSignal").innerHTML=
+        '<span style="color:var(--green)">🆕 <b>'+
+        s.sym+" "+s.dir+
+        "</b> "+
+        state.scanTime.toLocaleTimeString()+
+        "</span>";
+
+      toast("🆕 "+msg);
+
+    }else if(manual){
+      toast(
+        "✓ Scan complete — "+
+        state.signals.length+
+        " valid setups ("+ok+" ok, "+fail+" failed)"
+      );
+    }
+
+  }catch(e){
+    console.error(e);
+    logConnection("✕ Scanner error: "+(e?.message||e),"error","scan-error");
+
+    $("connDot").className="dot off";
+    $("connTxt").textContent="⚠️ Market data check failed";
+
+    if(manual){
+      toast("⚠️ "+(e.message||"Could not load market data"));
+    }
+  }
+
+  $("scanBtn").disabled=false;
+  $("scanBtn").textContent="🔍 Scan Now";
+
+  // Release the scanner lock BEFORE the optional live-P&L refresh.
+  // A slow price request must never block the next auto-scan.
+  scanInProgress=false;
+
+  render();
+  try{
+    await updateLivePrices();
+  }catch(e){
+    console.warn("Live price refresh:",e);
+    logConnection("⚠ Live price refresh failed · scanner remains available","warn","live-refresh-error");
+  }
+  return true;
+}
+
+/* ================= AUTO SCAN ================= */
 async function scan(manual=false){
   if(scanInProgress){
     logConnection("ℹ Scan skipped — previous scan is still running","warn","scan-overlap");
     return false;
   }
   const quotes=getSelectedQuotes();
-  window.__scanBatchMode=quotes.length>1;
+  window.__quoteBatch=quotes.length>1;
   let overallOk=false;
   try{
     state.signals=[];
     for(let i=0;i<quotes.length;i++){
-      const q=quotes[i];
-      if($("quoteSelect")) $("quoteSelect").value=q;
-      state.quote=q;
+      state.quote=quotes[i];
+      if($("quoteSelect")) $("quoteSelect").value=quotes[i];
       const ok=await scanSingleQuote(manual && i===quotes.length-1);
       overallOk=overallOk||ok;
     }
     state.quotes=quotes;
-    state.quote=quotes.length===1 ? quotes[0] : "MULTI";
-    if($("quoteSelect")) $("quoteSelect").value=quotes[0]||"USDT";
+    state.quote=quotes.length===1?quotes[0]:"MULTI";
     render();
     return overallOk;
   }finally{
-    window.__scanBatchMode=false;
+    window.__quoteBatch=false;
     state.quotes=quotes;
-    state.quote=quotes.length===1 ? quotes[0] : "MULTI";
+    state.quote=quotes.length===1?quotes[0]:"MULTI";
     if($("quoteSelect")) $("quoteSelect").value=quotes[0]||"USDT";
     saveQuotePreferences();
   }
