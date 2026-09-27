@@ -2355,6 +2355,14 @@ async function scanSingleQuote(manual=false){
         return (Number(b.conf)||0)-(Number(a.conf)||0);
       });
 
+    // Keep the signals produced by this quote scan. When multiple quote
+    // markets are selected, append this quote's results to the batch.
+    if(window.__quoteBatch){
+      state.signals=state.signals.concat(sortedSignals);
+    }else{
+      state.signals=sortedSignals;
+    }
+
     if(dbEnabled() && state.signals.length){
       dbSaveSignals(state.signals);
     }
