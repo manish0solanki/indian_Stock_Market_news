@@ -275,6 +275,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   #tradeCalc{grid-template-columns:1fr!important}
 }
 
+.crypto-live-header{display:grid;grid-template-columns:1.4fr .65fr .9fr 1fr;gap:8px;align-items:center;border-bottom:1px solid var(--border);padding:0 0 5px}.crypto-live-head{border:0;background:transparent;color:var(--muted);font:800 8px var(--font-body);text-align:left;padding:3px 0;cursor:pointer;letter-spacing:.4px}.crypto-live-head span{opacity:.55;font-size:8px}.crypto-live-head:nth-child(3),.crypto-live-head:nth-child(4){text-align:right}.crypto-live-header .crypto-live-head:nth-child(3),.crypto-live-header .crypto-live-head:nth-child(4){text-align:right}@media(max-width:600px){.crypto-live-header{grid-template-columns:1.25fr .55fr 1fr 1fr}}
 /* Compact live trade snapshot */
 .crypto-live-summary{margin:0 20px 12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
 .crypto-live-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;margin-bottom:7px}.crypto-live-summary-head span{font-size:9px;color:var(--muted);font-family:monospace}.crypto-live-summary-list{display:flex;flex-direction:column}.crypto-live-row{display:grid;grid-template-columns:1.4fr .65fr .9fr 1fr;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:10px}.crypto-live-row:first-child{border-top:0}.crypto-live-pair{font-family:monospace;font-weight:800}.crypto-live-dir{font-size:8px;font-weight:800;padding:2px 5px;border-radius:10px;width:max-content}.crypto-live-dir.long{color:var(--green);background:rgba(22,199,132,.12)}.crypto-live-dir.short{color:var(--red);background:rgba(234,57,67,.12)}.crypto-live-current{font-family:monospace;color:var(--muted);text-align:right}.crypto-live-pnl{font-family:monospace;font-weight:800;text-align:right}.crypto-live-empty{text-align:center;color:var(--muted);font-size:10px;padding:10px}.crypto-live-total{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}.crypto-live-total b{font-family:monospace;font-size:12px}.crypto-live-pnl.profit,.crypto-live-total .profit{color:var(--green)}.crypto-live-pnl.loss,.crypto-live-total .loss{color:var(--red)}
@@ -2753,18 +2754,34 @@ function sortTrades(list,sort="newest",mode="live"){
   return arr;
 }
 
+let cryptoLiveSummarySort={key:"pnl",dir:"desc"};
 function renderCryptoLiveSummary(){
   const list=$("cryptoLiveSummaryList"); if(!list)return;
   const open=state.journal.filter(t=>!t.closed);
   const time=$("cryptoLiveSummaryTime"); if(time)time.textContent=new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
   if(!open.length){list.innerHTML='<div class="crypto-live-empty">No open paper trades</div>';return;}
-  let total=0;
-  list.innerHTML=open.map(t=>{
-    const live=calcLivePnL(t); total+=Number(live.pnl)||0;
-    const dir=t.dir==="SHORT"?"SHORT":"LONG"; const pnl=Number(live.pnl)||0;
-    return '<div class="crypto-live-row"><div class="crypto-live-pair">'+escapeHtml(String(t.sym||"—"))+'</div><div><span class="crypto-live-dir '+(dir==="SHORT"?"short":"long")+'">'+dir+'</span></div><div class="crypto-live-current">'+fmtPrice(live.cp,t.quote||state.quote)+'</div><div class="crypto-live-pnl '+(pnl>=0?"profit":"loss")+'">'+(pnl>=0?"+":"")+fmtINR(pnl)+'</div></div>';
-  }).join('');
-  list.innerHTML += '<div class="crypto-live-total"><span>Total Live P&L · '+open.length+' trades</span><b class="'+(total>=0?"profit":"loss")+'">'+(total>=0?"+":"")+fmtINR(total)+'</b></div>';
+  const rows=open.map(t=>{const live=calcLivePnL(t);return {t,live,pair:String(t.sym||"—"),dir:t.dir==="SHORT"?"SHORT":"LONG",current:Number(live.cp)||0,pnl:Number(live.pnl)||0};});
+  const sign=cryptoLiveSummarySort.dir==="asc"?1:-1;
+  rows.sort((a,b)=>{
+    let av,bv;
+    if(cryptoLiveSummarySort.key==="pair"){av=a.pair.toUpperCase();bv=b.pair.toUpperCase();}
+    else if(cryptoLiveSummarySort.key==="dir"){av=a.dir;bv=b.dir;}
+    else if(cryptoLiveSummarySort.key==="current"){av=a.current;bv=b.current;}
+    else {av=a.pnl;bv=b.pnl;}
+    if(av<bv)return -1*sign;if(av>bv)return 1*sign;return 0;
+  });
+  const arrow=k=>cryptoLiveSummarySort.key===k?(cryptoLiveSummarySort.dir==="asc"?" ▲":" ▼"):" ↕";
+  const head=(k,label)=>'<button type="button" class="crypto-live-head" data-live-sort="'+k+'">'+label+'<span>'+arrow(k)+'</span></button>';
+  let total=0; rows.forEach(r=>total+=r.pnl);
+  list.innerHTML='<div class="crypto-live-header">'+head("pair","PAIR")+head("dir","DIR")+head("current","CURRENT")+head("pnl","LIVE P&L")+'</div>'+
+    rows.map(r=>'<div class="crypto-live-row"><div class="crypto-live-pair">'+escapeHtml(r.pair)+'</div><div><span class="crypto-live-dir '+(r.dir==="SHORT"?"short":"long")+'">'+r.dir+'</span></div><div class="crypto-live-current">'+fmtPrice(r.current,r.t.quote||state.quote)+'</div><div class="crypto-live-pnl '+(r.pnl>=0?"profit":"loss")+'">'+(r.pnl>=0?"+":"")+fmtINR(r.pnl)+'</div></div>').join('')+
+    '<div class="crypto-live-total"><span>Total Live P&L · '+open.length+' trades</span><b class="'+(total>=0?"profit":"loss")+'">'+(total>=0?"+":"")+fmtINR(total)+'</b></div>';
+  list.querySelectorAll("[data-live-sort]").forEach(btn=>btn.addEventListener("click",()=>{
+    const k=btn.dataset.liveSort;
+    if(cryptoLiveSummarySort.key===k)cryptoLiveSummarySort.dir=cryptoLiveSummarySort.dir==="asc"?"desc":"asc";
+    else{cryptoLiveSummarySort.key=k;cryptoLiveSummarySort.dir=k==="pnl"||k==="current"?"desc":"asc";}
+    renderCryptoLiveSummary();
+  }));
 }
 
 function liveListINR(v){const n=Number(v),r=Number(state.inrPerQuote);return Number.isFinite(n)&&n>0&&Number.isFinite(r)&&r>0?fmtINR(n*r):"₹—";}
