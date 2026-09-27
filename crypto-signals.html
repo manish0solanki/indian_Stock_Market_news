@@ -25,7 +25,14 @@ h1{font-size:20px} h1 span{color:var(--yellow)}
 .check-item{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:6px 7px;font-size:10px;cursor:pointer;user-select:none}
 .check-item:hover{border-color:var(--blue)}
 .check-item input{width:auto;margin:0;padding:0;accent-color:var(--blue)}
-@media(max-width:600px){.check-selector{width:100%;max-width:none;min-width:0}.check-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:220px}}
+.quote-selector{min-width:300px;max-width:460px}
+.quote-selector .check-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height:none}
+@media(max-width:600px){
+  .quote-selector{grid-column:1/-1;width:100%;max-width:none;min-width:0}
+  .quote-selector .check-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:none}
+}
+@media(max-width:380px){.quote-selector .check-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.check-selector{width:100%;max-width:none;min-width:0}.check-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:220px}.quote-selector .check-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:none}}
 select,button,input{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px}
 button{cursor:pointer} button:hover{border-color:var(--blue)}
 button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
@@ -310,11 +317,22 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="1h" selected>1H</option>
     <option value="4h">4H</option>
   </select>
-  <select id="quoteSelect">
+  <select id="quoteSelect" hidden>
     <option value="USDT" selected>USDT pairs</option>
     <option value="BTC">BTC pairs</option>
     <option value="INR">INR (converted)</option>
   </select>
+  <div id="quoteSelectorPanel" class="check-selector quote-selector">
+    <div class="check-selector-head"><b>Quote Markets</b><span>
+      <button type="button" class="small" id="selectAllQuotes">Select All</button>
+      <button type="button" class="small" id="clearAllQuotes">Clear</button>
+    </span></div>
+    <div id="quoteSelectChecks" class="check-grid">
+      <label class="check-item"><input type="checkbox" value="USDT" checked><span>USDT pairs</span></label>
+      <label class="check-item"><input type="checkbox" value="BTC"><span>BTC pairs</span></label>
+      <label class="check-item"><input type="checkbox" value="INR"><span>INR (converted)</span></label>
+    </div>
+  </div>
   <select id="scanModeSelect" title="Choose what the scanner should scan">
     <option value="all" selected>All tracked pairs</option>
     <option value="pairs">Select pairs</option>
@@ -1087,7 +1105,7 @@ const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
-const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker", inrPerQuote:null, autoKillSwitch:false, autoScheduleMode:"default", autoStartTime:"00:00", autoEndTime:"23:59", autoDays:[0,1,2,3,4,5,6] };
+const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", quotes:["USDT"], scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker", inrPerQuote:null, autoKillSwitch:false, autoScheduleMode:"default", autoStartTime:"00:00", autoEndTime:"23:59", autoDays:[0,1,2,3,4,5,6] };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0, scanInProgress=false;
 let liveTradeSort=localStorage.getItem("cs_live_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
@@ -1097,22 +1115,53 @@ let selectedRisk=Number(localStorage.getItem("cs_rr_risk")||1);
 let selectedReward=Number(localStorage.getItem("cs_rr_reward")||2);
 const $ = id => document.getElementById(id);
 
+function getSelectedQuotes(){
+  const selected=getCheckedValues("quoteSelectChecks");
+  return selected.length ? selected : ["USDT"];
+}
+function syncQuoteSelection(){
+  let selected=getCheckedValues("quoteSelectChecks");
+  if(!selected.length){
+    setCheckedValues("quoteSelectChecks",["USDT"]);
+    selected=["USDT"];
+  }
+  state.quotes=selected;
+  state.quote=selected.length===1 ? selected[0] : "MULTI";
+  if($("quoteSelect")) $("quoteSelect").value=selected[0]||"USDT";
+}
+function loadQuotePreferences(){
+  let quotes=[];
+  try{
+    const raw=JSON.parse(localStorage.getItem("cs_quotes")||"[]");
+    if(Array.isArray(raw)) quotes=raw.filter(x=>["USDT","BTC","INR"].includes(x));
+  }catch(e){}
+  if(!quotes.length){
+    const legacy=localStorage.getItem("cs_quote");
+    quotes=legacy && ["USDT","BTC","INR"].includes(legacy) ? [legacy] : ["USDT"];
+  }
+  setCheckedValues("quoteSelectChecks",quotes);
+  syncQuoteSelection();
+}
+function saveQuotePreferences(){
+  syncQuoteSelection();
+  localStorage.setItem("cs_quotes",JSON.stringify(state.quotes));
+  localStorage.setItem("cs_quote",state.quotes[0]||"USDT");
+}
+
 function loadScannerPreferences(){
   try{
     const tf=localStorage.getItem("cs_tf");
-    const quote=localStorage.getItem("cs_quote");
     const scanMode=localStorage.getItem("cs_scan_mode");
     const selectedPairs=JSON.parse(localStorage.getItem("cs_selected_pairs")||"[]");
     const selectedCurrencies=JSON.parse(localStorage.getItem("cs_selected_currencies")||"[]");
     if(tf && ["15m","1h","4h"].includes(tf)) $("tfSelect").value=tf;
-    if(quote && ["USDT","BTC","INR"].includes(quote)) $("quoteSelect").value=quote;
     if(scanMode && ["all","pairs","currencies"].includes(scanMode)) $("scanModeSelect").value=scanMode;
     if(Number.isInteger(selectedRisk) && selectedRisk>=1 && selectedRisk<=10) $("riskSelect").value=String(selectedRisk);
     if(Number.isInteger(selectedReward) && selectedReward>=1 && selectedReward<=10) $("rewardSelect").value=String(selectedReward);
     state.tf=$("tfSelect").value;
-    state.quote=$("quoteSelect").value;
     selectedRisk=Number($("riskSelect").value)||1;
     selectedReward=Number($("rewardSelect").value)||2;
+    loadQuotePreferences();
     populateUniverseOptions(window.__availableScannerPairs||[]);
     if(selectedPairs.length) setCheckedValues("pairSelect",selectedPairs);
     if(selectedCurrencies.length) setCheckedValues("currencySelect",selectedCurrencies);
@@ -1123,7 +1172,7 @@ function loadScannerPreferences(){
 function saveScannerPreferences(){
   try{
     localStorage.setItem("cs_tf",$("tfSelect").value);
-    localStorage.setItem("cs_quote",$("quoteSelect").value);
+    saveQuotePreferences();
     localStorage.setItem("cs_scan_mode",$("scanModeSelect").value);
     localStorage.setItem("cs_selected_pairs",JSON.stringify(getCheckedValues("pairSelect")));
     localStorage.setItem("cs_selected_currencies",JSON.stringify(getCheckedValues("currencySelect")));
@@ -1343,12 +1392,14 @@ async function getAvailablePairs(quote){
     .map(x=>x.symbol);
 }
 
-function pairCurrency(){
-  return state.quote==="INR" ? "₹" : "$";
+function pairCurrency(quoteOverride=null){
+  const q=String(quoteOverride||state.quote||"USDT").toUpperCase();
+  return q==="INR" ? "₹" : "$";
 }
 
-function displayPairFromSource(sourceSymbol){
-  if(state.quote!=="INR") return sourceSymbol;
+function displayPairFromSource(sourceSymbol,quoteOverride=null){
+  const q=String(quoteOverride||state.quote||"USDT").toUpperCase();
+  if(q!=="INR") return sourceSymbol;
 
   const base=sourceSymbol.endsWith("USDT")
     ? sourceSymbol.slice(0,-4)
@@ -2144,262 +2195,30 @@ async function scan(manual=false){
     logConnection("ℹ Scan skipped — previous scan is still running","warn","scan-overlap");
     return false;
   }
-  scanInProgress=true;
-  logConnection("→ Scanner starting · quote "+$("quoteSelect").value+" · timeframe "+$("tfSelect").value,"info","scan-start");
-  $("scanBtn").disabled=true;
-  $("scanBtn").textContent="⏳ Scanning...";
-  $("connDot").className="dot on";
-  $("connTxt").textContent="Checking Binance markets...";
-
-  const prevSigs=new Set(state.signals.map(s=>s.sym+"_"+s.dir));
-  state.signals=[];
-  const tf=$("tfSelect").value;
-  const q=$("quoteSelect").value;
-  const rrCfg=selectedRR();
-  const useV5=V5_MODE && (tf===V5_TIMEFRAME_DEFAULT || tf===V5_TIMEFRAME_ALT);
-  const myScanGeneration=++scanGeneration;
-  state.tf=tf;
-  state.quote=q;
-
-  let ok=0,fail=0;
-  let fx=1;
-  const results=[];
-
+  const quotes=getSelectedQuotes();
+  window.__scanBatchMode=quotes.length>1;
+  let overallOk=false;
   try{
-    logConnection("→ Binance: discovering available "+q+" pairs","info","pairs-"+q);
-    availablePairs=await getAvailablePairs(q);
-    populateUniverseOptions(availablePairs);
-    logConnection("✓ Binance: "+availablePairs.length+" supported pairs found","ok","pairs-result-"+q);
-
-    const scanTargets=selectedScanTargets(availablePairs);
-    if($("scanModeSelect").value!=="all"){
-      logConnection("→ Selected universe: "+scanTargets.length+" market"+(scanTargets.length===1?"":"s"),"info","selected-universe");
-      if(!scanTargets.length){
-        $("connDot").className="dot off";
-        $("connTxt").textContent="⚠️ Select at least one "+($("scanModeSelect").value==="pairs"?"pair":"currency");
-        toast("⚠️ Select at least one "+($("scanModeSelect").value==="pairs"?"pair":"currency")+".");
-        $("scanBtn").disabled=false;
-        $("scanBtn").textContent="🔍 Scan Now";
-        scanInProgress=false;
-        return false;
-      }
+    state.signals=[];
+    for(let i=0;i<quotes.length;i++){
+      const q=quotes[i];
+      if($("quoteSelect")) $("quoteSelect").value=q;
+      state.quote=q;
+      const ok=await scanSingleQuote(manual && i===quotes.length-1);
+      overallOk=overallOk||ok;
     }
-
-    if(q==="INR"){
-      logConnection("→ Connecting: USD/INR conversion service","info","fx-start");
-      fx=await getUsdInr();
-      logConnection("✓ USD/INR rate loaded: "+fx,"ok","fx-result");
-    }
-
-    if(!availablePairs.length){
-      $("connDot").className="dot off";
-      $("connTxt").textContent="⚠️ No supported pairs";
-      state.scanTime=new Date();
-      state.scans++;
-      $("scanCount").textContent=state.scans;
-      render();
-
-      if(manual){
-        logConnection("✕ No supported Binance pairs found for "+q,"error","no-pairs-"+q);
-      toast("⚠️ No supported Binance pairs found for "+q+".");
-      }
-
-      $("scanBtn").disabled=false;
-      $("scanBtn").textContent="🔍 Scan Now";
-      scanInProgress=false;
-      return false;
-    }
-
-    for(let s=0;s<scanTargets.length;s+=5){
-      const batch=scanTargets.slice(s,s+5);
-
-      const batchRes=await Promise.all(batch.map(async sourceSym=>{
-        try{
-          const [rawCandles,tickerR]=await Promise.all([
-            fetchKlines(sourceSym,tf),
-            fetchWithTimeout("https://api.binance.com/api/v3/ticker/24hr?symbol="+sourceSym,{},12000)
-          ]);
-
-          if(!tickerR.ok) throw new Error("Ticker failed");
-
-          const td=await tickerR.json();
-
-          let candles=rawCandles;
-          let price=Number(td.lastPrice);
-
-          if(q==="INR"){
-            candles=rawCandles.map(c=>({
-              t:c.t,
-              o:c.o*fx,
-              h:c.h*fx,
-              l:c.l*fx,
-              c:c.c*fx,
-              v:c.v
-            }));
-            price=price*fx;
-          }
-
-          ok++;
-
-          const displaySym=displayPairFromSource(sourceSym);
-          const signal=useV5
-            ? analyzeV5(
-                candles,
-                displaySym,
-                {chg:Number(td.priceChangePercent)},
-                rrCfg
-              )
-            : analyze(
-                candles,
-                displaySym,
-                {chg:Number(td.priceChangePercent)},
-                rrCfg
-              );
-
-          if(signal){
-            signal.sourcePair=sourceSym;
-            signal.quote=q;
-
-            // Binance ticker is the live/current price. The strategy levels
-            // were calculated from the latest closed candle, so reject the
-            // setup if the live price has already reached/approached SL or TP
-            // or drifted too far from the original setup price.
-            if(useV5 && !isLiveSignalTradable(signal,price)){
-              return null;
-            }
-
-            signal.price=price;
-            signal.currentPrice=price;
-          }
-
-          return signal;
-        }catch(e){
-          fail++;
-          console.warn(sourceSym,e);
-          return null;
-        }
-      }));
-
-      results.push(...batchRes);
-    }
-
-    if(myScanGeneration!==scanGeneration) { scanInProgress=false; return false; }
-    state.scans++;
-    $("scanCount").textContent=state.scans;
-    state.signals=results
-      .filter(s=>s&&s.dir&&s.score>=(useV5?V5_MIN_SCORE:MIN_SCORE))
-      .filter(s=>!useV5 || (
-        s.v5===true &&
-        (s.dir==="LONG" || s.dir==="SHORT") &&
-        Number(s.volumeRatio)>=V5_MIN_VOLUME &&
-        Number(s.stopPct)>=V5_MIN_STOP_PCT &&
-        Number(s.stopPct)<=V5_MAX_STOP_PCT
-      ))
-      .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001);
-
-    state.signals=dedupeEquivalentSignals(state.signals)
-      .sort((a,b)=>{
-        const scoreDiff=(Number(b.score)||0)-(Number(a.score)||0);
-        if(scoreDiff) return scoreDiff;
-        return (Number(b.conf)||0)-(Number(a.conf)||0);
-      });
-
-    if(dbEnabled() && state.signals.length){
-      dbSaveSignals(state.signals);
-    }
-
-    if(state.autoTrades){ await autoTradeFromSignals(); }
-
-    logConnection("✓ Scanner finished · "+ok+" market requests OK · "+fail+" failed · "+state.signals.length+" valid signals","ok","scan-finished");
-    state.scanTime=new Date();
-    $("scanCount").textContent=state.scans;
-
-    const threshold=Math.max(1,Math.ceil(scanTargets.length*.75));
-
-    if(ok>=threshold){
-      $("connDot").className="dot on";
-      $("connTxt").textContent=
-        q==="INR"
-          ? "Connected ("+ok+"/"+scanTargets.length+") · INR converted"
-          : "Connected ("+ok+"/"+scanTargets.length+")";
-    }else{
-      $("connDot").className="dot off";
-      $("connTxt").textContent="⚠️ "+ok+"/"+scanTargets.length+" selected markets";
-    }
-
-    const newSigs=state.signals.filter(s=>{
-      const key=s.sym+"_"+s.dir;
-
-      if(prevSigs.has(key)) return false;
-
-      const last=recentAlerts[key];
-
-      if(last && Date.now()-last<ALERT_COOLDOWN){
-        return false;
-      }
-
-      recentAlerts[key]=Date.now();
-      return true;
-    });
-
-    if(newSigs.length && state.scans>1){
-      const s=newSigs[0];
-      const cur=pairCurrency();
-
-      const msg=
-        s.dir+" "+s.sym+
-        " @ "+cur+fmt(s.price)+
-        " → TP "+cur+fmt(s.tp)+
-        " / SL "+cur+fmt(s.sl)+
-        " (1:"+s.rr.toFixed(1)+") Score "+s.score;
-
-      beep();
-      notify("⚡ New Crypto Signal",msg);
-
-      $("lastSignal").innerHTML=
-        '<span style="color:var(--green)">🆕 <b>'+
-        s.sym+" "+s.dir+
-        "</b> "+
-        state.scanTime.toLocaleTimeString()+
-        "</span>";
-
-      toast("🆕 "+msg);
-
-    }else if(manual){
-      toast(
-        "✓ Scan complete — "+
-        state.signals.length+
-        " valid setups ("+ok+" ok, "+fail+" failed)"
-      );
-    }
-
-  }catch(e){
-    console.error(e);
-    logConnection("✕ Scanner error: "+(e?.message||e),"error","scan-error");
-
-    $("connDot").className="dot off";
-    $("connTxt").textContent="⚠️ Market data check failed";
-
-    if(manual){
-      toast("⚠️ "+(e.message||"Could not load market data"));
-    }
+    state.quotes=quotes;
+    state.quote=quotes.length===1 ? quotes[0] : "MULTI";
+    if($("quoteSelect")) $("quoteSelect").value=quotes[0]||"USDT";
+    render();
+    return overallOk;
+  }finally{
+    window.__scanBatchMode=false;
+    state.quotes=quotes;
+    state.quote=quotes.length===1 ? quotes[0] : "MULTI";
+    if($("quoteSelect")) $("quoteSelect").value=quotes[0]||"USDT";
+    saveQuotePreferences();
   }
-
-  $("scanBtn").disabled=false;
-  $("scanBtn").textContent="🔍 Scan Now";
-
-  // Release the scanner lock BEFORE the optional live-P&L refresh.
-  // A slow price request must never block the next auto-scan.
-  scanInProgress=false;
-
-  render();
-  try{
-    await updateLivePrices();
-  }catch(e){
-    console.warn("Live price refresh:",e);
-    logConnection("⚠ Live price refresh failed · scanner remains available","warn","live-refresh-error");
-  }
-  return true;
 }
 
 /* ================= AUTO SCAN ================= */
@@ -2706,24 +2525,27 @@ function renderSignals(){
   if(!state.signals.length){
     g.innerHTML=`<div class="empty" style="grid-column:1/-1">
       No validated setups right now.<br><br>
-      Watching ${availablePairs.length || 0} available ${state.quote} pairs using CLOSED candles.<br>
+      Watching ${availablePairs.length || 0} available ${state.quote==="MULTI"?"selected quote":state.quote} pairs using CLOSED candles.<br>
       Last scan: ${state.scanTime?state.scanTime.toLocaleTimeString():"never"}
     </div>`;
     return;
   }
-  g.innerHTML=state.signals.map((s,idx)=>`
+  g.innerHTML=state.signals.map((s,idx)=>{
+    const sq=String(s.quote||state.quote||"USDT").toUpperCase();
+    const cur=sq==="INR"?"₹":"$";
+    return `
     <div class="card">
       <div class="top">
-        <div><div class="sym">${s.sym}</div><div class="name">Test mode · ${state.tf} · R:R ${selectedRisk}:${selectedReward}</div></div>
-        <div><div class="price">${state.quote==="INR"?"₹":"$"}${fmt(s.price)}</div>
+        <div><div class="sym">${s.sym}</div><div class="name">Test mode · ${state.tf} · ${sq} · R:R ${selectedRisk}:${selectedReward}</div></div>
+        <div><div class="price">${cur}${fmt(s.price)}</div>
         <div class="chg">${s.chg>=0?"▲":"▼"} ${Math.abs(s.chg).toFixed(2)}%</div></div>
       </div>
       <span class="badge ${s.dir==="LONG"?"long":"short"}">${s.dir==="LONG"?"📈 LONG":"📉 SHORT"}</span>
       <span class="badge wait" style="margin-left:6px">Confidence ${signalConfidence(s)}%</span>
       <div class="levels">
-        <div class="lvl entry"><div class="k">Entry (approx)</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.entry)}</div></div>
-        <div class="lvl sl"><div class="k">Stop Loss</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.sl)}</div></div>
-        <div class="lvl tp"><div class="k">Take Profit</div><div class="val">${state.quote==="INR"?"₹":"$"}${fmt(s.tp)}</div></div>
+        <div class="lvl entry"><div class="k">Entry (approx)</div><div class="val">${cur}${fmt(s.entry)}</div></div>
+        <div class="lvl sl"><div class="k">Stop Loss</div><div class="val">${cur}${fmt(s.sl)}</div></div>
+        <div class="lvl tp"><div class="k">Take Profit</div><div class="val">${cur}${fmt(s.tp)}</div></div>
         <div class="lvl rr"><div class="k">Risk : Reward</div><div class="val">1 : ${s.rr.toFixed(1)}</div></div>
       </div>
       <div class="riskbar"><i style="width:${s.score}%;background:${s.score>=75?"var(--green)":s.score>=60?"var(--yellow)":"var(--red)"}"></i></div>
@@ -2737,7 +2559,8 @@ function renderSignals(){
         <button onclick="askAI(${idx})">🤖 AI Review</button>
       </div>
       <div class="ai-box" id="ai-${idx}"></div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 /* ================= LIVE / ARCHIVE TRADES ================= */
@@ -3979,9 +3802,23 @@ $("tfSelect").addEventListener("change",()=>{
   saveScannerPreferences();
   scan(true);
 });
-$("quoteSelect").addEventListener("change",()=>{
-  state.quote=$("quoteSelect").value;
-  saveScannerPreferences();
+$("selectAllQuotes").onclick=()=>{
+  setAllChecked("quoteSelectChecks",true);
+  saveQuotePreferences();
+  if(state.auto) scheduleNext();
+  scan(true);
+};
+$("clearAllQuotes").onclick=()=>{
+  setAllChecked("quoteSelectChecks",false);
+  syncQuoteSelection();
+  saveQuotePreferences();
+  if(state.auto) scheduleNext();
+  scan(true);
+};
+$("quoteSelectChecks").addEventListener("change",()=>{
+  syncQuoteSelection();
+  saveQuotePreferences();
+  if(state.auto) scheduleNext();
   scan(true);
 });
 $("riskSelect").addEventListener("change",()=>{
@@ -4058,7 +3895,7 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
 (async()=>{
   // Startup must never depend on one optional service or render block.
   try{ await initSupabase(); }catch(e){ console.warn("Startup Supabase skipped:",e); }
-  try{ loadScannerPreferences(); updateUniverseSelectorVisibility(); }catch(e){ console.warn("Startup preferences skipped:",e); }
+  try{ loadScannerPreferences(); loadQuotePreferences(); updateUniverseSelectorVisibility(); }catch(e){ console.warn("Startup preferences skipped:",e); }
   try{ await load(); }catch(e){ console.warn("Startup trade load skipped:",e); state.journal=[]; state.walletTx=[]; }
   try{ await loadWallet(); }catch(e){ console.warn("Startup wallet load skipped:",e); }
   try{ updateAutoTradeButton(); updateKillSwitchButton(); }catch(e){}
