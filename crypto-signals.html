@@ -2549,8 +2549,32 @@ function getCapitalSnapshot(){
   return {availableCash,openCapital,unrealizedPnl,paperEquity,totalDeposits,totalWithdrawals,netCapitalAdded,realizedPnl,totalPnl:equityPnl,equityPnl,totalFees};
 }
 
-function renderStats(){const closed=state.journal.filter(t=>t.closed),wins=closed.filter(t=>calcClosedPnL(t)>0).length,total=closed.length,s=getCapitalSnapshot(),profit=s.equityPnl,gross=profit+s.totalFees,fees=s.totalFees,wr=total?Math.round(wins/total*100):0,heat=state.signals.length,heatClass=heat>MAX_HEAT?"heat-warn":"heat-ok";$("heatStat").innerHTML=`🌡 Heat: <b class="${heatClass}">${heat}/${MAX_HEAT}</b>`;$("statsBar").innerHTML=`<div class="stat"><div class="v" style="color:var(--blue)">${state.signals.length}</div><div class="l">Active Signals</div></div><div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div><div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Live Trades</div></div><div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div><div class="stat"><div class="v" style="color:${profit>=0?'var(--green)':'var(--red)'}">${profit>=0?"+":""}${fmtINR(profit)}</div><div class="l">Profit Since First Deposit</div></div><div class="stat"><div class="v" style="color:${gross>=0?'var(--green)':'var(--red)'}">${gross>=0?"+":""}${fmtINR(gross)}</div><div class="l">Gross P&L Since Deposit</div></div><div class="stat"><div class="v" style="color:var(--red)">-${fmtINR(fees)}</div><div class="l">Binance Fees</div></div><div class="stat"><div class="v" style="color:${profit>=0?'var(--green)':'var(--red)'}">${profit>=0?"+":""}${fmtINR(profit)}</div><div class="l">Total P&L Since Deposit</div></div><div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;}
-
+function renderStats(){
+  const closed=state.journal.filter(t=>t.closed);
+  const wins=closed.filter(t=>calcClosedPnL(t)>0).length;
+  const total=closed.length;
+  const s=getCapitalSnapshot();
+  const totalProfit=s.equityPnl;
+  const gross=totalProfit+s.totalFees;
+  const fees=s.totalFees;
+  const runningPnl=state.journal.filter(t=>!t.closed).reduce((sum,t)=>sum+(Number(calcLivePnL(t).pnl)||0),0);
+  const todayKey=new Date().toLocaleDateString("en-CA");
+  const todayPnl=closed.filter(t=>{const d=t.closedAt?new Date(t.closedAt):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString("en-CA")===todayKey;}).reduce((sum,t)=>sum+(Number(calcClosedPnL(t))||0),0);
+  const wr=total?Math.round(wins/total*100):0;
+  const heat=state.signals.length,heatClass=heat>MAX_HEAT?"heat-warn":"heat-ok";
+  $("heatStat").innerHTML=`🌡 Heat: <b class="${heatClass}">${heat}/${MAX_HEAT}</b>`;
+  $("statsBar").innerHTML=`
+    <div class="stat"><div class="v" style="color:var(--blue)">${state.signals.length}</div><div class="l">Active Signals</div></div>
+    <div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div>
+    <div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Live Trades</div></div>
+    <div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div>
+    <div class="stat"><div class="v" style="color:${runningPnl>=0?'var(--green)':'var(--red)'}">${runningPnl>=0?"+":""}${fmtINR(runningPnl)}</div><div class="l">Running P&L</div></div>
+    <div class="stat"><div class="v" style="color:${todayPnl>=0?'var(--green)':'var(--red)'}">${todayPnl>=0?"+":""}${fmtINR(todayPnl)}</div><div class="l">Today's P&L</div></div>
+    <div class="stat"><div class="v" style="color:${gross>=0?'var(--green)':'var(--red)'}">${gross>=0?"+":""}${fmtINR(gross)}</div><div class="l">Gross P&L Since Deposit</div></div>
+    <div class="stat"><div class="v" style="color:var(--red)">-${fmtINR(fees)}</div><div class="l">Binance Fees</div></div>
+    <div class="stat"><div class="v" style="color:${totalProfit>=0?'var(--green)':'var(--red)'}">${totalProfit>=0?"+":""}${fmtINR(totalProfit)}</div><div class="l">Total P&L Since Deposit</div></div>
+    <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
+}
 
 function renderSignals(){
   const g=$("signalsGrid");
