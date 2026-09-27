@@ -2352,6 +2352,8 @@ function fmt(n){
   if(a>=0.000000001)return n.toFixed(10).replace(/0+$/,"").replace(/\.$/,"");
   return n.toExponential(4);
 }
+function fmtPrice(n){ return fmt(Number(n)); }
+function tradeOpenDate(t){ return t?.createdAt||t?.created_at||t?.date||null; }
 function fmtINR(n){
   if(!Number.isFinite(n))return "—";
   const a=Math.abs(n);
