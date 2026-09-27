@@ -3528,8 +3528,34 @@ function exportReportCSV(){
     ["Total P&L Since Deposits",snapshot.equityPnl],
     ["Gross P&L (All Time)",r.overallPnl+r.totalFees],
     ["Binance Fees (All Time)",-r.totalFees],
-    ["Closed Win Rate (Selected Period)",r.closedInRange.length?(r.closedInRange.filter(t=>calcClosedPnL(t)>0).length/r.closedInRange.length):0]
+    ["Closed Win Rate (Selected Period)",r.closedInRange.length?(r.closedInRange.filter(t=>calcClosedPnL(t)>0).length/r.closedInRange.length):0],
+    [],
+    ["TRADE-BY-TRADE",""],
+    ["Open Date & Time","Close Date & Time","Trade","Direction","Capital Before INR","Capital After INR","Entry","Current/Close","Stop Loss","Take Profit","Gross P&L INR","Binance Fees INR","Net P&L INR","Status"]
   );
+  const ledgerStart=new Date(r.from+"T00:00:00"),ledgerEnd=new Date(r.to+"T23:59:59.999");
+  state.journal.filter(t=>{
+    const o=t.createdAt||t.created_at||t.date,cl=t.closedAt||t.closed_at||t.closeDate,od=o?new Date(o):null,cd=cl?new Date(cl):null;
+    return (od&&!Number.isNaN(od.getTime())&&od>=ledgerStart&&od<=ledgerEnd)||(cd&&!Number.isNaN(cd.getTime())&&cd>=ledgerStart&&cd<=ledgerEnd);
+  }).forEach(t=>{
+    const closed=!!t.closed,live=closed?null:calcLivePnL(t),capital=getTradeWalletCapital(t);
+    lines.push([
+      t.createdAt||t.created_at||t.date||"",
+      t.closedAt||t.closed_at||t.closeDate||"",
+      t.sym||t.pair||"",
+      t.dir||t.direction||"",
+      capital.capitalBefore==null?"":capital.capitalBefore,
+      capital.capitalAfter==null?"":capital.capitalAfter,
+      Number(t.entry||t.entry_price||0),
+      closed?Number(t.closePrice||t.close_price||t.entry||0):Number(state.livePrices[t.sym]||t.currentPrice||t.current_price||t.entry||0),
+      Number(t.sl||t.stop_loss||0),
+      Number(t.tp||t.take_profit||0),
+      closed?Number(t.grossPnl||0):Number(live?.grossPnl||0),
+      -(closed?Number(t.totalFees||0):Number(live?.totalFees||0)),
+      closed?Number(calcClosedPnL(t)||0):Number(live?.pnl||0),
+      closed?(String(t.status||"CLOSED").toUpperCase()):"OPEN"
+    ]);
+  });
   const csv=lines.map(row=>row.map(v=>'"'+String(v==null?"":v).replaceAll('"','""')+'"').join(",")).join("\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");
