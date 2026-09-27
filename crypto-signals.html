@@ -285,7 +285,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 @media(max-width:700px){.live-list-toolbar{align-items:flex-start;flex-direction:column}.live-list-wrap{border-radius:10px}}
 
 /* ================= CONNECTION LOG ================= */
-.connection-log{margin:28px 20px 20px;background:#0b0f18;border:1px solid var(--border);border-radius:12px;overflow:hidden}.connection-log-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card2);font-size:11px}.connection-log-head b{font-size:12px}.connection-log-head span{color:var(--muted);font-size:9px}.connection-log-body{max-height:190px;overflow:auto;padding:7px 10px;font:10px/1.55 monospace}.connection-log-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.035)}.connection-log-time{color:var(--muted);min-width:58px}.connection-log-ok{color:var(--green)}.connection-log-warn{color:var(--yellow)}.connection-log-error{color:var(--red)}.connection-log-info{color:var(--text)}.connection-log-clear{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:9px}.connection-log-empty{color:var(--muted);padding:10px 0}
+ .auto-window{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.auto-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}.auto-day{display:flex;align-items:center;justify-content:center;gap:4px;padding:7px 3px;border:1px solid var(--border);border-radius:8px;background:var(--card2);font-size:10px;color:var(--muted)}.kill-switch{border:1px solid rgba(234,57,67,.45)!important;color:var(--red)!important}.kill-switch.on{background:rgba(234,57,67,.16)!important;border-color:var(--red)!important}.report-insight{margin:12px 0;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}.report-insight h3{margin:0 0 5px;font-size:14px}.report-insight-sub{font-size:10px;color:var(--muted);margin-bottom:12px}.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.insight-box{background:var(--card2);border-radius:10px;padding:10px}.insight-box .k{font-size:9px;color:var(--muted);text-transform:uppercase}.insight-box .v{font-size:14px;font-weight:800;margin-top:4px}.insight-box .s{font-size:9px;color:var(--muted);margin-top:3px}.insight-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:10px}.insight-row b{font-family:monospace}@media(max-width:600px){.auto-days{grid-template-columns:repeat(4,1fr)}.insight-grid{grid-template-columns:1fr}}.connection-log{margin:28px 20px 20px;background:#0b0f18;border:1px solid var(--border);border-radius:12px;overflow:hidden}.connection-log-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card2);font-size:11px}.connection-log-head b{font-size:12px}.connection-log-head span{color:var(--muted);font-size:9px}.connection-log-body{max-height:190px;overflow:auto;padding:7px 10px;font:10px/1.55 monospace}.connection-log-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.035)}.connection-log-time{color:var(--muted);min-width:58px}.connection-log-ok{color:var(--green)}.connection-log-warn{color:var(--yellow)}.connection-log-error{color:var(--red)}.connection-log-info{color:var(--text)}.connection-log-clear{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:9px}.connection-log-empty{color:var(--muted);padding:10px 0}
 </style>
 <base target="_blank">
 
@@ -326,7 +326,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="9">Reward 9</option><option value="10">Reward 10</option>
   </select>
   <button id="autoBtn" class="primary">⏸ Auto: ON</button>
-  <button id="autoTradeBtn">🤖 Auto Trades: OFF</button>
+  <button id="autoTradeBtn">🤖 Auto Trades: OFF</button><button id="killSwitchBtn" class="kill-switch">🛑 Kill Switch: OFF</button>
   <button id="takeAllBtn" class="primary">⚡ Take All Qualified</button>
   <button id="scanBtn">🔍 Scan Now</button>
   <button id="notifyBtn">🔔 Alerts</button>
@@ -416,6 +416,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <button class="primary" id="generateReportBtn">📊 Generate Report</button><button id="exportReportBtn">⬇️ CSV</button>
   </div>
   <div id="reportSummary"></div>
+  <div id="reportInsights"></div>
   <div id="reportTable"></div>
   <div id="tradeLedger" style="margin-top:18px"></div>
 </div>
@@ -480,6 +481,9 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="1">1x</option><option value="2">2x</option>
     <option value="3">3x</option><option value="5" selected>5x</option>
   </select>
+  <label>Auto-trade schedule</label>
+  <select id="autoScheduleMode"><option value="default" selected>Default — all days, all day</option><option value="custom">Custom schedule</option></select>
+  <div id="autoCustomSchedule" hidden><div class="settings-info">Custom schedule controls when Auto Paper Trades may open new trades. The scanner can still run outside these hours. Times use your device local time.</div><div class="auto-window"><div><label>Start time</label><input id="autoStartTime" type="time" value="00:00"></div><div><label>End time</label><input id="autoEndTime" type="time" value="23:59"></div></div><div style="font-size:10px;color:var(--muted);margin-top:8px">Days</div><div class="auto-days"><label class="auto-day"><input type="checkbox" class="auto-day-check" value="1">Mon</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="2">Tue</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="3">Wed</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="4">Thu</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="5">Fri</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="6">Sat</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="0">Sun</label></div><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" id="autoSelectAllDays">Select All</button><button type="button" id="autoSelectDefaultDays">Select Default</button></div></div>
   <label>Binance fee profile (Spot)</label>
   <select id="binanceFeeMode">
     <option value="taker">Regular Spot — Taker 0.10% / side</option>
@@ -1064,7 +1068,7 @@ const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
-const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker", inrPerQuote:null };
+const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker", inrPerQuote:null, autoKillSwitch:false, autoScheduleMode:"default", autoStartTime:"00:00", autoEndTime:"23:59", autoDays:[0,1,2,3,4,5,6] };
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0, scanInProgress=false;
 let liveTradeSort=localStorage.getItem("cs_live_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
@@ -1118,7 +1122,7 @@ async function load(){
     if(al) { state.autoLeverage=al; $("autoLeverage").value=String(al); }
     state.binanceFeeMode = localStorage.getItem("cs_binance_fee_mode") || "taker";
     if($("binanceFeeMode")) $("binanceFeeMode").value=state.binanceFeeMode;
-    state.autoTrades = localStorage.getItem("cs_auto_trades")==="1";
+    state.autoTrades = localStorage.getItem("cs_auto_trades")==="1"; state.autoKillSwitch=localStorage.getItem("cs_auto_kill_switch")==="1"; state.autoScheduleMode=localStorage.getItem("cs_auto_schedule_mode")||"default"; state.autoStartTime=localStorage.getItem("cs_auto_start_time")||"00:00"; state.autoEndTime=localStorage.getItem("cs_auto_end_time")||"23:59"; try{const d=JSON.parse(localStorage.getItem("cs_auto_days")||"");if(Array.isArray(d))state.autoDays=d.map(Number);}catch(e){} if($("autoScheduleMode"))$("autoScheduleMode").value=state.autoScheduleMode;if($("autoStartTime"))$("autoStartTime").value=state.autoStartTime;if($("autoEndTime"))$("autoEndTime").value=state.autoEndTime;document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=state.autoDays.includes(Number(x.value)));if($("autoCustomSchedule"))$("autoCustomSchedule").hidden=state.autoScheduleMode!=="custom";
 
     if(dbEnabled()){
       // Database reads are optional at startup; never leave the scanner stuck on "Starting...".
@@ -1157,7 +1161,7 @@ function saveSettings(){
   localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));
   state.binanceFeeMode = $("binanceFeeMode")?.value || "taker";
   localStorage.setItem("cs_binance_fee_mode",state.binanceFeeMode);
-  localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");
+  localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");state.autoScheduleMode=$("autoScheduleMode")?.value||"default";state.autoStartTime=$("autoStartTime")?.value||"00:00";state.autoEndTime=$("autoEndTime")?.value||"23:59";state.autoDays=[...document.querySelectorAll(".auto-day-check:checked")].map(x=>Number(x.value));localStorage.setItem("cs_auto_schedule_mode",state.autoScheduleMode);localStorage.setItem("cs_auto_start_time",state.autoStartTime);localStorage.setItem("cs_auto_end_time",state.autoEndTime);localStorage.setItem("cs_auto_days",JSON.stringify(state.autoDays));localStorage.setItem("cs_auto_kill_switch",state.autoKillSwitch?"1":"0");
   $("saveMsg").style.display="block";
   setTimeout(()=>{$("saveMsg").style.display="none";},1500);
   if(state.auto) scheduleNext();
@@ -2373,7 +2377,8 @@ async function takeSignalAsPaperTrade(s){
   return await saveTradeToWallet(trade,s);
 }
 
-async function takeAllQualifiedTrades(){
+function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(state.autoScheduleMode!=="custom")return true;const n=new Date(),d=n.getDay();if(!state.autoDays.includes(d))return false;const p=s=>{const m=String(s||"").match(/^(\d{2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):0;};const now=n.getHours()*60+n.getMinutes(),a=p(state.autoStartTime),b=p(state.autoEndTime);if(a===b)return true;return a<b?now>=a&&now<=b:now>=a||now<=b;} function updateKillSwitchButton(){const b=$("killSwitchBtn");if(!b)return;b.textContent=state.autoKillSwitch?"🛑 Kill Switch: ON":"🛑 Kill Switch: OFF";b.className=state.autoKillSwitch?"kill-switch on":"kill-switch";} async function takeAllQualifiedTrades(){
+  if(state.autoKillSwitch||!autoTradeScheduleAllowed())return 0;
   state.autoConfidence=Math.min(95,Math.max(0,Number($("autoConfidence").value)||75));
   state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);
   state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);
@@ -2399,7 +2404,7 @@ function updateAutoTradeButton(){
   b.className=state.autoTrades?"primary":"";
 }
 async function autoTradeFromSignals(){
-  if(!state.autoTrades)return 0;
+  if(!state.autoTrades||state.autoKillSwitch||!autoTradeScheduleAllowed())return 0;
   logConnection("🤖 Auto Trades checking "+state.signals.length+" signals at ≥"+state.autoConfidence+"% confidence","info","auto-trade-check");
   try{
     const result=await Promise.race([
@@ -3179,7 +3184,14 @@ function renderTradeLedger(from,to){
   });
 }
 
-function generateReport(){
+function renderReportInsights(closedInRange,from,to){
+  const root=$("reportInsights");if(!root)return;
+  const days=Math.max(1,Math.floor((new Date(to+"T23:59:59")-new Date(from+"T00:00:00"))/86400000)+1);
+  const b=Array.from({length:12},(_,i)=>({s:i*2,e:i*2+2,n:0,p:0,w:0,l:0}));
+  closedInRange.forEach(t=>{const d=tradeOpenDate(t),dt=d?new Date(d):null;if(!dt||Number.isNaN(dt.getTime()))return;const x=b[Math.floor(dt.getHours()/2)],p=Number(calcClosedPnL(t))||0;x.n++;x.p+=p;if(p>0)x.w++;else if(p<0)x.l++;});
+  const u=b.filter(x=>x.n),pr=u.slice().sort((a,z)=>z.p-a.p),lo=u.slice().sort((a,z)=>a.p-z.p),ac=u.slice().sort((a,z)=>z.n-a.n),lab=x=>String(x.s).padStart(2,"0")+":00–"+String(x.e).padStart(2,"0")+":00",sg=x=>(x>=0?"+":"")+fmtINR(x),tot=closedInRange.length,win=closedInRange.filter(t=>calcClosedPnL(t)>0).length,net=closedInRange.reduce((s,t)=>s+calcClosedPnL(t),0),rows=a=>a.slice(0,3).map(x=>'<div class="insight-row"><span>'+lab(x)+' · '+x.n+' trades · '+x.w+'W / '+x.l+'L</span><b class="'+(x.p>=0?"profit":"loss")+'">'+sg(x.p)+'</b></div>').join("");
+  root.innerHTML='<div class="report-insight"><h3>📊 Trading Time Summary</h3><div class="report-insight-sub">Last '+days+' days · '+from+' to '+to+' · Based on trade opening time for closed trades. Times use your device local time. Historical activity only — not a prediction.</div><div class="insight-grid"><div class="insight-box"><div class="k">Closed trades</div><div class="v">'+tot+'</div><div class="s">Win rate '+(tot?Math.round(win/tot*100):0)+'% · Net '+sg(net)+'</div></div><div class="insight-box"><div class="k">Highest net P&L window</div><div class="v">'+(pr[0]?lab(pr[0]):"—")+'</div><div class="s">'+(pr[0]?sg(pr[0].p)+" · "+pr[0].n+" trades":"No data")+'</div></div><div class="insight-box"><div class="k">Largest loss window</div><div class="v">'+(lo[0]?lab(lo[0]):"—")+'</div><div class="s">'+(lo[0]?sg(lo[0].p)+" · "+lo[0].n+" trades":"No data")+'</div></div><div class="insight-box"><div class="k">Most active window</div><div class="v">'+(ac[0]?lab(ac[0]):"—")+'</div><div class="s">'+(ac[0]?ac[0].n+" closed trades":"No data")+'</div></div></div><div style="margin-top:12px"><b style="font-size:11px">Highest net P&L windows</b>'+(pr.length?rows(pr):'<div class="insight-row"><span>No closed trades</span></div>')+'</div><div style="margin-top:12px"><b style="font-size:11px">Largest loss windows</b>'+(lo.length?rows(lo):'<div class="insight-row"><span>No closed trades</span></div>')+'</div></div>';
+}function generateReport(){
   const from=$("reportFrom")?.value||dateOnly(Date.now()-30*86400000);
   const to=$("reportTo")?.value||dateOnly(Date.now());
   if($("reportFrom")&&!$("reportFrom").value) $("reportFrom").value=from;
@@ -3267,6 +3279,8 @@ function generateReport(){
   });
 
   const days=Object.keys(byDay).sort().reverse();
+  renderReportInsights(closedInRange,from,to);
+
   if($("reportTable")) $("reportTable").innerHTML=days.length
     ? '<div class="report-table-wrap"><table><thead><tr><th>Date</th><th>Added</th><th>Capital Reserved</th><th>Returned</th><th>Gross P&L</th><th>Binance Fees</th><th>Net Trading P&L</th><th>Capital Left to Trade</th><th>Withdrawn</th></tr></thead><tbody>'+
       days.map(day=>{
@@ -3882,7 +3896,7 @@ $("runBacktestBtn").onclick=runBacktest;
 $("exportBacktestBtn").onclick=exportBacktestCSV;
 
 $("homeBtn").onclick=()=>{ window.location.href="https://tradesutra-chi.vercel.app/"; };
-$("autoTradeBtn").onclick=async()=>{
+$("killSwitchBtn").onclick=()=>{state.autoKillSwitch=!state.autoKillSwitch;localStorage.setItem("cs_auto_kill_switch",state.autoKillSwitch?"1":"0");if(state.autoKillSwitch){state.autoTrades=false;localStorage.setItem("cs_auto_trades","0");updateAutoTradeButton();toast("🛑 Kill Switch ON — automatic entries blocked.");}else toast("🟢 Kill Switch OFF.");updateKillSwitchButton();};$("autoScheduleMode").onchange=()=>{$("autoCustomSchedule").hidden=$("autoScheduleMode").value!=="custom";};$("autoSelectAllDays").onclick=()=>document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=true);$("autoSelectDefaultDays").onclick=()=>document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=true);$("autoTradeBtn").onclick=async()=>{
   state.autoTrades=!state.autoTrades;
   localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");
   updateAutoTradeButton();
@@ -3988,7 +4002,7 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
   try{ loadScannerPreferences(); }catch(e){ console.warn("Startup preferences skipped:",e); }
   try{ await load(); }catch(e){ console.warn("Startup trade load skipped:",e); state.journal=[]; state.walletTx=[]; }
   try{ await loadWallet(); }catch(e){ console.warn("Startup wallet load skipped:",e); }
-  try{ updateAutoTradeButton(); }catch(e){}
+  try{ updateAutoTradeButton(); updateKillSwitchButton(); }catch(e){}
   try{ updateDbStatus(); }catch(e){}
   try{ render(); }catch(e){ console.error("Initial render failed:",e); }
   try{ renderLiveTrades(); }catch(e){ console.error("Live render failed:",e); }
