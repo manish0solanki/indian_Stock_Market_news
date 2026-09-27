@@ -276,11 +276,6 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 }
 
 .crypto-live-header{display:grid;grid-template-columns:1.4fr .65fr .9fr 1fr;gap:8px;align-items:center;border-bottom:1px solid var(--border);padding:0 0 5px}.crypto-live-head{border:0;background:transparent;color:var(--muted);font:800 8px var(--font-body);text-align:left;padding:3px 0;cursor:pointer;letter-spacing:.4px}.crypto-live-head span{opacity:.55;font-size:8px}.crypto-live-head:nth-child(3),.crypto-live-head:nth-child(4){text-align:right}.crypto-live-header .crypto-live-head:nth-child(3),.crypto-live-header .crypto-live-head:nth-child(4){text-align:right}@media(max-width:600px){.crypto-live-header{grid-template-columns:1.25fr .55fr 1fr 1fr}}
-/* Compact live trade snapshot */
-.crypto-live-summary{margin:0 20px 12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
-.crypto-live-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;margin-bottom:7px}.crypto-live-summary-head span{font-size:9px;color:var(--muted);font-family:monospace}.crypto-live-summary-list{display:flex;flex-direction:column}.crypto-live-row{display:grid;grid-template-columns:1.4fr .65fr .9fr 1fr;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:10px}.crypto-live-row:first-child{border-top:0}.crypto-live-pair{font-family:monospace;font-weight:800}.crypto-live-dir{font-size:8px;font-weight:800;padding:2px 5px;border-radius:10px;width:max-content}.crypto-live-dir.long{color:var(--green);background:rgba(22,199,132,.12)}.crypto-live-dir.short{color:var(--red);background:rgba(234,57,67,.12)}.crypto-live-current{font-family:monospace;color:var(--muted);text-align:right}.crypto-live-pnl{font-family:monospace;font-weight:800;text-align:right}.crypto-live-empty{text-align:center;color:var(--muted);font-size:10px;padding:10px}.crypto-live-total{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}.crypto-live-total b{font-family:monospace;font-size:12px}.crypto-live-pnl.profit,.crypto-live-total .profit{color:var(--green)}.crypto-live-pnl.loss,.crypto-live-total .loss{color:var(--red)}
-@media(max-width:600px){.crypto-live-summary{margin:0 10px 10px;padding:11px}.crypto-live-row{grid-template-columns:1.25fr .55fr 1fr 1fr}.crypto-live-current{font-size:9px}}
-
 /* ================= LIVE TRADE LIST ================= */
 .live-list-panel{width:100%;margin-top:2px}.live-list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 10px;padding:0 2px;font-size:12px}.live-list-toolbar>div{display:flex;align-items:center;gap:8px}.live-list-toolbar>div>b{font-size:14px}.live-list-toolbar>div>span{color:var(--muted);font-size:10px}.live-list-toolbar label{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px}.live-list-toolbar select{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:600 10px var(--font-body)}.live-list-wrap{width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--card)}.live-list-table{width:100%;min-width:1180px;border-collapse:collapse}.live-list-table th{padding:10px 9px;text-align:left;font-size:8px;letter-spacing:.5px;color:var(--muted);background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}.live-list-table td{padding:10px 9px;border-bottom:1px solid var(--border);font-size:10px;white-space:nowrap;vertical-align:middle}.live-list-table tbody tr:last-child td{border-bottom:0}.live-list-table tbody tr:hover{background:rgba(255,255,255,.025)}.live-list-pair{font:800 11px monospace}.live-list-num{font:600 10px monospace}.live-list-muted{font-size:9px;color:var(--muted)}.live-list-dir{display:inline-flex;padding:3px 7px;border-radius:20px;font-size:8px;font-weight:800}.live-list-dir.long{color:var(--green);background:rgba(22,199,132,.10);border:1px solid rgba(22,199,132,.25)}.live-list-dir.short{color:var(--red);background:rgba(234,57,67,.10);border:1px solid rgba(234,57,67,.25)}.live-list-pnl{font:800 10px monospace}.live-list-r{font:700 9px monospace;color:var(--muted)}.live-list-actions{display:flex;gap:4px}.live-list-actions button{font-size:9px;padding:5px 7px}.live-list-empty{padding:24px;text-align:center;color:var(--muted);font-size:11px}
 @media(max-width:700px){.live-list-toolbar{align-items:flex-start;flex-direction:column}.live-list-wrap{border-radius:10px}}
@@ -375,10 +370,6 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 </div>
 
 <div class="grid" id="signalsGrid"></div>
-<div class="crypto-live-summary" id="cryptoLiveSummary">
-  <div class="crypto-live-summary-head"><b>Live Trade Snapshot</b><span id="cryptoLiveSummaryTime">—</span></div>
-  <div class="crypto-live-summary-list" id="cryptoLiveSummaryList"></div>
-</div>
 <div class="live-list-panel" id="liveListPane" hidden>
   <div class="live-list-toolbar">
     <div><b>All Live Trades</b><span id="liveListSummary"></span></div>
@@ -2500,7 +2491,6 @@ async function updateLivePrices(){
   renderLiveTrades();
   renderArchive();
   renderLiveList();
-  renderCryptoLiveSummary();
   // Stats (including Today's P&L) must refresh whenever live prices or
   // automatic TP/SL closures are processed, not only after a market scan.
   renderStats();
@@ -2549,7 +2539,7 @@ function calcClosedPnL(t){
 }
 
 /* ================= RENDER ================= */
-function render(){renderStats();renderSignals();renderCryptoLiveSummary();renderLiveTrades();renderArchive();renderLiveList();renderWallet();}
+function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();renderLiveList();renderWallet();}
 
 function getCapitalSnapshot(){
   const openTrades=state.journal.filter(t=>!t.closed);
@@ -2797,7 +2787,6 @@ function renderCryptoLiveSummary(){
     const k=btn.dataset.liveSort;
     if(cryptoLiveSummarySort.key===k)cryptoLiveSummarySort.dir=cryptoLiveSummarySort.dir==="asc"?"desc":"asc";
     else{cryptoLiveSummarySort.key=k;cryptoLiveSummarySort.dir=k==="pnl"||k==="current"?"desc":"asc";}
-    renderCryptoLiveSummary();
   }));
 }
 
