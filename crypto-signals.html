@@ -3215,10 +3215,9 @@ function renderReportInsights(closedInRange,from,to){
     '<div class="report-grid">'+
     '<div><span>Money Added (Period)</span><b>'+fmtINR(deposits)+'</b></div>'+
     '<div><span>Cumulative Capital Reserved</span><b>'+fmtINR(reserved)+'</b></div>'+
-    '<div><span>Profit Since First Deposit</span><b class="'+(overallPnl>=0?"profit":"loss")+'">'+(overallPnl>=0?"+":"")+fmtINR(overallPnl)+'</b></div>'+
+    '<div><span>Total P&L Since First Deposit</span><b class="'+(overallPnl>=0?"profit":"loss")+'">'+(overallPnl>=0?"+":"")+fmtINR(overallPnl)+'</b></div>'+
     '<div><span>Gross P&L Since First Deposit</span><b class="'+(overallPnl+snapshot.totalFees>=0?"profit":"loss")+'">'+(overallPnl+snapshot.totalFees>=0?"+":"")+fmtINR(overallPnl+snapshot.totalFees)+'</b></div>'+
     '<div><span>Binance Fees (All Time)</span><b class="loss">-'+fmtINR(snapshot.totalFees)+'</b></div>'+
-    '<div><span>Total P&L Since First Deposit</span><b class="'+(overallPnl>=0?"profit":"loss")+'">'+(overallPnl>=0?"+":"")+fmtINR(overallPnl)+'</b></div>'+
     '<div><span>Net Capital Added (All Time)</span><b>'+fmtINR(snapshot.netCapitalAdded)+'</b></div>'+
     '<div><span>Available Cash Now</span><b>'+fmtINR(availableToTrade)+'</b></div>'+
     '<div><span>Open Capital Now</span><b>'+fmtINR(openCapital)+'</b></div>'+
@@ -3280,10 +3279,10 @@ function exportReportCSV(){
   lines.push(
     ["Money Added (Selected Period)",r.deposits],
     ["Cumulative Capital Reserved (Selected Period)",r.reserved],
-    ["Gross P&L (Selected Period)",r.grossRealized],
-    ["Binance Fees (Selected Period)",-r.binanceFees],
-    ["Net Trading P&L (Selected Period)",r.realized],
-    ["Realized ROI % (Selected Period)",r.roi.toFixed(2)],
+    ["Gross P&L Since First Deposit",r.overallPnl+r.totalFees],
+    ["Binance Fees (All Time)",-r.totalFees],
+    ["Total P&L Since First Deposit",r.overallPnl],
+    
     ["Withdrawn (Selected Period)",r.withdrawals],
     ["Net Capital Added (All Time)",snapshot.netCapitalAdded],
     ["Available Cash Now",snapshot.availableCash],
