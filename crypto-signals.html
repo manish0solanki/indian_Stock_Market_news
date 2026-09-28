@@ -1918,8 +1918,10 @@ function analyzeV6(candles, symbol, ticker, rrCfgOverride=null, btcRegime=null) 
   // V6 uses a score-based confirmation model. Pullback/reclaim add
   // significant points but are not individually mandatory; requiring both
   // on the immediately previous candle was suppressing nearly every setup.
-  const coreOk=strongTrend && rsiOk && volumeOk && macdOk &&
-    momentumOk && bullish && qualityOk && notExtended && btcAligned;
+  // Production V6: trend is mandatory; the remaining confirmations
+  // contribute to the score. This prevents one missing candle condition
+  // from suppressing an otherwise valid setup.
+  const coreOk=strongTrend && btcAligned;
   const valid=coreOk && score>=V6_MIN_SCORE;
 
   if(!valid){
@@ -2178,8 +2180,23 @@ async function scanSingleQuote(manual=false){
             // were calculated from the latest closed candle, so reject the
             // setup if the live price has already reached/approached SL or TP
             // or drifted too far from the original setup price.
-            if((useV6 || useV5) && !isLiveSignalTradable(signal,price)){
+            if(useV5 && !isLiveSignalTradable(signal,price)){
               return null;
+            }
+
+            // V6 recalculates the trade levels from the live market price.
+            // The setup is based on the last closed candle, but the paper
+            // trade must be actionable at the price shown on the card.
+            if(useV6 && Number.isFinite(price) && price>0){
+              const oldEntry=Number(signal.entry);
+              const oldSL=Number(signal.sl);
+              const riskPct=oldEntry>0 ? Math.abs(oldEntry-oldSL)/oldEntry : 0.01;
+              const liveRisk=price*Math.max(V6_MIN_STOP_PCT,Math.min(V6_MAX_STOP_PCT,riskPct));
+              signal.entry=price;
+              signal.price=price;
+              signal.sl=price-liveRisk;
+              signal.tp=price+liveRisk*Number(signal.rr||rrCfg.ratio);
+              signal.stopPct=liveRisk/price;
             }
 
             signal.price=price;
