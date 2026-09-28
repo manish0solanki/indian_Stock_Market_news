@@ -2185,9 +2185,21 @@ async function scanSingleQuote(manual=false){
               const liveRisk=price*Math.max(V6_MIN_STOP_PCT,Math.min(V6_MAX_STOP_PCT,riskPct));
               signal.entry=price;
               signal.price=price;
-              signal.sl=price-liveRisk;
-              signal.tp=price+liveRisk*Number(signal.rr||rrCfg.ratio);
+              if(signal.dir==="SHORT"){
+                signal.sl=price+liveRisk;
+                signal.tp=price-liveRisk*Number(signal.rr||rrCfg.ratio);
+              }else{
+                signal.sl=price-liveRisk;
+                signal.tp=price+liveRisk*Number(signal.rr||rrCfg.ratio);
+              }
               signal.stopPct=liveRisk/price;
+            }
+
+            // Final safety check after live-price recalculation.
+            const finalLevels=validateSignalLevels(signal);
+            if(!finalLevels.ok){
+              logConnection("🛑 Invalid recalculated "+signal.dir+" signal skipped: "+signal.sym+" · "+finalLevels.reason,"warn","invalid-recalculated-levels");
+              return null;
             }
 
             signal.price=price;
