@@ -39,6 +39,21 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 button:disabled{opacity:.5;cursor:not-allowed}
 button.danger{background:rgba(234,57,67,.15);border-color:var(--red);color:var(--red)}
 button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(--blue)}
+.market-ticker-panel{margin:10px 20px 14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.market-ticker-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.market-ticker-title{font-size:13px;font-weight:700}.market-ticker-status{font-size:10px;color:var(--muted)}
+.market-ticker-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:8px}
+.market-ticker-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px;min-width:0}
+.market-ticker-top{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.market-ticker-symbol{font-size:12px;font-weight:800}.market-ticker-price{font-family:monospace;font-size:13px;font-weight:700;text-align:right}
+.market-ticker-change{font-size:10px;text-align:right;margin-top:2px}
+.market-ticker-change.up{color:var(--green)}.market-ticker-change.down{color:var(--red)}
+.market-ticker-trend{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--muted)}
+.market-ticker-trend.up{color:var(--green)}.market-ticker-trend.down{color:var(--red)}.market-ticker-trend.flat{color:var(--yellow)}
+.market-spark{width:72px;height:24px;display:block;overflow:visible}
+.market-ticker-empty{color:var(--muted);font-size:11px;padding:8px}
+@media(max-width:1100px){.market-ticker-grid{grid-template-columns:repeat(4,minmax(145px,1fr))}}
+@media(max-width:899px){.market-ticker-panel{margin:8px 12px 12px}.market-ticker-grid{display:flex;overflow-x:auto;gap:8px;padding-bottom:3px}.market-ticker-card{flex:0 0 155px}}
 .statusbar{display:flex;gap:16px;align-items:center;padding:10px 20px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap}
 .mono{font-family:monospace;color:var(--muted)}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
@@ -388,6 +403,13 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
   <span id="lastSignal" style="margin-left:auto"></span>
 </div>
 
+<div class="market-ticker-panel" id="marketTickerPanel">
+  <div class="market-ticker-head">
+    <div class="market-ticker-title">📈 Top Crypto Market</div>
+    <div class="market-ticker-status" id="marketTickerStatus">Connecting to Binance…</div>
+  </div>
+  <div class="market-ticker-grid" id="marketTickerGrid"><div class="market-ticker-empty">Loading live prices…</div></div>
+</div>
 <div class="stats" id="statsBar"></div>
 
 <div class="tabs">
@@ -4208,6 +4230,114 @@ function escapeHtml(v){
   return String(v==null?"":v).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 }
 
+/* ================= TOP CRYPTO LIVE TICKER ================= */
+const TOP_CRYPTO_TICKERS=[
+  {sym:"BTCUSDT",name:"Bitcoin",short:"BTC"},
+  {sym:"ETHUSDT",name:"Ethereum",short:"ETH"},
+  {sym:"BNBUSDT",name:"BNB",short:"BNB"},
+  {sym:"XRPUSDT",name:"XRP",short:"XRP"},
+  {sym:"SOLUSDT",name:"Solana",short:"SOL"},
+  {sym:"DOGEUSDT",name:"Dogecoin",short:"DOGE"},
+  {sym:"ADAUSDT",name:"Cardano",short:"ADA"},
+  {sym:"TRXUSDT",name:"TRON",short:"TRX"},
+  {sym:"AVAXUSDT",name:"Avalanche",short:"AVAX"},
+  {sym:"LINKUSDT",name:"Chainlink",short:"LINK"}
+];
+const marketTickerState=new Map();
+let marketTickerWs=null;
+let marketTickerTrendTimer=null;
+function marketTickerPrice(v){
+  const n=Number(v);
+  if(!Number.isFinite(n))return "—";
+  if(n>=1000)return n.toLocaleString("en-IN",{maximumFractionDigits:2});
+  if(n>=1)return n.toLocaleString("en-IN",{maximumFractionDigits:4});
+  if(n>=.01)return n.toLocaleString("en-IN",{maximumFractionDigits:6});
+  return n.toLocaleString("en-IN",{maximumFractionDigits:8});
+}
+function marketTickerTrend(values){
+  const v=values.filter(Number.isFinite);
+  if(v.length<2)return {dir:"flat",label:"Trend loading"};
+  const change=((v[v.length-1]-v[0])/v[0])*100;
+  if(change>.15)return {dir:"up",label:"▲ Bullish"};
+  if(change<-.15)return {dir:"down",label:"▼ Bearish"};
+  return {dir:"flat",label:"→ Sideways"};
+}
+function marketTickerSpark(values,dir){
+  const v=values.filter(Number.isFinite);
+  if(v.length<2)return "";
+  const min=Math.min(...v),max=Math.max(...v),range=max-min||1;
+  const pts=v.map((x,i)=>{
+    const px=(i/(v.length-1))*70;
+    const py=22-((x-min)/range)*20;
+    return px.toFixed(1)+","+py.toFixed(1);
+  }).join(" ");
+  const stroke=dir==="up"?"var(--green)":dir==="down"?"var(--red)":"var(--yellow)";
+  return '<svg class="market-spark" viewBox="0 0 72 24" preserveAspectRatio="none"><polyline points="'+pts+'" fill="none" stroke="'+stroke+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function renderMarketTicker(){
+  const grid=$("marketTickerGrid");
+  if(!grid)return;
+  grid.innerHTML=TOP_CRYPTO_TICKERS.map(x=>{
+    const d=marketTickerState.get(x.sym)||{};
+    const ch=Number(d.change);
+    const trend=marketTickerTrend(d.trend||[]);
+    const cc=ch>0?"up":ch<0?"down":"";
+    return '<div class="market-ticker-card">'+
+      '<div class="market-ticker-top">'+
+        '<div><div class="market-ticker-symbol">'+x.short+'</div><div class="name">'+x.name+'</div></div>'+
+        '<div><div class="market-ticker-price">'+(d.price?marketTickerPrice(d.price):"—")+'</div>'+
+        '<div class="market-ticker-change '+cc+'">'+(Number.isFinite(ch)?(ch>=0?"+":"")+ch.toFixed(2)+"%":"—")+'</div></div>'+
+      '</div>'+
+      '<div class="market-ticker-trend '+trend.dir+'">'+marketTickerSpark(d.trend||[],trend.dir)+'<span>'+trend.label+'</span></div>'+
+    '</div>';
+  }).join("");
+}
+function startMarketTicker(){
+  const streams=TOP_CRYPTO_TICKERS.map(x=>x.sym.toLowerCase()+"@ticker").join("/");
+  try{
+    if(marketTickerWs)marketTickerWs.close();
+    marketTickerWs=new WebSocket("wss://stream.binance.com:9443/stream?streams="+streams);
+    marketTickerWs.onopen=()=>{
+      const el=$("marketTickerStatus");
+      if(el)el.textContent="● Live · Binance";
+    };
+    marketTickerWs.onmessage=e=>{
+      try{
+        const msg=JSON.parse(e.data),d=msg.data||msg;
+        if(!d.s)return;
+        const row=marketTickerState.get(d.s)||{trend:[]};
+        row.price=Number(d.c);
+        row.change=Number(d.P);
+        marketTickerState.set(d.s,row);
+        renderMarketTicker();
+      }catch(err){}
+    };
+    marketTickerWs.onerror=()=>{
+      const el=$("marketTickerStatus");
+      if(el)el.textContent="⚠️ Live feed error";
+    };
+    marketTickerWs.onclose=()=>{
+      const el=$("marketTickerStatus");
+      if(el)el.textContent="Reconnecting…";
+      setTimeout(startMarketTicker,5000);
+    };
+  }catch(e){}
+  refreshMarketTrends();
+  clearInterval(marketTickerTrendTimer);
+  marketTickerTrendTimer=setInterval(refreshMarketTrends,60000);
+}
+async function refreshMarketTrends(){
+  await Promise.all(TOP_CRYPTO_TICKERS.map(async x=>{
+    try{
+      const rows=await fetchKlines(x.sym,"5m");
+      if(!Array.isArray(rows)||rows.length<2)return;
+      const row=marketTickerState.get(x.sym)||{};
+      row.trend=rows.slice(-24).map(c=>Number(c.c));
+      marketTickerState.set(x.sym,row);
+    }catch(e){}
+  }));
+  renderMarketTicker();
+}
 /* ================= CONNECTION LOGGER ================= */
 const connectionLogSeen=new Map();
 function logConnection(message,type="info",key=null){
@@ -4247,6 +4377,7 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
   try{ selectAppTab("signals"); }catch(e){ console.error("Tab init failed:",e); }
 
   // Always start the market scan, even if an optional UI/database step failed.
+  try{ startMarketTicker(); }catch(e){ console.warn("Market ticker startup failed:",e); }
   try{
     await scan(true);
   }catch(e){
