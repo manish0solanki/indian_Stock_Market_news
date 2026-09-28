@@ -1046,6 +1046,7 @@ async function dbUpdateTrade(t){
     t.status==="tp"?"TP_HIT":
     t.status==="sl"?"SL_HIT":
     t.status==="manual"?"MANUAL_CLOSE":
+    t.status==="cancelled"?"CANCELLED":
     "RUNNING";
 
   const row={
