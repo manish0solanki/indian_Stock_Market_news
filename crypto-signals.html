@@ -1910,13 +1910,17 @@ function analyzeV6(candles, symbol, ticker, rrCfgOverride=null, btcRegime=null) 
   if(macdOk){score+=5;reasons.push("MACD+");}
   if(momentumOk){score+=5;reasons.push("Momentum↑");}
   if(bullish){score+=5;reasons.push("Bull candle");}
+  if(notExtended){score+=5;reasons.push("Not extended");}
 
   const btcAligned=!V6_MIN_BTC_TREND_ALIGNMENT || !btcRegime || btcRegime.aligned!==false;
   if(!btcAligned) reasons.push("BTC regime not aligned");
 
-  const valid=strongTrend && pullbackTouch && reclaim && rsiOk &&
-    volumeOk && macdOk && momentumOk && bullish && qualityOk &&
-    notExtended && btcAligned && score>=V6_MIN_SCORE;
+  // V6 uses a score-based confirmation model. Pullback/reclaim add
+  // significant points but are not individually mandatory; requiring both
+  // on the immediately previous candle was suppressing nearly every setup.
+  const coreOk=strongTrend && rsiOk && volumeOk && macdOk &&
+    momentumOk && bullish && qualityOk && notExtended && btcAligned;
+  const valid=coreOk && score>=V6_MIN_SCORE;
 
   if(!valid){
     return {
