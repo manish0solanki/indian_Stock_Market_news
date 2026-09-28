@@ -303,6 +303,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -1161,12 +1162,73 @@ const V6_MIN_SCORE = 80;
 const V6_MIN_RSI = 58;
 const V6_MAX_RSI = 70;
 const V6_MIN_VOLUME = 1.5;
-const V6_MAX_EMA_EXTENSION_ATR = 0.65;
+const V6_MAX_EMA_EXTENSION_ATR = 0.50;
 const V6_MIN_STOP_PCT = 0.008;
 const V6_MAX_STOP_PCT = 0.04;
 const V6_MAX_OPEN_TRADES = 3;
 const V6_MAX_OPEN_CAPITAL_PCT = 0.50;
 const V6_DAILY_LOSS_PCT = 0.02;
+const V6_MAX_CONSECUTIVE_LOSSES = 3;
+const V6_COOLDOWN_AFTER_LOSSES = 4;
+const V6_ENTRY_DRIFT_RISK = 0.50;
+const V6_MIN_BTC_TREND_ALIGNMENT = true;
+
+let consecutiveLosses = 0;
+let lastLossTime = null;
+
+function checkConsecutiveLossProtection() {
+  if (consecutiveLosses >= V6_MAX_CONSECUTIVE_LOSSES) {
+    const hoursSinceLastLoss = lastLossTime ? (Date.now() - lastLossTime) / (1000 * 60 * 60) : 999;
+    if (hoursSinceLastLoss < V6_COOLDOWN_AFTER_LOSSES) {
+      return {
+        blocked: true,
+        reason: `Cooldown: ${consecutiveLosses} consecutive losses. Wait ${Math.ceil(V6_COOLDOWN_AFTER_LOSSES - hoursSinceLastLoss)}h`
+      };
+    }
+    consecutiveLosses = 0;
+  }
+  return { blocked: false };
+}
+
+function updateConsecutiveLosses(tradeResult) {
+  if (tradeResult === 'loss') {
+    consecutiveLosses++;
+    lastLossTime = Date.now();
+  } else if (tradeResult === 'win') {
+    consecutiveLosses = 0;
+    lastLossTime = null;
+  }
+  localStorage.setItem('cs_consecutive_losses', String(consecutiveLosses));
+  localStorage.setItem('cs_last_loss_time', lastLossTime ? String(lastLossTime) : '');
+}
+
+function loadConsecutiveLosses() {
+  consecutiveLosses = parseInt(localStorage.getItem('cs_consecutive_losses') || '0', 10);
+  const lastLoss = localStorage.getItem('cs_last_loss_time');
+  lastLossTime = lastLoss ? parseInt(lastLoss, 10) : null;
+}
+
+async function getBTCRegime() {
+  try {
+    const candles = await fetchKlines('BTCUSDT', '4h');
+    if (!candles || candles.length < 110) return { aligned: true };
+    const closes = candles.map(c => c.c);
+    const e20 = ema(closes, 20);
+    const e50 = ema(closes, 50);
+    const e100 = ema(closes, 100);
+    const i = closes.length - 1;
+    const btcStrongUptrend = e20[i] > e50[i] && e50[i] > e100[i];
+    const btcAboveEMA50 = closes[i] > e50[i];
+    return {
+      aligned: btcStrongUptrend && btcAboveEMA50,
+      trend: btcStrongUptrend ? 'strong_up' : btcAboveEMA50 ? 'up' : 'down',
+      price: closes[i]
+    };
+  } catch (e) {
+    console.warn('BTC regime check failed:', e);
+    return { aligned: true };
+  }
+}
 const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
@@ -1954,8 +2016,8 @@ function dedupeEquivalentSignals(list){
    price used to calculate the setup.
    This prevents cards where CURRENT / SL / TP appear effectively the same.
 */
-const V5_MIN_LIVE_LEVEL_GAP_RISK = 0.15; // keep live price >=15% of risk away from SL/TP
-const V5_MAX_ENTRY_DRIFT_RISK = 0.75;    // reject stale setup if live price moved >75% of risk from entry
+const V5_MIN_LIVE_LEVEL_GAP_RISK = 0.20; // TIGHTENED: keep live price >=20% of risk away from SL/TP
+const V5_MAX_ENTRY_DRIFT_RISK = V6_MODE ? V6_ENTRY_DRIFT_RISK : 0.75;
 
 function isLiveSignalTradable(signal,currentPrice){
   const entry=Number(signal?.entry);
@@ -2090,7 +2152,16 @@ async function scanSingleQuote(manual=false){
           ok++;
 
           const displaySym=displayPairFromSource(sourceSym);
-          const signal=useV5
+          // V6: strict LONG-only with BTC regime alignment
+          const signal = V6_MODE
+            ? analyzeV6(
+                candles,
+                displaySym,
+                {chg:Number(td.priceChangePercent)},
+                rrCfg,
+                btcRegime
+              )
+            : useV5
             ? analyzeV5(
                 candles,
                 displaySym,
@@ -2135,14 +2206,15 @@ async function scanSingleQuote(manual=false){
     state.scans++;
     $("scanCount").textContent=state.scans;
     const filteredSignals=results
-      .filter(s=>s&&s.dir&&s.score>=(useV5?V5_MIN_SCORE:MIN_SCORE))
-      .filter(s=>!useV5 || (
+      .filter(s=>s&&s.dir&&s.score>=(V6_MODE?V6_MIN_SCORE:useV5?V5_MIN_SCORE:MIN_SCORE))
+      .filter(s=>!V6_MODE || (
         s.v6===true &&
         s.dir==="LONG" &&
         Number(s.volumeRatio)>=V6_MIN_VOLUME &&
         Number(s.stopPct)>=V6_MIN_STOP_PCT &&
         Number(s.stopPct)<=V6_MAX_STOP_PCT
       ))
+      .filter(s=>!V6_MODE || !s.rejectReason)
       .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001);
 
     const sortedSignals=dedupeEquivalentSignals(filteredSignals)
@@ -2401,6 +2473,15 @@ async function takeSignalAsPaperTrade(s){
 
 function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(state.autoScheduleMode!=="custom")return true;const n=new Date(),d=n.getDay();if(!state.autoDays.includes(d))return false;const p=s=>{const m=String(s||"").match(/^(\d{2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):0;};const now=n.getHours()*60+n.getMinutes(),a=p(state.autoStartTime),b=p(state.autoEndTime);if(a===b)return true;return a<b?now>=a&&now<=b:now>=a||now<=b;} function updateKillSwitchButton(){const b=$("killSwitchBtn");if(!b)return;b.textContent=state.autoKillSwitch?"🛑 Kill Switch: ON":"🛑 Kill Switch: OFF";b.className=state.autoKillSwitch?"kill-switch on":"kill-switch";} async function takeAllQualifiedTrades(){
   if(state.autoKillSwitch||!autoTradeScheduleAllowed())return 0;
+
+  // V6: Check consecutive loss protection
+  const lossProtection = checkConsecutiveLossProtection();
+  if (lossProtection.blocked) {
+    logConnection("🛡 V6 blocked: " + lossProtection.reason, "warn", "v6-loss-cooldown");
+    toast("🛡 V6: " + lossProtection.reason);
+    return 0;
+  }
+
   const risk=v6RiskStatus();
   if(!risk.ok){
     logConnection("🛡 V6 blocked new trades: "+risk.reason,"warn","v6-risk-block");
@@ -2510,6 +2591,12 @@ async function updateLivePrices(){
       t.closedAt=new Date().toISOString();
       t.date=t.date||new Date().toLocaleString();
       t.pnl=calcClosedPnL(t);
+
+      // V6: Track consecutive losses for cooldown
+      if (V6_MODE) {
+        updateConsecutiveLosses(hitTP ? 'win' : 'loss');
+      }
+
       if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
       toast(hitTP
         ? "🎯 "+t.sym+" "+t.dir+" TP hit — paper trade closed automatically."
@@ -3025,6 +3112,11 @@ async function quickClose(idx,result){
   t.pnl=calcClosedPnL(t);
   t.closePrice=state.livePrices[t.sym]||t.entry;
   t.closedAt=new Date().toISOString();
+
+  // V6: Track consecutive losses for cooldown
+  if (V6_MODE) {
+    updateConsecutiveLosses(result === 'tp' ? 'win' : 'loss');
+  }
 
   if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
 
@@ -4116,6 +4208,7 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
 /* ================= INIT ================= */
 (async()=>{
   // Startup must never depend on one optional service or render block.
+  try{ loadConsecutiveLosses(); }catch(e){ console.warn("Load loss tracker skipped:",e); }
   try{ await initSupabase(); }catch(e){ console.warn("Startup Supabase skipped:",e); }
   try{ loadScannerPreferences(); loadQuotePreferences(); updateUniverseSelectorVisibility(); }catch(e){ console.warn("Startup preferences skipped:",e); }
   try{ await load(); }catch(e){ console.warn("Startup trade load skipped:",e); state.journal=[]; state.walletTx=[]; }
