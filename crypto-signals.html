@@ -926,10 +926,13 @@ function renderWallet(){
   const realized=state.journal.filter(t=>t.closed).reduce((s,t)=>s+Number(calcClosedPnL(t)||0),0);
   const ledger=walletLedgerBalance();
 
-  if($("walletBalance")) $("walletBalance").textContent=fmtINR(equity);
+  // The wallet headline must show spendable cash, not total paper equity.
+  // Total equity = available cash + open capital + unrealized P&L.
+  if($("walletBalance")) $("walletBalance").textContent=fmtINR(available);
   if($("walletInvested")) $("walletInvested").textContent=fmtINR(invested);
-  if($("walletBalanceTab")) $("walletBalanceTab").textContent=equity?" · "+fmtINR(equity):"";
+  if($("walletBalanceTab")) $("walletBalanceTab").textContent=Number.isFinite(available)?" · "+fmtINR(available):"";
   if($("walletMetrics")) $("walletMetrics").innerHTML=
+    '<div><span>Paper Equity</span><b>'+fmtINR(equity)+'</b></div>'+
     '<div><span>Total Added</span><b>'+fmtINR(deposits)+'</b></div>'+
     '<div><span>Withdrawn</span><b>'+fmtINR(withdrawals)+'</b></div>'+
     '<div><span>Available Cash</span><b class="'+(available>=0?"profit":"loss")+'">'+fmtINR(available)+'</b></div>'+
@@ -2382,7 +2385,10 @@ function v6RiskStatus(){
 function signalConfidence(s){ return Number(s?.conf ?? s?.confidence ?? s?.score ?? 0); }
 
 async function takeSignalAsPaperTrade(s){
-  if(!s||!s.dir||activeTradeExists(s)) return false;
+  if(!s||s.dir!=="LONG"||activeTradeExists(s)){
+    if(s?.dir==="SHORT") toast("🛡 V6 is LONG-only. SHORT trades are blocked.");
+    return false;
+  }
   const trade={
     sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
@@ -2977,6 +2983,10 @@ async function saveTradeToWallet(trade,signal){
 }
 async function saveTrade(){
   const s=state.signals[curIdx]; if(!s)return;
+  if(V6_MODE && s.dir!=="LONG"){
+    toast("🛡 V6 is LONG-only. SHORT paper trades are disabled.");
+    return;
+  }
 
   const amt=Number($("tmAmt").value)||0;
   const lev=Number($("tmLev").value);
