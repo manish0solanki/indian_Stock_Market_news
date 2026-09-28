@@ -2123,7 +2123,8 @@ async function scanSingleQuote(manual=false){
   const tf=$("tfSelect").value;
   const q=$("quoteSelect").value;
   const rrCfg=selectedRR();
-  const useV5=V5_MODE && (tf===V5_TIMEFRAME_DEFAULT || tf===V5_TIMEFRAME_ALT);\n  const useV6=V6_MODE;
+  const useV5=V5_MODE && (tf===V5_TIMEFRAME_DEFAULT || tf===V5_TIMEFRAME_ALT);
+  const useV6=V6_MODE;
   const myScanGeneration=++scanGeneration;
   state.tf=tf;
   state.quote=q;
