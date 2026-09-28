@@ -296,7 +296,8 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 @media(max-width:700px){.live-list-toolbar{align-items:flex-start;flex-direction:column}.live-list-wrap{border-radius:10px}}
 
 /* ================= CONNECTION LOG ================= */
- .auto-window{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.auto-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}.auto-day{display:flex;align-items:center;justify-content:center;gap:4px;padding:7px 3px;border:1px solid var(--border);border-radius:8px;background:var(--card2);font-size:10px;color:var(--muted)}.kill-switch{border:1px solid rgba(234,57,67,.45)!important;color:var(--red)!important}.kill-switch.on{background:rgba(234,57,67,.16)!important;border-color:var(--red)!important}.report-insight{margin:12px 0;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}.report-insight h3{margin:0 0 5px;font-size:14px}.report-insight-sub{font-size:10px;color:var(--muted);margin-bottom:12px}.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.insight-box{background:var(--card2);border-radius:10px;padding:10px}.insight-box .k{font-size:9px;color:var(--muted);text-transform:uppercase}.insight-box .v{font-size:14px;font-weight:800;margin-top:4px}.insight-box .s{font-size:9px;color:var(--muted);margin-top:3px}.insight-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:10px}.insight-row b{font-family:monospace}@media(max-width:600px){.auto-days{grid-template-columns:repeat(4,1fr)}.insight-grid{grid-template-columns:1fr}}.connection-log{margin:28px 20px 20px;background:#0b0f18;border:1px solid var(--border);border-radius:12px;overflow:hidden}.connection-log-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card2);font-size:11px}.connection-log-head b{font-size:12px}.connection-log-head span{color:var(--muted);font-size:9px}.connection-log-body{max-height:190px;overflow:auto;padding:7px 10px;font:10px/1.55 monospace}.connection-log-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.035)}.connection-log-time{color:var(--muted);min-width:58px}.connection-log-ok{color:var(--green)}.connection-log-warn{color:var(--yellow)}.connection-log-error{color:var(--red)}.connection-log-info{color:var(--text)}.connection-log-clear{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:9px}.connection-log-empty{color:var(--muted);padding:10px 0}
+ .auto-window{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.auto-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}.auto-day{display:flex;align-items:center;justify-content:center;gap:4px;padding:7px 3px;border:1px solid var(--border);border-radius:8px;background:var(--card2);font-size:10px;color:var(--muted)}.trade-limits-off{background:#7f1d1d!important;color:#fff!important;border-color:#ef4444!important}
+.kill-switch{border:1px solid rgba(234,57,67,.45)!important;color:var(--red)!important}.kill-switch.on{background:rgba(234,57,67,.16)!important;border-color:var(--red)!important}.report-insight{margin:12px 0;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}.report-insight h3{margin:0 0 5px;font-size:14px}.report-insight-sub{font-size:10px;color:var(--muted);margin-bottom:12px}.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.insight-box{background:var(--card2);border-radius:10px;padding:10px}.insight-box .k{font-size:9px;color:var(--muted);text-transform:uppercase}.insight-box .v{font-size:14px;font-weight:800;margin-top:4px}.insight-box .s{font-size:9px;color:var(--muted);margin-top:3px}.insight-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:10px}.insight-row b{font-family:monospace}@media(max-width:600px){.auto-days{grid-template-columns:repeat(4,1fr)}.insight-grid{grid-template-columns:1fr}}.connection-log{margin:28px 20px 20px;background:#0b0f18;border:1px solid var(--border);border-radius:12px;overflow:hidden}.connection-log-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card2);font-size:11px}.connection-log-head b{font-size:12px}.connection-log-head span{color:var(--muted);font-size:9px}.connection-log-body{max-height:190px;overflow:auto;padding:7px 10px;font:10px/1.55 monospace}.connection-log-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.035)}.connection-log-time{color:var(--muted);min-width:58px}.connection-log-ok{color:var(--green)}.connection-log-warn{color:var(--yellow)}.connection-log-error{color:var(--red)}.connection-log-info{color:var(--text)}.connection-log-clear{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:9px}.connection-log-empty{color:var(--muted);padding:10px 0}
 </style>
 <base target="_blank">
 
@@ -368,7 +369,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="9">Reward 9</option><option value="10">Reward 10</option>
   </select>
   <button id="autoBtn" class="primary">⏸ Auto: ON</button>
-  <button id="autoTradeBtn">🤖 Auto Trades: OFF</button><button id="killSwitchBtn" class="kill-switch">🛑 Kill Switch: OFF</button>
+  <button id="autoTradeBtn">🤖 Auto Trades: OFF</button><button id="limitTradesBtn" title="Turn V6 trade limits on or off">🛡 Limits: ON</button><button id="killSwitchBtn" class="kill-switch">🛑 Kill Switch: OFF</button>
   <button id="takeAllBtn" class="primary">⚡ Take All Qualified</button>
   <button id="scanBtn">🔍 Scan Now</button>
   <button id="notifyBtn">🔔 Alerts</button>
@@ -1173,6 +1174,7 @@ const V6_COOLDOWN_AFTER_LOSSES = 4;
 const V6_MIN_BTC_TREND_ALIGNMENT = false;
 
 let consecutiveLosses = 0;
+let v6TradeLimitsEnabled = localStorage.getItem("cs_v6_trade_limits") !== "0";
 let lastLossTime = null;
 
 function checkConsecutiveLossProtection(){
@@ -2440,11 +2442,34 @@ function fmtINR(n){
 }
 
 /* ================= AUTO PAPER-TRADE ENGINE ================= */
+function updateTradeLimitsButton(){
+  const b=$("limitTradesBtn");
+  if(!b)return;
+  b.textContent=v6TradeLimitsEnabled?"🛡 Limits: ON":"⚠️ Limits: OFF";
+  b.className=v6TradeLimitsEnabled?"":"trade-limits-off";
+  b.title=v6TradeLimitsEnabled
+    ?"V6 max-open, exposure, daily-loss and consecutive-loss protections are active"
+    :"V6 trade limits are bypassed for paper-trading tests";
+}
+$("limitTradesBtn").onclick=()=>{
+  v6TradeLimitsEnabled=!v6TradeLimitsEnabled;
+  localStorage.setItem("cs_v6_trade_limits",v6TradeLimitsEnabled?"1":"0");
+  updateTradeLimitsButton();
+  toast(v6TradeLimitsEnabled?"🛡 V6 trade limits ON":"⚠️ V6 trade limits OFF — paper-trade safeguards bypassed");
+};
 function activeTradeExists(signal){
   return state.journal.some(t=>!t.closed&&t.sym===signal.sym);
 }
 
 function v6RiskStatus(){
+  if(!v6TradeLimitsEnabled){
+    return {
+      ok:true,reason:"V6 trade limits are OFF",
+      equity:Math.max(0,Number(walletPaperEquity())||0),
+      openCapital:state.journal.filter(t=>!t.closed).reduce((sum,t)=>sum+Number(t.amt||0),0),
+      maxOpenCapital:Infinity,todayPnl:0,dailyLimit:Infinity
+    };
+  }
   const open=state.journal.filter(t=>!t.closed);
   const openCapital=open.reduce((sum,t)=>sum+Number(t.amt||0),0);
   const equity=Math.max(0,Number(walletPaperEquity())||0);
@@ -4265,7 +4290,7 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
 /* ================= INIT ================= */
 (async()=>{
   // Startup must never depend on one optional service or render block.
-  try{ loadConsecutiveLosses(); }catch(e){ console.warn("Loss protection state load skipped:",e); }
+  try{ loadConsecutiveLosses(); }catch(e){ console.warn("Loss protection state load skipped:",e); }\n  updateTradeLimitsButton();
   try{ loadConsecutiveLosses(); }catch(e){ console.warn("Load loss tracker skipped:",e); }
   try{ await initSupabase(); }catch(e){ console.warn("Startup Supabase skipped:",e); }
   try{ loadScannerPreferences(); loadQuotePreferences(); updateUniverseSelectorVisibility(); }catch(e){ console.warn("Startup preferences skipped:",e); }
