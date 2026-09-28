@@ -1208,6 +1208,21 @@ function loadConsecutiveLosses(){
   lastLossTime=Number.isFinite(parsed)?parsed:null;
 }
 const V6_ENTRY_DRIFT_RISK = 0.50;
+async function getBTCRegime(){
+  try{
+    const candles=await fetchKlines("BTCUSDT","4h");
+    if(!candles||candles.length<110)return {aligned:true,trend:"unknown"};
+    const closes=candles.map(c=>Number(c.c));
+    const e20=ema(closes,20),e50=ema(closes,50),e100=ema(closes,100);
+    const i=closes.length-1;
+    const strong=e20[i]>e50[i]&&e50[i]>e100[i];
+    const above50=closes[i]>e50[i];
+    return {aligned:strong&&above50,trend:strong?"strong_up":above50?"up":"down",price:closes[i]};
+  }catch(e){
+    console.warn("BTC regime check failed:",e);
+    return {aligned:true,trend:"unknown",fallback:true};
+  }
+}
 const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
