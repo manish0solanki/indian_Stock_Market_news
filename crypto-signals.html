@@ -1127,6 +1127,7 @@ function calculateSetupConfidence({dir, score, rsiValue, volumeRatio, price, e20
    The older analyze() engine remains available for historical V3 research.
 */
 const V5_MODE = true;
+const V6_MODE = true;
 const V5_TIMEFRAME_DEFAULT = "1h";  // 1H recommended for balance
 const V5_TIMEFRAME_ALT = "4h";      // 4H for fewer but stronger signals
 const V5_MIN_SCORE = 70;
@@ -1135,6 +1136,34 @@ const V5_MAX_RSI = 78;
 const V5_MIN_VOLUME = 1.2;
 const V5_MIN_STOP_PCT = 0.008;
 const V5_MAX_STOP_PCT = 0.04;
+
+/* ================= STRATEGY V6 =================
+   V6 is intentionally stricter than V5 after the paper-trade results:
+   - LONG only while SHORT is re-tested separately
+   - 1H/4H preferred; 15m is allowed but uses the same strict filters
+   - strong EMA20 > EMA50 > EMA100 trend only
+   - RSI 58–70
+   - volume >= 1.5x
+   - previous candle must pull into EMA20 and current candle must reclaim it
+   - bullish confirmation candle
+   - positive and improving MACD
+   - score >= 80
+   - entry cannot be too extended above EMA20
+   - 0.8%–4% stop and selected R:R
+   - max 3 simultaneous trades / one trade per coin
+   - max 50% of paper equity in open capital
+   - daily loss lock at 2% of net capital
+*/
+const V6_MIN_SCORE = 80;
+const V6_MIN_RSI = 58;
+const V6_MAX_RSI = 70;
+const V6_MIN_VOLUME = 1.5;
+const V6_MAX_EMA_EXTENSION_ATR = 0.65;
+const V6_MIN_STOP_PCT = 0.008;
+const V6_MAX_STOP_PCT = 0.04;
+const V6_MAX_OPEN_TRADES = 3;
+const V6_MAX_OPEN_CAPITAL_PCT = 0.50;
+const V6_DAILY_LOSS_PCT = 0.02;
 const ALERT_COOLDOWN = 5 * 60 * 1000;
 const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
@@ -1767,375 +1796,106 @@ function analyzeV4(candles,symbol,ticker,rrCfgOverride=null){
    - RSI and candle/MACD conditions are mirrored for SHORT
 */
 function analyzeV5(candles, symbol, ticker, rrCfgOverride=null) {
-  const closes = candles.map(c => Number(c.c));
-  const highs = candles.map(c => Number(c.h));
-  const lows = candles.map(c => Number(c.l));
+  const closes=candles.map(c=>Number(c.c));
+  const highs=candles.map(c=>Number(c.h));
+  const lows=candles.map(c=>Number(c.l));
 
-  if (candles.length < 110) return null;
+  if(candles.length<110) return null;
 
-  const e20 = ema(closes, 20);
-  const e50 = ema(closes, 50);
-  const e100 = ema(closes, 100);
-  const rsiV = rsi(closes);
-  const atrV = atr(candles);
-  const macdV = macd(closes);
+  const e20=ema(closes,20), e50=ema(closes,50), e100=ema(closes,100);
+  const rsiV=rsi(closes), atrV=atr(candles), macdV=macd(closes);
+  const i=closes.length-1, p=i-1;
+  const price=closes[i];
 
-  const i = closes.length - 1;
-  const p = i - 1;
-  const price = closes[i];
+  if(i<4 || !Number.isFinite(price) ||
+     !Number.isFinite(e20[i]) || !Number.isFinite(e50[i]) ||
+     !Number.isFinite(e100[i]) || !Number.isFinite(rsiV[i]) ||
+     !Number.isFinite(atrV[i])) return null;
 
-  if (i < 4 || !Number.isFinite(price) || !Number.isFinite(e20[i]) ||
-      !Number.isFinite(e50[i]) || !Number.isFinite(e100[i]) ||
-      !Number.isFinite(rsiV[i]) || !Number.isFinite(atrV[i])) {
-    return null;
-  }
+  const cur=candles[i], prev=candles[p];
+  const volRatio=volumeRatio(candles,i);
+  const hist=macdV.hist[i], prevHist=macdV.hist[p];
 
-  const cur = candles[i];
-  const prev = candles[p];
-  const volRatio = volumeRatio(candles, i);
-  const hist = macdV.hist[i];
-  const prevHist = macdV.hist[p];
+  // V6 deliberately removes SHORT entries from production scanning.
+  // Short logic remains available in the older engines for research.
+  const strongTrend=e20[i]>e50[i] && e50[i]>e100[i];
+  const rsiOk=rsiV[i]>=V6_MIN_RSI && rsiV[i]<=V6_MAX_RSI;
+  const volumeOk=volRatio>=V6_MIN_VOLUME;
+  const macdOk=Number.isFinite(hist) && hist>0;
+  const momentumOk=Number.isFinite(hist) && Number.isFinite(prevHist) && hist>prevHist;
+  const bullish=Number(cur.c)>Number(cur.o);
 
-  /* ================= LONG SETUP ================= */
-  const longStrongTrend = e20[i] > e50[i] && e50[i] > e100[i];
-  const longModerateTrend = e20[i] > e50[i];
+  // The previous candle must actually test the EMA20 area.
+  const pullbackTouch=
+    Number(prev.l)<=e20[p]+atrV[p]*0.50 &&
+    Number(prev.l)>=e20[p]-atrV[p]*1.00;
 
-  const longEma20Zone = e20[i] + atrV[i] * 1.0;
-  const longRecentLow = Math.min(
-    lows[i],
-    lows[p],
-    lows[i-2] || lows[p]
-  );
-  const longNearEMA20 = longRecentLow <= longEma20Zone;
+  // Current closed candle must reclaim EMA20.
+  const reclaim=price>e20[i] && Number(cur.o)<=e20[i];
+  const extension=(price-e20[i])/atrV[i];
+  const notExtended=Number.isFinite(extension) && extension<=V6_MAX_EMA_EXTENSION_ATR;
 
-  const longReclaim = price > e20[i];
-  const longRsiOk = rsiV[i] >= V5_MIN_RSI && rsiV[i] <= V5_MAX_RSI;
-  const longVolumeOk = volRatio >= V5_MIN_VOLUME;
-  const longMacdOk = Number.isFinite(hist) && hist > 0;
-  const longMomentumOk =
-    Number.isFinite(hist) &&
-    Number.isFinite(prevHist) &&
-    hist >= prevHist;
-  const longBullish = Number(cur.c) > Number(cur.o);
+  // Avoid entering when the candle itself is an oversized chase candle.
+  const candleRange=Math.max(0,Number(cur.h)-Number(cur.l));
+  const body=Math.abs(Number(cur.c)-Number(cur.o));
+  const candleQuality=candleRange>0 ? body/candleRange : 0;
+  const qualityOk=candleQuality>=0.45;
 
-  let longScore = 0;
-  const longReasons = [];
+  let score=0;
+  const reasons=[];
+  if(strongTrend){score+=30;reasons.push("EMA20>50>100");}
+  if(pullbackTouch){score+=20;reasons.push("EMA20 pullback");}
+  if(reclaim){score+=15;reasons.push("EMA20 reclaim");}
+  if(rsiOk){score+=15;reasons.push("RSI "+rsiV[i].toFixed(0));}
+  if(volumeOk){score+=10;reasons.push("Vol "+volRatio.toFixed(1)+"x");}
+  if(macdOk){score+=5;reasons.push("MACD+");}
+  if(momentumOk){score+=5;reasons.push("Momentum↑");}
+  if(bullish){score+=5;reasons.push("Bull candle");}
 
-  if (longStrongTrend) {
-    longScore += 30;
-    longReasons.push("EMA20>50>100");
-  } else if (longModerateTrend) {
-    longScore += 20;
-    longReasons.push("EMA20>EMA50");
-  }
+  const valid=strongTrend && pullbackTouch && reclaim && rsiOk &&
+    volumeOk && macdOk && momentumOk && bullish && qualityOk &&
+    notExtended && score>=V6_MIN_SCORE;
 
-  if (longNearEMA20) {
-    longScore += 20;
-    longReasons.push("EMA20 zone");
-  }
-
-  if (longReclaim) {
-    longScore += 10;
-    longReasons.push("EMA20 reclaim");
-  }
-
-  if (longRsiOk) {
-    longScore += 15;
-    longReasons.push("RSI " + rsiV[i].toFixed(0));
-  }
-
-  if (longVolumeOk) {
-    longScore += 10;
-    longReasons.push("Vol " + volRatio.toFixed(1) + "x");
-  }
-
-  if (longBullish) {
-    longScore += 5;
-    longReasons.push("Bull candle");
-  }
-
-  if (longMacdOk) {
-    longScore += 5;
-    longReasons.push("MACD+");
-  }
-
-  if (longMomentumOk) {
-    longScore += 5;
-    longReasons.push("Momentum↑");
-  }
-
-  const longTrendOk = longStrongTrend || longModerateTrend;
-  const longPullbackOk =
-    longNearEMA20 ||
-    (price > e20[i] && price < e20[i] + atrV[i] * 0.5);
-
-  const longValid =
-    longTrendOk &&
-    longPullbackOk &&
-    longReclaim &&
-    longRsiOk &&
-    longVolumeOk &&
-    longScore >= V5_MIN_SCORE;
-
-  /* ================= SHORT SETUP =================
-     Exact bearish mirror of LONG.
-     RSI is mirrored around 50:
-       LONG: 55–78
-       SHORT: 22–45
-     This prevents the SHORT side from treating an already deeply
-     oversold market as a fresh short setup.
-  */
-  const shortStrongTrend = e20[i] < e50[i] && e50[i] < e100[i];
-  const shortModerateTrend = e20[i] < e50[i];
-
-  const shortEma20Zone = e20[i] - atrV[i] * 1.0;
-  const shortRecentHigh = Math.max(
-    highs[i],
-    highs[p],
-    highs[i-2] || highs[p]
-  );
-  const shortNearEMA20 = shortRecentHigh >= shortEma20Zone;
-
-  const shortReclaim = price < e20[i];
-
-  const shortMinRsi = 100 - V5_MAX_RSI; // 22
-  const shortMaxRsi = 100 - V5_MIN_RSI; // 45
-  const shortRsiOk =
-    rsiV[i] >= shortMinRsi &&
-    rsiV[i] <= shortMaxRsi;
-
-  const shortVolumeOk = volRatio >= V5_MIN_VOLUME;
-  const shortMacdOk = Number.isFinite(hist) && hist < 0;
-  const shortMomentumOk =
-    Number.isFinite(hist) &&
-    Number.isFinite(prevHist) &&
-    hist <= prevHist;
-  const shortBearish = Number(cur.c) < Number(cur.o);
-
-  let shortScore = 0;
-  const shortReasons = [];
-
-  if (shortStrongTrend) {
-    shortScore += 30;
-    shortReasons.push("EMA20<50<100");
-  } else if (shortModerateTrend) {
-    shortScore += 20;
-    shortReasons.push("EMA20<EMA50");
-  }
-
-  if (shortNearEMA20) {
-    shortScore += 20;
-    shortReasons.push("EMA20 zone");
-  }
-
-  if (shortReclaim) {
-    shortScore += 10;
-    shortReasons.push("EMA20 rejection");
-  }
-
-  if (shortRsiOk) {
-    shortScore += 15;
-    shortReasons.push("RSI " + rsiV[i].toFixed(0));
-  }
-
-  if (shortVolumeOk) {
-    shortScore += 10;
-    shortReasons.push("Vol " + volRatio.toFixed(1) + "x");
-  }
-
-  if (shortBearish) {
-    shortScore += 5;
-    shortReasons.push("Bear candle");
-  }
-
-  if (shortMacdOk) {
-    shortScore += 5;
-    shortReasons.push("MACD-");
-  }
-
-  if (shortMomentumOk) {
-    shortScore += 5;
-    shortReasons.push("Momentum↓");
-  }
-
-  const shortTrendOk = shortStrongTrend || shortModerateTrend;
-  const shortPullbackOk =
-    shortNearEMA20 ||
-    (price < e20[i] && price > e20[i] - atrV[i] * 0.5);
-
-  const shortValid =
-    shortTrendOk &&
-    shortPullbackOk &&
-    shortReclaim &&
-    shortRsiOk &&
-    shortVolumeOk &&
-    shortScore >= V5_MIN_SCORE;
-
-  /* ================= DIRECTION SELECTION =================
-     Keep the existing LONG behaviour. If both somehow qualify,
-     choose the higher-scoring setup. A tie is rejected rather than
-     inventing a direction.
-  */
-  let dir = null;
-  let score = 0;
-  let reasons = [];
-
-  if (longValid && !shortValid) {
-    dir = "LONG";
-    score = longScore;
-    reasons = longReasons;
-  } else if (shortValid && !longValid) {
-    dir = "SHORT";
-    score = shortScore;
-    reasons = shortReasons;
-  } else if (longValid && shortValid) {
-    if (longScore > shortScore) {
-      dir = "LONG";
-      score = longScore;
-      reasons = longReasons;
-    } else if (shortScore > longScore) {
-      dir = "SHORT";
-      score = shortScore;
-      reasons = shortReasons;
-    } else {
-      return {
-        sym: symbol,
-        name: symbol,
-        price,
-        chg: Number(ticker?.chg || 0),
-        dir: null,
-        score: longScore,
-        conf: longScore,
-        rsi: rsiV[i],
-        atr: atrV[i],
-        volumeRatio: volRatio,
-        v5: true,
-        candles
-      };
-    }
-  }
-
-  if (!dir) {
+  if(!valid){
     return {
-      sym: symbol,
-      name: symbol,
-      price,
-      chg: Number(ticker?.chg || 0),
-      dir: null,
-      score: Math.max(longScore, shortScore),
-      conf: Math.max(longScore, shortScore),
-      rsi: rsiV[i],
-      atr: atrV[i],
-      volumeRatio: volRatio,
-      longScore,
-      shortScore,
-      v5: true,
-      candles
+      sym:symbol,name:symbol,price,chg:Number(ticker?.chg||0),dir:null,
+      score,conf:score,rsi:rsiV[i],atr:atrV[i],volumeRatio:volRatio,
+      longScore:score,shortScore:0,v5:true,v6:true,candles
     };
   }
 
-  /* ================= DIRECTION-AWARE STOP / TARGET ================= */
-  const rrCfg = rrCfgOverride || selectedRR();
-  const rrRatio = Math.max(0.1, Number(rrCfg.ratio) || 2);
+  const rrCfg=rrCfgOverride||selectedRR();
+  const rrRatio=Math.max(0.1,Number(rrCfg.ratio)||2);
+  const swingLow=Math.min(lows[i],lows[p],lows[i-2]||lows[p],lows[i-3]||lows[p]);
+  let sl=swingLow-atrV[i]*0.30;
+  let risk=price-sl;
+  if(!Number.isFinite(risk)||risk<=0)return null;
 
-  let sl;
-  let risk;
-  let tp;
+  const minRisk=price*V6_MIN_STOP_PCT;
+  const maxRisk=price*V6_MAX_STOP_PCT;
+  if(risk<minRisk){sl=price-minRisk;risk=minRisk;}
+  if(risk>maxRisk)return null;
 
-  if (dir === "LONG") {
-    const swingLow = Math.min(
-      lows[i],
-      lows[p],
-      lows[i-2] || lows[p],
-      lows[i-3] || lows[p]
-    );
+  const tp=price+risk*rrRatio;
+  const rr=Math.abs(tp-price)/risk;
+  if(!Number.isFinite(rr)||rr<=0)return null;
 
-    sl = swingLow - atrV[i] * 0.30;
-    risk = price - sl;
-
-    if (!Number.isFinite(risk) || risk <= 0) return null;
-
-    const minRisk = price * V5_MIN_STOP_PCT;
-    const maxRisk = price * V5_MAX_STOP_PCT;
-
-    if (risk < minRisk) {
-      sl = price - minRisk;
-      risk = minRisk;
-    }
-
-    if (risk > maxRisk) return null;
-
-    tp = price + risk * rrRatio;
-  } else {
-    const swingHigh = Math.max(
-      highs[i],
-      highs[p],
-      highs[i-2] || highs[p],
-      highs[i-3] || highs[p]
-    );
-
-    sl = swingHigh + atrV[i] * 0.30;
-    risk = sl - price;
-
-    if (!Number.isFinite(risk) || risk <= 0) return null;
-
-    const minRisk = price * V5_MIN_STOP_PCT;
-    const maxRisk = price * V5_MAX_STOP_PCT;
-
-    if (risk < minRisk) {
-      sl = price + minRisk;
-      risk = minRisk;
-    }
-
-    if (risk > maxRisk) return null;
-
-    tp = price - risk * rrRatio;
-  }
-
-  const rr = Math.abs(tp - price) / risk;
-
-  if (!Number.isFinite(rr) || rr <= 0) return null;
-
-  const confidence = calculateSetupConfidence({
-    dir,
-    score,
-    rsiValue: rsiV[i],
-    volumeRatio: volRatio,
-    price,
-    e20: e20[i],
-    e50: e50[i],
-    e100: e100[i],
-    atrValue: atrV[i],
-    hist,
-    prevHist,
-    rr
-  }) + ((dir === "LONG" && longBullish) || (dir === "SHORT" && shortBearish) ? 0.5 : 0);
+  const confidence=calculateSetupConfidence({
+    dir:"LONG",score,rsiValue:rsiV[i],volumeRatio:volRatio,
+    price,e20:e20[i],e50:e50[i],e100:e100[i],
+    atrValue:atrV[i],hist,prevHist,rr
+  });
 
   return {
-    sym: symbol,
-    name: symbol,
-    price,
-    chg: Number(ticker?.chg || 0),
-    dir,
-    entry: price,
-    sl,
-    tp,
-    rr,
-    score: Math.min(100, score),
-    // Confidence is displayed in 5-point steps: 50, 55, 60 ... 95.
-    conf: Math.min(95, Math.max(50, Math.round(confidence / 5) * 5)),
-    reasons,
-    rsi: rsiV[i],
-    atr: atrV[i],
-    volumeRatio: volRatio,
-    stopPct: risk / price,
-    v5: true,
-    candles,
-    longScore,
-    shortScore
+    sym:symbol,name:symbol,price,chg:Number(ticker?.chg||0),
+    dir:"LONG",entry:price,sl,tp,rr,
+    score:Math.min(100,score),
+    conf:Math.min(95,Math.max(50,Math.round(confidence/5)*5)),
+    reasons,rsi:rsiV[i],atr:atrV[i],volumeRatio:volRatio,
+    stopPct:risk/price,v5:true,v6:true,candles,
+    longScore:score,shortScore:0
   };
 }
-
 /* ================= SIGNAL DEDUPLICATION ================= */
 function signalFingerprint(s){
   const structuralReasons=(Array.isArray(s.reasons)?s.reasons:[])
@@ -2374,11 +2134,11 @@ async function scanSingleQuote(manual=false){
     const filteredSignals=results
       .filter(s=>s&&s.dir&&s.score>=(useV5?V5_MIN_SCORE:MIN_SCORE))
       .filter(s=>!useV5 || (
-        s.v5===true &&
-        (s.dir==="LONG" || s.dir==="SHORT") &&
-        Number(s.volumeRatio)>=V5_MIN_VOLUME &&
-        Number(s.stopPct)>=V5_MIN_STOP_PCT &&
-        Number(s.stopPct)<=V5_MAX_STOP_PCT
+        s.v6===true &&
+        s.dir==="LONG" &&
+        Number(s.volumeRatio)>=V6_MIN_VOLUME &&
+        Number(s.stopPct)>=V6_MIN_STOP_PCT &&
+        Number(s.stopPct)<=V6_MAX_STOP_PCT
       ))
       .filter(s=>Math.abs(Number(s.rr)-rrCfg.ratio)<0.000001);
 
@@ -2594,7 +2354,30 @@ function fmtINR(n){
 
 /* ================= AUTO PAPER-TRADE ENGINE ================= */
 function activeTradeExists(signal){
-  return state.journal.some(t=>!t.closed&&t.sym===signal.sym&&t.dir===signal.dir);
+  return state.journal.some(t=>!t.closed&&t.sym===signal.sym);
+}
+
+function v6RiskStatus(){
+  const open=state.journal.filter(t=>!t.closed);
+  const openCapital=open.reduce((s,t)=>s+Number(t.amt||0),0);
+  const equity=Math.max(0,Number(walletPaperEquity())||0);
+  const todayKey=new Date().toLocaleDateString("en-CA");
+  const todayClosed=state.journal.filter(t=>{
+    if(!t.closedAt)return false;
+    const d=new Date(t.closedAt);
+    return !Number.isNaN(d.getTime())&&d.toLocaleDateString("en-CA")===todayKey;
+  });
+  const todayPnl=todayClosed.reduce((s,t)=>s+Number(calcClosedPnL(t)||0),0);
+  const dailyLimit=Math.max(1,(Number(state.walletTx.filter(x=>x.txn_type==="DEPOSIT").reduce((s,x)=>s+Number(x.amount_inr||0),0))||0)*V6_DAILY_LOSS_PCT);
+  const maxOpenCapital=equity*V6_MAX_OPEN_CAPITAL_PCT;
+
+  if(open.length>=V6_MAX_OPEN_TRADES)
+    return {ok:false,reason:"Maximum "+V6_MAX_OPEN_TRADES+" open trades reached"};
+  if(openCapital>=maxOpenCapital)
+    return {ok:false,reason:"Open capital is already ≥50% of paper equity"};
+  if(todayPnl<=-dailyLimit)
+    return {ok:false,reason:"Daily loss limit reached ("+fmtINR(dailyLimit)+")"};
+  return {ok:true,reason:"V6 risk limits clear"};
 }
 function signalConfidence(s){ return Number(s?.conf ?? s?.confidence ?? s?.score ?? 0); }
 
@@ -2603,7 +2386,8 @@ async function takeSignalAsPaperTrade(s){
   const trade={
     sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
-    status:"running",date:new Date().toLocaleString(),createdAt:new Date().toISOString(),closedAt:null,notes:"",
+    status:"running",date:new Date().toLocaleString(),createdAt:new Date().toISOString(),closedAt:null,
+    notes:JSON.stringify({strategy:"V6",engine:"LONG_ONLY_STRICT",version:6}),
     feeMode:state.binanceFeeMode||"taker",feeRate:binanceFeeRate(state.binanceFeeMode||"taker")
   };
   return await saveTradeToWallet(trade,s);
@@ -2611,6 +2395,12 @@ async function takeSignalAsPaperTrade(s){
 
 function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(state.autoScheduleMode!=="custom")return true;const n=new Date(),d=n.getDay();if(!state.autoDays.includes(d))return false;const p=s=>{const m=String(s||"").match(/^(\d{2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):0;};const now=n.getHours()*60+n.getMinutes(),a=p(state.autoStartTime),b=p(state.autoEndTime);if(a===b)return true;return a<b?now>=a&&now<=b:now>=a||now<=b;} function updateKillSwitchButton(){const b=$("killSwitchBtn");if(!b)return;b.textContent=state.autoKillSwitch?"🛑 Kill Switch: ON":"🛑 Kill Switch: OFF";b.className=state.autoKillSwitch?"kill-switch on":"kill-switch";} async function takeAllQualifiedTrades(){
   if(state.autoKillSwitch||!autoTradeScheduleAllowed())return 0;
+  const risk=v6RiskStatus();
+  if(!risk.ok){
+    logConnection("🛡 V6 blocked new trades: "+risk.reason,"warn","v6-risk-block");
+    toast("🛡 V6: "+risk.reason);
+    return 0;
+  }
   state.autoConfidence=Math.min(95,Math.max(0,Number($("autoConfidence").value)||75));
   state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);
   state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);
@@ -2632,8 +2422,11 @@ function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(stat
 
   let taken=0,failedWallet=0;
   for(const s of qualified){
+    const liveRisk=v6RiskStatus();
+    if(!liveRisk.ok) break;
     if(walletBalance()+0.000001<Number(state.autoAmount)){ failedWallet++; continue; }
     if(await takeSignalAsPaperTrade(s)) taken++;
+    if(taken>=2) break; // V6 maximum two new entries per scan
   }
   if(!taken && failedWallet){
     toast("⚠️ Qualified signal found, but Auto Trade amount "+fmtINR(state.autoAmount)+" exceeds available wallet "+fmtINR(walletBalance())+".");
