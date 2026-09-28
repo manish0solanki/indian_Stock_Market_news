@@ -368,6 +368,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="7">Reward 7</option><option value="8">Reward 8</option>
     <option value="9">Reward 9</option><option value="10">Reward 10</option>
   </select>
+  <select id="directionSelect" title="Signal direction"><option value="BOTH" selected>↕ Both</option><option value="LONG">📈 Longs</option><option value="SHORT">📉 Shorts</option></select>
   <button id="autoBtn" class="primary">⏸ Auto: ON</button>
   <button id="autoTradeBtn">🤖 Auto Trades: OFF</button><button id="limitTradesBtn" title="Turn V6 trade limits on or off">🛡 Limits: ON</button><button id="killSwitchBtn" class="kill-switch">🛑 Kill Switch: OFF</button>
   <button id="takeAllBtn" class="primary">⚡ Take All Qualified</button>
@@ -1856,117 +1857,59 @@ function analyzeV4(candles,symbol,ticker,rrCfgOverride=null){
    - same selectable R:R
    - RSI and candle/MACD conditions are mirrored for SHORT
 */
-function analyzeV6(candles, symbol, ticker, rrCfgOverride=null, btcRegime=null) {
-  const closes=candles.map(c=>Number(c.c));
-  const highs=candles.map(c=>Number(c.h));
-  const lows=candles.map(c=>Number(c.l));
-
-  if(candles.length<110) return null;
-
-  const e20=ema(closes,20), e50=ema(closes,50), e100=ema(closes,100);
-  const rsiV=rsi(closes), atrV=atr(candles), macdV=macd(closes);
-  const i=closes.length-1, p=i-1;
-  const price=closes[i];
-
-  if(i<4 || !Number.isFinite(price) ||
-     !Number.isFinite(e20[i]) || !Number.isFinite(e50[i]) ||
-     !Number.isFinite(e100[i]) || !Number.isFinite(rsiV[i]) ||
-     !Number.isFinite(atrV[i])) return null;
-
-  const cur=candles[i], prev=candles[p];
-  const volRatio=volumeRatio(candles,i);
-  const hist=macdV.hist[i], prevHist=macdV.hist[p];
-
-  // V6 deliberately removes SHORT entries from production scanning.
-  // Short logic remains available in the older engines for research.
-  const strongTrend=e20[i]>e50[i] && e50[i]>e100[i];
-  const rsiOk=rsiV[i]>=V6_MIN_RSI && rsiV[i]<=V6_MAX_RSI;
-  const volumeOk=volRatio>=V6_MIN_VOLUME;
-  const macdOk=Number.isFinite(hist) && hist>0;
-  const momentumOk=Number.isFinite(hist) && Number.isFinite(prevHist) && hist>prevHist;
-  const bullish=Number(cur.c)>Number(cur.o);
-
-  // The previous candle must actually test the EMA20 area.
-  const pullbackTouch=
-    Number(prev.l)<=e20[p]+atrV[p]*0.50 &&
-    Number(prev.l)>=e20[p]-atrV[p]*1.00;
-
-  // Current closed candle must reclaim EMA20.
-  const reclaim=price>e20[i] && Number(cur.o)<=e20[i];
-  const extension=(price-e20[i])/atrV[i];
-  const notExtended=Number.isFinite(extension) && extension<=V6_MAX_EMA_EXTENSION_ATR;
-
-  // Avoid entering when the candle itself is an oversized chase candle.
-  const candleRange=Math.max(0,Number(cur.h)-Number(cur.l));
-  const body=Math.abs(Number(cur.c)-Number(cur.o));
-  const candleQuality=candleRange>0 ? body/candleRange : 0;
-  const qualityOk=candleQuality>=0.35;
-
-  let score=0;
-  const reasons=[];
-  if(strongTrend){score+=30;reasons.push("EMA20>50>100");}
-  if(pullbackTouch){score+=20;reasons.push("EMA20 pullback");}
-  if(reclaim){score+=15;reasons.push("EMA20 reclaim");}
-  if(rsiOk){score+=15;reasons.push("RSI "+rsiV[i].toFixed(0));}
-  if(volumeOk){score+=10;reasons.push("Vol "+volRatio.toFixed(1)+"x");}
-  if(macdOk){score+=5;reasons.push("MACD+");}
-  if(momentumOk){score+=5;reasons.push("Momentum↑");}
-  if(bullish){score+=5;reasons.push("Bull candle");}
-  if(notExtended){score+=5;reasons.push("Not extended");}
-
-  const btcAligned=!V6_MIN_BTC_TREND_ALIGNMENT || !btcRegime || btcRegime.aligned!==false;
-  if(!btcAligned) reasons.push("BTC regime not aligned");
-
-  // V6 uses a score-based confirmation model. Pullback/reclaim add
-  // significant points but are not individually mandatory; requiring both
-  // on the immediately previous candle was suppressing nearly every setup.
-  // Production V6: trend is mandatory; the remaining confirmations
-  // contribute to the score. This prevents one missing candle condition
-  // from suppressing an otherwise valid setup.
-  const coreOk=strongTrend && btcAligned;
-  const valid=coreOk && score>=V6_MIN_SCORE;
-
-  if(!valid){
-    return {
-      sym:symbol,name:symbol,price,chg:Number(ticker?.chg||0),dir:null,
-      score,conf:score,rsi:rsiV[i],atr:atrV[i],volumeRatio:volRatio,
-      longScore:score,shortScore:0,v6:true,candles
-    };
-  }
-
-  const rrCfg=rrCfgOverride||selectedRR();
-  const rrRatio=Math.max(0.1,Number(rrCfg.ratio)||2);
-  const swingLow=Math.min(lows[i],lows[p],lows[i-2]||lows[p],lows[i-3]||lows[p]);
-  let sl=swingLow-atrV[i]*0.30;
-  let risk=price-sl;
-  if(!Number.isFinite(risk)||risk<=0)return null;
-
-  const minRisk=price*V6_MIN_STOP_PCT;
-  const maxRisk=price*V6_MAX_STOP_PCT;
-  if(risk<minRisk){sl=price-minRisk;risk=minRisk;}
-  if(risk>maxRisk)return null;
-
-  const tp=price+risk*rrRatio;
-  const rr=Math.abs(tp-price)/risk;
-  if(!Number.isFinite(rr)||rr<=0)return null;
-
-  const confidence=calculateSetupConfidence({
-    dir:"LONG",score,rsiValue:rsiV[i],volumeRatio:volRatio,
-    price,e20:e20[i],e50:e50[i],e100:e100[i],
-    atrValue:atrV[i],hist,prevHist,rr
-  });
-
-  return {
-    sym:symbol,name:symbol,price,chg:Number(ticker?.chg||0),
-    dir:"LONG",entry:price,sl,tp,rr,
-    score:Math.min(100,score),
-    conf:Math.min(95,Math.max(50,Math.round(confidence/5)*5)),
-    reasons,rsi:rsiV[i],atr:atrV[i],volumeRatio:volRatio,
-    stopPct:risk/price,v6:true,candles,
-    longScore:score,shortScore:0
-  };
+function selectedDirection(){return $("directionSelect")?.value||localStorage.getItem("cs_signal_direction")||"BOTH";}
+function updateDirectionSelection(){
+  const el=$("directionSelect");if(!el)return;
+  const saved=localStorage.getItem("cs_signal_direction");
+  el.value=["LONG","SHORT","BOTH"].includes(saved)?saved:"BOTH";
+  el.onchange=()=>localStorage.setItem("cs_signal_direction",el.value);
 }
-/* ================= SIGNAL DEDUPLICATION ================= */
+function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null){
+  const direction=selectedDirection(),closes=candles.map(c=>Number(c.c)),highs=candles.map(c=>Number(c.h)),lows=candles.map(c=>Number(c.l));
+  if(candles.length<110)return null;
+  const e20=ema(closes,20),e50=ema(closes,50),e100=ema(closes,100),rsiV=rsi(closes),atrV=atr(candles),macdV=macd(closes);
+  const i=closes.length-1,p=i-1,price=closes[i];
+  if(i<4||![price,e20[i],e50[i],e100[i],rsiV[i],atrV[i]].every(Number.isFinite))return null;
+  const cur=candles[i],prev=candles[p],volRatio=volumeRatio(candles,i),hist=macdV.hist[i],prevHist=macdV.hist[p];
+  const range=Math.max(0,Number(cur.h)-Number(cur.l)),body=Math.abs(Number(cur.c)-Number(cur.o));
+  const rrCfg=rrCfgOverride||selectedRR(),rrRatio=Math.max(0.1,Number(rrCfg.ratio)||2);
+  const btcAligned=!V6_MIN_BTC_TREND_ALIGNMENT||!btcRegime||btcRegime.aligned!==false;
+  const evaluate=dir=>{
+    const long=dir==="LONG";
+    const strongTrend=long?e20[i]>e50[i]&&e50[i]>e100[i]:e20[i]<e50[i]&&e50[i]<e100[i];
+    const rsiOk=long?rsiV[i]>=V6_MIN_RSI&&rsiV[i]<=V6_MAX_RSI:rsiV[i]>=100-V6_MAX_RSI&&rsiV[i]<=100-V6_MIN_RSI;
+    const volumeOk=volRatio>=V6_MIN_VOLUME,macdOk=long?hist>0:hist<0,momentumOk=long?hist>prevHist:hist<prevHist,candleOk=long?cur.c>cur.o:cur.c<cur.o;
+    const pullback=long?prev.l<=e20[p]+atrV[p]*0.75&&prev.l>=e20[p]-atrV[p]*1.25:prev.h>=e20[p]-atrV[p]*0.75&&prev.h<=e20[p]+atrV[p]*1.25;
+    const reclaim=long?price>e20[i]:price<e20[i];
+    const extension=long?(price-e20[i])/atrV[i]:(e20[i]-price)/atrV[i],notExtended=Number.isFinite(extension)&&extension<=V6_MAX_EMA_EXTENSION_ATR;
+    let score=0,reasons=[];
+    if(strongTrend){score+=30;reasons.push(long?"EMA20>50>100":"EMA20<50<100");}
+    if(pullback){score+=20;reasons.push("EMA20 pullback");}
+    if(reclaim){score+=15;reasons.push(long?"EMA20 reclaim":"EMA20 breakdown");}
+    if(rsiOk){score+=15;reasons.push("RSI "+rsiV[i].toFixed(0));}
+    if(volumeOk){score+=10;reasons.push("Vol "+volRatio.toFixed(1)+"x");}
+    if(macdOk){score+=5;reasons.push(long?"MACD+":"MACD-");}
+    if(momentumOk){score+=5;reasons.push("Momentum");}
+    if(candleOk){score+=5;reasons.push(long?"Bull candle":"Bear candle");}
+    if(notExtended){score+=5;reasons.push("Not extended");}
+    if(!strongTrend||!btcAligned||score<V6_MIN_SCORE)return null;
+    let sl,risk;
+    if(long){const swing=Math.min(lows[i],lows[p],lows[i-2]||lows[p],lows[i-3]||lows[p]);sl=swing-atrV[i]*0.30;risk=price-sl;}
+    else{const swing=Math.max(highs[i],highs[p],highs[i-2]||highs[p],highs[i-3]||highs[p]);sl=swing+atrV[i]*0.30;risk=sl-price;}
+    if(!Number.isFinite(risk)||risk<=0)return null;
+    const minRisk=price*V6_MIN_STOP_PCT,maxRisk=price*V6_MAX_STOP_PCT;
+    if(risk<minRisk){risk=minRisk;sl=long?price-risk:price+risk;}
+    if(risk>maxRisk)return null;
+    const tp=long?price+risk*rrRatio:price-risk*rrRatio;
+    const confidence=calculateSetupConfidence({dir,score,rsiValue:rsiV[i],volumeRatio:volRatio,price,e20:e20[i],e50:e50[i],e100:e100[i],atrValue:atrV[i],hist,prevHist,rr:rrRatio});
+    return {sym:symbol,name:symbol,price,chg:Number(ticker?.chg||0),dir,entry:price,sl,tp,rr:rrRatio,score:Math.min(100,score),conf:Math.min(95,Math.max(50,Math.round(confidence/5)*5)),reasons,rsi:rsiV[i],atr:atrV[i],volumeRatio:volRatio,stopPct:risk/price,v6:true,candles,longScore:long?score:0,shortScore:long?0:score};
+  };
+  const candidates=[];
+  if(direction!=="SHORT"){const x=evaluate("LONG");if(x)candidates.push(x);}
+  if(direction!=="LONG"){const x=evaluate("SHORT");if(x)candidates.push(x);}
+  candidates.sort((a,b)=>(b.score||0)-(a.score||0));
+  return candidates[0]||null;
+}
 function signalFingerprint(s){
   const structuralReasons=(Array.isArray(s.reasons)?s.reasons:[])
     .map(x=>String(x)
@@ -2073,6 +2016,7 @@ async function scanSingleQuote(manual=false){
   const rrCfg=selectedRR();
   const useV5=V5_MODE && (tf===V5_TIMEFRAME_DEFAULT || tf===V5_TIMEFRAME_ALT);
   const useV6=V6_MODE;
+  updateDirectionSelection();
   const myScanGeneration=++scanGeneration;
   state.tf=tf;
   state.quote=q;
@@ -2223,7 +2167,8 @@ async function scanSingleQuote(manual=false){
       .filter(s=>s&&s.dir&&s.score>=(V6_MODE?V6_MIN_SCORE:useV5?V5_MIN_SCORE:MIN_SCORE))
       .filter(s=>!V6_MODE || (
         s.v6===true &&
-        s.dir==="LONG" &&
+        ["LONG","SHORT"].includes(s.dir) &&
+        (selectedDirection()==="BOTH" || s.dir===selectedDirection()) &&
         Number(s.volumeRatio)>=V6_MIN_VOLUME &&
         Number(s.stopPct)>=V6_MIN_STOP_PCT &&
         Number(s.stopPct)<=V6_MAX_STOP_PCT
@@ -2506,10 +2451,8 @@ function v6EntryRiskStatus(amount=0,signal=null){
 function signalConfidence(s){ return Number(s?.conf ?? s?.confidence ?? s?.score ?? 0); }
 
 async function takeSignalAsPaperTrade(s){
-  if(!s||s.dir!=="LONG"){
-    if(s?.dir==="SHORT")toast("🛡 V6 is LONG-only. SHORT trades are blocked.");
-    return false;
-  }
+  if(!s||!["LONG","SHORT"].includes(s.dir))return false;
+  if(selectedDirection()!=="BOTH"&&s.dir!==selectedDirection()){toast("⚠️ "+s.dir+" signals are disabled.");return false;}
   const risk=v6EntryRiskStatus(state.autoAmount,s);
   if(!risk.ok){
     logConnection("🛡 V6 entry blocked: "+risk.reason,"warn","v6-entry-block");
@@ -2519,7 +2462,7 @@ async function takeSignalAsPaperTrade(s){
     sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
     status:"running",date:new Date().toLocaleString(),createdAt:new Date().toISOString(),closedAt:null,
-    notes:JSON.stringify({strategy:"V6",engine:"LONG_ONLY_STRICT",version:6}),
+    notes:JSON.stringify({strategy:"V6",engine:"DIRECTION_SELECTABLE",direction:s.dir,version:6}),
     feeMode:state.binanceFeeMode||"taker",feeRate:binanceFeeRate(state.binanceFeeMode||"taker")
   };
   return await saveTradeToWallet(trade,s);
@@ -3219,7 +3162,7 @@ async function saveEdit(){
   const st=$("emStatus").value;
 
   if(V6_MODE){
-    if(nextDir!=="LONG"){toast("🛡 V6 is LONG-only.");return;}
+    if(!["LONG","SHORT"].includes(nextDir)){toast("🛡 Select LONG or SHORT.");return;}
     if(nextAmt!==Number(t.amt)){
       toast("🔒 Open-trade capital is already reserved. Amount cannot be changed.");
       return;
