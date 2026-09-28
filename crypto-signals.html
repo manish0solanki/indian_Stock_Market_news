@@ -1158,11 +1158,11 @@ const V5_MAX_STOP_PCT = 0.04;
    - max 50% of paper equity in open capital
    - daily loss lock at 2% of net capital
 */
-const V6_MIN_SCORE = 80;
-const V6_MIN_RSI = 58;
-const V6_MAX_RSI = 70;
-const V6_MIN_VOLUME = 1.5;
-const V6_MAX_EMA_EXTENSION_ATR = 0.50;
+const V6_MIN_SCORE = 75;
+const V6_MIN_RSI = 55;
+const V6_MAX_RSI = 72;
+const V6_MIN_VOLUME = 1.2;
+const V6_MAX_EMA_EXTENSION_ATR = 0.80;
 const V6_MIN_STOP_PCT = 0.008;
 const V6_MAX_STOP_PCT = 0.04;
 const V6_MAX_OPEN_TRADES = 3;
@@ -1170,7 +1170,7 @@ const V6_MAX_OPEN_CAPITAL_PCT = 0.50;
 const V6_DAILY_LOSS_PCT = 0.02;
 const V6_MAX_CONSECUTIVE_LOSSES = 3;
 const V6_COOLDOWN_AFTER_LOSSES = 4;
-const V6_MIN_BTC_TREND_ALIGNMENT = true;
+const V6_MIN_BTC_TREND_ALIGNMENT = false;
 
 let consecutiveLosses = 0;
 let lastLossTime = null;
@@ -1898,7 +1898,7 @@ function analyzeV6(candles, symbol, ticker, rrCfgOverride=null, btcRegime=null) 
   const candleRange=Math.max(0,Number(cur.h)-Number(cur.l));
   const body=Math.abs(Number(cur.c)-Number(cur.o));
   const candleQuality=candleRange>0 ? body/candleRange : 0;
-  const qualityOk=candleQuality>=0.45;
+  const qualityOk=candleQuality>=0.35;
 
   let score=0;
   const reasons=[];
@@ -2013,8 +2013,8 @@ function dedupeEquivalentSignals(list){
    price used to calculate the setup.
    This prevents cards where CURRENT / SL / TP appear effectively the same.
 */
-const V5_MIN_LIVE_LEVEL_GAP_RISK = 0.20; // TIGHTENED: keep live price >=20% of risk away from SL/TP
-const V5_MAX_ENTRY_DRIFT_RISK = V6_MODE ? V6_ENTRY_DRIFT_RISK : 0.75;
+const V5_MIN_LIVE_LEVEL_GAP_RISK = 0.10; // TIGHTENED: keep live price >=20% of risk away from SL/TP
+const V5_MAX_ENTRY_DRIFT_RISK = V6_MODE ? 0.90 : 0.75;
 
 function isLiveSignalTradable(signal,currentPrice){
   const entry=Number(signal?.entry);
