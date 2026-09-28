@@ -853,6 +853,7 @@ function dbTradeToUI(t){
       t.status==="TP_HIT"?"tp":
       t.status==="SL_HIT"?"sl":
       t.status==="MANUAL_CLOSE"?"manual":
+      t.status==="CANCELLED"?"cancelled":
       "running",
     currentPrice:Number(t.current_price)||Number(t.entry_price),
     closePrice:t.close_price==null?null:Number(t.close_price),
@@ -1376,6 +1377,27 @@ function selectedScanTargets(pairs){
     return pairs.filter(p=>selected.has(baseSymbolFromPair(p)));
   }
   return pairs;
+}
+
+function validateTradeLevels(t){
+  const entry=Number(t?.entry),sl=Number(t?.sl),tp=Number(t?.tp);
+  const dir=String(t?.dir||"").toUpperCase();
+  if(!["LONG","SHORT"].includes(dir)) return {ok:false,reason:"Invalid direction"};
+  if(![entry,sl,tp].every(Number.isFinite)||entry<=0||sl<=0||tp<=0){
+    return {ok:false,reason:"Entry/SL/TP must be positive numbers"};
+  }
+  if(dir==="LONG" && !(sl<entry && tp>entry)){
+    return {ok:false,reason:"LONG requires SL below Entry and TP above Entry"};
+  }
+  if(dir==="SHORT" && !(sl>entry && tp<entry)){
+    return {ok:false,reason:"SHORT requires SL above Entry and TP below Entry"};
+  }
+  const risk=Math.abs(entry-sl),reward=Math.abs(tp-entry);
+  if(!(risk>0&&reward>0)) return {ok:false,reason:"Risk/reward distance is zero"};
+  return {ok:true,risk,reward,rr:reward/risk};
+}
+function validateSignalLevels(s){
+  return validateTradeLevels({dir:s?.dir,entry:s?.entry,sl:s?.sl,tp:s?.tp});
 }
 
 function selectedRR(){
@@ -2480,6 +2502,11 @@ async function takeSignalAsPaperTrade(s){
     logConnection("🛡 V6 entry blocked: "+risk.reason,"warn","v6-entry-block");
     return false;
   }
+  const levels=validateSignalLevels(s);
+  if(!levels.ok){
+    logConnection("🛑 Trade blocked: "+s.sym+" "+s.dir+" · "+levels.reason,"warn","invalid-trade-levels");
+    return false;
+  }
   const trade={
     sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
@@ -2511,7 +2538,15 @@ function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(stat
   state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);
   state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);
 
-  const thresholdMatches=state.signals.filter(s=>s.dir&&signalConfidence(s)>=state.autoConfidence);
+  const thresholdMatches=state.signals.filter(s=>{
+    if(!s.dir||signalConfidence(s)<state.autoConfidence) return false;
+    const levels=validateSignalLevels(s);
+    if(!levels.ok){
+      logConnection("🛑 Invalid "+s.dir+" signal skipped: "+s.sym+" · "+levels.reason,"warn","invalid-signal-levels");
+      return false;
+    }
+    return true;
+  });
   const duplicateBlocked=thresholdMatches.filter(s=>activeTradeExists(s));
   const qualified=thresholdMatches.filter(s=>!activeTradeExists(s));
   if(!qualified.length){
@@ -2600,6 +2635,27 @@ async function updateLivePrices(){
     if(!Number.isFinite(cp)) continue;
     t.currentPrice=cp;
 
+    // Safety guard: old/bad trades with reversed SL/TP must never be
+    // interpreted as real TP/SL hits. Cancel them and return the reserved
+    // capital instead of manufacturing a loss/win.
+    const levels=validateTradeLevels(t);
+    if(!levels.ok){
+      t.closed=true;
+      t.status="cancelled";
+      t.closePrice=cp;
+      t.closedAt=new Date().toISOString();
+      t.pnl=0;
+      t.grossPnl=0;
+      t.entryFee=0;
+      t.exitFee=0;
+      t.totalFees=0;
+      t.netPnl=0;
+      logConnection("🧹 Cancelled invalid open trade: "+t.sym+" "+t.dir+" · "+levels.reason,"warn","invalid-open-trade");
+      if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
+      toast("🧹 "+t.sym+" "+t.dir+" invalid SL/TP cancelled; capital returned.");
+      continue;
+    }
+
     const hitTP=t.dir==="LONG" ? cp>=t.tp : cp<=t.tp;
     const hitSL=t.dir==="LONG" ? cp<=t.sl : cp>=t.sl;
 
@@ -2668,6 +2724,7 @@ function calcLivePnL(t){
   };
 }
 function calcClosedPnL(t){
+  if(t.status==="cancelled") return 0;
   const close=Number(t.closePrice), fallback=t.status==="tp"?Number(t.tp):t.status==="sl"?Number(t.sl):Number(t.entry);
   const exit=Number.isFinite(close)&&close>0?close:fallback;
   const move=t.dir==="LONG"?(exit-t.entry)/t.entry:(t.entry-exit)/t.entry;
