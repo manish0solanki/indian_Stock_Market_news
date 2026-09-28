@@ -4233,8 +4233,8 @@ $("clearConnectionLog")?.addEventListener("click",()=>{connectionLogSeen.clear()
 /* ================= INIT ================= */
 (async()=>{
   // Startup must never depend on one optional service or render block.
-  try{ loadConsecutiveLosses(); }catch(e){ console.warn("Loss protection state load skipped:",e); }\n  updateTradeLimitsButton();
-  try{ loadConsecutiveLosses(); }catch(e){ console.warn("Load loss tracker skipped:",e); }
+  try{ loadConsecutiveLosses(); }catch(e){ console.warn("Loss protection state load skipped:",e); }
+  updateTradeLimitsButton();
   try{ await initSupabase(); }catch(e){ console.warn("Startup Supabase skipped:",e); }
   try{ loadScannerPreferences(); loadQuotePreferences(); updateUniverseSelectorVisibility(); }catch(e){ console.warn("Startup preferences skipped:",e); }
   try{ await load(); }catch(e){ console.warn("Startup trade load skipped:",e); state.journal=[]; state.walletTx=[]; }
