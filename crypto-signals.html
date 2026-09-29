@@ -1226,6 +1226,13 @@ function addRiskNotification(message,type="warn",key=message,repeatMs=15*60*1000
 }
 
 function checkConsecutiveLossProtection(){
+  // The V6 Limits switch is the master switch for ALL V6 risk protections,
+  // including the consecutive-loss cooldown. When Limits are OFF, the
+  // cooldown must never block a trade.
+  if(!v6TradeLimitsEnabled){
+    return {blocked:false,disabled:true,reason:"V6 trade limits are OFF"};
+  }
+
   if(consecutiveLosses>=V6_MAX_CONSECUTIVE_LOSSES){
     const hoursSinceLastLoss=lastLossTime?(Date.now()-lastLossTime)/(1000*60*60):999;
     if(hoursSinceLastLoss<V6_COOLDOWN_AFTER_LOSSES){
@@ -2639,7 +2646,28 @@ $("limitTradesBtn").onclick=()=>{
   v6TradeLimitsEnabled=!v6TradeLimitsEnabled;
   localStorage.setItem("cs_v6_trade_limits",v6TradeLimitsEnabled?"1":"0");
   updateTradeLimitsButton();
-  toast(v6TradeLimitsEnabled?"🛡 V6 trade limits ON":"⚠️ V6 trade limits OFF — paper-trade safeguards bypassed");
+
+  if(v6TradeLimitsEnabled){
+    // Do not alter the stored loss history. Turning the switch ON should
+    // restore the real V6 rules, including any still-active cooldown.
+    const protection=checkConsecutiveLossProtection();
+    if(protection.blocked){
+      const msg="🛡 V6 Limits ON — cooldown is active. "+protection.reason;
+      addRiskNotification(msg,"warn","v6-limits-on-cooldown",5*60*1000,true);
+    }else{
+      addRiskNotification(
+        "🛡 V6 Limits ON — max-open, exposure, daily-loss and cooldown protections are active.",
+        "ok","v6-limits-on",5*60*1000,true
+      );
+      toast("🛡 V6 trade limits ON");
+    }
+  }else{
+    addRiskNotification(
+      "⚠️ V6 Limits OFF — consecutive-loss cooldown and V6 trade limits are bypassed for paper trading.",
+      "warn","v6-limits-off",5*60*1000,true
+    );
+    toast("⚠️ V6 trade limits OFF — paper-trade safeguards bypassed");
+  }
 };
 function activeTradeExists(signal){
   return state.journal.some(t=>!t.closed&&t.sym===signal.sym);
