@@ -8200,55 +8200,218 @@ async function cryptoDashPrice(t){
 async function loadCryptoTradeDashboard(){
   const status=document.getElementById('cryptoDashStatus');if(!status)return;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+
   try{
-    const {data:{session}}=await supabaseClient.auth.getSession(),user=session?.user;
-    if(!user){status.textContent='Log in to view your paper-trade stats';['cryptoDashTotalPnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));return;}
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    const user=session?.user;
+
+    if(!user){
+      status.textContent='Log in to view your paper-trade stats';
+      ['cryptoDashTotalPnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));
+      return;
+    }
+
+    /*
+     * IMPORTANT:
+     * This dashboard intentionally mirrors the accounting used by
+     * crypto-signals.html. It reads the same crypto_trades and
+     * crypto_wallet_transactions tables and applies the same:
+     * - closed-trade definition
+     * - historical INR close-price correction
+     * - Binance fee calculation
+     * - realized P&L calculation
+     * - live/open P&L calculation
+     *
+     * The wallet transaction ledger is NOT treated as P&L.
+     */
     const [{data,error},{data:walletData,error:walletError}]=await Promise.all([
-      supabaseClient.from('crypto_trades').select('id,pair,symbol,quote,direction,entry_price,amount_inr,leverage,status,current_price,close_price,pnl_inr,closed_at,created_at,notes').eq('user_id',user.id).order('created_at',{ascending:false}).limit(500),
-      supabaseClient.from('crypto_wallet_transactions').select('txn_type,amount_inr,trade_id,created_at').eq('user_id',user.id).order('created_at',{ascending:true}).limit(2000)
+      supabaseClient
+        .from('crypto_trades')
+        .select('id,pair,symbol,quote,direction,entry_price,stop_loss,take_profit,amount_inr,leverage,status,current_price,close_price,pnl_inr,closed_at,created_at,notes')
+        .eq('user_id',user.id)
+        .order('created_at',{ascending:false})
+        .limit(500),
+      supabaseClient
+        .from('crypto_wallet_transactions')
+        .select('txn_type,amount_inr,trade_id,created_at')
+        .eq('user_id',user.id)
+        .order('created_at',{ascending:true})
+        .limit(2000)
     ]);
-    if(error)throw error;if(walletError)throw walletError;
-    const rows=Array.isArray(data)?data:[],wallet=Array.isArray(walletData)?walletData:[];
-    const isClosed=t=>['TP_HIT','SL_HIT','MANUAL_CLOSE','CANCELLED','KILL_SWITCH'].includes(String(t.status||'').toUpperCase());
-    const feeRate=t=>{let n=0;try{n=Number(JSON.parse(t.notes||'{}').feeRate)}catch(e){}return Number.isFinite(n)&&n>=0?n:0.001;};
-    const tradeCosts=(t,price)=>{const entry=Number(t.entry_price)||0,cp=Number(price)||entry,position=Math.max(0,Number(t.amount_inr||0)*Number(t.leverage||1));if(!(entry>0)||!(cp>0)||!(position>0))return 0;const rate=feeRate(t);return position*rate+position*(cp/entry)*rate;};
+
+    if(error)throw error;
+    if(walletError)throw walletError;
+
+    const rows=Array.isArray(data)?data:[];
+    const wallet=Array.isArray(walletData)?walletData:[];
+
+    // Matches crypto-signals.html: TP_HIT, SL_HIT, MANUAL_CLOSE and CANCELLED.
+    const isClosed=t=>[
+      'TP_HIT','SL_HIT','MANUAL_CLOSE','CANCELLED'
+    ].includes(String(t.status||'').toUpperCase());
+
+    const feeRate=t=>{
+      try{
+        const n=Number(JSON.parse(t.notes||'{}').feeRate);
+        return Number.isFinite(n)&&n>=0?n:0.001;
+      }catch(e){
+        return 0.001;
+      }
+    };
+
+    // Matches crypto-signals.html calcTradeCosts().
+    const tradeCosts=(t,price)=>{
+      const entry=Number(t.entry_price)||0;
+      const cp=Number(price)||entry;
+      const position=Math.max(0,Number(t.amount_inr||0)*Number(t.leverage||1));
+
+      if(!(entry>0)||!(cp>0)||!(position>0))return {
+        entryFee:0,exitFee:0,totalFees:0
+      };
+
+      const rate=feeRate(t);
+      const entryFee=position*rate;
+      const exitFee=position*(cp/entry)*rate;
+
+      return {
+        entryFee,
+        exitFee,
+        totalFees:entryFee+exitFee
+      };
+    };
+
+    // Exact accounting equivalent of crypto-signals.html calcClosedPnL().
     const calcClosedNet=t=>{
-      if(String(t.status||'').toUpperCase()==='CANCELLED') return 0;
+      if(String(t.status||'').toUpperCase()==='CANCELLED')return 0;
+
       const entry=Number(t.entry_price)||0;
       const rawClose=Number(t.close_price);
       const status=String(t.status||'').toUpperCase();
       const pair=String(t.pair||'').toUpperCase();
-      const ratio=entry>0&&Number.isFinite(rawClose)&&rawClose>0?rawClose/entry:0;
-      const badINR=pair.endsWith('INR')&&(!Number.isFinite(rawClose)||rawClose<=0||ratio<0.5||ratio>1.5);
-      const exit=badINR
-        ? (status==='TP_HIT'?Number(t.take_profit):status==='SL_HIT'?Number(t.stop_loss):rawClose)
-        : (Number.isFinite(rawClose)&&rawClose>0?rawClose:(status==='TP_HIT'?Number(t.take_profit):status==='SL_HIT'?Number(t.stop_loss):entry));
-      if(!(entry>0)||!(exit>0)) return 0;
-      const dir=String(t.direction||'').toUpperCase();
-      const move=dir==='LONG'?(exit-entry)/entry:(entry-exit)/entry;
-      return Number(t.amount_inr||0)*Number(t.leverage||1)*move-tradeCosts(t,exit);
-    };
-    const calcLiveNet=t=>{const cp=Number(t.current_price)||Number(t.entry_price)||0,entry=Number(t.entry_price)||0,amt=Number(t.amount_inr)||0,lev=Number(t.leverage)||1,dir=String(t.direction||'').toUpperCase(),move=entry>0?(dir==='LONG'?(cp-entry)/entry:(entry-cp)/entry):0;return amt*lev*move-tradeCosts(t,cp);};
-    const open=rows.filter(t=>!isClosed(t)),closed=rows.filter(isClosed);
-    const runningNetPnl=open.reduce((s,t)=>s+calcLiveNet(t),0);
-    const realizedPnl=closed.reduce((s,t)=>s+calcClosedNet(t),0);
-    const wins=closed.filter(t=>calcClosedNet(t)>0).length,winRate=closed.length?Math.round(wins/closed.length*100):null;
-    const today=new Date().toLocaleDateString('en-CA');
-    const todayPnl=closed.filter(t=>{const d=t.closed_at?new Date(t.closed_at):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+calcClosedNet(t),0);
+      const isINR=pair.endsWith('INR');
 
-    // Wallet ledger entries are cash reservations/returns, not P&L.
-    // Derive account value from deposits/withdrawals + actual trade P&L so
-    // stale or corrupted historical trade credits cannot inflate the wallet.
-    const deposits=wallet.filter(t=>String(t.txn_type||'').toUpperCase()==='DEPOSIT').reduce((s,t)=>s+Number(t.amount_inr||0),0);
-    const withdrawals=Math.abs(wallet.filter(t=>String(t.txn_type||'').toUpperCase()==='WITHDRAWAL').reduce((s,t)=>s+Number(t.amount_inr||0),0));
-    const netCapitalAdded=deposits-withdrawals;
-    const openCapital=open.reduce((s,t)=>s+Number(t.amount_inr||0),0);
+      const ratio=entry>0&&Number.isFinite(rawClose)&&rawClose>0
+        ? rawClose/entry
+        : 0;
+
+      // Historical INR trades can contain a Binance USDT close price.
+      // For TP/SL trades, crypto-signals.html uses stored TP/SL as the
+      // authoritative exit when the saved INR close is obviously wrong.
+      const obviouslyWrongINR=
+        isINR &&
+        (!Number.isFinite(rawClose)||rawClose<=0||ratio<0.5||ratio>1.5);
+
+      let exit;
+
+      if(obviouslyWrongINR){
+        exit=status==='TP_HIT'
+          ? Number(t.take_profit)
+          : status==='SL_HIT'
+            ? Number(t.stop_loss)
+            : Number.isFinite(rawClose)&&rawClose>0
+              ? rawClose
+              : Number(t.entry_price);
+      }else{
+        exit=Number.isFinite(rawClose)&&rawClose>0
+          ? rawClose
+          : status==='TP_HIT'
+            ? Number(t.take_profit)
+            : status==='SL_HIT'
+              ? Number(t.stop_loss)
+              : Number(t.entry_price);
+      }
+
+      if(!(entry>0)||!(exit>0))return 0;
+
+      const dir=String(t.direction||'').toUpperCase();
+      const move=dir==='LONG'
+        ? (exit-entry)/entry
+        : (entry-exit)/entry;
+
+      const grossPnl=
+        Number(t.amount_inr||0)*
+        Number(t.leverage||1)*
+        move;
+
+      const costs=tradeCosts(t,exit);
+      return grossPnl-costs.totalFees;
+    };
+
+    // Exact accounting equivalent of crypto-signals.html calcLivePnL().
+    // current_price is the live price written by the crypto scanner.
+    const calcLiveNet=t=>{
+      const cp=Number(t.current_price)||Number(t.entry_price)||0;
+      const entry=Number(t.entry_price)||0;
+      const amount=Number(t.amount_inr)||0;
+      const leverage=Number(t.leverage)||1;
+      const dir=String(t.direction||'').toUpperCase();
+
+      const move=entry>0
+        ? dir==='LONG'
+          ? (cp-entry)/entry
+          : (entry-cp)/entry
+        : 0;
+
+      const grossPnl=amount*leverage*move;
+      return grossPnl-tradeCosts(t,cp).totalFees;
+    };
+
+    const open=rows.filter(t=>!isClosed(t));
+    const closed=rows.filter(isClosed);
+
+    const runningNetPnl=open.reduce(
+      (sum,t)=>sum+calcLiveNet(t),0
+    );
+
+    const realizedPnl=closed.reduce(
+      (sum,t)=>sum+calcClosedNet(t),0
+    );
+
+    const wins=closed.filter(
+      t=>calcClosedNet(t)>0
+    ).length;
+
+    const winRate=closed.length
+      ? Math.round(wins/closed.length*100)
+      : null;
+
+    const today=new Date().toLocaleDateString('en-CA');
+
+    const todayPnl=closed
+      .filter(t=>{
+        const d=t.closed_at?new Date(t.closed_at):null;
+        return d &&
+          !Number.isNaN(d.getTime()) &&
+          d.toLocaleDateString('en-CA')===today;
+      })
+      .reduce((sum,t)=>sum+calcClosedNet(t),0);
+
     const totalPnl=realizedPnl+runningNetPnl;
-    const totalEquity=netCapitalAdded+totalPnl;
-    set('cryptoDashTotalPnl',cryptoDashMoney(totalPnl));set('cryptoDashOpen',String(open.length));set('cryptoDashWinRate',winRate==null?'—':winRate+'%');set('cryptoDashToday',cryptoDashMoney(todayPnl));
-    ['cryptoDashTotalPnl','cryptoDashToday'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=(id==='cryptoDashTotalPnl'?totalPnl:todayPnl)>=0?'var(--positive)':'var(--negative)';});
-    status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  }catch(e){console.error('[Crypto Dashboard]',e);status.textContent='Dashboard unavailable';}
+
+    set('cryptoDashTotalPnl',cryptoDashMoney(totalPnl));
+    set('cryptoDashOpen',String(open.length));
+    set('cryptoDashWinRate',winRate==null?'—':winRate+'%');
+    set('cryptoDashToday',cryptoDashMoney(todayPnl));
+
+    ['cryptoDashTotalPnl','cryptoDashToday'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){
+        const value=id==='cryptoDashTotalPnl'?totalPnl:todayPnl;
+        el.style.color=value>=0?'var(--positive)':'var(--negative)';
+      }
+    });
+
+    status.textContent=
+      'Live · '+
+      new Date().toLocaleTimeString('en-IN',{
+        hour:'2-digit',
+        minute:'2-digit'
+      });
+
+  }catch(e){
+    console.error('[Crypto Dashboard]',e);
+    status.textContent='Dashboard unavailable';
+  }
 }
 
 function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTimer)clearInterval(cryptoDashTimer);cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));}
