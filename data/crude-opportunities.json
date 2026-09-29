@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-29T09:31:03.956Z",
+  "generated_at": "2026-09-29T10:01:04.727Z",
   "feed": {
     "name": "MarketPulse Crude Opportunities",
     "version": "1.0",
@@ -50,7 +50,7 @@
       "rsi14": 39.94,
       "momentum5d": -2.73,
       "momentum20d": -2.86,
-      "volume_ratio": 0.74,
+      "volume_ratio": 0.92,
       "volume_state": "NORMAL",
       "technical_confirmation": "CONFIRMED",
       "volume_confirmation": "PENDING",
@@ -70,7 +70,7 @@
       "trigger_data_quality": "NORMAL",
       "opportunity_quality": "NORMAL",
       "quality_flags": [],
-      "generated_at": "2026-09-29T09:31:03.956Z",
+      "generated_at": "2026-09-29T10:01:04.727Z",
       "scanner_version": "1.0",
       "signal_engine_version": "1.1",
       "news_engine_version": "1.1",
