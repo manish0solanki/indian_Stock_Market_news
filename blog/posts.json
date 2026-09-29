@@ -1,5 +1,25 @@
 [
   {
+    "slug": "adaniports-stock-spotlight",
+    "title": "Adani Ports Surges 4.5% on Double Average Volume, Nears 52-Week High",
+    "excerpt": "PRICE ACTION: Adani Ports closed at ₹1822, up 4.49% with volume at twice the daily average, indicating genuine buying interest rather than thin-market drift. The stock now sits...",
+    "category": "stock-spotlight",
+    "date": "2026-09-29",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "ADANIPORTS",
+      "ADANI PORT & SEZ LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-50-daily-wrap-29-sept-2026",
     "title": "Nifty 50 Daily Wrap — 29 Sept 2026: Drops 0.28%",
     "excerpt": "Nifty 50 dropped 0.28% to close at 22,716.20.",
@@ -446,26 +466,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "adaniports-stock-spotlight",
-    "title": "Adani Ports Surges 4.9% on Heavy Volume, Within Striking Distance of 52-Week High",
-    "excerpt": "PRICE ACTION: Adani Ports rallied sharply on volume 68% above average, indicating genuine buying interest rather than thin-market drift. The stock now sits just 3.6% below its 5...",
-    "category": "stock-spotlight",
-    "date": "2026-09-18",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "ADANIPORTS",
-      "ADANI PORT & SEZ LTD"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
