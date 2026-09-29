@@ -3535,7 +3535,7 @@ body {
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashWinRate">—</div><div class="l">Win Rate</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashToday">—</div><div class="l">Today P&L</div></div>
         </div>
-        <div class="crypto-dash-note">Paper trades only · values use the same trade data and P&L calculation as the CryptoSignal Tracker.</div>
+        <div class="crypto-dash-note">Paper trades only · P&L is recalculated from each trade's entry/exit, direction, leverage and Binance fee — wallet deposits/reservations are excluded.</div>
       </div>
 
       <!-- 1. Market Snapshot -->
@@ -8203,7 +8203,7 @@ async function loadCryptoTradeDashboard(){
     const {data:{session}}=await supabaseClient.auth.getSession(),user=session?.user;
     if(!user){status.textContent='Log in to view your paper-trade stats';['cryptoDashTotalPnl','cryptoDashOpen','cryptoDashWinRate','cryptoDashToday'].forEach(id=>set(id,'—'));return;}
     const [{data,error},{data:walletData,error:walletError}]=await Promise.all([
-      supabaseClient.from('crypto_trades').select('id,pair,symbol,quote,direction,entry_price,amount_inr,leverage,status,current_price,close_price,pnl_inr,closed_at,created_at,notes').eq('user_id',user.id).order('created_at',{ascending:false}).limit(500),
+      supabaseClient.from('crypto_trades').select('id,pair,symbol,quote,direction,entry_price,stop_loss,take_profit,amount_inr,leverage,status,current_price,close_price,pnl_inr,closed_at,created_at,notes').eq('user_id',user.id).order('created_at',{ascending:false}).limit(500),
       supabaseClient.from('crypto_wallet_transactions').select('txn_type,amount_inr,trade_id,created_at').eq('user_id',user.id).order('created_at',{ascending:true}).limit(2000)
     ]);
     if(error)throw error;if(walletError)throw walletError;
@@ -8226,12 +8226,32 @@ async function loadCryptoTradeDashboard(){
       }catch(e){}
     }));
 
+    // Recalculate every closed trade from its actual entry/exit/direction.
+    // Never trust historical pnl_inr here because older scanner versions could
+    // have stored incorrect SHORT P&L or wallet-derived values.
+    const calcClosedNet=t=>{
+      if(String(t.status||'').toUpperCase()==='CANCELLED') return 0;
+      const entry=Number(t.entry_price)||0, amt=Number(t.amount_inr)||0, lev=Number(t.leverage)||1;
+      if(!(entry>0&&amt>0&&lev>0)) return 0;
+      let exit=Number(t.close_price);
+      if(!(exit>0)){
+        const st=String(t.status||'').toUpperCase();
+        exit=st==='TP_HIT'?Number(t.take_profit):st==='SL_HIT'?Number(t.stop_loss):entry;
+      }
+      if(!(exit>0)) return 0;
+      const dir=String(t.direction||'').toUpperCase();
+      const move=dir==='LONG'?(exit-entry)/entry:(entry-exit)/entry;
+      const gross=amt*lev*move;
+      return gross-tradeCosts(t,exit);
+    };
     const runningNetPnl=open.reduce((s,t)=>s+calcLiveNet(t),0);
-    const realizedNetPnl=closed.reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
+    const realizedNetPnl=closed.reduce((s,t)=>s+calcClosedNet(t),0);
     const totalPnl=realizedNetPnl+runningNetPnl;
-    const wins=closed.filter(t=>Number(t.pnl_inr)>0).length,winRate=closed.length?Math.round(wins/closed.length*100):null;
+    const performanceTrades=closed.filter(t=>String(t.status||'').toUpperCase()!=='CANCELLED');
+    const wins=performanceTrades.filter(t=>calcClosedNet(t)>0).length;
+    const winRate=performanceTrades.length?Math.round(wins/performanceTrades.length*100):null;
     const today=new Date().toLocaleDateString('en-CA');
-    const todayPnl=closed.filter(t=>{const d=t.closed_at?new Date(t.closed_at):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
+    const todayPnl=performanceTrades.filter(t=>{const d=t.closed_at?new Date(t.closed_at):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+calcClosedNet(t),0);
     set('cryptoDashTotalPnl',cryptoDashMoney(totalPnl));set('cryptoDashOpen',String(open.length));set('cryptoDashWinRate',winRate==null?'—':winRate+'%');set('cryptoDashToday',cryptoDashMoney(todayPnl));
     ['cryptoDashTotalPnl','cryptoDashToday'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=(id==='cryptoDashTotalPnl'?totalPnl:todayPnl)>=0?'var(--positive)':'var(--negative)';});
     status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
