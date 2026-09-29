@@ -3153,7 +3153,7 @@ body {
 .crypto-dash-title{font-size:13px;font-weight:700;color:var(--text)}
 .crypto-dash-link{font-size:10px;color:var(--indigo-light);text-decoration:none;font-weight:600}
 [data-theme="light"] .crypto-dash-link{color:var(--indigo)}
-.crypto-dash-badge{font-size:9px;color:var(--text-muted);font-family:var(--font-mono)}
+.crypto-dash-badge{font-size:9px;color:var(--text-muted);font-family:var(--font-mono)} .crypto-dash-mode{font-size:8px;color:var(--indigo-light);font-weight:700;margin-top:3px}
 .crypto-dash-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .crypto-dash-metric{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;min-width:0}
 .crypto-dash-metric .v{font:700 12px var(--font-mono);white-space:nowrap;overflow:visible;text-overflow:clip;letter-spacing:-.35px}
@@ -3528,7 +3528,7 @@ body {
 
       <!-- Crypto Paper Trade Dashboard -->
       <div class="widget-card crypto-dashboard" id="cryptoTradeDashboard">
-        <div class="crypto-dash-head"><div><div class="crypto-dash-title">⚡ Crypto Trade Dashboard</div><div class="crypto-dash-badge" id="cryptoDashStatus">Checking account…</div></div><a class="crypto-dash-link" href="/crypto-signals.html">Open Scanner →</a></div>
+        <div class="crypto-dash-head"><div><div class="crypto-dash-title">⚡ Crypto Trade Dashboard</div><div class="crypto-dash-badge" id="cryptoDashStatus">Checking account…</div><div class="crypto-dash-mode">V6 · LONG + SHORT · Paper/Test</div></div><a class="crypto-dash-link" href="/crypto-signals.html">Open Scanner →</a></div>
         <div class="crypto-dash-metrics">
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashTotalPnl">—</div><div class="l">Total P&L</div></div>
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashOpen">—</div><div class="l">Open Trades</div></div>
@@ -8213,14 +8213,25 @@ async function loadCryptoTradeDashboard(){
     const tradeCosts=(t,price)=>{const entry=Number(t.entry_price)||0,cp=Number(price)||entry,position=Math.max(0,Number(t.amount_inr||0)*Number(t.leverage||1));if(!(entry>0)||!(cp>0)||!(position>0))return 0;const rate=feeRate(t);return position*rate+position*(cp/entry)*rate;};
     const calcLiveNet=t=>{const cp=Number(t.current_price)||Number(t.entry_price)||0,entry=Number(t.entry_price)||0,amt=Number(t.amount_inr)||0,lev=Number(t.leverage)||1,dir=String(t.direction||'').toUpperCase(),move=entry>0?(dir==='LONG'?(cp-entry)/entry:(entry-cp)/entry):0;return amt*lev*move-tradeCosts(t,cp);};
     const open=rows.filter(t=>!isClosed(t)),closed=rows.filter(isClosed);
+
+    // Use the same P&L model as CryptoSignal Tracker:
+    // realized P&L from closed trades + live unrealized P&L from open trades.
+    // Do NOT derive profit from wallet debit/credit transactions, because those
+    // include capital reservations/returns and can make the home dashboard
+    // appear to show a fake profit (e.g. +₹10k).
+    await Promise.all(open.map(async t=>{
+      try{
+        const live=await cryptoDashPrice(t);
+        if(Number.isFinite(live)&&live>0) t.current_price=live;
+      }catch(e){}
+    }));
+
     const runningNetPnl=open.reduce((s,t)=>s+calcLiveNet(t),0);
+    const realizedNetPnl=closed.reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
+    const totalPnl=realizedNetPnl+runningNetPnl;
     const wins=closed.filter(t=>Number(t.pnl_inr)>0).length,winRate=closed.length?Math.round(wins/closed.length*100):null;
     const today=new Date().toLocaleDateString('en-CA');
     const todayPnl=closed.filter(t=>{const d=t.closed_at?new Date(t.closed_at):null;return d&&!Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===today;}).reduce((s,t)=>s+(Number(t.pnl_inr)||0),0);
-    const walletBalance=wallet.reduce((s,t)=>s+(Number(t.amount_inr)||0),0);
-    const openCapital=open.reduce((s,t)=>s+(Number(t.amount_inr)||0),0);
-    const netCapitalAdded=wallet.filter(t=>['DEPOSIT','WITHDRAWAL'].includes(String(t.txn_type||'').toUpperCase())).reduce((s,t)=>s+(Number(t.amount_inr)||0),0);
-    const totalEquity=walletBalance+openCapital+runningNetPnl,totalPnl=totalEquity-netCapitalAdded;
     set('cryptoDashTotalPnl',cryptoDashMoney(totalPnl));set('cryptoDashOpen',String(open.length));set('cryptoDashWinRate',winRate==null?'—':winRate+'%');set('cryptoDashToday',cryptoDashMoney(todayPnl));
     ['cryptoDashTotalPnl','cryptoDashToday'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=(id==='cryptoDashTotalPnl'?totalPnl:todayPnl)>=0?'var(--positive)':'var(--negative)';});
     status.textContent='Live · '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
