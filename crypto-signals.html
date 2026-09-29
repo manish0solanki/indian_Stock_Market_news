@@ -2050,6 +2050,109 @@ function isLiveSignalTradable(signal,currentPrice){
   return true;
 }
 
+/* ================= TRADE DECISION NOTIFICATIONS ================= */
+function addTradeDecisionNotification(message,type="info"){
+  addScanNotification(message,type);
+}
+
+function notifyScanTradeDecisions(previousOpenKeys, autoEnabled, autoOpenedCount){
+  if(!Array.isArray(state.signals)) return;
+
+  if(!autoEnabled){
+    if(state.signals.length){
+      addTradeDecisionNotification(
+        "❌ "+state.signals.length+" valid signal"+(state.signals.length===1?"":"s")+" found, but no trade taken — Auto Trades is OFF.",
+        "warn"
+      );
+    }else{
+      addTradeDecisionNotification("ℹ️ Scan completed — no valid trade setup passed the strategy filters.","info");
+    }
+    return;
+  }
+
+  if(!state.signals.length){
+    addTradeDecisionNotification("❌ No trade taken — no valid setup passed the strategy filters.","warn");
+    return;
+  }
+
+  let reported=0;
+  for(const s of state.signals){
+    const key=s.sym+"_"+s.dir;
+    const confidence=signalConfidence(s);
+    const threshold=Number(state.autoConfidence)||75;
+    const levels=validateSignalLevels(s);
+
+    if(previousOpenKeys.has(key) || activeTradeExists(s)){
+      addTradeDecisionNotification(
+        "⏭️ "+s.sym+" "+s.dir+" — not taken: an open trade already exists for this pair.",
+        "warn"
+      );
+      reported++; continue;
+    }
+
+    if(!levels.ok){
+      addTradeDecisionNotification(
+        "❌ "+s.sym+" "+s.dir+" — not taken: invalid trade levels · "+levels.reason,
+        "error"
+      );
+      reported++; continue;
+    }
+
+    if(confidence<threshold){
+      addTradeDecisionNotification(
+        "❌ "+s.sym+" "+s.dir+" — not taken: confidence "+confidence+"% is below "+threshold+"% threshold · score "+(Number(s.score)||0),
+        "warn"
+      );
+      reported++; continue;
+    }
+
+    const risk=v6EntryRiskStatus(state.autoAmount,s);
+    if(!risk.ok){
+      addTradeDecisionNotification(
+        "❌ "+s.sym+" "+s.dir+" — not taken: "+risk.reason,
+        "error"
+      );
+      reported++; continue;
+    }
+
+    const wallet=walletBalance();
+    if(wallet+0.000001<Number(state.autoAmount||0)){
+      addTradeDecisionNotification(
+        "❌ "+s.sym+" "+s.dir+" — not taken: wallet "+fmtINR(wallet)+" is below required "+fmtINR(state.autoAmount),
+        "error"
+      );
+      reported++; continue;
+    }
+
+    // A qualifying signal may still be skipped because the auto-trade engine
+    // limits entries per scan. Report that explicitly rather than implying it failed.
+    if(!activeTradeExists(s) && autoOpenedCount<=0){
+      addTradeDecisionNotification(
+        "ℹ️ "+s.sym+" "+s.dir+" — qualified, but no trade was opened by the auto-trade engine.",
+        "info"
+      );
+      reported++; continue;
+    }
+
+    if(activeTradeExists(s)){
+      addTradeDecisionNotification(
+        "✅ "+s.sym+" "+s.dir+" — TRADE TAKEN · confidence "+confidence+"% · score "+(Number(s.score)||0)+" · entry "+pairCurrency()+fmt(s.entry)+" · SL "+pairCurrency()+fmt(s.sl)+" · TP "+pairCurrency()+fmt(s.tp),
+        "ok"
+      );
+      reported++; continue;
+    }
+  }
+
+  if(!reported){
+    addTradeDecisionNotification(
+      autoOpenedCount>0
+        ? "✅ Scan decision complete — "+autoOpenedCount+" paper trade"+(autoOpenedCount===1?"":"s")+" opened."
+        : "ℹ️ Scan decision complete — no paper trade opened.",
+      autoOpenedCount>0?"ok":"info"
+    );
+  }
+}
+
 /* ================= SCANNER ================= */
 async function scanSingleQuote(manual=false){
   if(scanInProgress){
@@ -2261,7 +2364,18 @@ async function scanSingleQuote(manual=false){
       dbSaveSignals(state.signals);
     }
 
-    if(state.autoTrades){ await autoTradeFromSignals(); }
+    let autoOpenedCount=0;
+    const previousOpenKeys=new Set(
+      state.journal.filter(t=>!t.closed).map(t=>t.sym+"_"+t.dir)
+    );
+
+    if(state.autoTrades){
+      autoOpenedCount=await autoTradeFromSignals();
+    }
+
+    // Notifications are deliberately limited to trade decisions. Connection
+    // details continue to stay exclusively in the Connection Log.
+    notifyScanTradeDecisions(previousOpenKeys,state.autoTrades,autoOpenedCount);
 
     logConnection("✓ Scanner finished · "+ok+" market requests OK · "+fail+" failed · "+state.signals.length+" valid signals","ok","scan-finished");
     state.scanTime=new Date();
@@ -4455,7 +4569,6 @@ function logConnection(message,type="info",key=null){
   const status=document.getElementById("connectionLogStatus");
   const now=new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
   const k=key||message;
-  addScanNotification(message,type);
   const prev=connectionLogSeen.get(k)||0;
   connectionLogSeen.set(k,prev+1);
   if(body){
