@@ -1626,7 +1626,7 @@ async function fetchPrice(symbol, quoteOverride=null){
     return p;
   }catch(e){
     console.warn("Price fetch failed:",symbol,e);
-    logConnection("⚠ Live price timeout/failed · "+symbol,"warn","price-"+symbol);
+    logConnection("⚠ Live price timeout/failed · "+baseSymbolFromPair(symbol)+" (Binance "+source+")","warn","price-"+symbol);
     return null;
   }
 }
@@ -2810,7 +2810,7 @@ function renderSignals(){
   if(!state.signals.length){
     g.innerHTML=`<div class="empty" style="grid-column:1/-1">
       No validated setups right now.<br><br>
-      Watching ${availablePairs.length || 0} available ${state.quote==="MULTI"?"selected quote":state.quote} pairs using CLOSED candles.<br>
+      Watching ${availablePairs.length || 0} available coins using Binance USDT market and CLOSED candles.<br>
       Last scan: ${state.scanTime?state.scanTime.toLocaleTimeString():"never"}
     </div>`;
     return;
@@ -2913,7 +2913,7 @@ function renderTradeCard(t, ri, archived=false){
     <div class="trade-card ${archived?"archived":"active-trade"}">
       <div class="trade-head">
         <div>
-          <div class="trade-symbol">${t.sym}</div>
+          <div class="trade-symbol">${escapeHtml(baseSymbolFromPair(t.sym))}</div>
           <div class="trade-meta">${t.quote||state.quote} · ${state.tf}</div>
         </div>
         <div class="trade-badges">
@@ -3026,7 +3026,7 @@ function renderLiveList(){
     const i=state.journal.indexOf(t), live=calcLivePnL(t), price=v=>liveListINR(v);
     const pnl=Number(live.pnl)||0, r=Number(live.rMultiple)||0;
     return `<tr>
-      <td><div class="live-list-pair">${String(t.sym)}</div><div class="live-list-muted">${String(t.quote||state.quote)} · ${String(state.tf)}</div></td>
+      <td><div class="live-list-pair">${escapeHtml(baseSymbolFromPair(t.sym))}</div><div class="live-list-muted">${String(state.tf)} · Binance USDT</div></td>
       <td><span class="live-list-dir ${t.dir==="SHORT"?"short":"long"}">${String(t.dir)}</span></td>
       <td class="live-list-num">${price(t.entry)}</td><td class="live-list-num">${price(live.cp)}</td>
       <td class="live-list-num" style="color:var(--red)">${price(t.sl)}</td><td class="live-list-num" style="color:var(--green)">${price(t.tp)}</td>
