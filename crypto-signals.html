@@ -339,7 +339,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     <option value="BTC">BTC pairs</option>
     <option value="INR">INR (converted)</option>
   </select>
-  <div id="quoteSelectorPanel" class="check-selector quote-selector" hidden>
+  <div id="quoteSelectorPanel" class="check-selector quote-selector">
     <div class="check-selector-head"><b>Quote Markets</b><span>
       <button type="button" class="small" id="selectAllQuotes">Select All</button>
       <button type="button" class="small" id="clearAllQuotes">Clear</button>
@@ -351,12 +351,12 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
     </div>
   </div>
   <select id="scanModeSelect" title="Choose what the scanner should scan">
-    <option value="all" selected>All tracked coins</option>
-    <option value="pairs">Select coins</option>
+    <option value="all" selected>All tracked pairs</option>
+    <option value="pairs">Select pairs</option>
     <option value="currencies">Select currencies</option>
   </select>
   <div id="pairSelectorPanel" class="check-selector" hidden>
-    <div class="check-selector-head"><b>Select Coins</b><span>
+    <div class="check-selector-head"><b>Select Pairs</b><span>
       <button type="button" class="small" id="selectAllPairs">Select All</button>
       <button type="button" class="small" id="clearAllPairs">Clear</button>
     </span></div>
@@ -580,7 +580,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <div class="modal" id="tradeModal">
 <div class="box">
   <h3 id="tmTitle">Paper Trade</h3>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Signals are shown by coin (BTC, ETH, SOL, etc.). Binance USDT market data is used internally. Capital, TP profit and SL loss are always in INR.</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Entry / SL / TP use the symbol quote currency. Capital, TP profit and SL loss are always in INR.</div>
   <div class="row">
     <div><label>Direction</label><input id="tmDir" readonly></div>
     <div><label>Entry (approx)</label><input id="tmEntry" readonly></div>
@@ -1264,22 +1264,37 @@ let selectedRisk=Number(localStorage.getItem("cs_rr_risk")||1);
 let selectedReward=Number(localStorage.getItem("cs_rr_reward")||2);
 const $ = id => document.getElementById(id);
 
-function getSelectedQuotes(){ return ["USDT"]; }
+function getSelectedQuotes(){
+  const selected=getCheckedValues("quoteSelectChecks");
+  return selected.length ? selected : ["USDT"];
+}
 function syncQuoteSelection(){
-  state.quotes=["USDT"];
-  state.quote="USDT";
-  if($("quoteSelect")) $("quoteSelect").value="USDT";
-  if($("quoteSelectChecks")) setCheckedValues("quoteSelectChecks",["USDT"]);
+  let selected=getCheckedValues("quoteSelectChecks");
+  if(!selected.length){
+    setCheckedValues("quoteSelectChecks",["USDT"]);
+    selected=["USDT"];
+  }
+  state.quotes=selected;
+  state.quote=selected.length===1 ? selected[0] : "MULTI";
+  if($("quoteSelect")) $("quoteSelect").value=selected[0]||"USDT";
 }
 function loadQuotePreferences(){
+  let quotes=[];
+  try{
+    const raw=JSON.parse(localStorage.getItem("cs_quotes")||"[]");
+    if(Array.isArray(raw)) quotes=raw.filter(x=>["USDT","BTC","INR"].includes(x));
+  }catch(e){}
+  if(!quotes.length){
+    const legacy=localStorage.getItem("cs_quote");
+    quotes=legacy && ["USDT","BTC","INR"].includes(legacy) ? [legacy] : ["USDT"];
+  }
+  setCheckedValues("quoteSelectChecks",quotes);
   syncQuoteSelection();
-  localStorage.setItem("cs_quotes","[\"USDT\"]");
-  localStorage.setItem("cs_quote","USDT");
 }
 function saveQuotePreferences(){
   syncQuoteSelection();
-  localStorage.setItem("cs_quotes","[\"USDT\"]");
-  localStorage.setItem("cs_quote","USDT");
+  localStorage.setItem("cs_quotes",JSON.stringify(state.quotes));
+  localStorage.setItem("cs_quote",state.quotes[0]||"USDT");
 }
 
 function loadScannerPreferences(){
@@ -1341,9 +1356,8 @@ function populateUniverseOptions(pairs){
   const pairEl=$("pairSelect"), currencyEl=$("currencySelect");
   if(pairEl){
     const old=getCheckedValues("pairSelect");
-    const coins=[...new Set((pairs||[]).map(baseSymbolFromPair))].sort();
-    pairEl.innerHTML=coins.map(x=>'<label class="check-item"><input type="checkbox" value="'+x+'"><span>'+x+'</span></label>').join("");
-    setCheckedValues("pairSelect",old.map(baseSymbolFromPair));
+    pairEl.innerHTML=(pairs||[]).map(p=>'<label class="check-item"><input type="checkbox" value="'+p+'"><span>'+p+'</span></label>').join("");
+    setCheckedValues("pairSelect",old);
   }
   if(currencyEl){
     const old=getCheckedValues("currencySelect");
@@ -1356,8 +1370,8 @@ function populateUniverseOptions(pairs){
 function selectedScanTargets(pairs){
   const mode=$("scanModeSelect")?.value||"all";
   if(mode==="pairs"){
-    const selected=new Set(getCheckedValues("pairSelect"));
-    return selected.size ? pairs.filter(p=>selected.has(baseSymbolFromPair(p))) : [];
+    const selected=getCheckedValues("pairSelect");
+    return selected.length ? pairs.filter(p=>selected.includes(p)) : [];
   }
   if(mode==="currencies"){
     const selected=new Set(getCheckedValues("currencySelect"));
@@ -1554,7 +1568,14 @@ function pairCurrency(quoteOverride=null){
 }
 
 function displayPairFromSource(sourceSymbol,quoteOverride=null){
-  return baseSymbolFromPair(sourceSymbol);
+  const q=String(quoteOverride||state.quote||"USDT").toUpperCase();
+  if(q!=="INR") return sourceSymbol;
+
+  const base=sourceSymbol.endsWith("USDT")
+    ? sourceSymbol.slice(0,-4)
+    : sourceSymbol;
+
+  return base+"INR";
 }
 
 function baseSymbolFromPair(pair){
@@ -1594,39 +1615,39 @@ async function fetchKlines(symbol,tf){
   return raw.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
 }
 
-function sourceMarketSymbol(symbol,quoteOverride=null){
-  const raw=String(symbol||"").toUpperCase();
-  const q=String(quoteOverride||state.quote||"USDT").toUpperCase();
-
-  // The UI now stores/displays coin symbols, but older trades may still
-  // contain BTCUSDT / SOLINR / ETHBTC. Always normalize them to a
-  // real Binance market before requesting live prices.
-  if(raw.endsWith("INR")) return baseSymbolFromPair(raw)+"USDT";
-  if(raw.endsWith("USDT")) return raw;
-  if(raw.endsWith("BTC")) return raw;
-  return raw+(q==="BTC"?"BTC":"USDT");
-}
-
 async function fetchPrice(symbol, quoteOverride=null){
   try{
-    const q=String(quoteOverride||state.quote||"USDT").toUpperCase();
-    const source=sourceMarketSymbol(symbol,q);
+    const q=quoteOverride || state.quote || "USDT";
+
+    if(q==="INR" || String(symbol).endsWith("INR")){
+      const base=baseSymbolFromPair(symbol);
+      const fx=await getUsdInr();
+      const source=base+"USDT";
+      const r=await fetchWithTimeout(
+        "https://api.binance.com/api/v3/ticker/price?symbol="+source,
+        {},
+        8000
+      );
+      if(!r.ok) return null;
+
+      const d=await r.json();
+      const usdPrice=Number(d.price);
+
+      return Number.isFinite(usdPrice) ? usdPrice*fx : null;
+    }
+
     const r=await fetchWithTimeout(
-      "https://api.binance.com/api/v3/ticker/price?symbol="+source,
+      "https://api.binance.com/api/v3/ticker/price?symbol="+symbol,
       {},
       8000
     );
     if(!r.ok) return null;
+
     const d=await r.json();
-    const p=Number(d.price);
-    if(q==="INR"){
-      const fx=await getUsdInr();
-      return Number.isFinite(p)&&p>0 ? p*fx : null;
-    }
-    return p;
+    return Number(d.price);
   }catch(e){
     console.warn("Price fetch failed:",symbol,e);
-    logConnection("⚠ Live price timeout/failed · "+baseSymbolFromPair(symbol)+" (Binance "+source+")","warn","price-"+symbol);
+    logConnection("⚠ Live price timeout/failed · "+symbol,"warn","price-"+symbol);
     return null;
   }
 }
@@ -2027,7 +2048,7 @@ async function scanSingleQuote(manual=false){
     return false;
   }
   scanInProgress=true;
-  logConnection("→ Scanner starting · coins · Binance USDT market · timeframe "+$("tfSelect").value,"info","scan-start");
+  logConnection("→ Scanner starting · quote "+$("quoteSelect").value+" · timeframe "+$("tfSelect").value,"info","scan-start");
   $("scanBtn").disabled=true;
   $("scanBtn").textContent="⏳ Scanning...";
   $("connDot").className="dot on";
@@ -2618,7 +2639,7 @@ async function updateLivePrices(){
 
   await Promise.all(syms.map(async sym=>{
     const trade=openTrades.find(x=>x.sym===sym);
-    const p=await fetchPrice(sym,"USDT");
+    const p=await fetchPrice(sym,trade?.quote||state.quote);
     if(p!=null) state.livePrices[sym]=p;
   }));
 
@@ -2810,7 +2831,7 @@ function renderSignals(){
   if(!state.signals.length){
     g.innerHTML=`<div class="empty" style="grid-column:1/-1">
       No validated setups right now.<br><br>
-      Watching ${availablePairs.length || 0} available coins using Binance USDT market and CLOSED candles.<br>
+      Watching ${availablePairs.length || 0} available ${state.quote==="MULTI"?"selected quote":state.quote} pairs using CLOSED candles.<br>
       Last scan: ${state.scanTime?state.scanTime.toLocaleTimeString():"never"}
     </div>`;
     return;
@@ -2913,7 +2934,7 @@ function renderTradeCard(t, ri, archived=false){
     <div class="trade-card ${archived?"archived":"active-trade"}">
       <div class="trade-head">
         <div>
-          <div class="trade-symbol">${escapeHtml(baseSymbolFromPair(t.sym))}</div>
+          <div class="trade-symbol">${t.sym}</div>
           <div class="trade-meta">${t.quote||state.quote} · ${state.tf}</div>
         </div>
         <div class="trade-badges">
@@ -3026,7 +3047,7 @@ function renderLiveList(){
     const i=state.journal.indexOf(t), live=calcLivePnL(t), price=v=>liveListINR(v);
     const pnl=Number(live.pnl)||0, r=Number(live.rMultiple)||0;
     return `<tr>
-      <td><div class="live-list-pair">${escapeHtml(baseSymbolFromPair(t.sym))}</div><div class="live-list-muted">${String(state.tf)} · Binance USDT</div></td>
+      <td><div class="live-list-pair">${String(t.sym)}</div><div class="live-list-muted">${String(t.quote||state.quote)} · ${String(state.tf)}</div></td>
       <td><span class="live-list-dir ${t.dir==="SHORT"?"short":"long"}">${String(t.dir)}</span></td>
       <td class="live-list-num">${price(t.entry)}</td><td class="live-list-num">${price(live.cp)}</td>
       <td class="live-list-num" style="color:var(--red)">${price(t.sl)}</td><td class="live-list-num" style="color:var(--green)">${price(t.tp)}</td>
