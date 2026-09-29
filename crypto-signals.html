@@ -1210,18 +1210,49 @@ const V6_MIN_BTC_TREND_ALIGNMENT = false;
 let consecutiveLosses = 0;
 let v6TradeLimitsEnabled = localStorage.getItem("cs_v6_trade_limits") !== "0";
 let lastLossTime = null;
+const riskNotificationSeen = new Map();
+
+function addRiskNotification(message,type="warn",key=message,repeatMs=15*60*1000,showToast=true){
+  const now=Date.now();
+  const last=riskNotificationSeen.get(key)||0;
+  if(now-last<repeatMs)return false;
+  riskNotificationSeen.set(key,now);
+  addScanNotification(message,type);
+  if(showToast) toast(message);
+  if(type==="error" || type==="warn"){
+    try{ notify("🛡 MarketPulse Risk Guard",String(message).replace(/^\S+\s+/,"")); }catch(e){}
+  }
+  return true;
+}
 
 function checkConsecutiveLossProtection(){
   if(consecutiveLosses>=V6_MAX_CONSECUTIVE_LOSSES){
     const hoursSinceLastLoss=lastLossTime?(Date.now()-lastLossTime)/(1000*60*60):999;
     if(hoursSinceLastLoss<V6_COOLDOWN_AFTER_LOSSES){
-      return {blocked:true,reason:"Cooldown: "+consecutiveLosses+" consecutive losses. Wait "+
-        Math.ceil(V6_COOLDOWN_AFTER_LOSSES-hoursSinceLastLoss)+"h"};
+      const remainingMs=Math.max(0,V6_COOLDOWN_AFTER_LOSSES*60*60*1000-(lastLossTime?Date.now()-lastLossTime:0));
+      const remainingHours=Math.ceil(remainingMs/(60*60*1000));
+      const reason="Cooldown: "+consecutiveLosses+" consecutive losses. Wait "+remainingHours+"h";
+      addRiskNotification(
+        "🛡 V6 cooldown active — "+consecutiveLosses+" consecutive losses. Auto trades blocked for "+remainingHours+"h.",
+        "warn",
+        "v6-cooldown-active",
+        30*60*1000,
+        false
+      );
+      return {blocked:true,reason,remainingMs,remainingHours};
     }
+
     consecutiveLosses=0;
     lastLossTime=null;
     localStorage.setItem("cs_consecutive_losses","0");
     localStorage.removeItem("cs_last_loss_time");
+    addRiskNotification(
+      "✅ V6 cooldown expired — loss-streak protection reset. New trades can be evaluated again.",
+      "ok",
+      "v6-cooldown-expired",
+      24*60*60*1000,
+      true
+    );
   }
   return {blocked:false};
 }
@@ -1229,9 +1260,37 @@ function updateConsecutiveLosses(result){
   if(result==="loss"){
     consecutiveLosses++;
     lastLossTime=Date.now();
+
+    if(consecutiveLosses>=V6_MAX_CONSECUTIVE_LOSSES){
+      addRiskNotification(
+        "🛡 V6 cooldown activated — "+consecutiveLosses+" consecutive losses. Auto trades blocked for "+V6_COOLDOWN_AFTER_LOSSES+"h.",
+        "warn",
+        "v6-cooldown-activated-"+lastLossTime,
+        0,
+        true
+      );
+    }else{
+      addRiskNotification(
+        "⚠️ V6 loss streak: "+consecutiveLosses+"/"+V6_MAX_CONSECUTIVE_LOSSES+" consecutive losses.",
+        "warn",
+        "v6-loss-streak-"+consecutiveLosses+"-"+lastLossTime,
+        0,
+        true
+      );
+    }
   }else if(result==="win"){
+    const hadLossStreak=consecutiveLosses>0;
     consecutiveLosses=0;
     lastLossTime=null;
+    if(hadLossStreak){
+      addRiskNotification(
+        "✅ V6 loss streak reset after a winning trade.",
+        "ok",
+        "v6-loss-streak-reset-"+Date.now(),
+        0,
+        true
+      );
+    }
   }
   localStorage.setItem("cs_consecutive_losses",String(consecutiveLosses));
   if(lastLossTime) localStorage.setItem("cs_last_loss_time",String(lastLossTime));
@@ -2607,10 +2666,34 @@ function v6RiskStatus(){
   const todayPnl=todayClosed.reduce((sum,t)=>sum+Number(calcClosedPnL(t)||0),0);
   const dailyLimit=Math.max(1,(Number(state.walletTx.filter(x=>x.txn_type==="DEPOSIT").reduce((sum,x)=>sum+Number(x.amount_inr||0),0))||0)*V6_DAILY_LOSS_PCT);
   const maxOpenCapital=equity*V6_MAX_OPEN_CAPITAL_PCT;
-  if(open.length>=V6_MAX_OPEN_TRADES)return {ok:false,reason:"Maximum "+V6_MAX_OPEN_TRADES+" open trades reached"};
-  if(equity<=0)return {ok:false,reason:"Paper equity is zero or negative"};
-  if(openCapital>=maxOpenCapital)return {ok:false,reason:"Open capital is already ≥50% of paper equity"};
-  if(todayPnl<=-dailyLimit)return {ok:false,reason:"Daily loss limit reached ("+fmtINR(dailyLimit)+")"};
+  if(open.length>=V6_MAX_OPEN_TRADES){
+    addRiskNotification(
+      "🛡 V6 limit active — maximum "+V6_MAX_OPEN_TRADES+" open trades reached. New trades blocked.",
+      "warn","v6-max-open-trades",15*60*1000,true
+    );
+    return {ok:false,reason:"Maximum "+V6_MAX_OPEN_TRADES+" open trades reached"};
+  }
+  if(equity<=0){
+    addRiskNotification(
+      "🛑 V6 risk lock — paper equity is zero or negative. New trades blocked.",
+      "error","v6-zero-equity",15*60*1000,true
+    );
+    return {ok:false,reason:"Paper equity is zero or negative"};
+  }
+  if(openCapital>=maxOpenCapital){
+    addRiskNotification(
+      "🛡 V6 exposure limit — open capital is already ≥50% of paper equity. New trades blocked.",
+      "warn","v6-open-capital-limit",15*60*1000,true
+    );
+    return {ok:false,reason:"Open capital is already ≥50% of paper equity"};
+  }
+  if(todayPnl<=-dailyLimit){
+    addRiskNotification(
+      "🛑 V6 daily loss lock — today's loss reached "+fmtINR(dailyLimit)+". New trades blocked.",
+      "error","v6-daily-loss-limit",15*60*1000,true
+    );
+    return {ok:false,reason:"Daily loss limit reached ("+fmtINR(dailyLimit)+")"};
+  }
   const lossProtection=checkConsecutiveLossProtection();
   if(lossProtection.blocked)return {ok:false,reason:lossProtection.reason};
   return {ok:true,reason:"V6 risk limits clear",equity,openCapital,maxOpenCapital,todayPnl,dailyLimit};
@@ -2660,7 +2743,10 @@ function autoTradeScheduleAllowed(){if(state.autoKillSwitch)return false;if(stat
   const lossProtection = checkConsecutiveLossProtection();
   if (lossProtection.blocked) {
     logConnection("🛡 V6 blocked: " + lossProtection.reason, "warn", "v6-loss-cooldown");
-    toast("🛡 V6: " + lossProtection.reason);
+    addRiskNotification(
+      "🛡 V6 trade blocked — "+lossProtection.reason+".",
+      "warn","v6-trade-blocked-cooldown",30*60*1000,false
+    );
     return 0;
   }
 
