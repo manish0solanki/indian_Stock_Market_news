@@ -1597,7 +1597,13 @@ async function fetchKlines(symbol,tf){
 function sourceMarketSymbol(symbol,quoteOverride=null){
   const raw=String(symbol||"").toUpperCase();
   const q=String(quoteOverride||state.quote||"USDT").toUpperCase();
-  if(raw.endsWith("USDT")||raw.endsWith("BTC")||raw.endsWith("INR")) return raw;
+
+  // The UI now stores/displays coin symbols, but older trades may still
+  // contain BTCUSDT / SOLINR / ETHBTC. Always normalize them to a
+  // real Binance market before requesting live prices.
+  if(raw.endsWith("INR")) return baseSymbolFromPair(raw)+"USDT";
+  if(raw.endsWith("USDT")) return raw;
+  if(raw.endsWith("BTC")) return raw;
   return raw+(q==="BTC"?"BTC":"USDT");
 }
 
