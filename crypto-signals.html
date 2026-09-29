@@ -2738,16 +2738,47 @@ function calcLivePnL(t){
 }
 function calcClosedPnL(t){
   if(t.status==="cancelled") return 0;
-  const close=Number(t.closePrice), fallback=t.status==="tp"?Number(t.tp):t.status==="sl"?Number(t.sl):Number(t.entry);
-  const exit=Number.isFinite(close)&&close>0?close:fallback;
-  const move=t.dir==="LONG"?(exit-t.entry)/t.entry:(t.entry-exit)/t.entry;
-  const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move, costs=calcTradeCosts(t,exit);
+
+  const entry=Number(t.entry)||0;
+  const rawClose=Number(t.closePrice);
+  const status=String(t.status||"").toLowerCase();
+  const pair=String(t.sym||"").toUpperCase();
+  const isINR=pair.endsWith("INR");
+
+  // Historical INR trades were affected by a quote-mixing bug where the
+  // close price could be saved as the Binance USDT price (e.g. BNBINR
+  // entry ₹73,489 but close ₹763.55). Such a price is not a valid INR
+  // settlement. For TP/SL trades, the stored TP/SL is the authoritative
+  // exit level and is used instead.
+  let exit=rawClose;
+  const ratio=entry>0&&Number.isFinite(rawClose)&&rawClose>0 ? rawClose/entry : 0;
+  const obviouslyWrongINR=isINR && (!Number.isFinite(rawClose)||rawClose<=0||ratio<0.5||ratio>1.5);
+
+  if(obviouslyWrongINR){
+    exit=status==="tp"?Number(t.tp):
+         status==="sl"?Number(t.sl):
+         Number.isFinite(rawClose)&&rawClose>0?rawClose:Number(t.entry);
+  }else{
+    exit=Number.isFinite(rawClose)&&rawClose>0
+      ? rawClose
+      : status==="tp"?Number(t.tp)
+      : status==="sl"?Number(t.sl)
+      : Number(t.entry);
+  }
+
+  if(!(entry>0)||!(exit>0)) return 0;
+
+  const move=t.dir==="LONG"?(exit-entry)/entry:(entry-exit)/entry;
+  const grossPnl=Number(t.amt||0)*Number(t.lev||1)*move;
+  const costs=calcTradeCosts(t,exit);
   const netTradingPnl=grossPnl-costs.totalFees;
+
   t.grossPnl=grossPnl;
   t.entryFee=costs.entryFee;
   t.exitFee=costs.exitFee;
   t.totalFees=costs.totalFees;
   t.netPnl=netTradingPnl;
+  t.accountingExitPrice=exit;
   return t.netPnl;
 }
 
