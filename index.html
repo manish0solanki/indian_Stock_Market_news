@@ -5372,6 +5372,7 @@ logoutButton.addEventListener('click', async () => {
 const DEFAULT_API_BASE = "https://marketpulse-cache.manish0solanki20078.workers.dev";
 
 let API_BASE = DEFAULT_API_BASE;
+let NEWSAPI_KEY = "";
 
 async function initConfig() {
   let config = { apiBase: DEFAULT_API_BASE, source: 'default' };
@@ -8239,7 +8240,7 @@ async function loadCryptoTradeDashboard(){
     // Derive account value from deposits/withdrawals + actual trade P&L so
     // stale or corrupted historical trade credits cannot inflate the wallet.
     const deposits=wallet.filter(t=>String(t.txn_type||'').toUpperCase()==='DEPOSIT').reduce((s,t)=>s+Number(t.amount_inr||0),0);
-    const withdrawals=Math.abs(wallet.filter(t=>String(t.txn_type||'').toUpperCase()==='WITHDRAWAL').reduce((s,t)=>s+Number(t.amount_inr||0),0);
+    const withdrawals=Math.abs(wallet.filter(t=>String(t.txn_type||'').toUpperCase()==='WITHDRAWAL').reduce((s,t)=>s+Number(t.amount_inr||0),0));
     const netCapitalAdded=deposits-withdrawals;
     const openCapital=open.reduce((s,t)=>s+Number(t.amount_inr||0),0);
     const totalPnl=realizedPnl+runningNetPnl;
