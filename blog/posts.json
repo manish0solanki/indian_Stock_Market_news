@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-intensifies-to-record-session-high-as-dii-buying-hits-peak",
+    "title": "FII Selling Intensifies to Record Session High as DII Buying Hits Peak",
+    "excerpt": "FII net selling surged to ₹10,148.41 Cr, the steepest single-session outflow in 26 sessions, while DII net buying reached an equivalent high of ₹11,271.73 Cr. The Nifty 50 slipp...",
+    "category": "fiidii-flows",
+    "date": "2026-09-30",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "kotakbank-stock-spotlight",
     "title": "Kotak Mahindra Rallies 2.7% on 2.7x Volume, Nears 52-Week High as Moving Averages Align",
     "excerpt": "PRICE ACTION: Kotak Mahindra Bank surged 2.71% to ₹417 on volume nearly three times its average, indicating genuine institutional participation rather than thin-market drift. Th...",
