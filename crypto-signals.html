@@ -1129,7 +1129,10 @@ const MIN_VOLUME = 1.2;
 function clampNum(v, lo, hi){ return Math.min(hi, Math.max(lo, Number(v)||0)); }
 
 function calculateSetupConfidence({dir, score, rsiValue, volumeRatio, price, e20, e50, e100, atrValue, hist, prevHist, rr}){
-  let confidence = 55 + clampNum(score,0,100) * 0.25;
+  // Confidence is a setup-quality score, not a win probability.
+  // Calibrate it so an 80-point V6 setup can legitimately reach the
+  // default 85% Auto Trade gate when the secondary quality factors agree.
+  let confidence = 58 + clampNum(score,0,100) * 0.30;
 
   // Trend separation: stronger EMA stacking gets more confidence.
   const trendSpread = dir === "LONG"
@@ -2069,7 +2072,11 @@ function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null,htfCa
   const evaluate=dir=>{
     const long=dir==="LONG";
     const localTrend=long?e20[i]>e50[i]&&e50[i]>e100[i]:e20[i]<e50[i]&&e50[i]<e100[i];
-    const htfAligned=long?regime.long:regime.short;
+    // 4H must not directly oppose the trade. Strong alignment is preferred;
+    // neutral 4H structure is allowed so the scanner does not starve.
+    const htfAligned=long
+      ? (regime.long || regime.trend==="neutral")
+      : (regime.short || regime.trend==="neutral");
     const rsiOk=long
       ? rsiV[i]>=V6_MIN_RSI&&rsiV[i]<=V6_MAX_RSI
       : rsiV[i]>=100-V6_MAX_RSI&&rsiV[i]<=100-V6_MIN_RSI;
