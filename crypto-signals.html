@@ -433,7 +433,6 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 </div>
 
 <div class="trade-tools" id="tradeTools" style="display:none">
-  <label for="tradeSort">Sort current tab:</label>
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <label for="tradeSort">Sort current tab:</label>
     <select id="tradeSort">
@@ -2096,18 +2095,17 @@ function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null,htfCa
     }
 
     let score=0,reasons=[];
-    score+=25; reasons.push(long?"Local EMA trend":"Local EMA downtrend");
+    score+=20; reasons.push(long?"Local EMA trend":"Local EMA downtrend");
     score+=10; reasons.push("EMA separation");
     score+=15; reasons.push("EMA20 pullback");
     score+=10; reasons.push(long?"EMA20 reclaim":"EMA20 breakdown");
     score+=10; reasons.push("HTF 4H aligned");
     score+=10; reasons.push("RSI "+rsiV[i].toFixed(0));
-    score+=10; reasons.push("Vol "+volRatio.toFixed(1)+"x");
+    score+=8; reasons.push("Vol "+volRatio.toFixed(1)+"x");
     score+=5; reasons.push(long?"MACD+":"MACD-");
     score+=5; reasons.push("Momentum");
     score+=5; reasons.push(long?"Bull candle":"Bear candle");
-    score+=3; reasons.push("MACD strength");
-    score+=2; reasons.push("Not extended");
+    score+=2; reasons.push("MACD strength");
     if(score<V6_MIN_SCORE)return null;
 
     let sl,risk;
