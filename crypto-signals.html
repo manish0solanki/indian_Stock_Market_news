@@ -1199,11 +1199,11 @@ const V5_MAX_STOP_PCT = 0.04;
    - max 50% of paper equity in open capital
    - daily loss lock at 2% of net capital
 */
-const V6_MIN_SCORE = 80;
-const V6_MIN_RSI = 54;
-const V6_MAX_RSI = 70;
-const V6_MIN_VOLUME = 1.20;
-const V6_MAX_EMA_EXTENSION_ATR = 0.90;
+const V6_MIN_SCORE = 75;
+const V6_MIN_RSI = 50;
+const V6_MAX_RSI = 74;
+const V6_MIN_VOLUME = 1.10;
+const V6_MAX_EMA_EXTENSION_ATR = 1.00;
 const V6_MIN_STOP_PCT = 0.008;
 const V6_MAX_STOP_PCT = 0.035;
 const V6_MAX_OPEN_TRADES = 3;
@@ -2100,17 +2100,19 @@ function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null,htfCa
 
     // Core regime filters stay hard. Entry-quality signals are scored rather
     // than all being mandatory; otherwise the combination becomes too rare.
-    if(!localTrend||!htfAligned||!btcAligned||!separationOk||!rsiOk||
-       !volumeOk||!macdOk||!notExtended){
+    // Core filters: trend, non-opposing higher timeframe, directional momentum,
+    // and a sane entry. The remaining conditions contribute quality points.
+    if(!localTrend||!htfAligned||!btcAligned||!rsiOk||!macdOk||!notExtended){
       return null;
     }
 
     let score=0,reasons=[];
     score+=20; reasons.push(long?"Local EMA trend":"Local EMA downtrend");
-    score+=10; reasons.push("EMA separation");
-    score+=10; reasons.push("HTF 4H aligned");
+    if(separationOk){score+=10;reasons.push("EMA separation");}
+    score+=10; reasons.push(regime.trend==="neutral"?"HTF 4H neutral":"HTF 4H aligned");
     score+=10; reasons.push("RSI "+rsiV[i].toFixed(0));
-    score+=10; reasons.push("Vol "+volRatio.toFixed(1)+"x");
+    if(volumeOk){score+=10;reasons.push("Vol "+volRatio.toFixed(1)+"x");}
+    else {score+=4;reasons.push("Vol "+volRatio.toFixed(1)+"x");}
     score+=5; reasons.push(long?"MACD+":"MACD-");
     if(pullback){score+=10;reasons.push("EMA20 pullback");}
     if(reclaim){score+=10;reasons.push(long?"EMA20 reclaim":"EMA20 breakdown");}
