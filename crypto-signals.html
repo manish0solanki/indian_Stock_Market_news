@@ -1196,11 +1196,11 @@ const V5_MAX_STOP_PCT = 0.04;
    - max 50% of paper equity in open capital
    - daily loss lock at 2% of net capital
 */
-const V6_MIN_SCORE = 85;
-const V6_MIN_RSI = 55;
-const V6_MAX_RSI = 68;
-const V6_MIN_VOLUME = 1.5;
-const V6_MAX_EMA_EXTENSION_ATR = 0.60;
+const V6_MIN_SCORE = 80;
+const V6_MIN_RSI = 54;
+const V6_MAX_RSI = 70;
+const V6_MIN_VOLUME = 1.20;
+const V6_MAX_EMA_EXTENSION_ATR = 0.90;
 const V6_MIN_STOP_PCT = 0.008;
 const V6_MAX_STOP_PCT = 0.035;
 const V6_MAX_OPEN_TRADES = 3;
@@ -2077,35 +2077,39 @@ function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null,htfCa
     const macdOk=long?hist>0:hist<0;
     const momentumOk=long?hist>prevHist:hist<prevHist;
     const macdStrength=atrV[i]>0?Math.abs(hist)/atrV[i]:0;
-    const macdStrengthOk=macdStrength>=0.03;
+    const macdStrengthOk=macdStrength>=0.015;
     const separation20_50=atrV[i]>0?(long?(e20[i]-e50[i]):(e50[i]-e20[i]))/atrV[i]:0;
     const separation50_100=atrV[i]>0?(long?(e50[i]-e100[i]):(e100[i]-e50[i]))/atrV[i]:0;
-    const separationOk=separation20_50>=0.15&&separation50_100>=0.10;
+    const separationOk=separation20_50>=0.10&&separation50_100>=0.06;
     const pullback=long
-      ? prev.l<=e20[p]+atrV[p]*0.50&&prev.l>=e20[p]-atrV[p]*0.75
-      : prev.h>=e20[p]-atrV[p]*0.50&&prev.h<=e20[p]+atrV[p]*0.75;
-    const reclaim=long ? Number(prev.c)<=e20[p]&&price>e20[i] : Number(prev.c)>=e20[p]&&price<e20[i];
-    const strongCandle=bodyAtr>=0.35&&bodyRatio>=0.45&&(long?closeLocation>=0.65:closeLocation<=0.35);
+      ? prev.l<=e20[p]+atrV[p]*0.90&&prev.l>=e20[p]-atrV[p]*1.00
+      : prev.h>=e20[p]-atrV[p]*0.90&&prev.h<=e20[p]+atrV[p]*1.00;
+    const reclaim=long
+      ? price>e20[i] && (Number(prev.c)<=e20[p]+atrV[p]*0.35)
+      : price<e20[i] && (Number(prev.c)>=e20[p]-atrV[p]*0.35);
+    const strongCandle=bodyAtr>=0.20&&bodyRatio>=0.35&&(long?closeLocation>=0.55:closeLocation<=0.45);
     const extension=long?(price-e20[i])/atrV[i]:(e20[i]-price)/atrV[i];
-    const notExtended=Number.isFinite(extension)&&extension>=0&&extension<=V6_MAX_EMA_EXTENSION_ATR;
+    const notExtended=Number.isFinite(extension)&&extension>=-0.25&&extension<=V6_MAX_EMA_EXTENSION_ATR;
 
-    if(!localTrend||!htfAligned||!btcAligned||!separationOk||!pullback||!reclaim||
-       !rsiOk||!volumeOk||!macdOk||!momentumOk||!macdStrengthOk||!strongCandle||!notExtended){
+    // Core regime filters stay hard. Entry-quality signals are scored rather
+    // than all being mandatory; otherwise the combination becomes too rare.
+    if(!localTrend||!htfAligned||!btcAligned||!separationOk||!rsiOk||
+       !volumeOk||!macdOk||!notExtended){
       return null;
     }
 
     let score=0,reasons=[];
     score+=20; reasons.push(long?"Local EMA trend":"Local EMA downtrend");
     score+=10; reasons.push("EMA separation");
-    score+=15; reasons.push("EMA20 pullback");
-    score+=10; reasons.push(long?"EMA20 reclaim":"EMA20 breakdown");
     score+=10; reasons.push("HTF 4H aligned");
     score+=10; reasons.push("RSI "+rsiV[i].toFixed(0));
-    score+=8; reasons.push("Vol "+volRatio.toFixed(1)+"x");
+    score+=10; reasons.push("Vol "+volRatio.toFixed(1)+"x");
     score+=5; reasons.push(long?"MACD+":"MACD-");
-    score+=5; reasons.push("Momentum");
-    score+=5; reasons.push(long?"Bull candle":"Bear candle");
-    score+=2; reasons.push("MACD strength");
+    if(pullback){score+=10;reasons.push("EMA20 pullback");}
+    if(reclaim){score+=10;reasons.push(long?"EMA20 reclaim":"EMA20 breakdown");}
+    if(momentumOk){score+=5;reasons.push("Momentum");}
+    if(strongCandle){score+=5;reasons.push(long?"Bull candle":"Bear candle");}
+    if(macdStrengthOk){score+=5;reasons.push("MACD strength");}
     if(score<V6_MIN_SCORE)return null;
 
     let sl,risk;
