@@ -1,5 +1,24 @@
 [
-
+  {
+    "slug": "coforge-stock-spotlight",
+    "title": "Coforge Surges 4.4% on Above-Average Volume, Nears 52-Week High as Moving Averages Align",
+    "excerpt": "PRICE ACTION: Coforge rallied 4.4% to ₹1826 with volume running 39% above its average, indicating genuine buying interest rather than thin-market drift. The stock now sits just...",
+    "category": "stock-spotlight",
+    "date": "2026-10-01",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "COFORGE",
+      "COFORGE LIMITED"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
   {
     "slug": "fii-selling-extends-to-5th-session-as-dii-buying-hits-27-day-streak-nifty-slips-088",
     "title": "FII Selling Extends to 5th Session as DII Buying Hits 27-Day Streak; Nifty Slips 0.88%",
@@ -1672,26 +1691,6 @@
     "author": "MarketPulse AI",
     "featured": false,
     "dataSources": []
-  },
-  {
-    "slug": "coforge-stock-spotlight",
-    "title": "Coforge Limited (COFORGE) Stock Spotlight",
-    "excerpt": "Coforge Limited (NSE: COFORGE) is an IT services company specializing in digital transformation and software solutions. The company serves industries including...",
-    "category": "stock-spotlight",
-    "date": "2026-08-28T15:50:16+05:30",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "COFORGE",
-      "Coforge Limited"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
-    ]
   },
   {
     "slug": "nifty-it-falls-1-79-percent-as-small-cap-weakness-outpaces-large-cap-resilience",
