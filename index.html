@@ -7367,15 +7367,116 @@ function renderStockDetail(stock) {
 
   stockDetailCard.style.display = 'block';
 
-  // The on-demand API already returns the history, so do not make a
-  // second request to the old stock-history endpoint.
+  // The on-demand Yahoo API returns the daily history used by the chart.
+  // Make the chart visible immediately when a stock is selected.
   stockChartData = Array.isArray(stock.history) ? stock.history.slice() : [];
   stockChartData.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
   stockChartLoadedSymbol = selectedStockSymbol;
   stockChartVisibleData = [];
+  if (stockChartWrap) {
+    stockChartWrap.style.display = 'block';
+  }
   renderStockHistoryChart(getStockHistorySlice(stockChartData, '1M'));
 
+  // Yahoo's current on-demand response does not yet expose quarterly
+  // income-statement rows, so load only the quarterly table from the
+  // existing fundamentals endpoint without replacing the Yahoo metrics.
+  loadQuarterlyResults(selectedStockSymbol);
+
   renderOnDemandFundamentals(stock);
+}
+
+async function loadQuarterlyResults(symbol) {
+  const cleanSymbol = String(symbol || '').trim().toUpperCase();
+  if (!cleanSymbol || !fundamentalsQuarterlyBody) return;
+
+  const requestId = ++fundamentalsRequestId;
+
+  fundamentalsQuarterlyBody.innerHTML = `
+    <tr>
+      <td colspan="5" class="fundamentals-loading">
+        Loading quarterly results…
+      </td>
+    </tr>
+  `;
+
+  try {
+    const res = await fetch(
+      FUNDAMENTALS_URL() +
+      '?symbol=' + encodeURIComponent(cleanSymbol),
+      { cache: 'no-store' }
+    );
+
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
+
+    const data = await res.json();
+
+    if (
+      requestId !== fundamentalsRequestId ||
+      selectedStockSymbol !== cleanSymbol
+    ) {
+      return;
+    }
+
+    const quarterly = Array.isArray(data?.quarterly)
+      ? data.quarterly
+      : [];
+
+    if (!quarterly.length) {
+      throw new Error('No quarterly results returned');
+    }
+
+    fundamentalsQuarterlyBody.innerHTML =
+      quarterly.map((quarter, index) => {
+        const f = quarter.financials || {};
+        const e = quarter.eps || {};
+        const d = quarter.derived || {};
+
+        const period = formatFundamentalDate(quarter.period_end);
+
+        const margin = Number.isFinite(Number(d.net_margin_percent))
+          ? formatFundamentalNumber(d.net_margin_percent, 2) + '%'
+          : '—';
+
+        return `
+          <tr>
+            <td>
+              ${period}
+              ${index === 0
+                ? '<span style="color:var(--positive);font-size:9px;margin-left:4px;">LATEST</span>'
+                : ''}
+            </td>
+            <td>${formatFundamentalCr(f.revenue)}</td>
+            <td>${formatFundamentalCr(f.net_profit)}</td>
+            <td>
+              ${Number.isFinite(Number(e.basic))
+                ? '₹' + formatFundamentalNumber(e.basic, 2)
+                : '—'}
+            </td>
+            <td>${margin}</td>
+          </tr>
+        `;
+      }).join('');
+  } catch (error) {
+    if (
+      requestId !== fundamentalsRequestId ||
+      selectedStockSymbol !== cleanSymbol
+    ) {
+      return;
+    }
+
+    fundamentalsQuarterlyBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="fundamentals-loading">
+          Quarterly results are currently unavailable.
+        </td>
+      </tr>
+    `;
+
+    console.error('[Quarterly Results]', error);
+  }
 }
 
 function renderOnDemandFundamentals(stock) {
@@ -7413,13 +7514,8 @@ function renderOnDemandFundamentals(stock) {
     </div>
   `).join('');
 
-  fundamentalsQuarterlyBody.innerHTML = `
-    <tr>
-      <td colspan="5" class="fundamentals-loading">
-        Quarterly results are not included in the current on-demand Yahoo Finance response.
-      </td>
-    </tr>
-  `;
+  // Quarterly rows are loaded separately by loadQuarterlyResults().
+  // Keep the Yahoo Finance metrics above intact while that request runs.
 
   stockFundamentalsWrap.style.display = 'block';
 }
@@ -7649,24 +7745,11 @@ async function loadStockHistory(symbol, range=stockChartRange){
   );
 
   try{
-    // Keep one full 1-year dataset in memory and slice it locally for each
-    // button. This avoids replacing the master dataset with a shorter range.
-    // The backend only needs to provide the full 1Y history once per stock.
+    // The on-demand Yahoo response already supplies the chart history.
+    // Use that dataset for the selected range instead of calling the old
+    // stock-history endpoint again.
     if (!stockChartData.length || stockChartLoadedSymbol !== cleanSymbol) {
-      const res=await fetch(
-        STOCK_HISTORY_URL() +
-        '?symbol=' + encodeURIComponent(cleanSymbol) +
-        '&range=1Y&force=true'
-      );
-
-      if(!res.ok) throw new Error('HTTP '+res.status);
-
-      const json=await res.json();
-      if(requestId!==stockChartRequestId || selectedStockSymbol!==cleanSymbol) return;
-
-      stockChartData=Array.isArray(json?.data) ? json.data : [];
-      stockChartData.sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')));
-      stockChartLoadedSymbol = cleanSymbol;
+      throw new Error('Yahoo history is not loaded for this stock');
     }
 
     if(requestId!==stockChartRequestId || selectedStockSymbol!==cleanSymbol) return;
