@@ -3148,6 +3148,20 @@ body {
 
 
 /* Crypto Trade Dashboard */
+/* Portfolio Snapshot Dashboard */
+.portfolio-dashboard{margin-bottom:14px}
+.portfolio-dash-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.portfolio-dash-title{font-size:13px;font-weight:700;color:var(--text)}
+.portfolio-dash-link{font-size:10px;color:var(--indigo-light);text-decoration:none;font-weight:600}
+[data-theme="light"] .portfolio-dash-link{color:var(--indigo)}
+.portfolio-dash-status{font-size:9px;color:var(--text-muted);font-family:var(--font-mono)}
+.portfolio-snapshot-table{width:100%;border-collapse:collapse}
+.portfolio-snapshot-table th{padding:7px 8px;text-align:left;font-size:9px;color:var(--text-muted);text-transform:uppercase;background:var(--bg)}
+.portfolio-snapshot-table td{padding:9px 8px;border-top:1px solid var(--border);font-size:11px}
+.portfolio-snapshot-table td:last-child{text-align:right;font-family:var(--font-mono);font-weight:700}
+.portfolio-dash-note{margin-top:7px;color:var(--text-muted);font-size:9px;line-height:1.4}
+@media(max-width:640px){.portfolio-snapshot-table th,.portfolio-snapshot-table td{padding:8px 6px}}
+
 .crypto-dashboard{margin-bottom:14px}
 .crypto-dash-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .crypto-dash-title{font-size:13px;font-weight:700;color:var(--text)}
@@ -3190,6 +3204,7 @@ body {
       <div class="account-menu" id="accountMenu">
         <div class="account-email" id="accountEmail">—</div>
         <button class="profile-menu-button" id="profileButton" type="button">👤 My Profile</button>
+        <button class="portfolio-menu-button" id="portfolioMenuButton" type="button">📊 My Portfolio</button>
         <button class="watchlist-menu-button" id="watchlistButton" type="button">⭐ My Watchlist</button>
         <button class="alert-menu-button" id="alertButton" type="button">🔔 My Alerts</button>
         <button class="admin-menu-button" id="adminPanelButton" type="button" style="display:none;">🛡️ Admin Panel</button>
@@ -3536,6 +3551,24 @@ body {
           <div class="crypto-dash-metric"><div class="v" id="cryptoDashToday">—</div><div class="l">Today P&L</div></div>
         </div>
         <div class="crypto-dash-note">Paper trades only · values use the same trade data and P&L calculation as the CryptoSignal Tracker.</div>
+      </div>
+
+      <!-- Portfolio Snapshot -->
+      <div class="widget-card portfolio-dashboard" id="portfolioDashboard">
+        <div class="portfolio-dash-head">
+          <div>
+            <div class="portfolio-dash-title">📊 Portfolio Snapshot</div>
+            <div class="portfolio-dash-status" id="portfolioDashStatus">Checking account…</div>
+          </div>
+          <a class="portfolio-dash-link" href="/portfolio.html">Open Portfolio →</a>
+        </div>
+        <table class="portfolio-snapshot-table">
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody id="portfolioSnapshotBody">
+            <tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
+          </tbody>
+        </table>
+        <div class="portfolio-dash-note">Live portfolio value and today's change based on your holdings.</div>
       </div>
 
       <!-- 1. Market Snapshot -->
@@ -4016,6 +4049,7 @@ const loginForm = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
 const authStatus = document.getElementById('authStatus');
 const profileButton = document.getElementById('profileButton');
+const portfolioMenuButton = document.getElementById('portfolioMenuButton');
 const profileModal = document.getElementById('profileModal');
 const profileClose = document.getElementById('profileClose');
 const profileCancel = document.getElementById('profileCancel');
@@ -5253,6 +5287,7 @@ adminModal.addEventListener('click', e => { if (e.target === adminModal) closeAd
 adminPanelButton.addEventListener('click', openAdminModal);
 adminRefreshButton.addEventListener('click', loadAdminUsers);
 profileButton.addEventListener('click', openProfileModal);
+portfolioMenuButton.addEventListener('click', () => { window.location.href='/portfolio.html'; });
 profileClose.addEventListener('click', closeProfileModal);
 profileCancel.addEventListener('click', closeProfileModal);
 profileSave.addEventListener('click', saveProfile);
@@ -8416,6 +8451,142 @@ async function loadCryptoTradeDashboard(){
 
 function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTimer)clearInterval(cryptoDashTimer);cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));}
 
+/* ─── Portfolio Snapshot ─── */
+let portfolioDashTimer=null;
+const PORTFOLIO_API_BASE='https://marketpulse-cache.manish0solanki20078.workers.dev';
+
+function portfolioMoney(n){
+  return '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function portfolioNum(n){
+  const v=Number(n);
+  return Number.isFinite(v)?v:0;
+}
+function portfolioClean(s){
+  return String(s||'').trim().toUpperCase();
+}
+
+async function loadPortfolioSnapshot(){
+  const status=document.getElementById('portfolioDashStatus');
+  const body=document.getElementById('portfolioSnapshotBody');
+  if(!status||!body)return;
+
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(!session?.user){
+    status.textContent='Sign in to view your portfolio';
+    body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Sign in to see your portfolio snapshot.</td></tr>';
+    return;
+  }
+
+  try{
+    status.textContent='Live';
+    const {data:portfolio,error:portfolioError}=await supabaseClient
+      .from('portfolios')
+      .select('id,name')
+      .eq('user_id',session.user.id)
+      .order('created_at')
+      .limit(1)
+      .maybeSingle();
+    if(portfolioError)throw portfolioError;
+
+    if(!portfolio){
+      status.textContent='No portfolio yet';
+      body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Open Portfolio to create one.</td></tr>';
+      return;
+    }
+
+    const {data:tx,error:txError}=await supabaseClient
+      .from('portfolio_transactions')
+      .select('symbol,exchange,transaction_type,quantity,price,charges')
+      .eq('portfolio_id',portfolio.id)
+      .eq('user_id',session.user.id);
+    if(txError)throw txError;
+
+    const transactions=Array.isArray(tx)?tx:[];
+    const holdings={};
+    for(const t of transactions){
+      const symbol=portfolioClean(t.symbol);
+      if(!symbol)continue;
+      if(!holdings[symbol])holdings[symbol]={qty:0,cost:0};
+      const q=portfolioNum(t.quantity),p=portfolioNum(t.price),charges=portfolioNum(t.charges);
+      if(String(t.transaction_type).toUpperCase()==='BUY'){
+        holdings[symbol].qty+=q;
+        holdings[symbol].cost+=q*p+charges;
+      }else{
+        const old=holdings[symbol].qty;
+        if(old>0){
+          const avg=holdings[symbol].cost/old;
+          holdings[symbol].cost-=q*avg+charges;
+          holdings[symbol].qty-=q;
+        }
+      }
+    }
+
+    const symbols=Object.keys(holdings).filter(s=>holdings[s].qty>0.0000001);
+    if(!symbols.length){
+      status.textContent='No holdings';
+      body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">No active holdings yet.</td></tr>';
+      return;
+    }
+
+    let priceMap={};
+    try{
+      const r=await fetch(PORTFOLIO_API_BASE+'/price-feed',{cache:'no-store'});
+      if(r.ok){
+        const d=await r.json();
+        const rows=Array.isArray(d)?d:(d.items||[]);
+        rows.forEach(x=>{
+          if(x.symbol&&Number.isFinite(Number(x.price)))priceMap[portfolioClean(x.symbol)]=x;
+        });
+      }
+    }catch(e){}
+
+    const missing=symbols.filter(s=>!Number.isFinite(Number(priceMap[s]?.price)));
+    if(missing.length){
+      const fallback=await Promise.all(missing.map(async symbol=>{
+        try{
+          const r=await fetch(PORTFOLIO_API_BASE+'/stock-detail?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
+          if(!r.ok)return null;
+          const d=await r.json();
+          return Number.isFinite(Number(d?.price))?{symbol,data:d}:null;
+        }catch(e){return null;}
+      }));
+      fallback.filter(Boolean).forEach(x=>priceMap[x.symbol]=x.data);
+    }
+
+    let current=0,dayChange=0;
+    symbols.forEach(symbol=>{
+      const h=holdings[symbol],feed=priceMap[symbol]||{};
+      const price=portfolioNum(feed.price);
+      current+=h.qty*price;
+      const prev=portfolioNum(feed.previous_close);
+      const change=Number.isFinite(Number(feed.change))
+        ? Number(feed.change)
+        : (price&&prev?price-prev:0);
+      dayChange+=h.qty*change;
+    });
+
+    const dayPct=current-dayChange!==0 ? dayChange/(current-dayChange)*100 : 0;
+    const cls=dayChange>=0?'var(--positive)':'var(--negative)';
+    status.textContent=symbols.length+' holding'+(symbols.length===1?'':'s')+' · Live';
+    body.innerHTML=
+      '<tr><td>Current Value</td><td>'+portfolioMoney(current)+'</td></tr>'+
+      '<tr><td>Day Change</td><td style="color:'+cls+'">'+(dayChange>=0?'+':'')+portfolioMoney(dayChange)+'</td></tr>'+
+      '<tr><td>Day Change %</td><td style="color:'+cls+'">'+(dayChange>=0?'+':'')+dayPct.toFixed(2)+'%</td></tr>';
+  }catch(e){
+    console.error('[Portfolio Dashboard]',e);
+    status.textContent='Unavailable';
+    body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Portfolio snapshot unavailable.</td></tr>';
+  }
+}
+
+function initPortfolioDashboard(){
+  loadPortfolioSnapshot();
+  if(portfolioDashTimer)clearInterval(portfolioDashTimer);
+  portfolioDashTimer=setInterval(loadPortfolioSnapshot,30000);
+  supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadPortfolioSnapshot,250));
+}
+
 /* ─── Live Timer ─── */
 setInterval(() => {
   const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
@@ -8429,6 +8600,7 @@ setInterval(() => {
 async function init() {
   await initConfig();
   initCryptoTradeDashboard();
+  initPortfolioDashboard();
   initVoiceSearch();
   await Promise.all([
     loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines(),
