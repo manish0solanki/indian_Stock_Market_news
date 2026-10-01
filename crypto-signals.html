@@ -243,6 +243,25 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .trade-tools select{
   min-width:170px;
 }
+.trade-tools{justify-content:flex-start;flex-wrap:wrap}
+.trade-list-pane{padding:0 20px 30px;width:100%}
+.trade-list-summary{font-size:11px;color:var(--muted);margin:0 0 8px}
+.trade-list-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:14px}
+.trade-list-table{width:100%;border-collapse:collapse;min-width:1050px}
+.trade-list-table th,.trade-list-table td{padding:10px 9px;border-bottom:1px solid var(--border);text-align:left;font-size:11px;white-space:nowrap}
+.trade-list-table th{padding:0;background:var(--card2);position:sticky;top:0;z-index:2}
+.trade-list-table th button{display:block;width:100%;border:0;background:transparent;border-radius:0;text-align:left;padding:10px 9px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;cursor:pointer}
+.trade-list-table th button:hover{color:var(--text);background:rgba(79,140,255,.08)}
+.trade-list-table th button.active{color:var(--blue)}
+.trade-list-table td{font-family:monospace}
+.trade-list-table .list-pair{font-family:Segoe UI,system-ui,sans-serif;font-weight:800}
+.trade-list-table .list-muted{color:var(--muted);font-family:Segoe UI,system-ui,sans-serif;font-size:10px}
+.trade-list-table .list-long{color:var(--green);font-weight:800}
+.trade-list-table .list-short{color:var(--red);font-weight:800}
+.trade-list-table .list-profit{color:var(--green);font-weight:800}
+.trade-list-table .list-loss{color:var(--red);font-weight:800}
+.trade-list-actions{display:flex;gap:5px}
+@media(max-width:600px){.trade-tools{padding:0 10px 10px}.trade-tools select{width:auto;min-width:130px}.trade-list-pane{padding:0 10px 20px}}
 @media(max-width:600px){
   .trade-tools{
     padding:0 10px 10px;
@@ -424,7 +443,6 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 <div class="tabs">
   <div class="tab active" data-tab="signals">📶 Signals</div>
   <div class="tab" data-tab="live">🟢 Live Trades <span id="liveTabCount"></span></div>
-  <div class="tab" data-tab="liveList">📋 Live List <span id="liveListTabCount"></span></div>
   <div class="tab" data-tab="archive">🗄️ Archive <span id="archiveTabCount"></span></div>
   <div class="tab" data-tab="wallet">💰 Wallet <span id="walletBalanceTab"></span></div>
   <div class="tab" data-tab="reports">📊 Reports</div>
@@ -433,42 +451,29 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 </div>
 
 <div class="trade-tools" id="tradeTools" style="display:none">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <label for="tradeSort">Sort current tab:</label>
-    <select id="tradeSort">
-    <option value="newest">New → Old</option>
-    <option value="oldest">Old → New</option>
-    <option value="pnlHigh">P&L High → Low</option>
-    <option value="pnlLow">P&L Low → High</option>
-    <option value="capitalHigh">Capital High → Low</option>
-    <option value="capitalLow">Capital Low → High</option>
-    <option value="entryHigh">Entry High → Low</option>
-    <option value="entryLow">Entry Low → High</option>
-    <option value="symbolAZ">Symbol A → Z</option>
-    <option value="symbolZA">Symbol Z → A</option>
-    </select>
-    <button class="small danger" id="clearAllTradesBtn" type="button">🧹 Clear All Trades</button>
-  </div>
+  <label for="tradeView">View:</label>
+  <select id="tradeView">
+    <option value="detailed">Detailed</option>
+    <option value="list">List</option>
+  </select>
+  <label for="tradeSort">Sort:</label>
+  <select id="tradeSort">
+    <option value="newest">New → Old</option><option value="oldest">Old → New</option>
+    <option value="pnlHigh">P&L High → Low</option><option value="pnlLow">P&L Low → High</option>
+    <option value="capitalHigh">Capital High → Low</option><option value="capitalLow">Capital Low → High</option>
+    <option value="entryHigh">Entry High → Low</option><option value="entryLow">Entry Low → High</option>
+    <option value="symbolAZ">Symbol A → Z</option><option value="symbolZA">Symbol Z → A</option>
+  </select>
+  <button class="small danger" id="clearAllTradesBtn" type="button">🧹 Clear All Trades</button>
 </div>
 
 <div class="grid" id="signalsGrid"></div>
-<div class="live-list-panel" id="liveListPane" hidden>
-  <div class="live-list-toolbar">
-    <div><b>All Live Trades</b><span id="liveListSummary"></span></div>
-    <label>Sort <select id="liveListSort">
-      <option value="newest">New → Old</option><option value="oldest">Old → New</option>
-      <option value="pnlHigh">P&L High → Low</option><option value="pnlLow">P&L Low → High</option>
-      <option value="capitalHigh">Capital High → Low</option><option value="capitalLow">Capital Low → High</option>
-      <option value="entryHigh">Entry High → Low</option><option value="entryLow">Entry Low → High</option>
-      <option value="symbolAZ">Symbol A → Z</option><option value="symbolZA">Symbol Z → A</option>
-    </select></label>
-  </div>
-  <div class="live-list-wrap"><table class="live-list-table"><thead><tr>
-    <th>PAIR</th><th>DIR</th><th>ENTRY</th><th>CURRENT</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>CAPITAL</th><th>LEV.</th><th>LIVE P&L</th><th>R</th><th>OPENED</th><th>ACTIONS</th>
-  </tr></thead><tbody id="liveListBody"></tbody></table></div>
-</div>
 <div class="journal-list" id="liveTradesList" hidden></div>
 <div class="journal-list" id="archiveList" hidden></div>
+<div class="trade-list-pane" id="tradeListPane" hidden>
+  <div class="trade-list-summary" id="tradeListSummary"></div>
+  <div class="trade-list-wrap"><table class="trade-list-table"><thead id="tradeListHead"></thead><tbody id="tradeListBody"></tbody></table></div>
+</div>
 
 <div class="wallet-panel" id="walletPane" hidden>
   <div class="wallet-hero">
@@ -3289,7 +3294,7 @@ function calcClosedPnL(t){
 }
 
 /* ================= RENDER ================= */
-function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();renderLiveList();renderWallet();}
+function render(){renderStats();renderSignals();renderLiveTrades();renderArchive();renderWallet();}
 
 function getCapitalSnapshot(){
   /*
@@ -3363,7 +3368,83 @@ function renderStats(){
     <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
 }
 
+let tradeViewMode=localStorage.getItem("cs_trade_view")||"detailed";
+
+function listHeader(key,label){
+  const sort=activeTradePanel==="archive"?archiveTradeSort:activeTradePanel==="live"?liveTradeSort:"newest";
+  const active=sort===key;
+  const dir=active?" ↕":"";
+  return '<th><button type="button" class="'+(active?"active":"")+'" data-list-sort="'+key+'">'+label+dir+'</button></th>';
+}
+function renderTradeListView(panel){
+  const body=$("tradeListBody"),head=$("tradeListHead"),summary=$("tradeListSummary");
+  if(!body||!head)return;
+
+  let rows=[], mode=panel;
+  if(panel==="signals"){
+    rows=state.signals.slice();
+    rows.sort((a,b)=>{
+      const s=panel==="signals"?localStorage.getItem("cs_signal_list_sort")||"newest":"newest";
+      if(s==="symbolAZ"||s==="symbolZA"){
+        const d=String(a.sym).localeCompare(String(b.sym),undefined,{numeric:true,sensitivity:"base"});
+        return s==="symbolZA"?-d:d;
+      }
+      const av=s==="pnlHigh"||s==="pnlLow"?0:Number(a.entry)||0;
+      const bv=s==="pnlHigh"||s==="pnlLow"?0:Number(b.entry)||0;
+      if(s==="scoreHigh")return (Number(b.score)||0)-(Number(a.score)||0);
+      if(s==="scoreLow")return (Number(a.score)||0)-(Number(b.score)||0);
+      if(s==="confHigh")return signalConfidence(b)-signalConfidence(a);
+      if(s==="confLow")return signalConfidence(a)-signalConfidence(b);
+      if(s==="entryHigh")return bv-av;
+      if(s==="entryLow")return av-bv;
+      return 0;
+    });
+    head.innerHTML=listHeader("symbolAZ","PAIR")+listHeader("direction","DIR")+listHeader("entryHigh","PRICE")+listHeader("scoreHigh","SCORE")+listHeader("confHigh","CONF.")+listHeader("entryHigh","ENTRY")+listHeader("entryLow","SL")+listHeader("entryHigh","TP")+listHeader("rrHigh","R:R")+"<th>ACTIONS</th>";
+    body.innerHTML=rows.length?rows.map((s,i)=>'<tr>'+
+      '<td><div class="list-pair">'+escapeHtml(s.sym)+'</div><div class="list-muted">'+escapeHtml(s.quote||state.quote)+' · '+escapeHtml(state.tf)+'</div></td>'+
+      '<td class="'+(s.dir==="SHORT"?"list-short":"list-long")+'">'+s.dir+'</td>'+
+      '<td>'+fmtPrice(s.price,s.quote||state.quote)+'</td><td>'+Number(s.score||0)+'</td><td>'+signalConfidence(s)+'%</td>'+
+      '<td>'+fmtPrice(s.entry,s.quote||state.quote)+'</td><td style="color:var(--red)">'+fmtPrice(s.sl,s.quote||state.quote)+'</td><td style="color:var(--green)">'+fmtPrice(s.tp,s.quote||state.quote)+'</td><td>1:'+Number(s.rr||0).toFixed(1)+'</td>'+
+      '<td><button class="small primary" onclick="openTrade('+state.signals.indexOf(s)+')">📝</button> <button class="small" onclick="askAI('+state.signals.indexOf(s)+')">🤖</button></td></tr>').join("")
+      :'<tr><td colspan="10" class="empty">No validated signals.</td></tr>';
+    if(summary)summary.textContent=rows.length+" active signal"+(rows.length===1?"":"s");
+    return;
+  }
+
+  rows=state.journal.filter(t=>panel==="archive"?t.closed:!t.closed);
+  const sort=panel==="archive"?archiveTradeSort:liveTradeSort;
+  rows=sortTrades(rows,sort,panel==="archive"?"archive":"live");
+  if(panel==="live"){
+    head.innerHTML=listHeader("symbolAZ","PAIR")+listHeader("direction","DIR")+listHeader("entryHigh","ENTRY")+listHeader("currentHigh","CURRENT")+listHeader("entryLow","SL")+listHeader("entryHigh","TP")+listHeader("capitalHigh","CAPITAL")+listHeader("pnlHigh","LIVE P&L")+listHeader("pnlLow","R")+"<th>ACTIONS</th>";
+    body.innerHTML=rows.length?rows.map(t=>{
+      const i=state.journal.indexOf(t),live=calcLivePnL(t),p=Number(live.pnl)||0,r=Number(live.rMultiple)||0;
+      return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(live.cp,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td style="color:var(--green)">'+fmtPrice(t.tp,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+ (r>=0?"+":"")+r.toFixed(1)+'R</td><td><div class="trade-list-actions"><button class="small primary" onclick="quickClose('+i+',\'tp\')">🎯</button><button class="small danger" onclick="quickClose('+i+',\'sl\')">🛑</button><button class="small" onclick="openEdit('+i+')">✏️</button></div></td></tr>';
+    }).join(""):'<tr><td colspan="10" class="empty">No live paper trades.</td></tr>';
+    if(summary)summary.textContent=rows.length+" live trade"+(rows.length===1?"":"s");
+  }else{
+    head.innerHTML=listHeader("symbolAZ","PAIR")+listHeader("direction","DIR")+listHeader("entryHigh","ENTRY")+listHeader("currentHigh","EXIT")+listHeader("entryLow","SL")+listHeader("entryHigh","TP")+listHeader("capitalHigh","CAPITAL")+listHeader("pnlHigh","FINAL P&L")+listHeader("newest","STATUS")+ "<th>ACTIONS</th>";
+    body.innerHTML=rows.length?rows.map(t=>{
+      const i=state.journal.indexOf(t),p=Number(calcClosedPnL(t))||0,status=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL";
+      return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(t.closePrice||t.currentPrice,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td style="color:var(--green)">'+fmtPrice(t.tp,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+status+'</td><td><button class="small" onclick="openEdit('+i+')">✏️</button> <button class="small danger" onclick="deleteTrade('+i+')">🗑️</button></td></tr>';
+    }).join(""):'<tr><td colspan="10" class="empty">Archive is empty.</td></tr>';
+    if(summary)summary.textContent=rows.length+" archived trade"+(rows.length===1?"":"s");
+  }
+  body.querySelectorAll("[data-list-sort]").forEach(b=>b.addEventListener("click",()=>{
+    const key=b.dataset.listSort;
+    if(panel==="signals"){
+      let current=localStorage.getItem("cs_signal_list_sort")||"newest";
+      current=current===key?((key==="symbolAZ"?"symbolZA":key==="symbolZA"?"symbolAZ":key==="scoreHigh"?"scoreLow":key==="scoreLow"?"scoreHigh":key)):key;
+      localStorage.setItem("cs_signal_list_sort",current);
+    }else{
+      if(panel==="archive")archiveTradeSort=key;else liveTradeSort=key;
+      localStorage.setItem(panel==="archive"?"cs_archive_trade_sort":"cs_live_trade_sort",key);
+    }
+    renderTradeListView(panel);
+  }));
+}
 function renderSignals(){
+  if(tradeViewMode==="list" && activeTradePanel==="signals"){ renderTradeListView("signals"); return; }
+
   const g=$("signalsGrid");
   if(!state.signals.length){
     g.innerHTML=`<div class="empty" style="grid-column:1/-1">
@@ -3571,32 +3652,9 @@ function renderCryptoLiveSummary(){
   }));
 }
 
-function liveListINR(v){const n=Number(v),r=Number(state.inrPerQuote);return Number.isFinite(n)&&n>0&&Number.isFinite(r)&&r>0?fmtINR(n*r):"₹—";}
-function renderLiveList(){
-  const body=$("liveListBody"); if(!body)return;
-  const open=state.journal.filter(t=>!t.closed);
-  const summary=$("liveListSummary");
-  const total=open.reduce((s,t)=>s+calcLivePnL(t).pnl,0);
-  if(summary)summary.textContent=`· ${open.length} trades · Live P&L ${total>=0?"+":""}${fmtINR(total)}`;
-  if(!open.length){body.innerHTML='<tr><td colspan="12" class="live-list-empty">No live paper trades.</td></tr>';return;}
-  const sort=$("liveListSort")?.value||localStorage.getItem("cs_live_list_sort")||"newest";
-  body.innerHTML=sortTrades(open,sort).map(t=>{
-    const i=state.journal.indexOf(t), live=calcLivePnL(t), price=v=>liveListINR(v);
-    const pnl=Number(live.pnl)||0, r=Number(live.rMultiple)||0;
-    return `<tr>
-      <td><div class="live-list-pair">${String(t.sym)}</div><div class="live-list-muted">${String(t.quote||state.quote)} · ${String(state.tf)}</div></td>
-      <td><span class="live-list-dir ${t.dir==="SHORT"?"short":"long"}">${String(t.dir)}</span></td>
-      <td class="live-list-num">${price(t.entry)}</td><td class="live-list-num">${price(live.cp)}</td>
-      <td class="live-list-num" style="color:var(--red)">${price(t.sl)}</td><td class="live-list-num" style="color:var(--green)">${price(t.tp)}</td>
-      <td class="live-list-num">₹${Number(t.amt||0).toLocaleString("en-IN")}</td><td class="live-list-num">${t.lev}x</td>
-      <td class="live-list-pnl" style="color:${pnl>=0?"var(--green)":"var(--red)"}">${pnl>=0?"+":""}${fmtINR(pnl)}</td>
-      <td class="live-list-r">${r>=0?"+":""}${r.toFixed(1)}R</td><td class="live-list-muted">${String(t.date||"—")}</td>
-      <td><div class="live-list-actions"><button class="small primary" onclick="quickClose(${i},'tp')">🎯</button><button class="small danger" onclick="quickClose(${i},'sl')">🛑</button><button class="small" onclick="openEdit(${i})">✏️</button><button class="small danger" onclick="deleteTrade(${i})">🗑️</button></div></td>
-    </tr>`;
-  }).join("");
-}
 
 function renderLiveTrades(){
+  if(tradeViewMode==="list" && activeTradePanel==="live"){ renderTradeListView("live"); return; }
   const l=$("liveTradesList");
   if(!l)return;
 
@@ -3617,6 +3675,7 @@ function renderLiveTrades(){
 }
 
 function renderArchive(){
+  if(tradeViewMode==="list" && activeTradePanel==="archive"){ renderTradeListView("archive"); return; }
   const l=$("archiveList");
   if(!l)return;
 
@@ -4761,54 +4820,52 @@ function exportBacktestCSV(){
 
 function selectAppTab(sel){
   document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===sel));
+  $("signalsGrid").hidden=sel!=="signals" || tradeViewMode==="list";
+  $("liveTradesList").hidden=sel!=="live" || tradeViewMode==="list";
+  $("archiveList").hidden=sel!=="archive" || tradeViewMode==="list";
+  $("tradeListPane").hidden=!(["signals","live","archive"].includes(sel)&&tradeViewMode==="list");
 
-  /* Use the HTML hidden property rather than relying on inline display.
-     This is more reliable across Android browsers and responsive CSS. */
-  $("signalsGrid").hidden=sel!=="signals";
-  $("liveListPane").hidden=sel!=="liveList";
-  $("settingsPane").hidden=sel!=="settings";
-  $("walletPane").hidden=sel!=="wallet";
-  $("reportsPane").hidden=sel!=="reports";
-  $("backtestPane").hidden=sel!=="backtest";
-  $("liveTradesList").hidden=sel!=="live";
-  $("archiveList").hidden=sel!=="archive";
-
-  $("liveTradesList").classList.toggle("panel-visible",sel==="live");
-  if(sel==="liveList"){ activeTradePanel="liveList"; renderLiveList(); }
-  $("archiveList").classList.toggle("panel-visible",sel==="archive");
-
+  activeTradePanel=sel;
   const tools=$("tradeTools");
-  if(tools) tools.style.display=(sel==="live"||sel==="archive")?"flex":"none";
-
-  if(sel==="live"||sel==="archive") {
-    activeTradePanel=sel;
-    $("tradeSort").value=sel==="live"?liveTradeSort:archiveTradeSort;
+  if(tools) tools.style.display=["signals","live","archive"].includes(sel)?"flex":"none";
+  if($("tradeView")) $("tradeView").value=tradeViewMode;
+  if($("tradeSort")){
+    $("tradeSort").value=sel==="archive"?archiveTradeSort:sel==="live"?liveTradeSort:"newest";
   }
 
-  if(sel==="live") updateLivePrices();
-  if(sel==="archive") renderArchive();
-  if(sel==="wallet") renderWallet();
-  if(sel==="reports") generateReport();
-  if(sel==="backtest") $("btConfig").textContent=$("tfSelect").value+" · "+$("quoteSelect").value+" · R:R "+selectedRR().risk+":"+selectedRR().reward;
+  if(sel==="signals"){
+    if(tradeViewMode==="list")renderTradeListView("signals"); else renderSignals();
+  }
+  if(sel==="live"){
+    if(tradeViewMode==="list")renderTradeListView("live"); else {renderLiveTrades();updateLivePrices();}
+  }
+  if(sel==="archive"){
+    if(tradeViewMode==="list")renderTradeListView("archive"); else renderArchive();
+  }
+  if(sel==="wallet")renderWallet();
+  if(sel==="reports")generateReport();
+  if(sel==="backtest")$("btConfig").textContent=$("tfSelect").value+" · "+$("quoteSelect").value+" · R:R "+selectedRR().risk+":"+selectedRR().reward;
 }
 
-document.querySelectorAll(".tab").forEach(tab=>{
-  tab.addEventListener("click",()=>selectAppTab(tab.dataset.tab));
+document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>selectAppTab(tab.dataset.tab)));
+
+$("tradeView")?.addEventListener("change",()=>{
+  tradeViewMode=$("tradeView").value==="list"?"list":"detailed";
+  localStorage.setItem("cs_trade_view",tradeViewMode);
+  selectAppTab(activeTradePanel);
 });
 
-$("tradeSort").value=activeTradePanel==="archive"?archiveTradeSort:liveTradeSort;
-$("tradeSort").addEventListener("change",()=>{
+$("tradeSort")?.addEventListener("change",()=>{
   const value=$("tradeSort").value;
-  if(activeTradePanel==="archive") {
-    archiveTradeSort=value;
-    localStorage.setItem("cs_archive_trade_sort",archiveTradeSort);
-    renderArchive();
-  } else {
-    liveTradeSort=value;
-    localStorage.setItem("cs_live_trade_sort",liveTradeSort);
-    renderLiveTrades();
-  }
+  if(activeTradePanel==="archive"){archiveTradeSort=value;localStorage.setItem("cs_archive_trade_sort",value);}
+  else if(activeTradePanel==="live"){liveTradeSort=value;localStorage.setItem("cs_live_trade_sort",value);}
+  else {localStorage.setItem("cs_signal_list_sort",value);}
+  if(tradeViewMode==="list")renderTradeListView(activeTradePanel);
+  else if(activeTradePanel==="live")renderLiveTrades();
+  else if(activeTradePanel==="archive")renderArchive();
+  else renderSignals();
 });
+
 
 /* ================= UI EVENTS ================= */
 $("depositBtn").onclick=addWalletMoney;
