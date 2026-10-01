@@ -8723,7 +8723,24 @@ async function loadLatestBlogSnapshots(){
           '</div>';
       }
 
-      const url='/blog/'+encodeURIComponent(post.slug)+'/';
+      /*
+       * Blog posts are stored in category folders, e.g.
+       * /blog/daily-wrap/<slug>/
+       * /blog/stock-spotlight/<slug>/
+       */
+      const categoryPath={
+        'daily-wrap':'daily-wrap',
+        'sector-analysis':'sector-analysis',
+        'stock-spotlight':'stock-spotlight',
+        'fiidii-flows':'fiidii-flows',
+        'guide':'guides',
+        'earnings':'earnings',
+        'market-breadth':'market-breadth'
+      }[String(post.category||'').toLowerCase().trim()];
+
+      const url=categoryPath
+        ? '/blog/'+categoryPath+'/'+encodeURIComponent(post.slug)+'/'
+        : '/blog/'+encodeURIComponent(post.slug)+'/';
 
       return '<article class="latest-blog-card">'+
         '<div class="latest-blog-card-top">'+
