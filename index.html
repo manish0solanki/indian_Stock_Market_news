@@ -3155,7 +3155,7 @@ body {
 .portfolio-dash-link{font-size:10px;color:var(--indigo-light);text-decoration:none;font-weight:600}
 [data-theme="light"] .portfolio-dash-link{color:var(--indigo)}
 .portfolio-dash-status{font-size:9px;color:var(--text-muted);font-family:var(--font-mono)}
-.portfolio-snapshot-table{width:100%;border-collapse:collapse}
+.portfolio-snapshot-table{width:100%;border-collapse:collapse}.portfolio-snapshot-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.portfolio-snapshot-metric{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;min-width:0}.portfolio-snapshot-metric .v{font:700 12px var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.portfolio-snapshot-metric .l{font-size:9px;color:var(--text-muted);margin-top:3px;text-transform:uppercase}
 .portfolio-snapshot-table th{padding:7px 8px;text-align:left;font-size:9px;color:var(--text-muted);text-transform:uppercase;background:var(--bg)}
 .portfolio-snapshot-table td{padding:9px 8px;border-top:1px solid var(--border);font-size:11px}
 .portfolio-snapshot-table td:last-child{text-align:right;font-family:var(--font-mono);font-weight:700}
@@ -3562,12 +3562,7 @@ body {
           </div>
           <a class="portfolio-dash-link" href="/portfolio.html">Open Portfolio →</a>
         </div>
-        <table class="portfolio-snapshot-table">
-          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
-          <tbody id="portfolioSnapshotBody">
-            <tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
-          </tbody>
-        </table>
+        <div class="portfolio-snapshot-metrics"><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashCurrent">—</div><div class="l">Current Value</div></div><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashDay">—</div><div class="l">Day Change</div></div></div><div id="portfolioSnapshotBody" style="margin-top:7px;"></div>
         <div class="portfolio-dash-note">Live portfolio value and today's change based on your holdings.</div>
       </div>
 
@@ -8469,12 +8464,14 @@ function portfolioClean(s){
 async function loadPortfolioSnapshot(){
   const status=document.getElementById('portfolioDashStatus');
   const body=document.getElementById('portfolioSnapshotBody');
+  const currentEl=document.getElementById('portfolioDashCurrent');
+  const dayEl=document.getElementById('portfolioDashDay');
   if(!status||!body)return;
 
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(!session?.user){
     status.textContent='Sign in to view your portfolio';
-    body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Sign in to see your portfolio snapshot.</td></tr>';
+    if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Sign in to see your portfolio snapshot.</div>';
     return;
   }
 
@@ -8491,7 +8488,7 @@ async function loadPortfolioSnapshot(){
 
     if(!portfolio){
       status.textContent='No portfolio yet';
-      body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Open Portfolio to create one.</td></tr>';
+      if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Open Portfolio to create one.</div>';
       return;
     }
 
@@ -8525,7 +8522,7 @@ async function loadPortfolioSnapshot(){
     const symbols=Object.keys(holdings).filter(s=>holdings[s].qty>0.0000001);
     if(!symbols.length){
       status.textContent='No holdings';
-      body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">No active holdings yet.</td></tr>';
+      if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">No active holdings yet.</div>';
       return;
     }
 
@@ -8569,14 +8566,13 @@ async function loadPortfolioSnapshot(){
     const dayPct=current-dayChange!==0 ? dayChange/(current-dayChange)*100 : 0;
     const cls=dayChange>=0?'var(--positive)':'var(--negative)';
     status.textContent=symbols.length+' holding'+(symbols.length===1?'':'s')+' · Live';
-    body.innerHTML=
-      '<tr><td>Current Value</td><td>'+portfolioMoney(current)+'</td></tr>'+
-      '<tr><td>Day Change</td><td style="color:'+cls+'">'+(dayChange>=0?'+':'')+portfolioMoney(dayChange)+'</td></tr>'+
-      '<tr><td>Day Change %</td><td style="color:'+cls+'">'+(dayChange>=0?'+':'')+dayPct.toFixed(2)+'%</td></tr>';
+    if(currentEl)currentEl.textContent=portfolioMoney(current);
+    if(dayEl){dayEl.textContent=(dayChange>=0?'+':'')+portfolioMoney(dayChange);dayEl.style.color=cls;}
+    body.innerHTML='<div style="text-align:right;color:'+cls+';font:600 9px var(--font-mono);">Day '+(dayChange>=0?'+':'')+dayPct.toFixed(2)+'%</div>';
   }catch(e){
     console.error('[Portfolio Dashboard]',e);
     status.textContent='Unavailable';
-    body.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:12px;">Portfolio snapshot unavailable.</td></tr>';
+    if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Portfolio snapshot unavailable.</div>';
   }
 }
 
