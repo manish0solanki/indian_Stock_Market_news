@@ -3001,6 +3001,121 @@ async function refreshINRConversion(){
     if(state.quote==="BTC"){const btc=await fetchPrice("BTCUSDT","USDT");if(Number.isFinite(btc)&&btc>0)state.inrPerQuote=btc*fx;}
   }catch(e){console.warn("INR conversion failed",e);}
 }
+
+/* ================= PROFIT-PROTECTION TRAILING STOP =================
+   Rule:
+   1) When price reaches 70% of the original Entry -> TP distance,
+      activate profit protection.
+   2) Immediately lock 50% of the original target profit.
+   3) After activation, trail the protected stop in the profitable
+      direction using the remaining 20% of the original target distance
+      as the trail gap. The stop can only tighten, never loosen.
+   This is paper-trade management only; it does not place exchange orders.
+*/
+const PROFIT_TRAIL_TRIGGER_PCT = 0.70;
+const PROFIT_TRAIL_LOCK_PCT = 0.50;
+const PROFIT_TRAIL_GAP_PCT = 0.20;
+
+function readTradeNotes(t){
+  try{
+    const raw=typeof t.notes==="string"?JSON.parse(t.notes||"{}"):(t.notes||{});
+    return raw && typeof raw==="object" ? raw : {};
+  }catch(e){ return {}; }
+}
+
+function writeTradeNotes(t,patch){
+  const notes={...readTradeNotes(t),...(patch||{})};
+  t.notes=JSON.stringify(notes);
+  return notes;
+}
+
+function manageProfitProtection(t,cp){
+  const entry=Number(t.entry),tp=Number(t.tp);
+  const dir=String(t.dir||"").toUpperCase();
+
+  if(!Number.isFinite(entry)||!Number.isFinite(tp)||!Number.isFinite(cp)) return {changed:false,active:false};
+  if(!["LONG","SHORT"].includes(dir)) return {changed:false,active:false};
+
+  const targetDistance=Math.abs(tp-entry);
+  if(!(targetDistance>0)) return {changed:false,active:false};
+
+  const triggerDistance=targetDistance*PROFIT_TRAIL_TRIGGER_PCT;
+  const lockDistance=targetDistance*PROFIT_TRAIL_LOCK_PCT;
+  const trailGap=targetDistance*PROFIT_TRAIL_GAP_PCT;
+
+  const n=readTradeNotes(t);
+  let activated=n.profitTrailActivated===true;
+  let peak=Number(n.profitTrailPeakPrice);
+  let protectedStop=Number(n.profitTrailStop);
+
+  const favorableDistance=dir==="LONG" ? cp-entry : entry-cp;
+
+  // Activation happens only after the market has actually reached 70% of TP.
+  if(!activated && favorableDistance>=triggerDistance){
+    activated=true;
+    peak=cp;
+    protectedStop=dir==="LONG"
+      ? entry+lockDistance
+      : entry-lockDistance;
+
+    writeTradeNotes(t,{
+      profitTrailActivated:true,
+      profitTrailTriggerPct:PROFIT_TRAIL_TRIGGER_PCT,
+      profitTrailLockPct:PROFIT_TRAIL_LOCK_PCT,
+      profitTrailGapPct:PROFIT_TRAIL_GAP_PCT,
+      profitTrailTargetDistance:targetDistance,
+      profitTrailPeakPrice:peak,
+      profitTrailStop:protectedStop,
+      profitTrailActivatedAt:new Date().toISOString()
+    });
+
+    // Keep the original trade SL for historical reference, but replace the
+    // live protection level with the profit-protection stop.
+    t.sl=protectedStop;
+    return {changed:true,active:true,activated:true,stop:protectedStop};
+  }
+
+  if(!activated) return {changed:false,active:false};
+
+  // Once active, the peak/trailing stop can only move in the profitable direction.
+  if(dir==="LONG"){
+    if(!Number.isFinite(peak)||cp>peak) peak=cp;
+    const candidate=peak-trailGap;
+    const nextStop=Math.max(Number(t.sl)||(-Infinity),protectedStop,candidate);
+    if(nextStop>Number(t.sl)||nextStop>Number(n.profitTrailStop)){
+      t.sl=nextStop;
+      protectedStop=nextStop;
+      writeTradeNotes(t,{
+        profitTrailPeakPrice:peak,
+        profitTrailStop:protectedStop,
+        profitTrailLastUpdatedAt:new Date().toISOString()
+      });
+      return {changed:true,active:true,stop:nextStop,peak};
+    }
+  }else{
+    if(!Number.isFinite(peak)||cp<peak) peak=cp;
+    const candidate=peak+trailGap;
+    const nextStop=Math.min(Number(t.sl)||Infinity,protectedStop,candidate);
+    if(nextStop<Number(t.sl)||nextStop<Number(n.profitTrailStop)){
+      t.sl=nextStop;
+      protectedStop=nextStop;
+      writeTradeNotes(t,{
+        profitTrailPeakPrice:peak,
+        profitTrailStop:protectedStop,
+        profitTrailLastUpdatedAt:new Date().toISOString()
+      });
+      return {changed:true,active:true,stop:nextStop,peak};
+    }
+  }
+
+  // Persist a newly observed peak even when the stop did not need to move.
+  if(peak!==Number(n.profitTrailPeakPrice)){
+    writeTradeNotes(t,{profitTrailPeakPrice:peak});
+  }
+
+  return {changed:false,active:true,stop:Number(t.sl),peak};
+}
+
 async function updateLivePrices(){
   const openTrades=state.journal.filter(t=>!t.closed);
   const syms=[...new Set(openTrades.map(t=>t.sym))];
@@ -3017,6 +3132,26 @@ async function updateLivePrices(){
     const cp=state.livePrices[t.sym];
     if(!Number.isFinite(cp)) continue;
     t.currentPrice=cp;
+
+    // Profit protection: once price reaches 70% of the original TP distance,
+    // lock 50% of that original target profit and then ratchet the stop only
+    // in the profitable direction.
+    const profitTrail=manageProfitProtection(t,cp);
+    if(profitTrail.changed){
+      const cur=pairCurrency(t.quote||state.quote);
+      logConnection(
+        profitTrail.activated
+          ? "🛡 Profit protection active: "+t.sym+" "+t.dir+" · SL → "+cur+fmt(t.sl)
+          : "🛡 Trailing stop tightened: "+t.sym+" "+t.dir+" · SL → "+cur+fmt(t.sl),
+        "ok",
+        "profit-trail-"+t.id
+      );
+      if(dbEnabled()){
+        await dbUpdateTrade(t);
+      }else{
+        save();
+      }
+    }
 
     // Safety guard: old/bad trades with reversed SL/TP must never be
     // interpreted as real TP/SL hits. Cancel them and return the reserved
