@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-1-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 1 Oct 2026: Drops 0.88%",
+    "excerpt": "Nifty 50 dropped 0.88% to close at 22,421.95.",
+    "category": "daily-wrap",
+    "date": "2026-10-01T17:35:15+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-selling-intensifies-to-record-session-high-as-dii-buying-hits-peak",
     "title": "FII Selling Intensifies to Record Session High as DII Buying Hits Peak",
     "excerpt": "FII net selling surged to ₹10,148.41 Cr, the steepest single-session outflow in 26 sessions, while DII net buying reached an equivalent high of ₹11,271.73 Cr. The Nifty 50 slipp...",
