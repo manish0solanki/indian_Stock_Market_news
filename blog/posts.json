@@ -1,25 +1,5 @@
 [
-  {
-    "slug": "dii-buying-extends-to-27-sessions-as-fii-selling-moderates-nifty-slips-088",
-    "title": "DII Buying Extends to 27 Sessions as FII Selling Moderates; Nifty Slips 0.88%",
-    "excerpt": "FII net selling eased to ₹9,484.22 Cr from yesterday's record outflow, while DII net buying moderated to ₹10,041.84 Cr. The Nifty 50 fell 198.5 points despite near-neutral combi...",
-    "category": "fiidii-flows",
-    "date": "2026-10-01",
-    "readTime": "5 min read",
-    "tags": [
-      "FII",
-      "DII",
-      "Nifty 50",
-      "Institutional Buying",
-      "Indian Stock Market"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "nse-fii-dii-data",
-      "nifty-50-index-data"
-    ]
-  },
+
   {
     "slug": "fii-selling-extends-to-5th-session-as-dii-buying-hits-27-day-streak-nifty-slips-088",
     "title": "FII Selling Extends to 5th Session as DII Buying Hits 27-Day Streak; Nifty Slips 0.88%",
