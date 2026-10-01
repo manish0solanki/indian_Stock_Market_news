@@ -5429,26 +5429,40 @@ const CONTACT_URL  = () => API_BASE + "/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 
-/* ─── Supabase Stock Detail ─── */
+/* ─── On-Demand Stock Detail ─── */
+const STOCK_DATA_FUNCTION_URL =
+  'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-data';
+
 async function fetchStockDetailFromSupabase(symbol) {
   const cleanSymbol = String(symbol || '').trim().toUpperCase();
   if (!cleanSymbol) throw new Error('Missing stock symbol');
 
-  const { data, error } = await supabaseClient
-    .from('stock_latest')
-    .select('*')
-    .eq('symbol', cleanSymbol)
-    .maybeSingle();
+  const response = await fetch(
+    STOCK_DATA_FUNCTION_URL + '?symbol=' + encodeURIComponent(cleanSymbol),
+    {
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json'
+      }
+    }
+  );
 
-  if (error) throw error;
-  if (!data) throw new Error('Stock not found in Supabase: ' + cleanSymbol);
+  if (!response.ok) {
+    throw new Error('Stock API HTTP ' + response.status);
+  }
+
+  const data = await response.json();
+
+  if (!data?.success) {
+    throw new Error(data?.error || 'Stock data unavailable');
+  }
 
   return {
     ...data,
     name: data.company_name,
-    last_quarter_promoters: data.promoters_latest,
-    previous_quarter_promoters: data.promoters_previous,
-    promoters_change: data.promoters_change
+    last_quarter_promoters: data.promoters_latest ?? null,
+    previous_quarter_promoters: data.promoters_previous ?? null,
+    promoters_change: data.promoters_change ?? null
   };
 }
 const STOCK_HISTORY_URL = () => API_BASE + "/stock-history";
