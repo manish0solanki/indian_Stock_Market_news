@@ -201,7 +201,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .trade-pnl.profit{color:var(--green)}
 .trade-pnl.loss{color:var(--red)}
 .trade-live-price{font-size:9px;color:var(--muted);margin-top:2px}
-.trade-progress{height:5px;background:var(--card2);border-radius:4px;overflow:hidden;margin:10px 0 4px}
+.trade-progress{height:5px;background:var(--card2);border-radius:4px;overflow:hidden;margin:10px 0 4px}.trade-progress-wrap{margin:10px 0 5px}.trade-progress-label{display:flex;justify-content:space-between;gap:10px;font-size:10px;color:var(--muted);margin-bottom:5px}.trade-progress-label b{font-family:monospace;font-size:11px}
 .trade-progress span{display:block;height:100%;border-radius:4px;transition:width .4s}
 .trade-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;color:var(--muted);font-size:10px}
 .trade-footer .jbtns{display:flex;gap:5px}
@@ -245,6 +245,8 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 }
 .trade-tools{justify-content:flex-start;flex-wrap:wrap}
 .trade-list-pane{padding:0 20px 30px;width:100%}
+.trade-list-pane[hidden]{display:none!important}
+#liveTradesList.panel-visible,#archiveList.panel-visible{display:flex!important;flex-direction:column;gap:12px}
 .trade-list-summary{font-size:11px;color:var(--muted);margin:0 0 8px}
 .trade-list-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:14px}
 .trade-list-table{width:100%;border-collapse:collapse;min-width:1050px}
@@ -3213,7 +3215,6 @@ async function updateLivePrices(){
   }
   renderLiveTrades();
   renderArchive();
-  renderLiveList();
   // Stats (including Today's P&L) must refresh whenever live prices or
   // automatic TP/SL closures are processed, not only after a market scan.
   renderStats();
@@ -3532,13 +3533,12 @@ function renderTradeCard(t, ri, archived=false){
     statusBadge='<span class="trade-status status-running">● RUNNING</span>';
     pnlHtml=`<div class="trade-pnl ${live.pnl>=0?"profit":"loss"}">${live.pnl>=0?"+":""}${fmtINR(live.pnl)}</div><div class="trade-live-price">Gross ${live.grossPnl>=0?"+":""}${fmtINR(live.grossPnl)} · Est. fees -${fmtINR(live.totalFees)} · ${rTxt}</div>`;
 
-    const range=Math.abs(t.tp-t.sl);
-    const fromSL=Math.abs(live.cp-t.sl);
-    const pct=range>0?Math.min(100,Math.max(0,(fromSL/range)*100)):0;
-    progressHtml=`
-      <div class="trade-progress">
-        <span style="width:${pct}%;background:${live.pnl>=0?"var(--green)":"var(--red)"}"></span>
-      </div>`;
+    const targetDistance=Math.abs(Number(t.tp)-Number(t.entry));
+    const favorable=t.dir==="LONG"?(Number(live.cp)-Number(t.entry)):(Number(t.entry)-Number(live.cp));
+    const progressPct=targetDistance>0?(favorable/targetDistance)*100:0;
+    const shownPct=Math.min(100,Math.max(0,Math.abs(progressPct)));
+    const progressLabel=progressPct>=0?(progressPct>=100?"🎯 Target reached":"📈 "+progressPct.toFixed(1)+"% of target profit"):"📉 "+Math.abs(progressPct).toFixed(1)+"% toward stop loss";
+    progressHtml='<div class="trade-progress-wrap"><div class="trade-progress-label"><span>'+progressLabel+'</span><b>'+(progressPct>=0?"+":"")+progressPct.toFixed(1)+'%</b></div><div class="trade-progress"><span style="width:'+shownPct+'%;background:'+(progressPct>=0?"var(--green)":"var(--red)")+'"></span></div></div>';
   }
 
   const actionButtons=archived
@@ -3604,6 +3604,9 @@ function tradeSortValue(t,sort,mode="live"){
   if(sort==="pnlHigh"||sort==="pnlLow")return Number(t.closed?calcClosedPnL(t):calcLivePnL(t).pnl)||0;
   if(sort==="capitalHigh"||sort==="capitalLow")return Number(t.amt)||0;
   if(sort==="entryHigh"||sort==="entryLow")return Number(t.entry)||0;
+  if(sort==="currentHigh"||sort==="currentLow")return Number(t.currentPrice||state.livePrices[t.sym]||t.closePrice||t.entry)||0;
+  if(sort==="rrHigh"||sort==="rrLow"){const risk=Math.abs(Number(t.entry)-Number(t.sl)),reward=Math.abs(Number(t.tp)-Number(t.entry));return risk>0?reward/risk:0;}
+  if(sort==="directionAZ"||sort==="directionZA")return String(t.dir||"").toUpperCase();
   if(sort==="symbolAZ"||sort==="symbolZA")return String(t.sym||"").toUpperCase();
   return tradeSortTimestamp(t,"open");
 }
@@ -3615,7 +3618,7 @@ function sortTrades(list,sort="newest",mode="live"){
       const cmp=String(av).localeCompare(String(bv),undefined,{numeric:true,sensitivity:"base"});
       return sort==="symbolZA"?-cmp:cmp;
     }
-    const low=["oldest","pnlLow","capitalLow","entryLow"].includes(sort);
+    const low=["oldest","pnlLow","capitalLow","entryLow","currentLow","rrLow"].includes(sort);
     const diff=low?av-bv:bv-av;
     if(diff!==0)return diff;
     return tradeSortTimestamp(a,mode==="archive"?"close":"open")-tradeSortTimestamp(b,mode==="archive"?"close":"open");
@@ -4823,6 +4826,8 @@ function selectAppTab(sel){
   $("signalsGrid").hidden=sel!=="signals" || tradeViewMode==="list";
   $("liveTradesList").hidden=sel!=="live" || tradeViewMode==="list";
   $("archiveList").hidden=sel!=="archive" || tradeViewMode==="list";
+  $("liveTradesList").classList.toggle("panel-visible",sel==="live" && tradeViewMode==="detailed");
+  $("archiveList").classList.toggle("panel-visible",sel==="archive" && tradeViewMode==="detailed");
   $("tradeListPane").hidden=!(["signals","live","archive"].includes(sel)&&tradeViewMode==="list");
 
   activeTradePanel=sel;
