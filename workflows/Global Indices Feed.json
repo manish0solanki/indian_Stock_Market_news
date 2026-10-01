@@ -2131,7 +2131,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const sheet = $('Filter Symbol').first().json;\nconst yahoo = $input.first().json;\n\n// v8 chart API structure: chart.result[0].meta + indicators.quote[0]\nconst result = yahoo?.chart?.result?.[0] || {};\nconst meta = result.meta || {};\nconst quote = result.indicators?.quote?.[0] || {};\n\n// Extract live fields from CORRECT v8 paths\nconst price = meta.regularMarketPrice;\nconst prevClose = meta.chartPreviousClose;\nconst open = quote.open?.[0];           // open is inside indicators array\nconst dayHigh = meta.regularMarketDayHigh;\nconst dayLow = meta.regularMarketDayLow;\nconst high52 = meta.fiftyTwoWeekHigh;\nconst low52 = meta.fiftyTwoWeekLow;\n\n// Calculate change percent from live price & prev close\nlet changePct;\nif (price !== undefined && prevClose !== undefined && prevClose !== 0) {\n  changePct = ((price - prevClose) / prevClose) * 100;\n} else {\n  changePct = sheet[\"Percentage Change\"];\n}\n\n// Helper: use Yahoo value if it exists and is a number, else fallback to sheet\nconst pick = (live, sheetVal) => (live !== undefined && live !== null && !isNaN(live)) ? live : sheetVal;\n\nreturn [{\n  json: {\n    symbol: sheet.SYMBOL,\n    company_name: sheet[\"NAME OF COMPANY\"],\n    sector: sheet.Sector,\n\n    // Live from Yahoo v8 chart\n    price: pick(price, sheet.Price),\n    open: pick(open, sheet.Open),\n    previous_close: pick(prevClose, sheet[\"Previous Close\"]),\n    change_percent: changePct,\n\n    // Sheet data for rest\n    dividend_yield: sheet[\"Dividend Yield\"],\n    high_52w: pick(high52, sheet[\"52W High\"]),\n    low_52w: pick(low52, sheet[\"52W Low\"]),\n\n    market_cap: sheet[\"Market Cap\"],\n    high: pick(dayHigh, sheet.High),\n    low: pick(dayLow, sheet.Low),\n\n    pe: sheet[\"P/E\"],\n    roe: sheet.ROE,\n    roce: sheet.ROCE,\n\n    book_value: sheet[\"Book Value\"],\n    face_value: sheet[\"Face Value\"],\n\n    last_quarter_promoters: sheet[\"Promoters \"],\n    previous_quarter_promoters: sheet.Promoters,\n    promoters_change: sheet[\"Promoters Change\"]\n  }\n}];"
+        "jsCode": "const sheet = $('Filter Symbol').first().json;\nconst yahoo = $input.first().json;\n\n// v8 chart API structure: chart.result[0].meta + indicators.quote[0]\nconst result = yahoo?.chart?.result?.[0] || {};\nconst meta = result.meta || {};\nconst quote = result.indicators?.quote?.[0] || {};\n\n// Extract live fields from CORRECT v8 paths\nconst price = meta.regularMarketPrice;\nconst prevClose = meta.chartPreviousClose;\nconst open = quote.open?.[0];           // open is inside indicators array\nconst dayHigh = meta.regularMarketDayHigh;\nconst dayLow = meta.regularMarketDayLow;\nconst high52 = meta.fiftyTwoWeekHigh;\nconst low52 = meta.fiftyTwoWeekLow;\n\n// Calculate change percent from live price & prev close\nlet changePct;\nif (price !== undefined && prevClose !== undefined && prevClose !== 0) {\n  changePct = ((price - prevClose) / prevClose) * 100;\n} else {\n  changePct = sheet[\"Percentage Change\"];\n}\n\n// Helper: use Yahoo value if it exists and is a number, else fallback to sheet\nconst pick = (live, sheetVal) => (live !== undefined && live !== null && !isNaN(live)) ? live : sheetVal;\n\nreturn [{\n  json: {\n    symbol: sheet.SYMBOL,\n    company_name: sheet[\"NAME OF COMPANY\"],\n    sector: sheet.Sector,\n\n    // Live from Yahoo v8 chart\n    price: pick(price, sheet.Price),\n    open: pick(open, sheet.Open),\n    previous_close: pick(prevClose, sheet[\"Previous Close\"]),\n    change: (price !== undefined && prevClose !== undefined && !isNaN(price) && !isNaN(prevClose)) ? (price - prevClose) : null,\n    change_percent: changePct,\n\n    // Sheet data for rest\n    dividend_yield: sheet[\"Dividend Yield\"],\n    high_52w: pick(high52, sheet[\"52W High\"]),\n    low_52w: pick(low52, sheet[\"52W Low\"]),\n\n    market_cap: sheet[\"Market Cap\"],\n    high: pick(dayHigh, sheet.High),\n    low: pick(dayLow, sheet.Low),\n\n    pe: sheet[\"P/E\"],\n    roe: sheet.ROE,\n    roce: sheet.ROCE,\n\n    book_value: sheet[\"Book Value\"],\n    face_value: sheet[\"Face Value\"],\n\n    last_quarter_promoters: sheet[\"Promoters \"],\n    previous_quarter_promoters: sheet.Promoters,\n    promoters_change: sheet[\"Promoters Change\"],\n    quote_time: new Date().toISOString()\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3136,6 +3136,46 @@
       "id": "b4372961-ea7c-47a1-9a75-89a826fb3f98",
       "name": "Webhook - sector-stocks",
       "webhookId": "df54c107-b7e5-4d2a-8c9e-2957e0b9c05f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL + '/rest/v1/stock_quotes?on_conflict=symbol' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ symbol:$json.symbol, price:$json.price, previous_close:$json.previous_close, open:$json.open, high:$json.high, low:$json.low, change:$json.change, change_percent:$json.change_percent, high_52w:$json.high_52w, low_52w:$json.low_52w, source:'Yahoo Finance', quote_time:$json.quote_time }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        128,
+        3904
+      ],
+      "id": "9e3b0d54-6f8f-4e8d-9f8a-4e7b9b3f6a21",
+      "name": "Upsert Quote to Supabase"
     }
   ],
   "pinData": {},
@@ -3802,7 +3842,7 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook - stock-detail",
+            "node": "Upsert Quote to Supabase",
             "type": "main",
             "index": 0
           }
@@ -4237,6 +4277,17 @@
         [
           {
             "node": "Get row(s) in sheet4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Quote to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - stock-detail",
             "type": "main",
             "index": 0
           }
