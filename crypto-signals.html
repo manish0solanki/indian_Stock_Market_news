@@ -3635,6 +3635,8 @@ async function updateLivePrices(){
     if(!levels.ok){
       t.closed=true;
       t.status="cancelled";
+      t.cancelReason="invalid_levels";
+      t.closeReason="invalid_levels";
       t.closePrice=cp;
       t.closedAt=new Date().toISOString();
       t.pnl=0;
@@ -3655,6 +3657,15 @@ async function updateLivePrices(){
     if(hitTP||hitSL){
       t.closed=true;
       t.status=hitTP?"tp":"sl";
+      // If the active SL has moved into profit, this is a trailing-stop
+      // exit. Keep it as an SL-classified exit, but calculate P&L from the
+      // actual executed close price rather than treating it as cancelled.
+      if(!hitTP && t.trailingActive){
+        t.closeReason="trailing_stop";
+        t.trailingStopHit=true;
+      }else{
+        t.closeReason=hitTP?"take_profit":"stop_loss";
+      }
       t.closePrice=cp;
       t.closedAt=new Date().toISOString();
       t.date=t.date||new Date().toLocaleString();
@@ -3717,7 +3728,9 @@ function calcLivePnL(t){
   };
 }
 function calcClosedPnL(t){
-  if(t.status==="cancelled") return 0;
+  // A trade closed by a trailing stop is a real exit, not a cancellation.
+  // Only genuine invalid-trade cancellations are zero-P&L.
+  if(t.status==="cancelled" && t.cancelReason==="invalid_levels") return 0;
 
   const entry=Number(t.entry)||0;
   const rawClose=Number(t.closePrice);
