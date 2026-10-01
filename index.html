@@ -1190,7 +1190,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
    * 150px accounts for the topbar, ticker, search/controls
    * and surrounding spacing.
    */
-  height: calc(100dvh - 150px);
+  /* Latest Insights now sits above the dashboard, so the dashboard
+     must use the remaining viewport instead of the old pre-insights height. */
+  height: calc(100dvh - 300px);
+  min-height: 420px;
 
   /*
    * Prevent the dashboard itself from becoming the scrollbar.
