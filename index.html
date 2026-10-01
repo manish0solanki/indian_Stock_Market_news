@@ -3162,6 +3162,28 @@ body {
 .portfolio-dash-note{margin-top:7px;color:var(--text-muted);font-size:9px;line-height:1.4}
 @media(max-width:640px){.portfolio-snapshot-table th,.portfolio-snapshot-table td{padding:8px 6px}}
 
+/* Latest Blog Snapshots */
+.latest-blog-snapshots{max-width:1400px;margin:0 auto 14px;padding:0 0}
+.latest-blog-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:10px}
+.latest-blog-title{font-size:14px;font-weight:700;color:var(--text)}
+.latest-blog-subtitle{font-size:10px;color:var(--text-muted);margin-top:2px}
+.latest-blog-all{font-size:10px;color:var(--indigo-light);text-decoration:none;font-weight:600;white-space:nowrap}
+[data-theme="light"] .latest-blog-all{color:var(--indigo)}
+.latest-blog-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.latest-blog-card{display:flex;flex-direction:column;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;transition:transform var(--transition),border-color var(--transition),background var(--transition)}
+.latest-blog-card:hover{transform:translateY(-2px);border-color:var(--indigo-light);background:var(--surface-hover)}
+.latest-blog-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.latest-blog-category{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--indigo-light)}
+.latest-blog-date{font:9px var(--font-mono);color:var(--text-muted);white-space:nowrap}
+.latest-blog-card h3{font-size:12px;line-height:1.4;margin:0 0 7px;color:var(--text)}
+.latest-blog-excerpt{font-size:10px;line-height:1.5;color:var(--text-secondary);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:45px}
+.latest-blog-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+.latest-blog-read{font-size:10px;font-weight:700;color:var(--indigo-light);text-decoration:none}
+.latest-blog-meta{font-size:9px;color:var(--text-muted)}
+.latest-blog-loading,.latest-blog-empty{font-size:10px;color:var(--text-muted);padding:12px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius-md)}
+@media(max-width:1000px){.latest-blog-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.latest-blog-head{align-items:flex-start}.latest-blog-grid{grid-template-columns:1fr}.latest-blog-card-excerpt{min-height:0}}
+
 .crypto-dashboard{margin-bottom:14px}
 .crypto-dash-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .crypto-dash-title{font-size:13px;font-weight:700;color:var(--text)}
@@ -3531,6 +3553,20 @@ body {
         <div class="mp-panel-title"><span>Global Headlines</span></div>
         <div id="pageGlobalHeadlines" class="mp-empty-state">Open this page after global news loads to see the latest headlines.</div>
       </div>
+    </div>
+  </section>
+
+  <!-- Latest Generated Blog Snapshots -->
+  <section class="latest-blog-snapshots" id="latestBlogSnapshots" data-home-only="true">
+    <div class="latest-blog-head">
+      <div>
+        <div class="latest-blog-title">📰 Latest Market Insights</div>
+        <div class="latest-blog-subtitle">The newest Daily Wrap, Sector Analysis, Stock Spotlight and FII/DII reports.</div>
+      </div>
+      <a class="latest-blog-all" href="/blog/">View all articles →</a>
+    </div>
+    <div class="latest-blog-grid" id="latestBlogGrid">
+      <div class="latest-blog-loading">Loading latest insights…</div>
     </div>
   </section>
 
@@ -8624,6 +8660,94 @@ async function loadCryptoTradeDashboard(){
 
 function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTimer)clearInterval(cryptoDashTimer);cryptoDashTimer=setInterval(loadCryptoTradeDashboard,15000);supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadCryptoTradeDashboard,250));}
 
+/* ─── Latest Blog Snapshots ─── */
+let latestBlogTimer=null;
+const LATEST_BLOG_CATEGORIES=[
+  {key:'daily-wrap',label:'Daily Wrap',icon:'📈'},
+  {key:'sector-analysis',label:'Sector Analysis',icon:'📊'},
+  {key:'stock-spotlight',label:'Stock Spotlight',icon:'🔎'},
+  {key:'fiidii-flows',label:'FII / DII',icon:'🏦'}
+];
+
+function latestBlogEsc(value){
+  return String(value??'').replace(/[&<>"']/g,m=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
+}
+
+function latestBlogDate(value){
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '';
+  return d.toLocaleDateString('en-IN',{
+    day:'2-digit',month:'short',year:'numeric'
+  });
+}
+
+async function loadLatestBlogSnapshots(){
+  const grid=document.getElementById('latestBlogGrid');
+  if(!grid)return;
+
+  try{
+    const response=await fetch('/blog/posts.json?ts='+Date.now(),{
+      cache:'no-store'
+    });
+    if(!response.ok)throw Error('HTTP '+response.status);
+
+    const posts=await response.json();
+    if(!Array.isArray(posts))throw Error('Invalid blog index');
+
+    const latest={};
+
+    posts.forEach(post=>{
+      if(!post||!post.category||!post.slug)return;
+      if(!latest[post.category]){
+        latest[post.category]=post;
+      }
+    });
+
+    const cards=LATEST_BLOG_CATEGORIES.map(category=>{
+      const post=latest[category.key];
+
+      if(!post){
+        return '<div class="latest-blog-empty">'+
+          category.icon+' '+category.label+
+          '<br><span style="font-size:9px;">No article available yet.</span>'+
+          '</div>';
+      }
+
+      const url='/blog/'+encodeURIComponent(post.slug)+'/';
+
+      return '<article class="latest-blog-card">'+
+        '<div class="latest-blog-card-top">'+
+          '<span class="latest-blog-category">'+
+            category.icon+' '+latestBlogEsc(category.label)+
+          '</span>'+
+          '<span class="latest-blog-date">'+latestBlogDate(post.date)+'</span>'+
+        '</div>'+
+        '<h3>'+latestBlogEsc(post.title)+'</h3>'+
+        '<div class="latest-blog-excerpt">'+
+          latestBlogEsc(post.excerpt||'Open the article for the full analysis.')+
+        '</div>'+
+        '<div class="latest-blog-footer">'+
+          '<span class="latest-blog-meta">'+latestBlogEsc(post.readTime||'Read')+'</span>'+
+          '<a class="latest-blog-read" href="'+url+'">Read article →</a>'+
+        '</div>'+
+      '</article>';
+    });
+
+    grid.innerHTML=cards.join('');
+  }catch(error){
+    console.error('[Latest Blog Snapshots]',error);
+    grid.innerHTML='<div class="latest-blog-empty" style="grid-column:1/-1;">Latest insights are temporarily unavailable.</div>';
+  }
+}
+
+function initLatestBlogSnapshots(){
+  loadLatestBlogSnapshots();
+  if(latestBlogTimer)clearInterval(latestBlogTimer);
+  latestBlogTimer=setInterval(loadLatestBlogSnapshots,300000);
+}
+
 /* ─── Portfolio Snapshot ─── */
 let portfolioDashTimer=null;
 
@@ -8848,6 +8972,7 @@ async function init() {
   await initConfig();
   initCryptoTradeDashboard();
   initPortfolioDashboard();
+  initLatestBlogSnapshots();
   initVoiceSearch();
   await Promise.all([
     loadNews(), loadPrices(), loadIndices(), loadGlobalHeadlines(),
