@@ -10,7 +10,7 @@
 <style>
 :root{--indigo:#2E1F82;--indigo-dark:#1B134F;--bg:#0F0F1A;--surface:#1A1A2E;--surface2:#222240;--border:#2A2A4A;--text:#E8E8F0;--muted:#8E8EA8;--green:#4ADE80;--red:#F87171;--amber:#F5A623;--greenbg:rgba(74,222,128,.12);--redbg:rgba(248,113,113,.12);--radius:12px}
 [data-theme=light]{--bg:#F3F4F8;--surface:#fff;--surface2:#FAFAFC;--border:#E2E4EE;--text:#0F0F1A;--muted:#6B6B7F}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,sans-serif}.top{height:56px;background:var(--indigo);display:flex;align-items:center;padding:0 18px;position:sticky;top:0;z-index:20}.brand{color:#fff;text-decoration:none;font-weight:700;display:flex;gap:9px;align-items:center}.diamond{width:9px;height:9px;background:var(--amber);transform:rotate(45deg)}.topright{margin-left:auto;display:flex;gap:8px;align-items:center}.top button,.top a{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.13);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;text-decoration:none}.page{max-width:1400px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:16px}.head h1{margin:0 0 4px;font-size:24px}.sub{font-size:12px;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer}.btn.primary{background:var(--indigo);border-color:var(--indigo);color:#fff}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.5;cursor:not-allowed}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}.label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.value{font:700 21px 'JetBrains Mono';margin-top:6px}.green{color:var(--green)}.red{color:var(--red)}.neutral{color:var(--text)}.grid{display:grid;grid-template-columns:1fr 330px;gap:14px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}.panelhead{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.paneltitle{font-size:12px;font-weight:700}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th{padding:10px;text-align:left;background:var(--bg);color:var(--muted);font-size:9px;text-transform:uppercase;white-space:nowrap}td{padding:11px 10px;border-top:1px solid var(--border);font-size:11px;white-space:nowrap}.mono{font-family:'JetBrains Mono'}.right{text-align:right}.muted{color:var(--muted)}.empty{text-align:center;padding:35px;color:var(--muted)}.allocation{padding:14px}.bar{height:12px;background:var(--bg);border-radius:99px;overflow:hidden;display:flex;margin:10px 0 14px}.seg{height:100%}.allocrow{display:flex;justify-content:space-between;font-size:10px;margin:7px 0}.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:14px;z-index:50}.modalbg.open{display:flex}.modal{width:min(700px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px}.modalhead{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.modalhead h2{font-size:15px;margin:0}.close{border:0;background:none;color:var(--muted);font-size:22px}.form{padding:16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field.full{grid-column:1/-1}.field label{display:block;font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:5px}.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px;color:var(--text);outline:0}.foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}.drop{border:1px dashed var(--border);padding:22px;text-align:center;border-radius:10px;color:var(--muted);font-size:11px}.status{margin:0 0 12px;padding:10px 12px;border-radius:8px;font-size:11px;display:none}.status.show{display:block}.status.ok{background:var(--greenbg);color:var(--green)}.status.err{background:var(--redbg);color:var(--red)}.preview{margin-top:12px;max-height:250px;overflow:auto;border:1px solid var(--border);border-radius:8px}.hint{font-size:9px;color:var(--muted);line-height:1.5;margin-top:8px}@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}@media(max-width:520px){.page{padding:14px}.head{flex-direction:column}.cards{grid-template-columns:1fr 1fr}.fields{grid-template-columns:1fr}.field.full{grid-column:auto}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,sans-serif}.top{height:56px;background:var(--indigo);display:flex;align-items:center;padding:0 18px;position:sticky;top:0;z-index:20}.brand{color:#fff;text-decoration:none;font-weight:700;display:flex;gap:9px;align-items:center}.diamond{width:9px;height:9px;background:var(--amber);transform:rotate(45deg)}.topright{margin-left:auto;display:flex;gap:8px;align-items:center}.top button,.top a{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.13);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;text-decoration:none}.page{max-width:1400px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:16px}.head h1{margin:0 0 4px;font-size:24px}.sub{font-size:12px;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer}.btn.primary{background:var(--indigo);border-color:var(--indigo);color:#fff}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.5;cursor:not-allowed}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}.label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.value{font:700 21px 'JetBrains Mono';margin-top:6px}.green{color:var(--green)}.red{color:var(--red)}.neutral{color:var(--text)}.grid{display:grid;grid-template-columns:1fr 330px;gap:14px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}.panelhead{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.paneltitle{font-size:12px;font-weight:700}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th{padding:10px;text-align:left;background:var(--bg);color:var(--muted);font-size:9px;text-transform:uppercase;white-space:nowrap}td{padding:11px 10px;border-top:1px solid var(--border);font-size:11px;white-space:nowrap}.mono{font-family:'JetBrains Mono'}.right{text-align:right}.muted{color:var(--muted)}.empty{text-align:center;padding:35px;color:var(--muted)}.allocation{padding:14px}.bar{height:12px;background:var(--bg);border-radius:99px;overflow:hidden;display:flex;margin:10px 0 14px}.seg{height:100%}.allocrow{display:flex;justify-content:space-between;font-size:10px;margin:7px 0}.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:14px;z-index:50}.modalbg.open{display:flex}.modal{width:min(700px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px}.modalhead{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.modalhead h2{font-size:15px;margin:0}.close{border:0;background:none;color:var(--muted);font-size:22px}.form{padding:16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field.full{grid-column:1/-1}.field label{display:block;font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:5px}.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px;color:var(--text);outline:0}.symbol-wrap{position:relative}.symbol-suggestions{position:absolute;left:0;right:0;top:calc(100% + 5px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:80;max-height:260px;overflow-y:auto;display:none}.symbol-suggestions.open{display:block}.symbol-suggestion{padding:9px 10px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}.symbol-suggestion:last-child{border-bottom:0}.symbol-suggestion:hover{background:var(--bg)}.symbol-suggestion .ss-name{font-size:11px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.symbol-suggestion .ss-symbol{font:600 10px 'JetBrains Mono';color:var(--muted);background:var(--bg);padding:3px 6px;border-radius:5px;white-space:nowrap}.symbol-suggestion-empty{padding:11px;text-align:center;font-size:10px;color:var(--muted)}.symbol-company-hint{font-size:9px;color:var(--muted);margin-top:5px;min-height:12px}.foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}.drop{border:1px dashed var(--border);padding:22px;text-align:center;border-radius:10px;color:var(--muted);font-size:11px}.status{margin:0 0 12px;padding:10px 12px;border-radius:8px;font-size:11px;display:none}.status.show{display:block}.status.ok{background:var(--greenbg);color:var(--green)}.status.err{background:var(--redbg);color:var(--red)}.preview{margin-top:12px;max-height:250px;overflow:auto;border:1px solid var(--border);border-radius:8px}.hint{font-size:9px;color:var(--muted);line-height:1.5;margin-top:8px}@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}@media(max-width:520px){.page{padding:14px}.head{flex-direction:column}.cards{grid-template-columns:1fr 1fr}.fields{grid-template-columns:1fr}.field.full{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -31,8 +31,8 @@
 <section class="panel" style="margin-top:14px"><div class="panelhead"><span class="paneltitle">Recent Transactions</span></div><div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Symbol</th><th>Exchange</th><th>Qty</th><th>Price</th><th>Charges</th><th>Source</th><th></th></tr></thead><tbody id="transactions"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div></section>
 </main>
 
-<div class="modalbg" id="txModal"><div class="modal"><div class="modalhead"><h2>Add Transaction</h2><button class="close" data-close="txModal">×</button></div><form id="txForm"><div class="form"><div class="fields">
-<div class="field"><label>Symbol</label><input id="symbol" required placeholder="TCS"></div>
+<div class="modalbg" id="txModal"><div class="modal"><div class="modalhead"><h2 id="txModalTitle">Add Transaction</h2><button class="close" data-close="txModal">×</button></div><form id="txForm"><div class="form"><div class="fields">
+<div class="field"><label>Symbol</label><div class="symbol-wrap"><input id="symbol" required placeholder="Search company or symbol…" autocomplete="off"><div class="symbol-suggestions" id="symbolSuggestions"></div></div><div class="symbol-company-hint" id="symbolCompanyHint"></div></div>
 <div class="field"><label>Exchange</label><select id="exchange"><option>NSE</option><option>BSE</option></select></div>
 <div class="field"><label>Type</label><select id="type"><option>BUY</option><option>SELL</option></select></div>
 <div class="field"><label>Quantity</label><input id="qty" type="number" min="0.000001" step="any" required></div>
@@ -94,7 +94,7 @@ function render(){
  $('invested').textContent=money(inv);$('current').textContent=money(cur);$('pnl').textContent=money(pnl);$('pnl').className='value '+(pnl>=0?'green':'red');$('pnlPct').textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';$('pnlPct').className='value '+(pct>=0?'green':'red');$('holdCount').textContent=h.length+' holding'+(h.length===1?'':'s');
  $('holdings').innerHTML=h.length?h.map(x=>'<tr><td><b>'+esc(x.symbol)+'</b><div class="muted">'+esc(x.exchange)+'</div></td><td class="mono">'+x.qty.toLocaleString('en-IN')+'</td><td class="mono">'+money(x.avg)+'</td><td class="mono">'+(x.ltp?money(x.ltp):'—')+'</td><td class="mono">'+money(x.cost)+'</td><td class="mono">'+(x.ltp?money(x.current):'—')+'</td><td class="mono '+(x.pnl>=0?'green':'red')+'">'+(x.ltp?money(x.pnl):'—')+'</td><td class="mono '+(x.pct>=0?'green':'red')+'">'+(x.ltp?(x.pct>=0?'+':'')+x.pct.toFixed(2)+'%':'—')+'</td><td><button class="btn" onclick="viewStock(\''+esc(x.symbol)+'\')">View</button></td></tr>').join(''):'<tr><td colspan="9" class="empty">No holdings yet. Add a transaction or import a CSV/Excel file.</td></tr>';
  const sorted=[...h].sort((a,b)=>b.current-a.current);const max=cur||1;$('allocation').innerHTML=sorted.length?'<div class="bar">'+sorted.map((x,i)=>'<div class="seg" style="width:'+(x.current/max*100)+'%;background:hsl('+(i*47%360)+' 65% 55%)"></div>').join('')+'</div>'+sorted.map(x=>'<div class="allocrow"><span>'+esc(x.symbol)+'</span><span class="mono">'+(x.current/max*100).toFixed(1)+'%</span></div>').join(''):'<div class="empty">No holdings</div>';
- $('transactions').innerHTML=transactions.slice(0,100).map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+esc(t.symbol)+'</td><td>'+esc(t.exchange)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.source)+'</td><td><button class="btn" onclick="deleteTx(\''+esc(t.id)+'\')">Delete</button></td></tr>').join('')||'<tr><td colspan="9" class="empty">No transactions</td></tr>';
+ $('transactions').innerHTML=transactions.slice(0,100).map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+esc(t.symbol)+'</td><td>'+esc(t.exchange)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.source)+'</td><td><button class="btn" onclick="editTx(\''+esc(t.id)+'\')">Edit</button> <button class="btn" onclick="deleteTx(\'').join('')||'<tr><td colspan="9" class="empty">No transactions</td></tr>';
 }
 async function addTransactions(rows){
  const cleanRows=rows.map(r=>({portfolio_id:portfolio.id,user_id:user.id,symbol:clean(r.symbol),exchange:clean(r.exchange||'NSE')==='BSE'?'BSE':'NSE',transaction_type:'BUY',quantity:num(r.quantity),price:num(r.buy_price),charges:num(r.charges),trade_date:r.buy_date||new Date().toISOString().slice(0,10),notes:r.notes||null,source:'CSV'})).filter(r=>r.symbol&&r.quantity>0&&r.price>0);
@@ -103,13 +103,170 @@ async function addTransactions(rows){
 }
 $('addBtn').onclick=()=>{ $('tradeDate').value=new Date().toISOString().slice(0,10);open('txModal')};
 $('importBtn').onclick=()=>{pendingImport=[];$('preview').innerHTML='';$('file').value='';$('importConfirm').disabled=true;open('importModal')};
-$('txForm').onsubmit=async e=>{e.preventDefault();const b=$('saveTx');b.disabled=true;try{const row={portfolio_id:portfolio.id,user_id:user.id,symbol:clean($('symbol').value),exchange:$('exchange').value,transaction_type:$('type').value,quantity:num($('qty').value),price:num($('price').value),charges:num($('charges').value),trade_date:$('tradeDate').value,notes:$('notes').value||null,source:'MANUAL'};if(!row.symbol||row.quantity<=0||row.price<=0)throw Error('Enter valid transaction details');const {error}=await sb.from('portfolio_transactions').insert(row);if(error)throw error;close('txModal');e.target.reset();await refresh();status('Transaction added.')}catch(x){status(x.message,'err')}finally{b.disabled=false}};
+let editingTxId=null;
+let symbolSearchTimer=null;
+let symbolSearchRequestId=0;
+
+function resetTxModal(){
+  editingTxId=null;
+  $('txModalTitle').textContent='Add Transaction';
+  $('saveTx').textContent='Save transaction';
+  $('txForm').reset();
+  $('charges').value='0';
+  $('tradeDate').value=new Date().toISOString().slice(0,10);
+  $('symbolCompanyHint').textContent='';
+  closeSymbolSuggestions();
+}
+
+function openAddTransaction(){
+  resetTxModal();
+  open('txModal');
+  setTimeout(()=>$('symbol').focus(),50);
+}
+
+function closeSymbolSuggestions(){
+  const box=$('symbolSuggestions');
+  if(box){box.classList.remove('open');box.innerHTML='';}
+}
+
+async function searchPortfolioSymbols(query){
+  const q=String(query||'').trim();
+  const box=$('symbolSuggestions');
+  if(!box) return;
+  const requestId=++symbolSearchRequestId;
+
+  if(q.length<2){
+    closeSymbolSuggestions();
+    return;
+  }
+
+  box.innerHTML='<div class="symbol-suggestion-empty">Searching…</div>';
+  box.classList.add('open');
+
+  try{
+    const res=await fetch(API_BASE+"/stock-search?q="+encodeURIComponent(q),{cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(requestId!==symbolSearchRequestId) return;
+
+    let stocks=[];
+    if(Array.isArray(data)) stocks=data;
+    else if(Array.isArray(data.items)) stocks=data.items;
+    else if(data && typeof data==='object' && (data.symbol||data.company_name)) stocks=[data];
+
+    if(!stocks.length){
+      box.innerHTML='<div class="symbol-suggestion-empty">No matching stocks</div>';
+      return;
+    }
+
+    box.innerHTML='';
+    stocks.slice(0,10).forEach(stock=>{
+      const symbol=String(stock.symbol||'').trim().toUpperCase();
+      const company=String(stock.company_name||stock.name||symbol).trim();
+      if(!symbol) return;
+
+      const div=document.createElement('div');
+      div.className='symbol-suggestion';
+      div.innerHTML='<span class="ss-name">'+esc(company)+'</span><span class="ss-symbol">'+esc(symbol)+'</span>';
+      div.addEventListener('click',()=>{
+        $('symbol').value=symbol;
+        $('symbolCompanyHint').textContent=company;
+        closeSymbolSuggestions();
+        $('qty').focus();
+      });
+      box.appendChild(div);
+    });
+
+    if(!box.children.length) box.innerHTML='<div class="symbol-suggestion-empty">No matching stocks</div>';
+  }catch(err){
+    if(requestId!==symbolSearchRequestId) return;
+    box.innerHTML='<div class="symbol-suggestion-empty">Search unavailable</div>';
+    console.error('[Portfolio Stock Search]',err);
+  }
+}
+
+$('symbol').addEventListener('input',()=>{
+  const q=$('symbol').value;
+  clearTimeout(symbolSearchTimer);
+  $('symbolCompanyHint').textContent='';
+  symbolSearchTimer=setTimeout(()=>searchPortfolioSymbols(q),250);
+});
+
+$('symbol').addEventListener('focus',()=>{
+  if($('symbol').value.trim().length>=2) searchPortfolioSymbols($('symbol').value);
+});
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.symbol-wrap')) closeSymbolSuggestions();
+});
+
+function editTx(id){
+  const t=transactions.find(x=>x.id===id);
+  if(!t) return status('Transaction not found. Refresh and try again.','err');
+
+  editingTxId=id;
+  $('txModalTitle').textContent='Edit Transaction';
+  $('saveTx').textContent='Update transaction';
+  $('symbol').value=t.symbol||'';
+  $('exchange').value=t.exchange||'NSE';
+  $('type').value=t.transaction_type||'BUY';
+  $('qty').value=t.quantity;
+  $('price').value=t.price;
+  $('charges').value=t.charges||0;
+  $('tradeDate').value=t.trade_date||new Date().toISOString().slice(0,10);
+  $('notes').value=t.notes||'';
+  $('symbolCompanyHint').textContent='';
+  closeSymbolSuggestions();
+  open('txModal');
+}
+
+$('addBtn').onclick=openAddTransaction;
+
+$('txForm').onsubmit=async e=>{
+  e.preventDefault();
+  const b=$('saveTx'); b.disabled=true;
+  try{
+    const row={
+      portfolio_id:portfolio.id,
+      user_id:user.id,
+      symbol:clean($('symbol').value),
+      exchange:$('exchange').value,
+      transaction_type:$('type').value,
+      quantity:num($('qty').value),
+      price:num($('price').value),
+      charges:num($('charges').value),
+      trade_date:$('tradeDate').value,
+      notes:$('notes').value||null
+    };
+
+    if(!row.symbol||row.quantity<=0||row.price<=0) throw Error('Enter valid transaction details');
+
+    const wasEdit=!!editingTxId;
+    let error;
+    if(editingTxId){
+      ({error}=await sb.from('portfolio_transactions').update(row).eq('id',editingTxId).eq('user_id',user.id).eq('portfolio_id',portfolio.id));
+    }else{
+      ({error}=await sb.from('portfolio_transactions').insert({...row,source:'MANUAL'}));
+    }
+
+    if(error) throw error;
+    close('txModal');
+    resetTxModal();
+    await refresh();
+    status(wasEdit?'Transaction updated.':'Transaction added.');
+  }catch(x){
+    status(x.message,'err');
+  }finally{
+    b.disabled=false;
+  }
+};
+
 $('file').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;const data=await f.arrayBuffer();const wb=XLSX.read(data,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{defval:''});pendingImport=raw.map(r=>{const n={};Object.keys(r).forEach(k=>n[k.trim().toLowerCase().replace(/\s+/g,'_')]=r[k]);return {symbol:n.symbol||n.ticker||n.scrip,exchange:n.exchange||'NSE',quantity:n.quantity||n.qty,buy_price:n.buy_price||n.buyprice||n.price,buy_date:n.buy_date||n.date||new Date().toISOString().slice(0,10),charges:n.charges||0,notes:n.notes||''}});if(!pendingImport.length)throw Error('File has no rows');$('preview').innerHTML='<table style="min-width:600px"><thead><tr><th>Symbol</th><th>Qty</th><th>Buy Price</th><th>Date</th></tr></thead><tbody>'+pendingImport.slice(0,20).map(r=>'<tr><td>'+esc(r.symbol)+'</td><td>'+esc(r.quantity)+'</td><td>'+esc(r.buy_price)+'</td><td>'+esc(r.buy_date)+'</td></tr>').join('')+'</tbody></table>'+(pendingImport.length>20?'<div class="hint" style="padding:8px">Showing first 20 of '+pendingImport.length+' rows.</div>':'');$('importConfirm').disabled=false}catch(x){status(x.message,'err')}};
 $('importConfirm').onclick=async()=>{const b=$('importConfirm');b.disabled=true;try{await addTransactions(pendingImport);close('importModal');await refresh();status(pendingImport.length+' transactions imported.')}catch(x){status(x.message,'err')}finally{b.disabled=false}};
 async function deleteTx(id){if(!confirm('Delete this transaction? This changes your portfolio calculations.'))return;const {error}=await sb.from('portfolio_transactions').delete().eq('id',id).eq('user_id',user.id);if(error)return status(error.message,'err');await refresh();status('Transaction deleted.')}
 function viewStock(s){location.href='/?symbol='+encodeURIComponent(s)}
 $('logout').onclick=async()=>{await sb.auth.signOut();location.href='/'};
-document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>close(b.dataset.close));
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{close(b.dataset.close);if(b.dataset.close==='txModal')resetTxModal();});
 document.querySelectorAll('.modalbg').forEach(m=>m.onclick=e=>{if(e.target===m)close(m.id)});
 boot().catch(e=>{console.error(e);status(e.message||'Portfolio could not load','err');$('holdings').innerHTML='<tr><td colspan="9" class="empty">Could not load portfolio. Check the Supabase portfolio schema and login.</td></tr>'});
 </script>
