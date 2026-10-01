@@ -751,6 +751,20 @@ img,svg,canvas{max-width:100%}
     grid-template-columns:repeat(auto-fill,minmax(330px,1fr)) !important;
   }
 }
+/* ================= PROFIT TRAILING STOP ================= */
+.trailing-stop-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin-top:7px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:700;
+  background:rgba(22,199,132,.10);
+  border:1px solid rgba(22,199,132,.35);
+  color:var(--green);
+}
 </style>
 <base target="_blank">
 
@@ -3596,6 +3610,59 @@ async function updateLivePrices(){
       if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
       toast("🧹 "+t.sym+" "+t.dir+" invalid SL/TP cancelled; capital returned.");
       continue;
+    }
+
+    // Profit-based trailing stop:
+    // +30% price move activates a +10% protected level.
+    // Every additional +10% move raises protection by another +10%.
+    // The stop only moves in the profitable direction.
+    const trailState=t.trailingState||{active:false,step:0,stop:t.sl};
+    const entryPrice=Number(t.entry);
+    const currentPrice=Number(cp);
+    if(entryPrice>0 && currentPrice>0){
+      const movePct=t.dir==="LONG"
+        ? ((currentPrice-entryPrice)/entryPrice)*100
+        : ((entryPrice-currentPrice)/entryPrice)*100;
+      if(movePct>=30){
+        const step=Math.floor((movePct-30)/10)+1;
+        const protectedPct=step*10;
+        const protectedStop=t.dir==="LONG"
+          ? entryPrice*(1+protectedPct/100)
+          : entryPrice*(1-protectedPct/100);
+        const oldStop=Number(t.sl);
+        const shouldMove=t.dir==="LONG"
+          ? protectedStop>oldStop
+          : protectedStop<oldStop;
+        if(shouldMove){
+          t.sl=protectedStop;
+          t.trailingState={
+            active:true,
+            step,
+            triggerPct:30+(step-1)*10,
+            protectedPct,
+            stop:protectedStop,
+            activatedAt:t.trailingState?.activatedAt||new Date().toISOString(),
+            updatedAt:new Date().toISOString()
+          };
+          t.trailingActive=true;
+          t.trailingStop=protectedStop;
+          t.trailingProtectedPct=protectedPct;
+          t.trailingTriggerPct=30+(step-1)*10;
+          if(dbEnabled()) await dbUpdateTrade(t);
+        }else{
+          t.trailingState={
+            ...trailState,
+            active:true,
+            step:Math.max(Number(trailState.step)||0,step),
+            protectedPct:Math.max(Number(trailState.protectedPct)||0,protectedPct),
+            stop:oldStop
+          };
+          t.trailingActive=true;
+          t.trailingStop=oldStop;
+          t.trailingProtectedPct=Math.max(Number(trailState.protectedPct)||0,protectedPct);
+          t.trailingTriggerPct=30+(Math.max(Number(trailState.step)||0,step)-1)*10;
+        }
+      }
     }
 
     const hitTP=t.dir==="LONG" ? cp>=t.tp : cp<=t.tp;
