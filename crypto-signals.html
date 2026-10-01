@@ -3455,18 +3455,15 @@ async function refreshINRConversion(){
 }
 
 /* ================= PROFIT-PROTECTION TRAILING STOP =================
-   Rule:
-   1) When price reaches 70% of the original Entry -> TP distance,
-      activate profit protection.
-   2) Immediately lock 50% of the original target profit.
-   3) After activation, trail the protected stop in the profitable
-      direction using the remaining 20% of the original target distance
-      as the trail gap. The stop can only tighten, never loosen.
-   This is paper-trade management only; it does not place exchange orders.
+   Rule requested:
+   - Use progress toward the original TP, not raw price movement.
+   - At +30% of the target distance: protect +10% of target distance.
+   - Every additional +10% toward target raises protection by another +10%.
+   - Stop only moves in the profitable direction.
 */
-const PROFIT_TRAIL_TRIGGER_PCT = 0.70;
-const PROFIT_TRAIL_LOCK_PCT = 0.50;
-const PROFIT_TRAIL_GAP_PCT = 0.20;
+const PROFIT_TRAIL_TRIGGER_PCT = 30;
+const PROFIT_TRAIL_STEP_PCT = 10;
+const PROFIT_TRAIL_LOCK_START_PCT = 10;
 
 function readTradeNotes(t){
   try{
@@ -3484,88 +3481,94 @@ function writeTradeNotes(t,patch){
 function manageProfitProtection(t,cp){
   const entry=Number(t.entry),tp=Number(t.tp);
   const dir=String(t.dir||"").toUpperCase();
-
   if(!Number.isFinite(entry)||!Number.isFinite(tp)||!Number.isFinite(cp)) return {changed:false,active:false};
   if(!["LONG","SHORT"].includes(dir)) return {changed:false,active:false};
 
   const targetDistance=Math.abs(tp-entry);
   if(!(targetDistance>0)) return {changed:false,active:false};
 
-  const triggerDistance=targetDistance*PROFIT_TRAIL_TRIGGER_PCT;
-  const lockDistance=targetDistance*PROFIT_TRAIL_LOCK_PCT;
-  const trailGap=targetDistance*PROFIT_TRAIL_GAP_PCT;
+  const favorableDistance=dir==="LONG" ? cp-entry : entry-cp;
+  const targetProgressPct=(favorableDistance/targetDistance)*100;
 
   const n=readTradeNotes(t);
-  let activated=n.profitTrailActivated===true;
-  let peak=Number(n.profitTrailPeakPrice);
-  let protectedStop=Number(n.profitTrailStop);
+  let activated=n.profitTrailActivated===true && n.profitTrailVersion===2;
+  let step=Math.max(0,Number(n.profitTrailStep)||0);
+  let protectedPct=Math.max(0,Number(n.profitTrailProtectedPct)||0);
 
-  const favorableDistance=dir==="LONG" ? cp-entry : entry-cp;
-
-  // Activation happens only after the market has actually reached 70% of TP.
-  if(!activated && favorableDistance>=triggerDistance){
+  // 30% of the way to TP activates the trail and locks 10% of the
+  // original target distance. Every further 10% of target progress
+  // increases the protected level by another 10%.
+  if(!activated && targetProgressPct>=PROFIT_TRAIL_TRIGGER_PCT){
     activated=true;
-    peak=cp;
-    protectedStop=dir==="LONG"
-      ? entry+lockDistance
-      : entry-lockDistance;
+    step=Math.floor((targetProgressPct-PROFIT_TRAIL_TRIGGER_PCT)/PROFIT_TRAIL_STEP_PCT)+1;
+    protectedPct=Math.min(90,PROFIT_TRAIL_LOCK_START_PCT+(step-1)*PROFIT_TRAIL_STEP_PCT);
+
+    const protectedDistance=targetDistance*(protectedPct/100);
+    const protectedStop=dir==="LONG"
+      ? entry+protectedDistance
+      : entry-protectedDistance;
 
     writeTradeNotes(t,{
+      profitTrailVersion:2,
       profitTrailActivated:true,
       profitTrailTriggerPct:PROFIT_TRAIL_TRIGGER_PCT,
-      profitTrailLockPct:PROFIT_TRAIL_LOCK_PCT,
-      profitTrailGapPct:PROFIT_TRAIL_GAP_PCT,
+      profitTrailStep:step,
+      profitTrailProtectedPct:protectedPct,
       profitTrailTargetDistance:targetDistance,
-      profitTrailPeakPrice:peak,
       profitTrailStop:protectedStop,
-      profitTrailActivatedAt:new Date().toISOString()
+      profitTrailActivatedAt:new Date().toISOString(),
+      profitTrailLastUpdatedAt:new Date().toISOString()
     });
 
-    // Keep the original trade SL for historical reference, but replace the
-    // live protection level with the profit-protection stop.
+    t.trailingActive=true;
+    t.trailingStop=protectedStop;
+    t.trailingProtectedPct=protectedPct;
+    t.trailingTriggerPct=PROFIT_TRAIL_TRIGGER_PCT+(step-1)*PROFIT_TRAIL_STEP_PCT;
     t.sl=protectedStop;
-    return {changed:true,active:true,activated:true,stop:protectedStop};
+
+    return {changed:true,active:true,activated:true,stop:protectedStop,progressPct:targetProgressPct,protectedPct};
   }
 
-  if(!activated) return {changed:false,active:false};
+  if(!activated) return {changed:false,active:false,progressPct:targetProgressPct};
 
-  // Once active, the peak/trailing stop can only move in the profitable direction.
-  if(dir==="LONG"){
-    if(!Number.isFinite(peak)||cp>peak) peak=cp;
-    const candidate=peak-trailGap;
-    const nextStop=Math.max(Number(t.sl)||(-Infinity),protectedStop,candidate);
-    if(nextStop>Number(t.sl)||nextStop>Number(n.profitTrailStop)){
-      t.sl=nextStop;
-      protectedStop=nextStop;
-      writeTradeNotes(t,{
-        profitTrailPeakPrice:peak,
-        profitTrailStop:protectedStop,
-        profitTrailLastUpdatedAt:new Date().toISOString()
-      });
-      return {changed:true,active:true,stop:nextStop,peak};
-    }
-  }else{
-    if(!Number.isFinite(peak)||cp<peak) peak=cp;
-    const candidate=peak+trailGap;
-    const nextStop=Math.min(Number(t.sl)||Infinity,protectedStop,candidate);
-    if(nextStop<Number(t.sl)||nextStop<Number(n.profitTrailStop)){
-      t.sl=nextStop;
-      protectedStop=nextStop;
-      writeTradeNotes(t,{
-        profitTrailPeakPrice:peak,
-        profitTrailStop:protectedStop,
-        profitTrailLastUpdatedAt:new Date().toISOString()
-      });
-      return {changed:true,active:true,stop:nextStop,peak};
-    }
+  // Calculate the highest protection level justified by the current
+  // target-progress, but never reduce an already protected level.
+  const desiredStep=targetProgressPct>=PROFIT_TRAIL_TRIGGER_PCT
+    ? Math.floor((targetProgressPct-PROFIT_TRAIL_TRIGGER_PCT)/PROFIT_TRAIL_STEP_PCT)+1
+    : step;
+  const nextStep=Math.max(step,desiredStep);
+  const nextProtectedPct=Math.min(90,Math.max(protectedPct,
+    PROFIT_TRAIL_LOCK_START_PCT+(nextStep-1)*PROFIT_TRAIL_STEP_PCT));
+
+  const protectedDistance=targetDistance*(nextProtectedPct/100);
+  const candidateStop=dir==="LONG"
+    ? entry+protectedDistance
+    : entry-protectedDistance;
+  const oldStop=Number(t.sl);
+
+  const shouldMove=dir==="LONG"
+    ? candidateStop>oldStop
+    : candidateStop<oldStop;
+
+  t.trailingActive=true;
+  t.trailingStop=shouldMove?candidateStop:oldStop;
+  t.trailingProtectedPct=nextProtectedPct;
+  t.trailingTriggerPct=PROFIT_TRAIL_TRIGGER_PCT+(nextStep-1)*PROFIT_TRAIL_STEP_PCT;
+
+  if(shouldMove || nextStep>step || nextProtectedPct>protectedPct){
+    t.sl=shouldMove?candidateStop:oldStop;
+    writeTradeNotes(t,{
+      profitTrailVersion:2,
+      profitTrailActivated:true,
+      profitTrailStep:nextStep,
+      profitTrailProtectedPct:nextProtectedPct,
+      profitTrailStop:t.sl,
+      profitTrailLastUpdatedAt:new Date().toISOString()
+    });
+    return {changed:true,active:true,stop:t.sl,progressPct:targetProgressPct,protectedPct:nextProtectedPct};
   }
 
-  // Persist a newly observed peak even when the stop did not need to move.
-  if(peak!==Number(n.profitTrailPeakPrice)){
-    writeTradeNotes(t,{profitTrailPeakPrice:peak});
-  }
-
-  return {changed:false,active:true,stop:Number(t.sl),peak};
+  return {changed:false,active:true,stop:oldStop,progressPct:targetProgressPct,protectedPct:nextProtectedPct};
 }
 
 async function updateLivePrices(){
@@ -3624,59 +3627,6 @@ async function updateLivePrices(){
       if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
       toast("🧹 "+t.sym+" "+t.dir+" invalid SL/TP cancelled; capital returned.");
       continue;
-    }
-
-    // Profit-based trailing stop:
-    // +30% price move activates a +10% protected level.
-    // Every additional +10% move raises protection by another +10%.
-    // The stop only moves in the profitable direction.
-    const trailState=t.trailingState||{active:false,step:0,stop:t.sl};
-    const entryPrice=Number(t.entry);
-    const currentPrice=Number(cp);
-    if(entryPrice>0 && currentPrice>0){
-      const movePct=t.dir==="LONG"
-        ? ((currentPrice-entryPrice)/entryPrice)*100
-        : ((entryPrice-currentPrice)/entryPrice)*100;
-      if(movePct>=30){
-        const step=Math.floor((movePct-30)/10)+1;
-        const protectedPct=step*10;
-        const protectedStop=t.dir==="LONG"
-          ? entryPrice*(1+protectedPct/100)
-          : entryPrice*(1-protectedPct/100);
-        const oldStop=Number(t.sl);
-        const shouldMove=t.dir==="LONG"
-          ? protectedStop>oldStop
-          : protectedStop<oldStop;
-        if(shouldMove){
-          t.sl=protectedStop;
-          t.trailingState={
-            active:true,
-            step,
-            triggerPct:30+(step-1)*10,
-            protectedPct,
-            stop:protectedStop,
-            activatedAt:t.trailingState?.activatedAt||new Date().toISOString(),
-            updatedAt:new Date().toISOString()
-          };
-          t.trailingActive=true;
-          t.trailingStop=protectedStop;
-          t.trailingProtectedPct=protectedPct;
-          t.trailingTriggerPct=30+(step-1)*10;
-          if(dbEnabled()) await dbUpdateTrade(t);
-        }else{
-          t.trailingState={
-            ...trailState,
-            active:true,
-            step:Math.max(Number(trailState.step)||0,step),
-            protectedPct:Math.max(Number(trailState.protectedPct)||0,protectedPct),
-            stop:oldStop
-          };
-          t.trailingActive=true;
-          t.trailingStop=oldStop;
-          t.trailingProtectedPct=Math.max(Number(trailState.protectedPct)||0,protectedPct);
-          t.trailingTriggerPct=30+(Math.max(Number(trailState.step)||0,step)-1)*10;
-        }
-      }
     }
 
     const hitTP=t.dir==="LONG" ? cp>=t.tp : cp<=t.tp;
