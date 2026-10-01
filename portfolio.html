@@ -10,7 +10,7 @@
 <style>
 :root{--indigo:#2E1F82;--indigo-dark:#1B134F;--bg:#0F0F1A;--surface:#1A1A2E;--surface2:#222240;--border:#2A2A4A;--text:#E8E8F0;--muted:#8E8EA8;--green:#4ADE80;--red:#F87171;--amber:#F5A623;--greenbg:rgba(74,222,128,.12);--redbg:rgba(248,113,113,.12);--radius:12px}
 [data-theme=light]{--bg:#F3F4F8;--surface:#fff;--surface2:#FAFAFC;--border:#E2E4EE;--text:#0F0F1A;--muted:#6B6B7F}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,sans-serif}.top{height:56px;background:var(--indigo);display:flex;align-items:center;padding:0 18px;position:sticky;top:0;z-index:20}.brand{color:#fff;text-decoration:none;font-weight:700;display:flex;gap:9px;align-items:center}.diamond{width:9px;height:9px;background:var(--amber);transform:rotate(45deg)}.topright{margin-left:auto;display:flex;gap:8px;align-items:center}.top button,.top a{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.13);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;text-decoration:none}.page{max-width:1400px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:16px}.head h1{margin:0 0 4px;font-size:24px}.sub{font-size:12px;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer}.btn.primary{background:var(--indigo);border-color:var(--indigo);color:#fff}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.5;cursor:not-allowed}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}.label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.value{font:700 21px 'JetBrains Mono';margin-top:6px}.green{color:var(--green)}.red{color:var(--red)}.neutral{color:var(--text)}.grid{display:grid;grid-template-columns:1fr 330px;gap:14px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}.panelhead{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.paneltitle{font-size:12px;font-weight:700}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th{padding:10px;text-align:left;background:var(--bg);color:var(--muted);font-size:9px;text-transform:uppercase;white-space:nowrap}td{padding:11px 10px;border-top:1px solid var(--border);font-size:11px;white-space:nowrap}.mono{font-family:'JetBrains Mono'}.right{text-align:right}.muted{color:var(--muted)}.empty{text-align:center;padding:35px;color:var(--muted)}.allocation{padding:14px}.bar{height:12px;background:var(--bg);border-radius:99px;overflow:hidden;display:flex;margin:10px 0 14px}.seg{height:100%}.allocrow{display:flex;justify-content:space-between;font-size:10px;margin:7px 0}.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:14px;z-index:50}.modalbg.open{display:flex}.modal{width:min(700px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px}.modalhead{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.modalhead h2{font-size:15px;margin:0}.close{border:0;background:none;color:var(--muted);font-size:22px}.form{padding:16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field.full{grid-column:1/-1}.field label{display:block;font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:5px}.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px;color:var(--text);outline:0}.symbol-wrap{position:relative}.symbol-suggestions{position:absolute;left:0;right:0;top:calc(100% + 5px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:80;max-height:260px;overflow-y:auto;display:none}.symbol-suggestions.open{display:block}.symbol-suggestion{padding:9px 10px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}.symbol-suggestion:last-child{border-bottom:0}.symbol-suggestion:hover{background:var(--bg)}.symbol-suggestion .ss-name{font-size:11px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.symbol-suggestion .ss-symbol{font:600 10px 'JetBrains Mono';color:var(--muted);background:var(--bg);padding:3px 6px;border-radius:5px;white-space:nowrap}.symbol-suggestion-empty{padding:11px;text-align:center;font-size:10px;color:var(--muted)}.symbol-company-hint{font-size:9px;color:var(--muted);margin-top:5px;min-height:12px}.foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}.drop{border:1px dashed var(--border);padding:22px;text-align:center;border-radius:10px;color:var(--muted);font-size:11px}.status{margin:0 0 12px;padding:10px 12px;border-radius:8px;font-size:11px;display:none}.status.show{display:block}.status.ok{background:var(--greenbg);color:var(--green)}.status.err{background:var(--redbg);color:var(--red)}.preview{margin-top:12px;max-height:250px;overflow:auto;border:1px solid var(--border);border-radius:8px}.hint{font-size:9px;color:var(--muted);line-height:1.5;margin-top:8px}@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}@media(max-width:520px){.page{padding:14px}.head{flex-direction:column}.cards{grid-template-columns:1fr 1fr}.fields{grid-template-columns:1fr}.field.full{grid-column:auto}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,sans-serif}.top{height:56px;background:var(--indigo);display:flex;align-items:center;padding:0 18px;position:sticky;top:0;z-index:20}.brand{color:#fff;text-decoration:none;font-weight:700;display:flex;gap:9px;align-items:center}.diamond{width:9px;height:9px;background:var(--amber);transform:rotate(45deg)}.topright{margin-left:auto;display:flex;gap:8px;align-items:center}.top button,.top a{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.13);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;text-decoration:none}.page{max-width:1400px;margin:auto;padding:22px}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:16px}.head h1{margin:0 0 4px;font-size:24px}.sub{font-size:12px;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:9px 12px;font-size:11px;font-weight:600;cursor:pointer}.btn.primary{background:var(--indigo);border-color:var(--indigo);color:#fff}.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.5;cursor:not-allowed}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}.label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.value{font:700 21px 'JetBrains Mono';margin-top:6px}.green{color:var(--green)}.red{color:var(--red)}.neutral{color:var(--text)}.grid{display:grid;grid-template-columns:1fr 330px;gap:14px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}.panelhead{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.paneltitle{font-size:12px;font-weight:700}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th{padding:10px;text-align:left;background:var(--bg);color:var(--muted);font-size:9px;text-transform:uppercase;white-space:nowrap}td{padding:11px 10px;border-top:1px solid var(--border);font-size:11px;white-space:nowrap}.mono{font-family:'JetBrains Mono'}.right{text-align:right}.muted{color:var(--muted)}.empty{text-align:center;padding:35px;color:var(--muted)}.allocation{padding:14px}.bar{height:12px;background:var(--bg);border-radius:99px;overflow:hidden;display:flex;margin:10px 0 14px}.seg{height:100%}.allocrow{display:flex;justify-content:space-between;font-size:10px;margin:7px 0}.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:14px;z-index:50;overflow:auto}.modalbg.open{display:flex}.modal{width:min(700px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px}.modalhead{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.modalhead h2{font-size:15px;margin:0}.close{border:0;background:none;color:var(--muted);font-size:22px}.form{padding:16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field.full{grid-column:1/-1}.field label{display:block;font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:5px}.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px;color:var(--text);outline:0}.symbol-wrap{position:relative}.symbol-suggestions{position:absolute;left:0;right:0;top:calc(100% + 5px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:80;max-height:260px;overflow-y:auto;display:none}.symbol-suggestions.open{display:block}.symbol-suggestion{padding:9px 10px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}.symbol-suggestion:last-child{border-bottom:0}.symbol-suggestion:hover{background:var(--bg)}.symbol-suggestion .ss-name{font-size:11px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.symbol-suggestion .ss-symbol{font:600 10px 'JetBrains Mono';color:var(--muted);background:var(--bg);padding:3px 6px;border-radius:5px;white-space:nowrap}.symbol-suggestion-empty{padding:11px;text-align:center;font-size:10px;color:var(--muted)}.symbol-company-hint{font-size:9px;color:var(--muted);margin-top:5px;min-height:12px}.foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}.drop{border:1px dashed var(--border);padding:22px;text-align:center;border-radius:10px;color:var(--muted);font-size:11px}.status{margin:0 0 12px;padding:10px 12px;border-radius:8px;font-size:11px;display:none}.status.show{display:block}.status.ok{background:var(--greenbg);color:var(--green)}.status.err{background:var(--redbg);color:var(--red)}.preview{margin-top:12px;max-height:250px;overflow:auto;border:1px solid var(--border);border-radius:8px}.import-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.import-pill{padding:5px 8px;border-radius:6px;background:var(--bg);font-size:9px;color:var(--muted)}.import-pill.good{color:var(--green);background:var(--greenbg)}.import-pill.bad{color:var(--red);background:var(--redbg)}.import-error{color:var(--red);font-size:9px;line-height:1.4}.hint{font-size:9px;color:var(--muted);line-height:1.5;margin-top:8px}@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}@media(max-width:520px){.page{padding:14px}.head{flex-direction:column}.cards{grid-template-columns:1fr 1fr}.fields{grid-template-columns:1fr}.field.full{grid-column:auto}.modalbg{align-items:flex-start;padding:8px;padding-top:max(8px,calc(env(safe-area-inset-top) + 8px));height:var(--vvh,100dvh);overflow:auto}.modal{width:100%;max-height:calc(var(--vvh,100dvh) - 16px);margin:0}.modalhead{position:sticky;top:0;background:var(--surface);z-index:5}.foot{position:sticky;bottom:0;background:var(--surface);z-index:5}.form{padding:12px}.fields{gap:9px}.field input,.field select{font-size:16px;min-height:42px}.symbol-suggestions{position:fixed;left:12px;right:12px;max-height:180px;z-index:200}.preview{max-height:35vh}.drop{padding:16px 10px}}
 </style>
 </head>
 <body>
@@ -46,7 +46,7 @@
 
 <div class="modalbg" id="importModal"><div class="modal"><div class="modalhead"><h2>Import Portfolio</h2><button class="close" data-close="importModal">×</button></div><div class="form">
 <div class="drop"><input id="file" type="file" accept=".csv,.xlsx,.xls"></div>
-<div class="hint">Required columns: <b>symbol, quantity, buy_price</b>. Optional: exchange, buy_date, charges, notes. CSV/Excel rows are converted into BUY transactions. Existing transactions are not deleted.</div>
+<div class="hint">Supported columns: <b>symbol/ticker/scrip</b>, <b>quantity/qty</b>, <b>buy_price/price/avg_price</b>. Optional: <b>exchange</b>, <b>type/transaction</b>, <b>buy_date/date/trade_date</b>, <b>charges</b>, <b>notes</b>. If type is omitted, rows are treated as BUY transactions. CSV and Excel are supported. Existing transactions are not deleted.</div>
 <div class="preview" id="preview"></div>
 </div><div class="foot"><button class="btn" type="button" data-close="importModal">Cancel</button><button class="btn primary" id="importConfirm" disabled>Import</button></div></div></div>
 
@@ -66,6 +66,21 @@ const clean=s=>String(s||'').trim().toUpperCase();
 function status(msg,type='ok'){const e=$('status');e.textContent=msg;e.className='status show '+type;clearTimeout(status.t);status.t=setTimeout(()=>e.className='status',5000)}
 function open(id){$(id).classList.add('open')} function close(id){$(id).classList.remove('open')}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function syncViewport(){
+ const vv=window.visualViewport;
+ const h=vv?vv.height:window.innerHeight;
+ document.documentElement.style.setProperty('--vvh',h+'px');
+}
+syncViewport();
+if(window.visualViewport){
+ window.visualViewport.addEventListener('resize',syncViewport);
+ window.visualViewport.addEventListener('scroll',syncViewport);
+}
+document.addEventListener('focusin',e=>{
+ if(!e.target.matches('input,select,textarea'))return;
+ setTimeout(()=>e.target.scrollIntoView({block:'center',behavior:'smooth'}),120);
+});
+
 async function boot(){
  const {data,error}=await sb.auth.getSession(); if(error||!data.session){location.href='/';return}
  user=data.session.user;$('userText').textContent=user.email||'Signed-in user';
@@ -98,12 +113,76 @@ function render(){
  const sorted=[...h].sort((a,b)=>b.current-a.current);const max=cur||1;$('allocation').innerHTML=sorted.length?'<div class="bar">'+sorted.map((x,i)=>'<div class="seg" style="width:'+(x.current/max*100)+'%;background:hsl('+(i*47%360)+' 65% 55%)"></div>').join('')+'</div>'+sorted.map(x=>'<div class="allocrow"><span>'+esc(x.symbol)+'</span><span class="mono">'+(x.current/max*100).toFixed(1)+'%</span></div>').join(''):'<div class="empty">No holdings</div>';
  $('transactions').innerHTML=transactions.slice(0,100).map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+esc(t.symbol)+'</td><td>'+esc(t.exchange)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.source)+'</td></tr>').join('')||'<tr><td colspan="8" class="empty">No transactions</td></tr>';
 }
-async function addTransactions(rows){
- const cleanRows=rows.map(r=>({portfolio_id:portfolio.id,user_id:user.id,symbol:clean(r.symbol),exchange:clean(r.exchange||'NSE')==='BSE'?'BSE':'NSE',transaction_type:'BUY',quantity:num(r.quantity),price:num(r.buy_price),charges:num(r.charges),trade_date:r.buy_date||new Date().toISOString().slice(0,10),notes:r.notes||null,source:'CSV'})).filter(r=>r.symbol&&r.quantity>0&&r.price>0);
- if(!cleanRows.length)throw Error('No valid rows found');
- const {error}=await sb.from('portfolio_transactions').insert(cleanRows);if(error)throw error;
+function normalizeImportKey(key){
+ return String(key||'').trim().toLowerCase().replace(/[.()#%]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 }
-$('addBtn').onclick=()=>{ $('tradeDate').value=new Date().toISOString().slice(0,10);open('txModal')};
+function pickField(row,keys){
+ for(const key of keys){
+  const v=row[normalizeImportKey(key)];
+  if(v!==undefined&&v!==null&&String(v).trim()!=='') return v;
+ }
+ return '';
+}
+function parseImportNumber(value){
+ if(typeof value==='number') return Number.isFinite(value)?value:NaN;
+ const s=String(value??'').replace(/[₹,\s]/g,'').replace(/%$/,'').trim();
+ if(!s)return NaN;
+ const n=Number(s);
+ return Number.isFinite(n)?n:NaN;
+}
+function parseImportDate(value){
+ if(value instanceof Date&&!isNaN(value)) return value.toISOString().slice(0,10);
+ if(typeof value==='number'&&window.XLSX?.SSF){
+  const d=XLSX.SSF.parse_date_code(value);
+  if(d&&d.y&&d.m&&d.d) return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');
+ }
+ const s=String(value??'').trim();
+ if(!s)return new Date().toISOString().slice(0,10);
+ let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+ if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+ const d=new Date(s);
+ if(!isNaN(d))return d.toISOString().slice(0,10);
+ return '';
+}
+function prepareImportRows(raw){
+ const rows=[];
+ const errors=[];
+ raw.forEach((r,index)=>{
+  const line=index+2;
+  const symbol=clean(pickField(r,['symbol','ticker','scrip','stock','stock_symbol','security']));
+  const qty=parseImportNumber(pickField(r,['quantity','qty','shares','no_of_shares','units']));
+  const price=parseImportNumber(pickField(r,['buy_price','buyprice','price','avg_price','average_price','average_buy_price','rate']));
+  const exchange=clean(pickField(r,['exchange','market']))==='BSE'?'BSE':'NSE';
+  const type=clean(pickField(r,['type','transaction_type','transaction','trade_type','side']))==='SELL'?'SELL':'BUY';
+  const date=parseImportDate(pickField(r,['buy_date','trade_date','date','transaction_date','purchase_date']));
+  const chargesRaw=pickField(r,['charges','brokerage','fees','taxes']);
+  const charges=chargesRaw===''?0:parseImportNumber(chargesRaw);
+  const notes=String(pickField(r,['notes','remarks','comment'])||'').trim();
+  const errorsForRow=[];
+  if(!symbol)errorsForRow.push('missing symbol');
+  if(!Number.isFinite(qty)||qty<=0)errorsForRow.push('invalid quantity');
+  if(!Number.isFinite(price)||price<=0)errorsForRow.push('invalid price');
+  if(!date)errorsForRow.push('invalid date');
+  if(!Number.isFinite(charges)||charges<0)errorsForRow.push('invalid charges');
+  if(errorsForRow.length) errors.push('Row '+line+': '+errorsForRow.join(', '));
+  else rows.push({portfolio_id:portfolio.id,user_id:user.id,symbol,exchange,transaction_type:type,quantity:qty,price,charges,trade_date:date,notes:notes||null,source:'CSV'});
+ });
+ return {rows,errors};
+}
+function renderImportPreview(raw){
+ const {rows,errors}=prepareImportRows(raw);
+ pendingImport=rows;
+ $('preview').innerHTML='<div class="import-summary"><span class="import-pill good">'+rows.length+' valid</span><span class="import-pill '+(errors.length?'bad':'')+'">'+errors.length+' skipped</span><span class="import-pill">'+raw.length+' total</span></div>'+
+  (errors.length?'<div class="import-error" style="padding:8px 0">'+errors.slice(0,8).map(esc).join('<br>')+(errors.length>8?'<br>…and '+(errors.length-8)+' more':'')+'</div>':'')+
+  (rows.length?'<table style="min-width:760px"><thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Price</th><th>Exchange</th><th>Date</th><th>Charges</th></tr></thead><tbody>'+rows.slice(0,30).map(r=>'<tr><td>'+esc(r.symbol)+'</td><td class="'+(r.transaction_type==='BUY'?'green':'red')+'">'+r.transaction_type+'</td><td>'+r.quantity.toLocaleString('en-IN')+'</td><td>'+money(r.price)+'</td><td>'+r.exchange+'</td><td>'+r.trade_date+'</td><td>'+money(r.charges)+'</td></tr>').join('')+'</tbody></table>'+(rows.length>30?'<div class="hint" style="padding:8px">Showing first 30 of '+rows.length+' valid rows.</div>':''):'<div class="empty">No valid rows to import.</div>');
+ $('importConfirm').disabled=rows.length===0;
+}
+async function addTransactions(rows){
+ if(!rows.length)throw Error('No valid rows found');
+ const {error}=await sb.from('portfolio_transactions').insert(rows);
+ if(error)throw error;
+}
+
 $('importBtn').onclick=()=>{pendingImport=[];$('preview').innerHTML='';$('file').value='';$('importConfirm').disabled=true;open('importModal')};
 let editingTxId=null;
 let symbolSearchTimer=null;
@@ -227,6 +306,7 @@ async function deleteHolding(symbol){
 }
 
 function editTx(id){
+  close('manageModal');
   const t=transactions.find(x=>x.id===id);
   if(!t) return status('Transaction not found. Refresh and try again.','err');
 
@@ -287,8 +367,22 @@ $('txForm').onsubmit=async e=>{
   }
 };
 
-$('file').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;const data=await f.arrayBuffer();const wb=XLSX.read(data,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{defval:''});pendingImport=raw.map(r=>{const n={};Object.keys(r).forEach(k=>n[k.trim().toLowerCase().replace(/\s+/g,'_')]=r[k]);return {symbol:n.symbol||n.ticker||n.scrip,exchange:n.exchange||'NSE',quantity:n.quantity||n.qty,buy_price:n.buy_price||n.buyprice||n.price,buy_date:n.buy_date||n.date||new Date().toISOString().slice(0,10),charges:n.charges||0,notes:n.notes||''}});if(!pendingImport.length)throw Error('File has no rows');$('preview').innerHTML='<table style="min-width:600px"><thead><tr><th>Symbol</th><th>Qty</th><th>Buy Price</th><th>Date</th></tr></thead><tbody>'+pendingImport.slice(0,20).map(r=>'<tr><td>'+esc(r.symbol)+'</td><td>'+esc(r.quantity)+'</td><td>'+esc(r.buy_price)+'</td><td>'+esc(r.buy_date)+'</td></tr>').join('')+'</tbody></table>'+(pendingImport.length>20?'<div class="hint" style="padding:8px">Showing first 20 of '+pendingImport.length+' rows.</div>':'');$('importConfirm').disabled=false}catch(x){status(x.message,'err')}};
-$('importConfirm').onclick=async()=>{const b=$('importConfirm');b.disabled=true;try{await addTransactions(pendingImport);close('importModal');await refresh();status(pendingImport.length+' transactions imported.')}catch(x){status(x.message,'err')}finally{b.disabled=false}};
+$('file').onchange=async e=>{
+ try{
+  const f=e.target.files[0]; if(!f)return;
+  $('preview').innerHTML='<div class="hint" style="padding:10px">Reading '+esc(f.name)+'…</div>';
+  const data=await f.arrayBuffer();
+  const wb=XLSX.read(data,{type:'array',cellDates:true});
+  if(!wb.SheetNames.length)throw Error('Workbook has no sheets');
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const raw=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+  if(!raw.length)throw Error('File has no data rows');
+  renderImportPreview(raw);
+ }catch(x){
+  pendingImport=[];$('importConfirm').disabled=true;$('preview').innerHTML='<div class="import-error" style="padding:10px">'+esc(x.message||'Could not read file')+'</div>';
+ }
+};
+$('importConfirm').onclick=async()=>{const b=$('importConfirm');b.disabled=true;const count=pendingImport.length;try{await addTransactions(pendingImport);pendingImport=[];close('importModal');await refresh();status(count+' transactions imported.')}catch(x){status(x.message,'err')}finally{b.disabled=false}};
 async function deleteTx(id){if(!confirm('Delete this transaction? This changes your portfolio calculations.'))return;const {error}=await sb.from('portfolio_transactions').delete().eq('id',id).eq('user_id',user.id);if(error)return status(error.message,'err');await refresh();status('Transaction deleted.')}
 function viewStock(s){location.href='/?symbol='+encodeURIComponent(s)}
 $('logout').onclick=async()=>{await sb.auth.signOut();location.href='/'};
