@@ -436,23 +436,55 @@ async function searchPortfolioSymbols(query){
     else if(Array.isArray(data.items)) stocks=data.items;
     else if(data && typeof data==='object' && (data.symbol||data.company_name)) stocks=[data];
 
+    stocks=stocks
+      .map(stock=>({
+        symbol:String(stock.symbol||'').trim().toUpperCase(),
+        company:String(stock.company_name||stock.name||stock.symbol||'').trim()
+      }))
+      .filter(stock=>stock.symbol)
+      .slice(0,8);
+
     if(!stocks.length){
       box.innerHTML='<div class="symbol-suggestion-empty">No matching stocks</div>';
       return;
     }
 
-    box.innerHTML='';
-    stocks.slice(0,10).forEach(stock=>{
-      const symbol=String(stock.symbol||'').trim().toUpperCase();
-      const company=String(stock.company_name||stock.name||symbol).trim();
-      if(!symbol) return;
+    // Search gives us the NSE symbol/name. Fetch the latest price separately
+    // so every search result shows a fresh LTP instead of a stale/missing value.
+    const priced=await Promise.all(stocks.map(async stock=>{
+      try{
+        const r=await fetch(STOCK_DETAIL_URL+"?symbol="+encodeURIComponent(stock.symbol),{cache:'no-store'});
+        if(!r.ok) return {...stock,price:null};
+        const detail=await r.json();
+        const price=Number(detail?.price);
+        return {...stock,price:Number.isFinite(price)&&price>0?price:null};
+      }catch(e){
+        return {...stock,price:null};
+      }
+    }));
 
+    if(requestId!==symbolSearchRequestId) return;
+
+    box.innerHTML='';
+    priced.forEach(stock=>{
       const div=document.createElement('div');
       div.className='symbol-suggestion';
-      div.innerHTML='<span class="ss-name">'+esc(company)+'</span><span class="ss-symbol">'+esc(symbol)+'</span>';
+
+      const priceText=Number.isFinite(stock.price)
+        ? money(stock.price)
+        : 'Price unavailable';
+
+      div.innerHTML=
+        '<span class="ss-name">'+esc(stock.company)+'</span>'+
+        '<span style="display:flex;align-items:center;gap:6px;flex-shrink:0">'+
+          '<span style="font:600 10px \'JetBrains Mono\';color:var(--green)">'+esc(priceText)+'</span>'+
+          '<span class="ss-symbol">'+esc(stock.symbol)+'</span>'+
+        '</span>';
+
       div.addEventListener('click',()=>{
-        $('symbol').value=symbol;
-        $('symbolCompanyHint').textContent=company;
+        $('symbol').value=stock.symbol;
+        $('symbolCompanyHint').textContent=stock.company+(Number.isFinite(stock.price)?' • Current price '+money(stock.price):'');
+        if(Number.isFinite(stock.price)) $('price').value=stock.price;
         closeSymbolSuggestions();
         $('qty').focus();
       });

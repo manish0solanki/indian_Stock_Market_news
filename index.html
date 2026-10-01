@@ -4244,9 +4244,7 @@ async function loadWatchlist() {
     const details = await Promise.all(rows.map(async row => {
       const symbol = String(row.symbol || '').trim().toUpperCase();
       try {
-        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(symbol));
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return { symbol, stock: await res.json() };
+        return { symbol, stock: await fetchFreshStockDetail(symbol) };
       } catch (error) {
         console.error('[Watchlist] Could not load', symbol, error);
         return { symbol, stock: null };
@@ -4387,9 +4385,7 @@ async function loadAlertStockPrice(symbol) {
   alertSelectedPrice.className = 'alert-selected-price';
 
   try {
-    const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const stock = await res.json();
+    const stock = await fetchFreshStockDetail(cleanSymbol);
     const price = Number(stock?.price);
 
     if (!Number.isFinite(price)) {
@@ -4524,10 +4520,7 @@ async function loadAlerts() {
     const details = await Promise.all(rows.map(async row => {
       const symbol = String(row.symbol || '').trim().toUpperCase();
       let stock = null;
-      try {
-        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(symbol));
-        if (res.ok) stock = await res.json();
-      } catch (e) { console.error('[Alerts] Price fetch failed', symbol, e); }
+      try { stock = await fetchFreshStockDetail(symbol); } catch (e) { console.error('[Alerts] Price fetch failed', symbol, e); }
       return { row, stock };
     }));
     alertBody.innerHTML = details.map(({ row, stock }) => {
@@ -5428,6 +5421,31 @@ const GLOBAL_URL   = () => API_BASE + "/global-news";
 const CONTACT_URL  = () => API_BASE + "/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
+
+/* Keep the stock-detail URL stable.
+   Cloudflare can reuse the same cached response for this symbol instead
+   of creating a new cache key on every search. The browser cache is
+   bypassed, while the Worker/CDN cache remains available. */
+async function fetchFreshStockDetail(symbol) {
+  const clean = String(symbol || '').trim().toUpperCase();
+  if (!clean) throw new Error('Missing stock symbol');
+
+  // Use a unique query parameter for every explicit stock lookup.
+  // This prevents an older Worker/cache response from being reused for
+  // the user's direct search.
+  const url =
+    STOCK_DETAIL_URL() +
+    '?symbol=' + encodeURIComponent(clean) +
+    '&_ts=' + Date.now();
+
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+
+  const data = await res.json();
+  const price = Number(data?.price);
+  if (!Number.isFinite(price) || price <= 0) throw new Error('Invalid latest price');
+  return data;
+}
 const STOCK_HISTORY_URL = () => API_BASE + "/stock-history";
 const FUNDAMENTALS_URL = () => API_BASE + "/fundamentals";
 const SECTOR_INDICES_URL = () => API_BASE + "/sector-indices";
@@ -6720,12 +6738,7 @@ async function openStockDetailFromNews(symbol, companyName) {
   stockDetailCard.style.display = 'none';
 
   try {
-    const res = await fetch(
-      STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol)
-    );
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-
-    const data = await res.json();
+    const data = await fetchFreshStockDetail(cleanSymbol);
     renderStockDetail(data);
     sdHint.textContent = '';
 
@@ -7625,21 +7638,61 @@ async function searchStock(query) {
       return;
     }
 
-    stocks.forEach(stock => {
+    const pricedStocks = await Promise.all(
+      stocks.slice(0, 10).map(async stock => {
+        try {
+          const detail = await fetchFreshStockDetail(stock.symbol);
+          return { stock, detail };
+        } catch (error) {
+          return { stock, detail: null };
+        }
+      })
+    );
+
+    pricedStocks.forEach(({ stock, detail }) => {
       const div = document.createElement('div');
       div.className = 'search-dropdown-item';
-      const isFnoSearch = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
-      div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
-      div.addEventListener('click', () => {
+
+      const symbol = String(stock.symbol || detail?.symbol || '').trim().toUpperCase();
+      const company = String(
+        detail?.company_name ||
+        detail?.name ||
+        stock.company_name ||
+        stock.name ||
+        symbol ||
+        '—'
+      ).trim();
+
+      const price = Number(detail?.price);
+      const priceText = Number.isFinite(price)
+        ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : 'Price unavailable';
+
+      const isFnoSearch = symbol && fnoSymbols.has(symbol);
+
+      div.innerHTML =
+        `<span class="dd-name">${company}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span>` +
+        `<span style="display:flex;align-items:center;gap:7px;flex-shrink:0">` +
+        `<span style="font:600 10px var(--font-mono);color:var(--positive)">${priceText}</span>` +
+        `<span class="dd-symbol">${symbol || '—'}</span>` +
+        `</span>`;
+
+      div.addEventListener('click', async () => {
         dropdown.classList.remove('open');
-        searchInput.value = stock.company_name || stock.symbol || '';
-        sdHint.textContent = 'Fetching…';
+        searchInput.value = company;
+        sdHint.textContent = 'Fetching latest price…';
         stockDetailCard.style.display = 'none';
-        fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(stock.symbol))
-          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-          .then(data => { renderStockDetail(data); sdHint.textContent = ''; })
-          .catch(e => { sdHint.textContent = 'Cached data shown'; renderStockDetail(stock); console.error('[Stock Detail]', e); });
+
+        try {
+          const latest = await fetchFreshStockDetail(symbol);
+          renderStockDetail(latest);
+          sdHint.textContent = 'Latest available quote';
+        } catch (error) {
+          sdHint.textContent = 'Latest quote unavailable';
+          console.error('[Stock Detail]', error);
+        }
       });
+
       dropdown.appendChild(div);
     });
     dropdown.classList.add('open');
