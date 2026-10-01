@@ -3628,29 +3628,11 @@ async function updateLivePrices(){
       }
     }
 
-    // Safety guard: old/bad trades with reversed SL/TP must never be
-    // interpreted as real TP/SL hits. Cancel them and return the reserved
-    // capital instead of manufacturing a loss/win.
-    const levels=validateTradeLevels(t);
-    if(!levels.ok){
-      t.closed=true;
-      t.status="cancelled";
-      t.cancelReason="invalid_levels";
-      t.closeReason="invalid_levels";
-      t.closePrice=cp;
-      t.closedAt=new Date().toISOString();
-      t.pnl=0;
-      t.grossPnl=0;
-      t.entryFee=0;
-      t.exitFee=0;
-      t.totalFees=0;
-      t.netPnl=0;
-      logConnection("🧹 Cancelled invalid open trade: "+t.sym+" "+t.dir+" · "+levels.reason,"warn","invalid-open-trade");
-      if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
-      toast("🧹 "+t.sym+" "+t.dir+" invalid SL/TP cancelled; capital returned.");
-      continue;
-    }
-
+    // Trade levels are validated when the trade is opened.
+    // Do NOT run the original-level validator on every live tick:
+    // a valid trailing SL is intentionally allowed to cross above entry
+    // on LONGs (or below entry on SHORTs).
+    
     const hitTP=t.dir==="LONG" ? cp>=t.tp : cp<=t.tp;
     const hitSL=t.dir==="LONG" ? cp<=t.sl : cp>=t.sl;
 
