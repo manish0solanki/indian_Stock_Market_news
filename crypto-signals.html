@@ -1964,11 +1964,31 @@ function validateTradeLevels(t){
   if(![entry,sl,tp].every(Number.isFinite)||entry<=0||sl<=0||tp<=0){
     return {ok:false,reason:"Entry/SL/TP must be positive numbers"};
   }
-  if(dir==="LONG" && !(sl<entry && tp>entry)){
-    return {ok:false,reason:"LONG requires SL below Entry and TP above Entry"};
+  const trailingActive=t?.trailingActive===true || readTradeNotes(t).profitTrailActivated===true;
+  if(dir==="LONG"){
+    // A normal LONG must have SL below entry. Once profit trailing is active,
+    // the protected SL is intentionally allowed to move above entry, but it
+    // must remain below the current market price until the stop is actually hit.
+    const current=Number(t?.currentPrice);
+    const validNormal=(sl<entry && tp>entry);
+    const validTrailing=trailingActive && sl>0 && tp>entry &&
+      (!Number.isFinite(current) || sl<current);
+    if(!(validNormal||validTrailing)){
+      return {ok:false,reason:trailingActive
+        ?"LONG trailing SL/TP is invalid or trailing SL has been reached"
+        :"LONG requires SL below Entry and TP above Entry"};
+    }
   }
-  if(dir==="SHORT" && !(sl>entry && tp<entry)){
-    return {ok:false,reason:"SHORT requires SL above Entry and TP below Entry"};
+  if(dir==="SHORT"){
+    const current=Number(t?.currentPrice);
+    const validNormal=(sl>entry && tp<entry);
+    const validTrailing=trailingActive && sl>0 && tp<entry &&
+      (!Number.isFinite(current) || sl>current);
+    if(!(validNormal||validTrailing)){
+      return {ok:false,reason:trailingActive
+        ?"SHORT trailing SL/TP is invalid or trailing SL has been reached"
+        :"SHORT requires SL above Entry and TP below Entry"};
+    }
   }
   const risk=Math.abs(entry-sl),reward=Math.abs(tp-entry);
   if(!(risk>0&&reward>0)) return {ok:false,reason:"Risk/reward distance is zero"};
