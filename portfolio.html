@@ -210,12 +210,12 @@ async function resolveHoldingSymbol(company,isin){
 async function prepareImportRows(raw){
  const rows=[];
  const errors=[];
- const isSnapshot=raw.some(r=>pickField(r,['script_name','script name','script'])!==''&&pickField(r,['avg_unit_cost','avg unit cost','average unit cost'])!=='');
+ const isSnapshot=raw.some(r=>{const keys=Object.keys(r).map(normalizeImportKey);return (keys.includes('script_name')||keys.includes('isin'))&&(keys.includes('avg_unit_cost')||keys.includes('invested_value')||keys.includes('current_value')||keys.includes('unrealized_pnl'));});
  const symbolCache=new Map();
  for(let index=0;index<raw.length;index++){
   const r=raw[index];
   const line=index+2;
-  const qty=parseImportNumber(pickField(r,['quantity','qty','shares','no_of_shares','units']));
+  const qty=parseImportNumber(pickField(r,['quantity','qty','shares','no_of_shares','units','quantity_held']));
   const exchange=clean(pickField(r,['exchange','market']))==='BSE'?'BSE':'NSE';
   const chargesRaw=pickField(r,['charges','brokerage','fees','taxes']);
   const charges=chargesRaw===''?0:parseImportNumber(chargesRaw);
@@ -227,10 +227,10 @@ async function prepareImportRows(raw){
   let price=parseImportNumber(pickField(r,['buy_price','buyprice','price','avg_price','average_price','average_buy_price','rate']));
   let rowNotes=notes;
   if(isSnapshot){
-   const company=String(pickField(r,['script_name','script name','script','company_name','company','stock_name','security_name'])||'').trim();
+   const company=String(pickField(r,['script_name','script name','script','company_name','company','stock_name','security_name','scrip_name'])||'').trim();
    const isin=String(pickField(r,['isin','isin_code'])||'').trim();
-   const snapshotPrice=parseImportNumber(pickField(r,['avg_unit_cost','avg unit cost','average_unit_cost','average_cost','avg_cost']));
-   const statusValue=String(pickField(r,['status','position_status','holding_status'])||'').trim().toUpperCase();
+   const snapshotPrice=parseImportNumber(pickField(r,['avg_unit_cost','avg unit cost','average_unit_cost','average_cost','avg_cost','avg_buy_price']));
+   const statusValue=String(pickField(r,['status','position_status','holding_status','position'])||'').trim().toUpperCase();
    if(statusValue&&statusValue!=='ACTIVE'){
     errors.push('Row '+line+': skipped because status is '+statusValue);
     continue;
