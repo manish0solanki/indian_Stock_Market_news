@@ -27,7 +27,7 @@ h1{font-size:20px} h1 span{color:var(--yellow)}
 .check-item input{width:auto;margin:0;padding:0;accent-color:var(--blue)}
 .quote-selector{min-width:300px;max-width:460px}
 .quote-selector .check-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height:none}
-@media(max-width:600px){
+@media(max-width:900px){.journal-list{grid-template-columns:1fr}}\n@media(max-width:600px){
   .quote-selector{grid-column:1/-1;width:100%;max-width:none;min-width:0}
   .quote-selector .check-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:none}
 }
@@ -89,7 +89,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .actions{margin-top:12px;display:flex;gap:8px}
 .actions button{flex:1;font-size:12px}
 .ai-box{display:none;margin-top:10px;padding:10px;border:1px solid rgba(155,107,255,.25);border-radius:8px;background:rgba(155,107,255,.06);font-size:12px;line-height:1.5}
-.journal-list{padding:0 20px 30px;display:flex;flex-direction:column;gap:10px}
+.journal-list{padding:0 20px 30px;display:flex;flex-direction:column;gap:10pxgrid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
 .jrow{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .jdetail{font-size:12px;color:var(--muted);flex:1}
 .jpnl{font-weight:700;font-family:monospace}
@@ -3371,12 +3371,13 @@ function renderStats(){
 
 let tradeViewMode=localStorage.getItem("cs_trade_view")||"detailed";
 
-function listHeader(key,label){
-  const sort=activeTradePanel==="archive"?archiveTradeSort:activeTradePanel==="live"?liveTradeSort:"newest";
-  const active=sort===key;
-  const dir=active?" ↕":"";
-  return '<th><button type="button" class="'+(active?"active":"")+'" data-list-sort="'+key+'">'+label+dir+'</button></th>';
+function listHeader(key,label,sortState){
+  const active=sortState===key;
+  const low=["oldest","pnlLow","capitalLow","entryLow","currentLow","rrLow","directionZA","symbolZA","scoreLow","confLow"].includes(sortState);
+  const arrow=active?(low?"▼":"▲"):"↕";
+  return '<th><button type="button" class="'+(active?"active":"")+'" data-list-sort="'+key+'">'+label+' <span>'+arrow+'</span></button></th>';
 }
+
 function renderTradeListView(panel){
   const body=$("tradeListBody"),head=$("tradeListHead"),summary=$("tradeListSummary");
   if(!body||!head)return;
@@ -3618,7 +3619,7 @@ function sortTrades(list,sort="newest",mode="live"){
       const cmp=String(av).localeCompare(String(bv),undefined,{numeric:true,sensitivity:"base"});
       return sort==="symbolZA"?-cmp:cmp;
     }
-    const low=["oldest","pnlLow","capitalLow","entryLow","currentLow","rrLow"].includes(sort);
+    const low=["oldest","pnlLow","capitalLow","entryLow","currentLow","rrLow","directionZA","symbolZA"].includes(sort);
     const diff=low?av-bv:bv-av;
     if(diff!==0)return diff;
     return tradeSortTimestamp(a,mode==="archive"?"close":"open")-tradeSortTimestamp(b,mode==="archive"?"close":"open");
