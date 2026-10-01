@@ -619,6 +619,138 @@ img,svg,canvas{max-width:100%}
     padding-top:4px;
   }
 }
+/* ================= LIVE / ARCHIVE = SIGNAL CARD STYLE =================
+   Keep Live and Archive cards visually consistent with the Signals grid.
+   This override intentionally comes last so older responsive rules cannot
+   force the panels into oversized two-column cards.
+*/
+#liveTradesList.panel-visible,
+#archiveList.panel-visible{
+  display:grid !important;
+  grid-template-columns:repeat(auto-fill,minmax(330px,1fr)) !important;
+  gap:14px !important;
+  padding:0 20px 20px !important;
+  align-items:start !important;
+}
+
+#liveTradesList .trade-card,
+#archiveList .trade-card{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  height:auto;
+  align-self:start;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  box-shadow:none;
+}
+
+#liveTradesList .trade-card.active-trade{
+  border-color:rgba(79,140,255,.30);
+}
+#archiveList .trade-card.archived{
+  border-color:var(--border);
+  opacity:1;
+}
+
+#liveTradesList .trade-head,
+#archiveList .trade-head{
+  margin-bottom:10px;
+  gap:8px;
+}
+
+#liveTradesList .trade-symbol,
+#archiveList .trade-symbol{
+  font-size:16px;
+  font-weight:700;
+}
+
+#liveTradesList .trade-meta,
+#archiveList .trade-meta{
+  font-size:11px;
+}
+
+#liveTradesList .trade-badges,
+#archiveList .trade-badges{
+  gap:5px;
+}
+
+#liveTradesList .trade-levels,
+#archiveList .trade-levels{
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:12px;
+  margin-bottom:8px;
+}
+
+#liveTradesList .trade-levels>div,
+#archiveList .trade-levels>div,
+#liveTradesList .trade-money>div,
+#archiveList .trade-money>div{
+  background:var(--card2);
+  border-radius:8px;
+  padding:8px 10px;
+}
+
+#liveTradesList .trade-levels b,
+#archiveList .trade-levels b{
+  font-size:14px;
+}
+
+#liveTradesList .trade-money,
+#archiveList .trade-money{
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+
+#liveTradesList .trade-money>div:last-child,
+#archiveList .trade-money>div:last-child{
+  grid-column:1/-1;
+}
+
+#liveTradesList .trade-money b,
+#archiveList .trade-money b{
+  font-size:14px;
+}
+
+#liveTradesList .trade-pnl,
+#archiveList .trade-pnl{
+  font-size:18px;
+}
+
+#liveTradesList .trade-progress-wrap,
+#archiveList .trade-progress-wrap{
+  margin-top:10px;
+}
+
+#liveTradesList .trade-footer,
+#archiveList .trade-footer{
+  margin-top:12px;
+  align-items:center;
+}
+
+@media(max-width:899px){
+  #liveTradesList.panel-visible,
+  #archiveList.panel-visible{
+    grid-template-columns:1fr !important;
+    padding:0 10px 18px !important;
+    gap:10px !important;
+  }
+  #liveTradesList .trade-card,
+  #archiveList .trade-card{
+    padding:13px;
+  }
+}
+
+@media(min-width:1300px){
+  #liveTradesList.panel-visible,
+  #archiveList.panel-visible{
+    grid-template-columns:repeat(auto-fill,minmax(330px,1fr)) !important;
+  }
+}
 </style>
 <base target="_blank">
 
