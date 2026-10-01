@@ -4850,33 +4850,72 @@ function exportBacktestCSV(){
 
 function selectAppTab(sel){
   document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===sel));
-  $("signalsGrid").hidden=sel!=="signals" || tradeViewMode==="list";
-  $("liveTradesList").hidden=sel!=="live" || tradeViewMode==="list";
-  $("archiveList").hidden=sel!=="archive" || tradeViewMode==="list";
-  $("liveTradesList").classList.toggle("panel-visible",sel==="live" && tradeViewMode==="detailed");
-  $("archiveList").classList.toggle("panel-visible",sel==="archive" && tradeViewMode==="detailed");
-  $("tradeListPane").hidden=!(["signals","live","archive"].includes(sel)&&tradeViewMode==="list");
+
+  // Hide every main content pane first. The previous tab logic only hid the
+  // Signals/Live/Archive panes, leaving Wallet/Reports/Backtest/Settings hidden
+  // permanently because those panes use the HTML `hidden` attribute.
+  const panes=["signalsGrid","liveTradesList","archiveList","tradeListPane","walletPane","reportsPane","backtestPane","settingsPane"];
+  panes.forEach(id=>{const el=$(id);if(el)el.hidden=true;});
+
+  // Remove the detailed-card display helper from inactive trade panels.
+  $("liveTradesList")?.classList.remove("panel-visible");
+  $("archiveList")?.classList.remove("panel-visible");
 
   activeTradePanel=sel;
+
+  const isTradePanel=["signals","live","archive"].includes(sel);
   const tools=$("tradeTools");
-  if(tools) tools.style.display=["signals","live","archive"].includes(sel)?"flex":"none";
+  if(tools) tools.style.display=isTradePanel?"flex":"none";
+
   if($("tradeView")) $("tradeView").value=tradeViewMode;
   if($("tradeSort")){
-    $("tradeSort").value=sel==="archive"?archiveTradeSort:sel==="live"?liveTradeSort:(localStorage.getItem("cs_signal_list_sort")||"symbolAZ");
+    $("tradeSort").value=sel==="archive"
+      ?archiveTradeSort
+      :sel==="live"
+        ?liveTradeSort
+        :(localStorage.getItem("cs_signal_list_sort")||"symbolAZ");
   }
 
   if(sel==="signals"){
-    if(tradeViewMode==="list")renderTradeListView("signals"); else renderSignals();
+    if(tradeViewMode==="list"){
+      $("tradeListPane").hidden=false;
+      renderTradeListView("signals");
+    }else{
+      $("signalsGrid").hidden=false;
+      renderSignals();
+    }
+  }else if(sel==="live"){
+    if(tradeViewMode==="list"){
+      $("tradeListPane").hidden=false;
+      renderTradeListView("live");
+    }else{
+      $("liveTradesList").hidden=false;
+      $("liveTradesList").classList.add("panel-visible");
+      renderLiveTrades();
+      updateLivePrices();
+    }
+  }else if(sel==="archive"){
+    if(tradeViewMode==="list"){
+      $("tradeListPane").hidden=false;
+      renderTradeListView("archive");
+    }else{
+      $("archiveList").hidden=false;
+      $("archiveList").classList.add("panel-visible");
+      renderArchive();
+    }
+  }else if(sel==="wallet"){
+    $("walletPane").hidden=false;
+    renderWallet();
+  }else if(sel==="reports"){
+    $("reportsPane").hidden=false;
+    generateReport();
+  }else if(sel==="backtest"){
+    $("backtestPane").hidden=false;
+    const bt=$("btConfig");
+    if(bt)bt.textContent=$("tfSelect").value+" · "+$("quoteSelect").value+" · R:R "+selectedRR().risk+":"+selectedRR().reward;
+  }else if(sel==="settings"){
+    $("settingsPane").hidden=false;
   }
-  if(sel==="live"){
-    if(tradeViewMode==="list")renderTradeListView("live"); else {renderLiveTrades();updateLivePrices();}
-  }
-  if(sel==="archive"){
-    if(tradeViewMode==="list")renderTradeListView("archive"); else renderArchive();
-  }
-  if(sel==="wallet")renderWallet();
-  if(sel==="reports")generateReport();
-  if(sel==="backtest")$("btConfig").textContent=$("tfSelect").value+" · "+$("quoteSelect").value+" · R:R "+selectedRR().risk+":"+selectedRR().reward;
 }
 
 document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>selectAppTab(tab.dataset.tab)));
