@@ -5430,7 +5430,14 @@ async function fetchFreshStockDetail(symbol) {
   const clean = String(symbol || '').trim().toUpperCase();
   if (!clean) throw new Error('Missing stock symbol');
 
-  const url = STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(clean);
+  // Use a unique query parameter for every explicit stock lookup.
+  // This prevents an older Worker/cache response from being reused for
+  // the user's direct search.
+  const url =
+    STOCK_DETAIL_URL() +
+    '?symbol=' + encodeURIComponent(clean) +
+    '&_ts=' + Date.now();
+
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
 
@@ -7631,20 +7638,61 @@ async function searchStock(query) {
       return;
     }
 
-    stocks.forEach(stock => {
+    const pricedStocks = await Promise.all(
+      stocks.slice(0, 10).map(async stock => {
+        try {
+          const detail = await fetchFreshStockDetail(stock.symbol);
+          return { stock, detail };
+        } catch (error) {
+          return { stock, detail: null };
+        }
+      })
+    );
+
+    pricedStocks.forEach(({ stock, detail }) => {
       const div = document.createElement('div');
       div.className = 'search-dropdown-item';
-      const isFnoSearch = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
-      div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
-      div.addEventListener('click', () => {
+
+      const symbol = String(stock.symbol || detail?.symbol || '').trim().toUpperCase();
+      const company = String(
+        detail?.company_name ||
+        detail?.name ||
+        stock.company_name ||
+        stock.name ||
+        symbol ||
+        '—'
+      ).trim();
+
+      const price = Number(detail?.price);
+      const priceText = Number.isFinite(price)
+        ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : 'Price unavailable';
+
+      const isFnoSearch = symbol && fnoSymbols.has(symbol);
+
+      div.innerHTML =
+        `<span class="dd-name">${company}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span>` +
+        `<span style="display:flex;align-items:center;gap:7px;flex-shrink:0">` +
+        `<span style="font:600 10px var(--font-mono);color:var(--positive)">${priceText}</span>` +
+        `<span class="dd-symbol">${symbol || '—'}</span>` +
+        `</span>`;
+
+      div.addEventListener('click', async () => {
         dropdown.classList.remove('open');
-        searchInput.value = stock.company_name || stock.symbol || '';
-        sdHint.textContent = 'Fetching…';
+        searchInput.value = company;
+        sdHint.textContent = 'Fetching latest price…';
         stockDetailCard.style.display = 'none';
-        fetchFreshStockDetail(stock.symbol)
-          .then(data => { renderStockDetail(data); sdHint.textContent = 'Latest available quote'; })
-          .catch(e => { sdHint.textContent = 'Latest quote unavailable'; renderStockDetail(stock); console.error('[Stock Detail]', e); });
+
+        try {
+          const latest = await fetchFreshStockDetail(symbol);
+          renderStockDetail(latest);
+          sdHint.textContent = 'Latest available quote';
+        } catch (error) {
+          sdHint.textContent = 'Latest quote unavailable';
+          console.error('[Stock Detail]', error);
+        }
       });
+
       dropdown.appendChild(div);
     });
     dropdown.classList.add('open');
