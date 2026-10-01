@@ -7305,28 +7305,42 @@ function renderStockDetail(stock) {
     updateStockWatchlistButton();
     return;
   }
+
   selectedStockSymbol = String(stock.symbol || '').trim().toUpperCase();
   sdName.textContent = stock.company_name || stock.name || '—';
   sdSymbol.textContent = stock.symbol || '—';
-  selectedStockSymbol = String(stock.symbol || '').trim().toUpperCase();
   selectedStockName = String(stock.company_name || stock.name || '').trim();
   updateStockWatchlistButton();
   updateStockAlertButton();
+
+  const fundamentals = stock.fundamentals || {};
   const isFnoDetail = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
-  sdSector.innerHTML = (stock.sector || '—') + (isFnoDetail ? ' <span class="fno-badge">F&O</span>' : '');
+  sdSector.innerHTML =
+    (fundamentals.sector || stock.sector || '—') +
+    (isFnoDetail ? ' <span class="fno-badge">F&O</span>' : '');
 
   const price = Number(stock.price);
   const prevClose = Number(stock.previous_close);
   let changePct = stock.change_percent;
-  if ((changePct === undefined || changePct === null || changePct === '') && !isNaN(price) && !isNaN(prevClose) && prevClose !== 0) {
+  if ((changePct === undefined || changePct === null || changePct === '') &&
+      !isNaN(price) && !isNaN(prevClose) && prevClose !== 0) {
     changePct = ((price - prevClose) / prevClose) * 100;
   }
+
   const isUp = Number(changePct) >= 0;
 
-  sdPrice.textContent = !isNaN(price) ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+  sdPrice.textContent = !isNaN(price)
+    ? '₹' + price.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    : '—';
+
   sdChange.textContent = fmtPct(changePct);
   sdChange.className = 'stock-change ' + (isUp ? 'up' : 'down');
-  updateStockWatchlistButton();
+
+  const roePct = Number(fundamentals.return_on_equity) * 100;
+  const divYieldPct = Number(fundamentals.dividend_yield) * 100;
 
   const metrics = [
     { label: 'Open', value: fmtNum(stock.open, 2) },
@@ -7335,16 +7349,16 @@ function renderStockDetail(stock) {
     { label: 'Day Low', value: fmtNum(stock.low, 2) },
     { label: '52W High', value: fmtNum(stock.high_52w, 2) },
     { label: '52W Low', value: fmtNum(stock.low_52w, 2) },
-    { label: 'Market Cap', value: fmtNum(stock.market_cap, 2) },
-    { label: 'P/E', value: fmtNum(stock.pe, 2) },
-    { label: 'ROE', value: fmtNum(stock.roe, 2) },
-    { label: 'ROCE', value: fmtNum(stock.roce, 2) },
-    { label: 'Book Value', value: fmtNum(stock.book_value, 2) },
-    { label: 'Face Value', value: fmtNum(stock.face_value, 2) },
-    { label: 'Div Yield', value: fmtNum(stock.dividend_yield, 2) + (stock.dividend_yield ? '%' : '') },
-    { label: 'Promoters (Latest)', value: fmtPromoter(stock.last_quarter_promoters), cls: 'promoters' },
-    { label: 'Promoters (Prev)',  value: fmtPromoter(stock.previous_quarter_promoters), cls: 'promoters' },
-    { label: 'Promoters Chg',     value: fmtPromoter(stock.promoters_change, true), cls: 'promoters' }
+    { label: 'Market Cap', value: fmtNum(fundamentals.market_cap, 2) },
+    { label: 'P/E', value: fmtNum(fundamentals.pe, 2) },
+    { label: 'ROE', value: Number.isFinite(roePct) ? roePct.toFixed(2) + '%' : '—' },
+    { label: 'ROCE', value: '—' },
+    { label: 'Book Value', value: fmtNum(fundamentals.book_value, 2) },
+    { label: 'Face Value', value: '—' },
+    { label: 'Div Yield', value: Number.isFinite(divYieldPct) ? divYieldPct.toFixed(2) + '%' : '—' },
+    { label: 'Promoters (Latest)', value: fmtPromoter(stock.promoters_latest ?? stock.last_quarter_promoters), cls: 'promoters' },
+    { label: 'Promoters (Prev)', value: fmtPromoter(stock.promoters_previous ?? stock.previous_quarter_promoters), cls: 'promoters' },
+    { label: 'Promoters Chg', value: fmtPromoter(stock.promoters_change, true), cls: 'promoters' }
   ];
 
   sdMetrics.innerHTML = metrics.map(m =>
@@ -7353,16 +7367,61 @@ function renderStockDetail(stock) {
 
   stockDetailCard.style.display = 'block';
 
-  // Reset the history master dataset whenever a new stock is selected.
-  stockChartData = [];
-  stockChartLoadedSymbol = '';
+  // The on-demand API already returns the history, so do not make a
+  // second request to the old stock-history endpoint.
+  stockChartData = Array.isArray(stock.history) ? stock.history.slice() : [];
+  stockChartData.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  stockChartLoadedSymbol = selectedStockSymbol;
   stockChartVisibleData = [];
+  renderStockHistoryChart(getStockHistorySlice(stockChartData, '1M'));
 
-  // Load the default 1-month price history whenever a stock is selected.
-  loadStockHistory(selectedStockSymbol, '1M');
+  renderOnDemandFundamentals(stock);
+}
 
-  // Load fundamentals independently from Cloudflare KV.
-  loadStockFundamentals(selectedStockSymbol);
+function renderOnDemandFundamentals(stock) {
+  if (!stockFundamentalsWrap) return;
+
+  const f = stock.fundamentals || {};
+  const fmtCr = value => {
+    const n = Number(value);
+    return Number.isFinite(n)
+      ? '₹' + (n / 1e7).toLocaleString('en-IN', { maximumFractionDigits: 2 }) + ' Cr'
+      : '—';
+  };
+  const fmtPctValue = value => {
+    const n = Number(value) * 100;
+    return Number.isFinite(n) ? n.toFixed(2) + '%' : '—';
+  };
+
+  fundamentalsPeriod.textContent = 'Yahoo Finance · Live';
+
+  const metrics = [
+    { label: 'Revenue', value: fmtCr(f.revenue) },
+    { label: 'EPS', value: Number.isFinite(Number(f.eps)) ? '₹' + Number(f.eps).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—' },
+    { label: 'Profit Margin', value: fmtPctValue(f.profit_margin) },
+    { label: 'ROE', value: fmtPctValue(f.return_on_equity) },
+    { label: 'ROA', value: fmtPctValue(f.return_on_assets) },
+    { label: 'Free Cash Flow', value: fmtCr(f.free_cash_flow) },
+    { label: 'Total Cash', value: fmtCr(f.total_cash) },
+    { label: 'Total Debt', value: fmtCr(f.total_debt) }
+  ];
+
+  fundamentalsMetrics.innerHTML = metrics.map(metric => `
+    <div class="fundamental-metric">
+      <div class="fundamental-metric-label">${metric.label}</div>
+      <div class="fundamental-metric-value">${metric.value}</div>
+    </div>
+  `).join('');
+
+  fundamentalsQuarterlyBody.innerHTML = `
+    <tr>
+      <td colspan="5" class="fundamentals-loading">
+        Quarterly results are not included in the current on-demand Yahoo Finance response.
+      </td>
+    </tr>
+  `;
+
+  stockFundamentalsWrap.style.display = 'block';
 }
 
 
