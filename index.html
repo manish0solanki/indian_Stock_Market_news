@@ -5422,18 +5422,27 @@ const CONTACT_URL  = () => API_BASE + "/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 
-/* Always request a fresh quote when a user opens a stock.
-   The Worker may cache /stock-detail, so a cache-busting query parameter
-   forces a new Yahoo Finance lookup while n8n continues to use query.symbol. */
+/* Free stock-quote cache strategy:
+   - Keep the Cloudflare URL stable for a 30-second cache bucket.
+   - Repeated requests for the same symbol in that bucket can share one
+     Cloudflare cached response instead of creating a unique URL per request.
+   - The browser cache is bypassed so a new bucket can obtain the latest
+     available Yahoo Finance quote. */
 async function fetchFreshStockDetail(symbol) {
   const clean = String(symbol || '').trim().toUpperCase();
   if (!clean) throw new Error('Missing stock symbol');
-  const url = STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(clean) + '&_fresh=' + Date.now();
+
+  const cacheBucket = Math.floor(Date.now() / 30000);
+  const url = STOCK_DETAIL_URL()
+    + '?symbol=' + encodeURIComponent(clean)
+    + '&_v=' + cacheBucket;
+
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
+
   const data = await res.json();
   const price = Number(data?.price);
-  if (!Number.isFinite(price) || price <= 0) throw new Error('Invalid live price');
+  if (!Number.isFinite(price) || price <= 0) throw new Error('Invalid latest price');
   return data;
 }
 const STOCK_HISTORY_URL = () => API_BASE + "/stock-history";
@@ -7639,8 +7648,8 @@ async function searchStock(query) {
         sdHint.textContent = 'Fetching…';
         stockDetailCard.style.display = 'none';
         fetchFreshStockDetail(stock.symbol)
-          .then(data => { renderStockDetail(data); sdHint.textContent = 'Live quote'; })
-          .catch(e => { sdHint.textContent = 'Live quote unavailable'; renderStockDetail(stock); console.error('[Stock Detail]', e); });
+          .then(data => { renderStockDetail(data); sdHint.textContent = 'Latest available quote'; })
+          .catch(e => { sdHint.textContent = 'Latest quote unavailable'; renderStockDetail(stock); console.error('[Stock Detail]', e); });
       });
       dropdown.appendChild(div);
     });
