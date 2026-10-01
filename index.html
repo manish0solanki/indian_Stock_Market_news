@@ -7594,32 +7594,6 @@ if(stockChartRanges) stockChartRanges.addEventListener('click',event=>{
   loadStockHistory(selectedStockSymbol, btn.dataset.range);
 });
 
-async function fetchFreshStockDetail(symbol) {
-  const clean = String(symbol || '').trim().toUpperCase();
-  if (!clean) throw new Error('Missing stock symbol');
-
-  // The search result can be cached. Always bypass browser/edge caching
-  // when the user actually selects a stock and needs the latest quote.
-  const url =
-    STOCK_DETAIL_URL() +
-    '?symbol=' + encodeURIComponent(clean) +
-    '&_ts=' + Date.now();
-
-  const res = await fetch(url, {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache' }
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-
-  const data = await res.json();
-  const price = Number(data?.price);
-  if (!Number.isFinite(price) || price <= 0) {
-    throw new Error('Invalid latest price');
-  }
-
-  return data;
-}
-
 async function searchStock(query) {
   const dropdown = document.getElementById('searchDropdown');
   if (!query || query.length < 2) {
@@ -7633,12 +7607,7 @@ async function searchStock(query) {
   }
   sdHint.textContent = 'Searching…';
   try {
-    const res = await fetch(
-      STOCK_SEARCH_URL() +
-      '?q=' + encodeURIComponent(query) +
-      '&_ts=' + Date.now(),
-      { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }
-    );
+    const res = await fetch(STOCK_SEARCH_URL() + '?q=' + encodeURIComponent(query));
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     let stocks = [];
@@ -7661,24 +7630,15 @@ async function searchStock(query) {
       div.className = 'search-dropdown-item';
       const isFnoSearch = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
       div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
-      div.addEventListener('click', async () => {
-        const symbol = String(stock.symbol || '').trim().toUpperCase();
-        if (!symbol) return;
-
+      div.addEventListener('click', () => {
         dropdown.classList.remove('open');
-        searchInput.value = stock.company_name || symbol;
-        sdHint.textContent = 'Fetching latest price…';
+        searchInput.value = stock.company_name || stock.symbol || '';
+        sdHint.textContent = 'Fetching…';
         stockDetailCard.style.display = 'none';
-
-        try {
-          const latest = await fetchFreshStockDetail(symbol);
-          renderStockDetail(latest);
-          sdHint.textContent = 'Latest price';
-        } catch (e) {
-          // Do not silently display the older search result as if it were live.
-          sdHint.textContent = 'Latest price unavailable';
-          console.error('[Stock Detail] Fresh quote failed for ' + symbol, e);
-        }
+        fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(stock.symbol))
+          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(data => { renderStockDetail(data); sdHint.textContent = ''; })
+          .catch(e => { sdHint.textContent = 'Cached data shown'; renderStockDetail(stock); console.error('[Stock Detail]', e); });
       });
       dropdown.appendChild(div);
     });
