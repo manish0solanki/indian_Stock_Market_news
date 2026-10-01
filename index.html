@@ -8626,7 +8626,6 @@ function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTime
 
 /* ─── Portfolio Snapshot ─── */
 let portfolioDashTimer=null;
-const STOCK_DATA_FUNCTION_URL='https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-data';
 
 function portfolioMoney(n){
   return '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
