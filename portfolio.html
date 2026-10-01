@@ -27,7 +27,7 @@
 <div class="card"><div class="label">P&amp;L %</div><div class="value" id="pnlPct">0.00%</div></div>
 </section>
 <div class="grid">
-<section class="panel"><div class="panelhead"><span class="paneltitle">Holdings</span><span class="muted" id="holdCount">0 holdings</span></div><div class="tablewrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>LTP</th><th>Invested</th><th>Current</th><th>P&L</th><th>%</th><th>Actions</th></tr></thead><tbody id="holdings"><tr><td colspan="11" class="empty">Loading…</td></tr></tbody></table></div></section>
+<section class="panel"><div class="panelhead"><span class="paneltitle">Holdings</span><span class="muted" id="holdCount">0 holdings</span></div><div class="tablewrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>LTP</th><th>Invested</th><th>Current</th><th>Day Chg</th><th>Day %</th><th>P&amp;L</th><th>%</th><th>Actions</th></tr></thead><tbody id="holdings"><tr><td colspan="11" class="empty">Loading…</td></tr></tbody></table></div></section>
 <aside class="panel"><div class="panelhead"><span class="paneltitle">Allocation</span></div><div class="allocation" id="allocation"><div class="empty">No holdings</div></div></aside>
 </div>
 <section class="panel" style="margin-top:14px"><div class="panelhead"><span class="paneltitle">Recent Transactions</span></div><div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Symbol</th><th>Exchange</th><th>Qty</th><th>Price</th><th>Charges</th><th>Source</th></tr></thead><tbody id="transactions"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody></table></div></section>
@@ -59,6 +59,8 @@ const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const STOCK_DATA_FUNCTION_URL="https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-data";
+/* FIX: API_BASE was missing, which broke stock search and import symbol lookup */
+const API_BASE="https://marketpulse-cache.manish0solanki20078.workers.dev";
 let user=null,portfolio=null,transactions=[],prices={},pendingImport=[];
 const $=id=>document.getElementById(id);
 const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -202,9 +204,8 @@ function render(){
 function normalizeImportKey(key){
  return String(key||'').replace(/^\uFEFF/,'').trim().toLowerCase().replace(/[.()#%]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 }
-/* FIX: read the sheet as a grid, find the real header row, normalise the header
-   names, and skip section rows (e.g. "Equity"). Row objects now use normalised keys
-   so pickField() can find them. */
+/* Read the sheet as a grid, find the real header row, normalise header names,
+   and skip section rows (e.g. "Equity"). */
 function sheetToObjects(ws){
  const grid=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true,blankrows:false});
  const known=['script_name','symbol','ticker','scrip','stock','quantity','qty','isin','avg_unit_cost','price','buy_price','trade_date','date'];
@@ -258,7 +259,6 @@ function todayLocal(){
  const d=new Date();
  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-/* FIX: regexes used \\b and \\s (literal backslash), so suffixes were never stripped */
 function normalizeCompanyName(value){
  return String(value||'').toLowerCase()
   .replace(/&/g,' and ')
@@ -303,7 +303,7 @@ function chooseImportStock(items,company){
  }
  return bestScore>=0.6?best:null;
 }
-/* FIX: retry with shorter queries; strict 0.6 match threshold still protects against wrong matches */
+/* Retry with shorter queries; strict 0.6 match threshold still protects against wrong matches */
 async function resolveHoldingSymbol(company,isin){
  const words=String(company).replace(/\b(ltd|limited)\b\.?/ig,'').trim().split(/\s+/);
  const queries=[company,words.join(' '),words.slice(0,2).join(' '),words[0]];
@@ -313,7 +313,7 @@ async function resolveHoldingSymbol(company,isin){
    const items=await searchImportStocks(q);
    const chosen=chooseImportStock(items,company);
    if(chosen) return chosen;
-  }catch(e){}
+  }catch(e){console.warn('Symbol lookup failed for',q,e)}
  }
  return null;
 }
@@ -393,7 +393,7 @@ async function addTransactions(rows){
 async function deletePortfolio(){
  if(!portfolio||!user)return;
  const name=portfolio.name||'this portfolio';
- if(!confirm('Delete "'+name+'"?\\n\\nThis will permanently delete the portfolio and ALL its transactions. This cannot be undone.'))return;
+ if(!confirm('Delete "'+name+'"?\n\nThis will permanently delete the portfolio and ALL its transactions. This cannot be undone.'))return;
  const button=$('deletePortfolioBtn');
  button.disabled=true;
  try{
@@ -617,7 +617,7 @@ function viewStock(s){location.href='/?symbol='+encodeURIComponent(s)}
 $('logout').onclick=async()=>{await sb.auth.signOut();location.href='/'};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{close(b.dataset.close);if(b.dataset.close==='txModal')resetTxModal();});
 document.querySelectorAll('.modalbg').forEach(m=>m.onclick=e=>{if(e.target===m)close(m.id)});
-boot().catch(e=>{console.error(e);status(e.message||'Portfolio could not load','err');$('holdings').innerHTML='<tr><td colspan="9" class="empty">Could not load portfolio. Check the Supabase portfolio schema and login.</td></tr>'});
+boot().catch(e=>{console.error(e);status(e.message||'Portfolio could not load','err');$('holdings').innerHTML='<tr><td colspan="11" class="empty">Could not load portfolio. Check the Supabase portfolio schema and login.</td></tr>'});
 </script>
 </body>
 </html>
