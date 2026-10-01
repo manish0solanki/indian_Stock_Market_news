@@ -25,10 +25,10 @@
 <div class="card"><div class="label">P&L %</div><div class="value" id="pnlPct">0.00%</div></div>
 </section>
 <div class="grid">
-<section class="panel"><div class="panelhead"><span class="paneltitle">Holdings</span><span class="muted" id="holdCount">0 holdings</span></div><div class="tablewrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>LTP</th><th>Invested</th><th>Current</th><th>P&L</th><th>%</th><th></th></tr></thead><tbody id="holdings"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div></section>
+<section class="panel"><div class="panelhead"><span class="paneltitle">Holdings</span><span class="muted" id="holdCount">0 holdings</span></div><div class="tablewrap"><table><thead><tr><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>LTP</th><th>Invested</th><th>Current</th><th>P&L</th><th>%</th><th>Actions</th></tr></thead><tbody id="holdings"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div></section>
 <aside class="panel"><div class="panelhead"><span class="paneltitle">Allocation</span></div><div class="allocation" id="allocation"><div class="empty">No holdings</div></div></aside>
 </div>
-<section class="panel" style="margin-top:14px"><div class="panelhead"><span class="paneltitle">Recent Transactions</span></div><div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Symbol</th><th>Exchange</th><th>Qty</th><th>Price</th><th>Charges</th><th>Source</th><th></th></tr></thead><tbody id="transactions"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div></section>
+<section class="panel" style="margin-top:14px"><div class="panelhead"><span class="paneltitle">Recent Transactions</span></div><div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Symbol</th><th>Exchange</th><th>Qty</th><th>Price</th><th>Charges</th><th>Source</th></tr></thead><tbody id="transactions"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody></table></div></section>
 </main>
 
 <div class="modalbg" id="txModal"><div class="modal"><div class="modalhead"><h2 id="txModalTitle">Add Transaction</h2><button class="close" data-close="txModal">×</button></div><form id="txForm"><div class="form"><div class="fields">
@@ -41,6 +41,8 @@
 <div class="field"><label>Trade date</label><input id="tradeDate" type="date" required></div>
 <div class="field"><label>Notes</label><input id="notes"></div>
 </div><div class="hint">Use transactions rather than typing a final average price. MarketPulse will calculate the live position from your BUY/SELL history.</div></div><div class="foot"><button class="btn" type="button" data-close="txModal">Cancel</button><button class="btn primary" id="saveTx">Save transaction</button></div></form></div></div>
+
+<div class="modalbg" id="manageModal"><div class="modal"><div class="modalhead"><h2 id="manageTitle">Manage Holding</h2><button class="close" data-close="manageModal">×</button></div><div class="form"><div class="hint" id="manageHint"></div><div class="preview" id="manageTransactions"></div></div><div class="foot"><button class="btn" type="button" data-close="manageModal">Close</button></div></div></div>
 
 <div class="modalbg" id="importModal"><div class="modal"><div class="modalhead"><h2>Import Portfolio</h2><button class="close" data-close="importModal">×</button></div><div class="form">
 <div class="drop"><input id="file" type="file" accept=".csv,.xlsx,.xls"></div>
@@ -92,9 +94,9 @@ function buildHoldings(){
 function render(){
  const h=buildHoldings();let inv=h.reduce((a,x)=>a+x.cost,0),cur=h.reduce((a,x)=>a+x.current,0),pnl=cur-inv,pct=inv?pnl/inv*100:0;
  $('invested').textContent=money(inv);$('current').textContent=money(cur);$('pnl').textContent=money(pnl);$('pnl').className='value '+(pnl>=0?'green':'red');$('pnlPct').textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';$('pnlPct').className='value '+(pct>=0?'green':'red');$('holdCount').textContent=h.length+' holding'+(h.length===1?'':'s');
- $('holdings').innerHTML=h.length?h.map(x=>'<tr><td><b>'+esc(x.symbol)+'</b><div class="muted">'+esc(x.exchange)+'</div></td><td class="mono">'+x.qty.toLocaleString('en-IN')+'</td><td class="mono">'+money(x.avg)+'</td><td class="mono">'+(x.ltp?money(x.ltp):'—')+'</td><td class="mono">'+money(x.cost)+'</td><td class="mono">'+(x.ltp?money(x.current):'—')+'</td><td class="mono '+(x.pnl>=0?'green':'red')+'">'+(x.ltp?money(x.pnl):'—')+'</td><td class="mono '+(x.pct>=0?'green':'red')+'">'+(x.ltp?(x.pct>=0?'+':'')+x.pct.toFixed(2)+'%':'—')+'</td><td><button class="btn" onclick="viewStock(\''+esc(x.symbol)+'\')">View</button></td></tr>').join(''):'<tr><td colspan="9" class="empty">No holdings yet. Add a transaction or import a CSV/Excel file.</td></tr>';
+ $('holdings').innerHTML=h.length?h.map(x=>'<tr><td><b>'+esc(x.symbol)+'</b><div class="muted">'+esc(x.exchange)+'</div></td><td class="mono">'+x.qty.toLocaleString('en-IN')+'</td><td class="mono">'+money(x.avg)+'</td><td class="mono">'+(x.ltp?money(x.ltp):'—')+'</td><td class="mono">'+money(x.cost)+'</td><td class="mono">'+(x.ltp?money(x.current):'—')+'</td><td class="mono '+(x.pnl>=0?'green':'red')+'">'+(x.ltp?money(x.pnl):'—')+'</td><td class="mono '+(x.pct>=0?'green':'red')+'">'+(x.ltp?(x.pct>=0?'+':'')+x.pct.toFixed(2)+'%':'—')+'</td><td><button class="btn" onclick="manageHolding(\''+esc(x.symbol)+'\')">Edit</button> <button class="btn" onclick="deleteHolding(\''+esc(x.symbol)+'\')">Delete</button></td></tr>').join(''):'<tr><td colspan="9" class="empty">No holdings yet. Add a transaction or import a CSV/Excel file.</td></tr>';
  const sorted=[...h].sort((a,b)=>b.current-a.current);const max=cur||1;$('allocation').innerHTML=sorted.length?'<div class="bar">'+sorted.map((x,i)=>'<div class="seg" style="width:'+(x.current/max*100)+'%;background:hsl('+(i*47%360)+' 65% 55%)"></div>').join('')+'</div>'+sorted.map(x=>'<div class="allocrow"><span>'+esc(x.symbol)+'</span><span class="mono">'+(x.current/max*100).toFixed(1)+'%</span></div>').join(''):'<div class="empty">No holdings</div>';
- $('transactions').innerHTML=transactions.slice(0,100).map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+esc(t.symbol)+'</td><td>'+esc(t.exchange)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.source)+'</td><td><button class="btn" onclick="editTx(\''+esc(t.id)+'\')">Edit</button> <button class="btn" onclick="deleteTx(\'').join('')||'<tr><td colspan="9" class="empty">No transactions</td></tr>';
+ $('transactions').innerHTML=transactions.slice(0,100).map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+esc(t.symbol)+'</td><td>'+esc(t.exchange)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.source)+'</td><td><button class="btn" onclick="editTx(\''+esc(t.id)+'\')">Edit</button> <button class="btn" onclick="deleteTx(\'').join('')||'<tr><td colspan="8" class="empty">No transactions</td></tr>';
 }
 async function addTransactions(rows){
  const cleanRows=rows.map(r=>({portfolio_id:portfolio.id,user_id:user.id,symbol:clean(r.symbol),exchange:clean(r.exchange||'NSE')==='BSE'?'BSE':'NSE',transaction_type:'BUY',quantity:num(r.quantity),price:num(r.buy_price),charges:num(r.charges),trade_date:r.buy_date||new Date().toISOString().slice(0,10),notes:r.notes||null,source:'CSV'})).filter(r=>r.symbol&&r.quantity>0&&r.price>0);
@@ -199,6 +201,30 @@ $('symbol').addEventListener('focus',()=>{
 document.addEventListener('click',e=>{
   if(!e.target.closest('.symbol-wrap')) closeSymbolSuggestions();
 });
+
+function manageHolding(symbol){
+  const s=clean(symbol);
+  const rows=transactions.filter(t=>clean(t.symbol)===s);
+  if(!rows.length){status('No transactions found for '+s,'err');return;}
+  $('manageTitle').textContent='Manage '+s;
+  $('manageHint').textContent=rows.length+' transaction'+(rows.length===1?'':'s')+' make up this holding. Edit or delete individual transactions below.';
+  $('manageTransactions').innerHTML='<table style="min-width:760px"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Charges</th><th>Notes</th><th>Actions</th></tr></thead><tbody>'+
+    rows.map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.notes||'')+'</td><td><button class="btn" onclick="editTx(\''+esc(t.id)+'\');close(\'manageModal\')">Edit</button> <button class="btn" onclick="deleteTx(\''+esc(t.id)+'\');close(\'manageModal\')">Delete</button></td></tr>').join('')+
+    '</tbody></table>';
+  open('manageModal');
+}
+
+async function deleteHolding(symbol){
+  const s=clean(symbol);
+  const rows=transactions.filter(t=>clean(t.symbol)===s);
+  if(!rows.length)return status('Holding not found.','err');
+  const ok=confirm('Delete the entire '+s+' holding? This will delete all '+rows.length+' transaction'+(rows.length===1?'':'s')+' for '+s+' and cannot be undone.');
+  if(!ok)return;
+  const {error}=await sb.from('portfolio_transactions').delete().eq('portfolio_id',portfolio.id).eq('user_id',user.id).eq('symbol',s);
+  if(error)return status(error.message,'err');
+  await refresh();
+  status(s+' holding deleted.');
+}
 
 function editTx(id){
   const t=transactions.find(x=>x.id===id);
