@@ -7635,7 +7635,15 @@ async function searchStock(query) {
         searchInput.value = stock.company_name || stock.symbol || '';
         sdHint.textContent = 'Fetching…';
         stockDetailCard.style.display = 'none';
-        fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(stock.symbol))
+        fetch(
+          STOCK_DETAIL_URL() +
+          '?symbol=' + encodeURIComponent(stock.symbol) +
+          '&_ts=' + Date.now(),
+          {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+          }
+        )
           .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
           .then(data => { renderStockDetail(data); sdHint.textContent = ''; })
           .catch(e => { sdHint.textContent = 'Cached data shown'; renderStockDetail(stock); console.error('[Stock Detail]', e); });
