@@ -207,11 +207,18 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .trade-footer .jbtns{display:flex;gap:5px}
 
 @media(min-width:900px){
+  /* Live and Archive use the same responsive card grid as Signals. */
   #liveTradesList.panel-visible,#archiveList.panel-visible{
     display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:16px;
+    grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+    gap:14px;
+    padding:0 20px 20px;
     align-items:stretch;
+  }
+  #liveTradesList .trade-card,#archiveList .trade-card{
+    height:100%;
+    padding:16px;
+    border-radius:14px;
   }
   #liveTradesList .empty,#archiveList .empty{
     grid-column:1/-1;
@@ -589,6 +596,28 @@ img,svg,canvas{max-width:100%}
 .settings *{
   min-width:0;
   max-width:100%;
+}
+/* Desktop trade-card polish: mirror Signals card proportions */
+@media(min-width:900px){
+  #liveTradesList .trade-card,#archiveList .trade-card{
+    display:flex;
+    flex-direction:column;
+  }
+  #liveTradesList .trade-head,#archiveList .trade-head{
+    min-height:52px;
+  }
+  #liveTradesList .trade-levels,#archiveList .trade-levels{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  #liveTradesList .trade-money,#archiveList .trade-money{
+    grid-template-columns:1fr 1fr 1.3fr;
+    gap:8px;
+  }
+  #liveTradesList .trade-footer,#archiveList .trade-footer{
+    margin-top:auto;
+    padding-top:4px;
+  }
 }
 </style>
 <base target="_blank">
@@ -3625,7 +3654,15 @@ function renderStats(){
     <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
 }
 
-let tradeViewMode=localStorage.getItem("cs_trade_view")||"detailed";
+function getTradeView(panel){
+  const key=panel==="live"?"cs_live_trade_view":panel==="archive"?"cs_archive_trade_view":"cs_signals_view";
+  return localStorage.getItem(key)||localStorage.getItem("cs_trade_view")||"detailed";
+}
+function setTradeView(panel,mode){
+  const key=panel==="live"?"cs_live_trade_view":panel==="archive"?"cs_archive_trade_view":"cs_signals_view";
+  localStorage.setItem(key,mode==="list"?"list":"detailed");
+}
+let tradeViewMode=getTradeView("signals");
 
 function listHeader(key,label,sortState){
   const active=sortState===key;
@@ -5118,6 +5155,7 @@ function selectAppTab(sel){
   $("archiveList")?.classList.remove("panel-visible");
 
   activeTradePanel=sel;
+  tradeViewMode=getTradeView(sel);
 
   const isTradePanel=["signals","live","archive"].includes(sel);
   const tools=$("tradeTools");
@@ -5178,7 +5216,7 @@ document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>
 
 $("tradeView")?.addEventListener("change",()=>{
   tradeViewMode=$("tradeView").value==="list"?"list":"detailed";
-  localStorage.setItem("cs_trade_view",tradeViewMode);
+  setTradeView(activeTradePanel,tradeViewMode);
   selectAppTab(activeTradePanel);
 });
 
