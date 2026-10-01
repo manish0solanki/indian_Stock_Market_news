@@ -765,6 +765,20 @@ img,svg,canvas{max-width:100%}
   border:1px solid rgba(22,199,132,.35);
   color:var(--green);
 }
+/* Trailing-stop status shown on every live/archive trade card */
+.trailing-stop-note{
+  margin-top:8px;padding:7px 10px;border-radius:8px;
+  background:var(--card2);border:1px dashed var(--border);
+  display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0;
+}
+.trailing-stop-note span{font-size:9px;color:var(--muted);letter-spacing:.5px;white-space:nowrap}
+.trailing-stop-note b{font-family:monospace;font-size:11px;color:var(--muted);text-align:right}
+.trailing-stop-note.active{border-color:rgba(22,199,132,.35);background:rgba(22,199,132,.07)}
+.trailing-stop-note.active b{color:var(--green)}
+@media(max-width:480px){
+  .trailing-stop-note{align-items:flex-start;flex-direction:column;gap:3px}
+  .trailing-stop-note b{font-size:10px;text-align:left}
+}
 </style>
 <base target="_blank">
 
@@ -4083,6 +4097,13 @@ function renderTradeCard(t, ri, archived=false){
         <div class="trade-current-cell">${currentPriceHtml}</div>
         <div><span>STOP LOSS</span><b class="sl-text">${price(t.sl)}</b></div>
         <div><span>TAKE PROFIT</span><b class="tp-text">${price(t.tp)}</b></div>
+      </div>
+
+      <div class="trailing-stop-note ${t.trailingActive?"active":""}">
+        <span>TRAILING STOP</span>
+        <b>${t.trailingActive
+          ? "🛡 "+price(Number(t.trailingStop||t.sl))+" · Protected +"+Number(t.trailingProtectedPct||0)+"%"
+          : "⏳ Not active · Starts at +30% profit"}</b>
       </div>
 
       <div class="trade-money">
