@@ -57,9 +57,7 @@
 const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-const API_BASE="https://marketpulse-cache.manish0solanki20078.workers.dev";
-const PRICE_URL=API_BASE+"/price-feed";
-const STOCK_DETAIL_URL=API_BASE+"/stock-detail";
+const STOCK_DATA_FUNCTION_URL="https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-data";
 let user=null,portfolio=null,transactions=[],prices={},pendingImport=[];
 const $=id=>document.getElementById(id);
 const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -90,44 +88,73 @@ async function boot(){
  if(pe) throw pe;
  if(!p){const {data:n,error:ne}=await sb.from('portfolios').insert({user_id:user.id,name:'My Portfolio'}).select().single();if(ne)throw ne;portfolio=n}else portfolio=p;
  await refresh();
+ startLivePriceRefresh();
 }
 async function refresh(){
  const {data,error}=await sb.from('portfolio_transactions').select('*').eq('portfolio_id',portfolio.id).order('trade_date',{ascending:false}).order('created_at',{ascending:false});
  if(error)throw error;transactions=data||[];await loadPrices();render();
 }
+
+let priceRefreshTimer=null;
+
+async function refreshLivePrices(){
+ if(!portfolio || !transactions.length)return;
+ try{
+  await loadPrices();
+  render();
+ }catch(e){
+  console.warn('Live portfolio price refresh failed',e);
+ }
+}
+
+function startLivePriceRefresh(){
+ if(priceRefreshTimer)clearInterval(priceRefreshTimer);
+ priceRefreshTimer=setInterval(refreshLivePrices,30000);
+}
 async function loadPrices(){
  prices={};
- try{
-  const r=await fetch(PRICE_URL,{cache:'no-store'});
-  if(!r.ok)throw Error('HTTP '+r.status);
-  const d=await r.json();
-  const a=Array.isArray(d)?d:(d.items||[]);
-  a.forEach(x=>{if(x.symbol&&Number.isFinite(Number(x.price)))prices[clean(x.symbol)]=x});
- }catch(e){
-  console.warn('Price feed unavailable',e);
- }
 
- // /price-feed is built from the site's news symbol universe, so a valid
- // portfolio holding can be missing when it has no recent news. Fill those
- // gaps from the single-stock detail endpoint, which resolves the symbol
- // against the NSE list and Yahoo Finance.
- const symbols=[...new Set(transactions.map(t=>clean(t.symbol)).filter(Boolean))];
- const missing=symbols.filter(s=>!Number.isFinite(Number(prices[s]?.price)));
- if(!missing.length)return;
+ // Portfolio prices use the same on-demand Yahoo Finance source as the
+ // stock detail page. This keeps LTP, current value and day P&L aligned
+ // with the prices shown when searching a stock.
+ const symbols=[...new Set(
+  transactions
+   .filter(t=>clean(t.exchange||'NSE')==='NSE')
+   .map(t=>clean(t.symbol))
+   .filter(Boolean)
+ )];
 
- const results=await Promise.all(missing.map(async symbol=>{
+ if(!symbols.length)return;
+
+ const results=await Promise.all(symbols.map(async symbol=>{
   try{
-   const r=await fetch(STOCK_DETAIL_URL+"?symbol="+encodeURIComponent(symbol),{cache:'no-store'});
+   const r=await fetch(
+    STOCK_DATA_FUNCTION_URL+"?symbol="+encodeURIComponent(symbol),
+    {
+     cache:'no-store',
+     headers:{'Accept':'application/json'}
+    }
+   );
+
    if(!r.ok)throw Error('HTTP '+r.status);
+
    const d=await r.json();
    const price=Number(d?.price);
-   return Number.isFinite(price)&&price>0?{symbol,data:d}:null;
+
+   if(!d?.success || !Number.isFinite(price) || price<=0){
+    throw Error(d?.error||'Invalid stock price');
+   }
+
+   return {symbol,data:d};
   }catch(e){
-   console.warn('Stock detail unavailable for '+symbol,e);
+   console.warn('Yahoo stock data unavailable for '+symbol,e);
    return null;
   }
  }));
- results.filter(Boolean).forEach(x=>{prices[x.symbol]=x.data});
+
+ results.filter(Boolean).forEach(x=>{
+  prices[x.symbol]=x.data;
+ });
 }
 function buildHoldings(){
  const map={};
