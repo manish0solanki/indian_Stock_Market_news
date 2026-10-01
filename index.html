@@ -8626,7 +8626,7 @@ function initCryptoTradeDashboard(){loadCryptoTradeDashboard();if(cryptoDashTime
 
 /* ─── Portfolio Snapshot ─── */
 let portfolioDashTimer=null;
-const PORTFOLIO_API_BASE='https://marketpulse-cache.manish0solanki20078.workers.dev';
+const STOCK_DATA_FUNCTION_URL='https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-data';
 
 function portfolioMoney(n){
   return '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -8649,12 +8649,15 @@ async function loadPortfolioSnapshot(){
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(!session?.user){
     status.textContent='Sign in to view your portfolio';
-    if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Sign in to see your portfolio snapshot.</div>';
+    if(currentEl)currentEl.textContent='—';
+    if(dayEl)dayEl.textContent='—';
+    body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Sign in to see your portfolio snapshot.</div>';
     return;
   }
 
   try{
     status.textContent='Live';
+
     const {data:portfolio,error:portfolioError}=await supabaseClient
       .from('portfolios')
       .select('id,name')
@@ -8662,11 +8665,14 @@ async function loadPortfolioSnapshot(){
       .order('created_at')
       .limit(1)
       .maybeSingle();
+
     if(portfolioError)throw portfolioError;
 
     if(!portfolio){
       status.textContent='No portfolio yet';
-      if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Open Portfolio to create one.</div>';
+      if(currentEl)currentEl.textContent='—';
+      if(dayEl)dayEl.textContent='—';
+      body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Open Portfolio to create one.</div>';
       return;
     }
 
@@ -8675,15 +8681,24 @@ async function loadPortfolioSnapshot(){
       .select('symbol,exchange,transaction_type,quantity,price,charges')
       .eq('portfolio_id',portfolio.id)
       .eq('user_id',session.user.id);
+
     if(txError)throw txError;
 
     const transactions=Array.isArray(tx)?tx:[];
     const holdings={};
+
     for(const t of transactions){
       const symbol=portfolioClean(t.symbol);
       if(!symbol)continue;
-      if(!holdings[symbol])holdings[symbol]={qty:0,cost:0};
-      const q=portfolioNum(t.quantity),p=portfolioNum(t.price),charges=portfolioNum(t.charges);
+
+      if(!holdings[symbol]){
+        holdings[symbol]={qty:0,cost:0,exchange:portfolioClean(t.exchange||'NSE')};
+      }
+
+      const q=portfolioNum(t.quantity);
+      const p=portfolioNum(t.price);
+      const charges=portfolioNum(t.charges);
+
       if(String(t.transaction_type).toUpperCase()==='BUY'){
         holdings[symbol].qty+=q;
         holdings[symbol].cost+=q*p+charges;
@@ -8697,68 +8712,127 @@ async function loadPortfolioSnapshot(){
       }
     }
 
-    const symbols=Object.keys(holdings).filter(s=>holdings[s].qty>0.0000001);
+    const symbols=Object.keys(holdings).filter(
+      s=>holdings[s].qty>0.0000001
+    );
+
     if(!symbols.length){
       status.textContent='No holdings';
-      if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">No active holdings yet.</div>';
+      if(currentEl)currentEl.textContent='—';
+      if(dayEl)dayEl.textContent='—';
+      body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">No active holdings yet.</div>';
       return;
     }
 
-    let priceMap={};
-    try{
-      const r=await fetch(PORTFOLIO_API_BASE+'/price-feed',{cache:'no-store'});
-      if(r.ok){
+    // Same on-demand Yahoo Finance source used by portfolio.html.
+    const results=await Promise.all(symbols.map(async symbol=>{
+      try{
+        if(holdings[symbol].exchange!=='NSE'){
+          return {symbol,data:null};
+        }
+
+        const r=await fetch(
+          STOCK_DATA_FUNCTION_URL+'?symbol='+encodeURIComponent(symbol),
+          {
+            cache:'no-store',
+            headers:{'Accept':'application/json'}
+          }
+        );
+
+        if(!r.ok)throw Error('HTTP '+r.status);
+
         const d=await r.json();
-        const rows=Array.isArray(d)?d:(d.items||[]);
-        rows.forEach(x=>{
-          if(x.symbol&&Number.isFinite(Number(x.price)))priceMap[portfolioClean(x.symbol)]=x;
-        });
+        const price=Number(d?.price);
+
+        if(!d?.success||!Number.isFinite(price)||price<=0){
+          throw Error(d?.error||'Invalid stock price');
+        }
+
+        return {symbol,data:d};
+      }catch(e){
+        console.warn('Portfolio snapshot price unavailable for '+symbol,e);
+        return {symbol,data:null};
       }
-    }catch(e){}
+    }));
 
-    const missing=symbols.filter(s=>!Number.isFinite(Number(priceMap[s]?.price)));
-    if(missing.length){
-      const fallback=await Promise.all(missing.map(async symbol=>{
-        try{
-          const r=await fetch(PORTFOLIO_API_BASE+'/stock-detail?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
-          if(!r.ok)return null;
-          const d=await r.json();
-          return Number.isFinite(Number(d?.price))?{symbol,data:d}:null;
-        }catch(e){return null;}
-      }));
-      fallback.filter(Boolean).forEach(x=>priceMap[x.symbol]=x.data);
-    }
+    const priceMap={};
+    results.forEach(x=>{
+      if(x.data)priceMap[x.symbol]=x.data;
+    });
 
-    let current=0,dayChange=0;
+    let current=0;
+    let dayChange=0;
+    let pricedHoldings=0;
+
     symbols.forEach(symbol=>{
-      const h=holdings[symbol],feed=priceMap[symbol]||{};
+      const h=holdings[symbol];
+      const feed=priceMap[symbol];
+
+      if(!feed)return;
+
       const price=portfolioNum(feed.price);
       current+=h.qty*price;
-      const prev=portfolioNum(feed.previous_close);
+      pricedHoldings++;
+
       const change=Number.isFinite(Number(feed.change))
         ? Number(feed.change)
-        : (price&&prev?price-prev:0);
+        : 0;
+
       dayChange+=h.qty*change;
     });
 
-    const dayPct=current-dayChange!==0 ? dayChange/(current-dayChange)*100 : 0;
-    const cls=dayChange>=0?'var(--positive)':'var(--negative)';
-    status.textContent=symbols.length+' holding'+(symbols.length===1?'':'s')+' · Live';
+    if(!pricedHoldings){
+      throw Error('No live portfolio prices available');
+    }
+
+    const dayStartValue=current-dayChange;
+    const dayPct=dayStartValue!==0
+      ? dayChange/dayStartValue*100
+      : 0;
+
+    const cls=dayChange>=0
+      ? 'var(--positive)'
+      : 'var(--negative)';
+
+    const priceStatus=pricedHoldings===symbols.length
+      ? 'Live'
+      : pricedHoldings+' of '+symbols.length+' priced';
+
+    status.textContent=symbols.length+
+      ' holding'+(symbols.length===1?'':'s')+
+      ' · '+priceStatus;
+
     if(currentEl)currentEl.textContent=portfolioMoney(current);
-    if(dayEl){dayEl.textContent=(dayChange>=0?'+':'')+portfolioMoney(dayChange);dayEl.style.color=cls;}
-    body.innerHTML='<div style="text-align:right;color:'+cls+';font:600 9px var(--font-mono);">Day '+(dayChange>=0?'+':'')+dayPct.toFixed(2)+'%</div>';
+
+    if(dayEl){
+      dayEl.textContent=(dayChange>=0?'+':'')+portfolioMoney(dayChange);
+      dayEl.style.color=cls;
+    }
+
+    body.innerHTML=
+      '<div style="text-align:right;color:'+cls+';font:600 9px var(--font-mono);">'+
+      'Day '+(dayChange>=0?'+':'')+dayPct.toFixed(2)+'%'+
+      '</div>';
+
   }catch(e){
     console.error('[Portfolio Dashboard]',e);
     status.textContent='Unavailable';
-    if(currentEl)currentEl.textContent='—'; if(dayEl)dayEl.textContent='—'; body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Portfolio snapshot unavailable.</div>';
+    if(currentEl)currentEl.textContent='—';
+    if(dayEl)dayEl.textContent='—';
+    body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Portfolio snapshot unavailable.</div>';
   }
 }
 
 function initPortfolioDashboard(){
   loadPortfolioSnapshot();
+
   if(portfolioDashTimer)clearInterval(portfolioDashTimer);
+
   portfolioDashTimer=setInterval(loadPortfolioSnapshot,30000);
-  supabaseClient.auth.onAuthStateChange(()=>setTimeout(loadPortfolioSnapshot,250));
+
+  supabaseClient.auth.onAuthStateChange(
+    ()=>setTimeout(loadPortfolioSnapshot,250)
+  );
 }
 
 /* ─── Live Timer ─── */
