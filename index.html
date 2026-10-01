@@ -5422,21 +5422,15 @@ const CONTACT_URL  = () => API_BASE + "/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 
-/* Free stock-quote cache strategy:
-   - Keep the Cloudflare URL stable for a 30-second cache bucket.
-   - Repeated requests for the same symbol in that bucket can share one
-     Cloudflare cached response instead of creating a unique URL per request.
-   - The browser cache is bypassed so a new bucket can obtain the latest
-     available Yahoo Finance quote. */
+/* Keep the stock-detail URL stable.
+   Cloudflare can reuse the same cached response for this symbol instead
+   of creating a new cache key on every search. The browser cache is
+   bypassed, while the Worker/CDN cache remains available. */
 async function fetchFreshStockDetail(symbol) {
   const clean = String(symbol || '').trim().toUpperCase();
   if (!clean) throw new Error('Missing stock symbol');
 
-  const cacheBucket = Math.floor(Date.now() / 30000);
-  const url = STOCK_DETAIL_URL()
-    + '?symbol=' + encodeURIComponent(clean)
-    + '&_v=' + cacheBucket;
-
+  const url = STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(clean);
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
 
