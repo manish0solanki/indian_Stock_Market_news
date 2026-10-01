@@ -89,7 +89,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .actions{margin-top:12px;display:flex;gap:8px}
 .actions button{flex:1;font-size:12px}
 .ai-box{display:none;margin-top:10px;padding:10px;border:1px solid rgba(155,107,255,.25);border-radius:8px;background:rgba(155,107,255,.06);font-size:12px;line-height:1.5}
-.journal-list{padding:0 20px 30px;display:flex;flex-direction:column;gap:10pxgrid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.journal-list{padding:0 20px 30px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
 .jrow{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .jdetail{font-size:12px;color:var(--muted);flex:1}
 .jpnl{font-weight:700;font-family:monospace}
@@ -3378,72 +3378,96 @@ function listHeader(key,label,sortState){
   return '<th><button type="button" class="'+(active?"active":"")+'" data-list-sort="'+key+'">'+label+' <span>'+arrow+'</span></button></th>';
 }
 
+function getStoredTradeSort(panel){
+  if(panel==="signals") return localStorage.getItem("cs_signal_list_sort")||"symbolAZ";
+  if(panel==="archive") return localStorage.getItem("cs_archive_trade_sort")||"newest";
+  return localStorage.getItem("cs_live_trade_sort")||"newest";
+}
+function toggleTradeSort(panel,key){
+  const current=getStoredTradeSort(panel);
+  const pairs={
+    symbolAZ:"symbolZA",symbolZA:"symbolAZ",
+    directionAZ:"directionZA",directionZA:"directionAZ",
+    entryHigh:"entryLow",entryLow:"entryHigh",
+    currentHigh:"currentLow",currentLow:"currentHigh",
+    capitalHigh:"capitalLow",capitalLow:"capitalHigh",
+    pnlHigh:"pnlLow",pnlLow:"pnlHigh",
+    rrHigh:"rrLow",rrLow:"rrHigh",
+    scoreHigh:"scoreLow",scoreLow:"scoreHigh",
+    confHigh:"confLow",confLow:"confHigh",
+    newest:"oldest",oldest:"newest"
+  };
+  const next=current===key?(pairs[key]||key):key;
+  if(panel==="signals") localStorage.setItem("cs_signal_list_sort",next);
+  if(panel==="live"){liveTradeSort=next;localStorage.setItem("cs_live_trade_sort",next);}
+  if(panel==="archive"){archiveTradeSort=next;localStorage.setItem("cs_archive_trade_sort",next);}
+  renderTradeListView(panel);
+}
+function listHeader(key,label,sortState){
+  const active=sortState===key;
+  const descending=["symbolZA","directionZA","entryLow","currentLow","capitalLow","pnlLow","rrLow","scoreLow","confLow","oldest"].includes(sortState);
+  const arrow=active?(descending?" ▼":" ▲"):" ↕";
+  return '<th><button type="button" data-list-sort="'+key+'" class="'+(active?"active":"")+'">'+label+arrow+'</button></th>';
+}
 function renderTradeListView(panel){
   const body=$("tradeListBody"),head=$("tradeListHead"),summary=$("tradeListSummary");
   if(!body||!head)return;
+  const sort=getStoredTradeSort(panel);
+  let rows=[];
 
-  let rows=[], mode=panel;
   if(panel==="signals"){
-    rows=state.signals.slice();
-    rows.sort((a,b)=>{
-      const s=panel==="signals"?localStorage.getItem("cs_signal_list_sort")||"newest":"newest";
-      if(s==="symbolAZ"||s==="symbolZA"){
-        const d=String(a.sym).localeCompare(String(b.sym),undefined,{numeric:true,sensitivity:"base"});
-        return s==="symbolZA"?-d:d;
+    rows=state.signals.slice().sort((a,b)=>{
+      if(sort==="symbolAZ"||sort==="symbolZA"){
+        const d=String(a.sym||"").localeCompare(String(b.sym||""),undefined,{numeric:true,sensitivity:"base"});
+        return sort==="symbolZA"?-d:d;
       }
-      const av=s==="pnlHigh"||s==="pnlLow"?0:Number(a.entry)||0;
-      const bv=s==="pnlHigh"||s==="pnlLow"?0:Number(b.entry)||0;
-      if(s==="scoreHigh")return (Number(b.score)||0)-(Number(a.score)||0);
-      if(s==="scoreLow")return (Number(a.score)||0)-(Number(b.score)||0);
-      if(s==="confHigh")return signalConfidence(b)-signalConfidence(a);
-      if(s==="confLow")return signalConfidence(a)-signalConfidence(b);
-      if(s==="entryHigh")return bv-av;
-      if(s==="entryLow")return av-bv;
+      if(sort==="directionAZ"||sort==="directionZA"){
+        const d=String(a.dir||"").localeCompare(String(b.dir||""));
+        return sort==="directionZA"?-d:d;
+      }
+      if(sort==="scoreHigh"||sort==="scoreLow"){
+        const d=(Number(a.score)||0)-(Number(b.score)||0); return sort==="scoreLow"?d:-d;
+      }
+      if(sort==="confHigh"||sort==="confLow"){
+        const d=signalConfidence(a)-signalConfidence(b); return sort==="confLow"?d:-d;
+      }
+      if(sort==="entryHigh"||sort==="entryLow"){
+        const d=(Number(a.entry)||0)-(Number(b.entry)||0); return sort==="entryLow"?d:-d;
+      }
+      if(sort==="rrHigh"||sort==="rrLow"){
+        const d=(Number(a.rr)||0)-(Number(b.rr)||0); return sort==="rrLow"?d:-d;
+      }
       return 0;
     });
-    head.innerHTML=listHeader("symbolAZ","PAIR")+listHeader("direction","DIR")+listHeader("entryHigh","PRICE")+listHeader("scoreHigh","SCORE")+listHeader("confHigh","CONF.")+listHeader("entryHigh","ENTRY")+listHeader("entryLow","SL")+listHeader("entryHigh","TP")+listHeader("rrHigh","R:R")+"<th>ACTIONS</th>";
-    body.innerHTML=rows.length?rows.map((s,i)=>'<tr>'+
-      '<td><div class="list-pair">'+escapeHtml(s.sym)+'</div><div class="list-muted">'+escapeHtml(s.quote||state.quote)+' · '+escapeHtml(state.tf)+'</div></td>'+
-      '<td class="'+(s.dir==="SHORT"?"list-short":"list-long")+'">'+s.dir+'</td>'+
-      '<td>'+fmtPrice(s.price,s.quote||state.quote)+'</td><td>'+Number(s.score||0)+'</td><td>'+signalConfidence(s)+'%</td>'+
-      '<td>'+fmtPrice(s.entry,s.quote||state.quote)+'</td><td style="color:var(--red)">'+fmtPrice(s.sl,s.quote||state.quote)+'</td><td style="color:var(--green)">'+fmtPrice(s.tp,s.quote||state.quote)+'</td><td>1:'+Number(s.rr||0).toFixed(1)+'</td>'+
-      '<td><button class="small primary" onclick="openTrade('+state.signals.indexOf(s)+')">📝</button> <button class="small" onclick="askAI('+state.signals.indexOf(s)+')">🤖</button></td></tr>').join("")
-      :'<tr><td colspan="10" class="empty">No validated signals.</td></tr>';
+    head.innerHTML=listHeader("symbolAZ","PAIR",sort)+listHeader("directionAZ","DIR",sort)+listHeader("entryHigh","ENTRY",sort)+listHeader("scoreHigh","SCORE",sort)+listHeader("confHigh","CONF.",sort)+listHeader("entryLow","SL",sort)+listHeader("rrHigh","R:R",sort)+'<th>ACTIONS</th>';
+    body.innerHTML=rows.length?rows.map(s=>{
+      const i=state.signals.indexOf(s);
+      return '<tr><td><div class="list-pair">'+escapeHtml(s.sym)+'</div><div class="list-muted">'+escapeHtml(s.quote||state.quote)+' · '+escapeHtml(state.tf)+'</div></td><td class="'+(s.dir==="SHORT"?"list-short":"list-long")+'">'+s.dir+'</td><td>'+fmtPrice(s.entry,s.quote||state.quote)+'</td><td>'+Number(s.score||0)+'</td><td>'+signalConfidence(s)+'%</td><td style="color:var(--red)">'+fmtPrice(s.sl,s.quote||state.quote)+'</td><td>1:'+Number(s.rr||0).toFixed(1)+'</td><td><button class="small primary" onclick="openTrade('+i+')">📝</button> <button class="small" onclick="askAI('+i+')">🤖</button></td></tr>';
+    }).join(""):'<tr><td colspan="8" class="empty">No validated signals.</td></tr>';
     if(summary)summary.textContent=rows.length+" active signal"+(rows.length===1?"":"s");
-    return;
+  }else{
+    const mode=panel==="archive"?"archive":"live";
+    rows=sortTrades(state.journal.filter(t=>panel==="archive"?t.closed:!t.closed),sort,mode);
+    if(panel==="live"){
+      head.innerHTML=listHeader("symbolAZ","PAIR",sort)+listHeader("directionAZ","DIR",sort)+listHeader("entryHigh","ENTRY",sort)+listHeader("currentHigh","CURRENT",sort)+listHeader("entryLow","SL",sort)+listHeader("capitalHigh","CAPITAL",sort)+listHeader("pnlHigh","LIVE P&L",sort)+listHeader("rrHigh","R",sort)+'<th>ACTIONS</th>';
+      body.innerHTML=rows.length?rows.map(t=>{
+        const i=state.journal.indexOf(t),live=calcLivePnL(t),p=Number(live.pnl)||0,r=Number(live.rMultiple)||0;
+        return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(live.cp,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+(r>=0?"+":"")+r.toFixed(1)+'R</td><td><button class="small primary" onclick="quickClose('+i+',\'tp\')">🎯</button> <button class="small danger" onclick="quickClose('+i+',\'sl\')">🛑</button> <button class="small" onclick="openEdit('+i+')">✏️</button></td></tr>';
+      }).join(""):'<tr><td colspan="9" class="empty">No live paper trades.</td></tr>';
+      if(summary)summary.textContent=rows.length+" live trade"+(rows.length===1?"":"s");
+    }else{
+      head.innerHTML=listHeader("symbolAZ","PAIR",sort)+listHeader("directionAZ","DIR",sort)+listHeader("entryHigh","ENTRY",sort)+listHeader("currentHigh","EXIT",sort)+listHeader("entryLow","SL",sort)+listHeader("capitalHigh","CAPITAL",sort)+listHeader("pnlHigh","FINAL P&L",sort)+listHeader("newest","CLOSED",sort)+'<th>ACTIONS</th>';
+      body.innerHTML=rows.length?rows.map(t=>{
+        const i=state.journal.indexOf(t),p=Number(calcClosedPnL(t))||0,status=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL";
+        return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(t.closePrice||t.currentPrice,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+status+'</td><td><button class="small" onclick="openEdit('+i+')">✏️</button> <button class="small danger" onclick="deleteTrade('+i+')">🗑️</button></td></tr>';
+      }).join(""):'<tr><td colspan="9" class="empty">Archive is empty.</td></tr>';
+      if(summary)summary.textContent=rows.length+" archived trade"+(rows.length===1?"":"s");
+    }
   }
 
-  rows=state.journal.filter(t=>panel==="archive"?t.closed:!t.closed);
-  const sort=panel==="archive"?archiveTradeSort:liveTradeSort;
-  rows=sortTrades(rows,sort,panel==="archive"?"archive":"live");
-  if(panel==="live"){
-    head.innerHTML=listHeader("symbolAZ","PAIR")+listHeader("direction","DIR")+listHeader("entryHigh","ENTRY")+listHeader("currentHigh","CURRENT")+listHeader("entryLow","SL")+listHeader("entryHigh","TP")+listHeader("capitalHigh","CAPITAL")+listHeader("pnlHigh","LIVE P&L")+listHeader("pnlLow","R")+"<th>ACTIONS</th>";
-    body.innerHTML=rows.length?rows.map(t=>{
-      const i=state.journal.indexOf(t),live=calcLivePnL(t),p=Number(live.pnl)||0,r=Number(live.rMultiple)||0;
-      return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(live.cp,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td style="color:var(--green)">'+fmtPrice(t.tp,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+ (r>=0?"+":"")+r.toFixed(1)+'R</td><td><div class="trade-list-actions"><button class="small primary" onclick="quickClose('+i+',\'tp\')">🎯</button><button class="small danger" onclick="quickClose('+i+',\'sl\')">🛑</button><button class="small" onclick="openEdit('+i+')">✏️</button></div></td></tr>';
-    }).join(""):'<tr><td colspan="10" class="empty">No live paper trades.</td></tr>';
-    if(summary)summary.textContent=rows.length+" live trade"+(rows.length===1?"":"s");
-  }else{
-    head.innerHTML=listHeader("symbolAZ","PAIR")+listHeader("direction","DIR")+listHeader("entryHigh","ENTRY")+listHeader("currentHigh","EXIT")+listHeader("entryLow","SL")+listHeader("entryHigh","TP")+listHeader("capitalHigh","CAPITAL")+listHeader("pnlHigh","FINAL P&L")+listHeader("newest","STATUS")+ "<th>ACTIONS</th>";
-    body.innerHTML=rows.length?rows.map(t=>{
-      const i=state.journal.indexOf(t),p=Number(calcClosedPnL(t))||0,status=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL";
-      return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(t.closePrice||t.currentPrice,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td style="color:var(--green)">'+fmtPrice(t.tp,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+status+'</td><td><button class="small" onclick="openEdit('+i+')">✏️</button> <button class="small danger" onclick="deleteTrade('+i+')">🗑️</button></td></tr>';
-    }).join(""):'<tr><td colspan="10" class="empty">Archive is empty.</td></tr>';
-    if(summary)summary.textContent=rows.length+" archived trade"+(rows.length===1?"":"s");
-  }
-  body.querySelectorAll("[data-list-sort]").forEach(b=>b.addEventListener("click",()=>{
-    const key=b.dataset.listSort;
-    if(panel==="signals"){
-      let current=localStorage.getItem("cs_signal_list_sort")||"newest";
-      current=current===key?((key==="symbolAZ"?"symbolZA":key==="symbolZA"?"symbolAZ":key==="scoreHigh"?"scoreLow":key==="scoreLow"?"scoreHigh":key)):key;
-      localStorage.setItem("cs_signal_list_sort",current);
-    }else{
-      if(panel==="archive")archiveTradeSort=key;else liveTradeSort=key;
-      localStorage.setItem(panel==="archive"?"cs_archive_trade_sort":"cs_live_trade_sort",key);
-    }
-    renderTradeListView(panel);
-  }));
+  head.querySelectorAll("[data-list-sort]").forEach(btn=>btn.addEventListener("click",()=>toggleTradeSort(panel,btn.dataset.listSort)));
 }
+
 function renderSignals(){
   if(tradeViewMode==="list" && activeTradePanel==="signals"){ renderTradeListView("signals"); return; }
 
@@ -3599,25 +3623,27 @@ function tradeSortTimestamp(t,mode="open"){
   return Number.isFinite(ms)?ms:0;
 }
 function tradeSortValue(t,sort,mode="live"){
-  if(mode==="archive" && (sort==="newest"||sort==="oldest")){
-    return tradeSortTimestamp(t,"close");
+  if(mode==="archive" && (sort==="newest"||sort==="oldest")) return tradeSortTimestamp(t,"close");
+  if(sort==="pnlHigh"||sort==="pnlLow") return Number(t.closed?calcClosedPnL(t):calcLivePnL(t).pnl)||0;
+  if(sort==="capitalHigh"||sort==="capitalLow") return Number(t.amt)||0;
+  if(sort==="entryHigh"||sort==="entryLow") return Number(t.entry)||0;
+  if(sort==="currentHigh"||sort==="currentLow") return Number(t.currentPrice||state.livePrices[t.sym]||t.closePrice||t.entry)||0;
+  if(sort==="rrHigh"||sort==="rrLow"){
+    const risk=Math.abs(Number(t.entry)-Number(t.sl)),reward=Math.abs(Number(t.tp)-Number(t.entry));
+    return risk>0?reward/risk:0;
   }
-  if(sort==="pnlHigh"||sort==="pnlLow")return Number(t.closed?calcClosedPnL(t):calcLivePnL(t).pnl)||0;
-  if(sort==="capitalHigh"||sort==="capitalLow")return Number(t.amt)||0;
-  if(sort==="entryHigh"||sort==="entryLow")return Number(t.entry)||0;
-  if(sort==="currentHigh"||sort==="currentLow")return Number(t.currentPrice||state.livePrices[t.sym]||t.closePrice||t.entry)||0;
-  if(sort==="rrHigh"||sort==="rrLow"){const risk=Math.abs(Number(t.entry)-Number(t.sl)),reward=Math.abs(Number(t.tp)-Number(t.entry));return risk>0?reward/risk:0;}
-  if(sort==="directionAZ"||sort==="directionZA")return String(t.dir||"").toUpperCase();
-  if(sort==="symbolAZ"||sort==="symbolZA")return String(t.sym||"").toUpperCase();
+  if(sort==="directionAZ"||sort==="directionZA") return String(t.dir||"").toUpperCase();
+  if(sort==="symbolAZ"||sort==="symbolZA") return String(t.sym||"").toUpperCase();
   return tradeSortTimestamp(t,"open");
 }
+
 function sortTrades(list,sort="newest",mode="live"){
   const arr=list.slice();
   arr.sort((a,b)=>{
     const av=tradeSortValue(a,sort,mode),bv=tradeSortValue(b,sort,mode);
     if(typeof av==="string"||typeof bv==="string"){
       const cmp=String(av).localeCompare(String(bv),undefined,{numeric:true,sensitivity:"base"});
-      return sort==="symbolZA"?-cmp:cmp;
+      return ["symbolZA","directionZA"].includes(sort)?-cmp:cmp;
     }
     const low=["oldest","pnlLow","capitalLow","entryLow","currentLow","rrLow","directionZA","symbolZA"].includes(sort);
     const diff=low?av-bv:bv-av;
@@ -4836,7 +4862,7 @@ function selectAppTab(sel){
   if(tools) tools.style.display=["signals","live","archive"].includes(sel)?"flex":"none";
   if($("tradeView")) $("tradeView").value=tradeViewMode;
   if($("tradeSort")){
-    $("tradeSort").value=sel==="archive"?archiveTradeSort:sel==="live"?liveTradeSort:"newest";
+    $("tradeSort").value=sel==="archive"?archiveTradeSort:sel==="live"?liveTradeSort:(localStorage.getItem("cs_signal_list_sort")||"symbolAZ");
   }
 
   if(sel==="signals"){
