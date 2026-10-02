@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-02T03:37:10.623Z",
+  "generated_at": "2026-10-02T15:51:45.191Z",
   "source": {
     "crude": "Snapdata / EIA",
     "fx": "Snapdata / ECB cross-rates",
@@ -8,7 +8,7 @@
   },
   "data_quality": {
     "crude_latest_date": "2026-09-29",
-    "fx_latest_date": "2026-10-01",
+    "fx_latest_date": "2026-10-02",
     "crude_status": "final",
     "fx_status": "provisional"
   },
@@ -31,11 +31,11 @@
     "regime": "NEUTRAL"
   },
   "usdinr": {
-    "rate": 96.3286,
-    "date": "2026-10-01",
-    "change_1d": 0.52,
-    "change_5d": 0.38,
-    "change_1m": 1.45
+    "rate": 96.3247,
+    "date": "2026-10-02",
+    "change_1d": 0,
+    "change_5d": 0.53,
+    "change_1m": 1.42
   },
   "sector_impact": {
     "energy": {
@@ -89,7 +89,7 @@
   },
   "marketpulse": {
     "version": "1.0",
-    "generated_at": "2026-10-02T03:37:10.623Z",
+    "generated_at": "2026-10-02T15:51:45.191Z",
     "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
     "crude_regime": "NEUTRAL",
     "india_crude_pressure": "MODERATE"
@@ -650,8 +650,8 @@
       "published_duplicate_symbols": 0,
       "published_high_confidence": 19,
       "published_medium_confidence": 0,
-      "generated_at": "2026-10-02T03:37:14.777Z"
+      "generated_at": "2026-10-02T15:51:56.920Z"
     },
-    "generated_at": "2026-10-02T03:37:14.677Z"
+    "generated_at": "2026-10-02T15:51:55.501Z"
   }
 }
