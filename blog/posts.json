@@ -1,5 +1,25 @@
 [
   {
+    "slug": "kotakbank-stock-spotlight",
+    "title": "Kotak Mahindra Bank Flat on 4.6x Volume: Buyers Absorb Supply Near 52-Week High",
+    "excerpt": "PRICE ACTION: The stock closed unchanged at ₹418.35 despite volume surging to 4.65x the daily average, suggesting intense two-way activity where buyers fully absorbed selling pr...",
+    "category": "stock-spotlight",
+    "date": "2026-10-02",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "KOTAKBANK",
+      "KOTAK MAHINDRA BANK LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-auto-falls-3-46-percent-as-bajaj-auto-maruti-lead-large-cap-decline",
     "title": "Nifty Auto Falls 3.46% as Bajaj Auto, Maruti Lead Large-Cap Decline",
     "excerpt": "Nifty Auto declined 3.46% (909 points) to 25,384.95. Bajaj Auto fell 7.62% and Maruti Suzuki dropped 4.86%. The top 10 companies by market capitalization averaged -3.07%, while smaller stocks averaged -1.86%. In the broader stock universe, 105 of 123 stocks declined.",
@@ -129,26 +149,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "kotakbank-stock-spotlight",
-    "title": "Kotak Mahindra Rallies 2.7% on 2.7x Volume, Nears 52-Week High as Moving Averages Align",
-    "excerpt": "PRICE ACTION: Kotak Mahindra Bank surged 2.71% to ₹417 on volume nearly three times its average, indicating genuine institutional participation rather than thin-market drift. Th...",
-    "category": "stock-spotlight",
-    "date": "2026-09-30",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "KOTAKBANK",
-      "KOTAK MAHINDRA BANK LTD"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
