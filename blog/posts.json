@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-3-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 3 Oct 2026: Drops 0.88%",
+    "excerpt": "The mood turned cautious as NIFTY 50 shed 198 points to close at 22,421.95, a 0.88% drop. Market breadth was weak — only 13 stocks advanced against 37 decliners, showing broad-based selling pressure. IT emerged as the lone bright spot, rallying 2.17% on strong global cues and fresh deal wins.",
+    "category": "daily-wrap",
+    "date": "2026-10-03T07:15:56+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "coforge-stock-spotlight",
     "title": "Coforge Surges 4.4% on Above-Average Volume, Nears 52-Week High as Moving Averages Align",
     "excerpt": "PRICE ACTION: Coforge rallied 4.4% to ₹1826 with volume running 39% above its average, indicating genuine buying interest rather than thin-market drift. The stock now sits just...",
