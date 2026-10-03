@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-eases-dii-buying-extends-27-session-streak-as-nifty-slips",
+    "title": "FII Selling Eases, DII Buying Extends 27-Session Streak as Nifty Slips",
+    "excerpt": "FIIs net sold ₹9,484.22 Cr while DIIs net bought ₹10,041.84 Cr, resulting in a modest combined institutional inflow of ₹557.62 Cr. The Nifty 50 declined 0.88% to ₹22,421.95 desp...",
+    "category": "fiidii-flows",
+    "date": "2026-10-01",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "kotakbank-stock-spotlight",
     "title": "Kotak Mahindra Bank Flat on 4.6x Volume: Buyers Absorb Supply Near 52-Week High",
     "excerpt": "PRICE ACTION: The stock closed unchanged at ₹418.35 despite volume surging to 4.65x the daily average, suggesting intense two-way activity where buyers fully absorbed selling pr...",
