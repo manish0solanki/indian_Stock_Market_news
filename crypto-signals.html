@@ -1543,7 +1543,9 @@ async function dbUpdateTrade(t){
   // and fee settings must survive every Supabase update/reload.
   const notes=writeTradeNotes(t,{
     feeMode:t.feeMode||state.binanceFeeMode||"taker",
-    feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")
+    feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker"),
+    closeReason:t.closeReason||null,
+    trailingStopHit:t.trailingStopHit===true
   });
 
   const row={
