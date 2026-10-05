@@ -779,6 +779,15 @@ img,svg,canvas{max-width:100%}
   .trailing-stop-note{align-items:flex-start;flex-direction:column;gap:3px}
   .trailing-stop-note b{font-size:10px;text-align:left}
 }
+.manager-shadow-box{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+.manager-shadow-box>div{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11px}
+.manager-shadow-box>div span{opacity:.75;font-weight:700}
+.manager-shadow-box>div b{font-size:12px}
+.manager-shadow-box small{display:block;margin-top:5px;opacity:.7;font-size:10px}
+.manager-shadow-box.watch{border-color:#d9a441}
+.manager-shadow-box.warn{border-color:#d95d5d}
+.manager-shadow-box.hold{border-color:#4aa66a}
+.manager-shadow-box.idle{opacity:.8}
 </style>
 <base target="_blank">
 
@@ -1126,6 +1135,7 @@ img,svg,canvas{max-width:100%}
   <div class="connection-log-head"><b>🔌 Connection Log</b><div><span id="connectionLogStatus">Waiting for scanner…</span> <button class="connection-log-clear" id="clearConnectionLog">Clear</button></div></div>
   <div class="connection-log-body" id="connectionLogBody"><div class="connection-log-empty">No connection attempts yet.</div></div>
 </div>
+<script src="crypto-manager/manager.js"></script>
 <script>
 /* ================= CONFIG ================= */
 
@@ -1300,6 +1310,10 @@ async function dbLoadTrades(){
 }
 
 function dbTradeToUI(t){
+  const parsedNotes=(()=>{try{
+    const n=typeof t.notes==="string"?JSON.parse(t.notes||"{}"):(t.notes||{});
+    return n&&typeof n==="object"?n:{};
+  }catch(e){return {};}})();
   return {
     id:t.id,
     signalId:t.signal_id,
@@ -1312,12 +1326,13 @@ function dbTradeToUI(t){
     amt:Number(t.amount_inr)||0,
     lev:Number(t.leverage)||1,
     pnl:Number(t.pnl_inr)||0,
-    closed:["TP_HIT","SL_HIT","MANUAL_CLOSE","CANCELLED"].includes(t.status),
+    closed:["TP_HIT","SL_HIT","MANUAL_CLOSE","CANCELLED","KILL_SWITCH"].includes(t.status),
     status:
       t.status==="TP_HIT"?"tp":
       t.status==="SL_HIT"?"sl":
       t.status==="MANUAL_CLOSE"?"manual":
       t.status==="CANCELLED"?"cancelled":
+      t.status==="KILL_SWITCH"?"kill_switch":
       "running",
     currentPrice:Number(t.current_price)||Number(t.entry_price),
     closePrice:t.close_price==null?null:Number(t.close_price),
@@ -1327,7 +1342,14 @@ function dbTradeToUI(t){
     closedDate:t.closed_at?new Date(t.closed_at).toLocaleString():"",
     feeMode:(()=>{try{return t.notes?JSON.parse(t.notes).feeMode||"taker":"taker"}catch(e){return "taker"}})(),
     feeRate:(()=>{try{return Number(JSON.parse(t.notes||"{}").feeRate)||0.001}catch(e){return 0.001}})(),
-    notes:t.notes||""
+    notes:t.notes||"",
+    managerDecision:parsedNotes.managerLastAction||"NO_DECISION",
+    managerReason:parsedNotes.managerLastReason||"Waiting for first manager check",
+    managerConfidence:Number(parsedNotes.managerLastConfidence)||0,
+    managerR:Number(parsedNotes.managerLastR)||0,
+    managerPeakR:Number(parsedNotes.managerPeakR)||0,
+    managerLastCheckedAt:parsedNotes.managerLastCheckedAt||null,
+    managerVersion:parsedNotes.managerVersion||null
   };
 }
 
@@ -1511,7 +1533,15 @@ async function dbUpdateTrade(t){
     t.status==="sl"?"SL_HIT":
     t.status==="manual"?"MANUAL_CLOSE":
     t.status==="cancelled"?"CANCELLED":
+    t.status==="kill_switch"?"KILL_SWITCH":
     "RUNNING";
+
+  // Preserve the complete trade notes. Trailing-stop state, manager metadata,
+  // and fee settings must survive every Supabase update/reload.
+  const notes=writeTradeNotes(t,{
+    feeMode:t.feeMode||state.binanceFeeMode||"taker",
+    feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")
+  });
 
   const row={
     symbol:baseSymbolFromPair(t.sym),
@@ -1526,7 +1556,7 @@ async function dbUpdateTrade(t){
     current_price:Number(t.currentPrice)||Number(t.entry),
     close_price:t.closePrice==null?null:Number(t.closePrice),
     pnl_inr:Number(t.pnl)||0,
-    notes:JSON.stringify({feeMode:t.feeMode||state.binanceFeeMode||"taker",feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")})
+    notes:JSON.stringify(notes)
   };
 
   row.closed_at=t.closed
@@ -1545,6 +1575,7 @@ async function dbUpdateTrade(t){
   if(result.error){
     console.warn("Trade database update failed:",result.error.message);
   }
+  return result;
 }
 
 async function dbDeleteTrade(t){
@@ -1652,6 +1683,7 @@ const V5_MAX_STOP_PCT = 0.04;
    - daily loss lock at 2% of net capital
 */
 const V6_MIN_SCORE = 75;
+const V6_ALLOW_SHORTS = true; // V6 supports both LONG and SHORT setups.
 const V6_MIN_RSI = 50;
 const V6_MAX_RSI = 74;
 const V6_MIN_VOLUME = 1.10;
@@ -2617,8 +2649,10 @@ function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null,htfCa
   };
 
   const candidates=[];
+  // V6 production contract: LONG + SHORT. The direction selector controls which
+  // side is evaluated; BOTH evaluates both and keeps the stronger valid setup.
   if(direction!=="SHORT"){const x=evaluate("LONG");if(x)candidates.push(x);}
-  if(direction!=="LONG"){const x=evaluate("SHORT");if(x)candidates.push(x);}
+  if(V6_ALLOW_SHORTS && direction!=="LONG"){const x=evaluate("SHORT");if(x)candidates.push(x);}
   candidates.sort((a,b)=>(b.score||0)-(a.score||0));
   return candidates[0]||null;
 }
@@ -3591,6 +3625,50 @@ function manageProfitProtection(t,cp){
   return {changed:false,active:true,stop:oldStop,progressPct:targetProgressPct,protectedPct:nextProtectedPct};
 }
 
+function managerMarketContext(t,cp){
+  const dir=String(t.dir||"").toUpperCase();
+  const emaInvalidated=dir==="LONG"
+    ? Number(t.ema20)>0 && cp<Number(t.ema20)
+    : Number(t.ema20)>0 && cp>Number(t.ema20);
+  const momentumAgainst=t.managerMomentumAgainst===true;
+  const regime=t.managerRegime||"neutral";
+  return {
+    price:cp,
+    asOf:new Date().toISOString(),
+    emaInvalidated,
+    momentumAgainst,
+    volumeRatio:Number(t.managerVolumeRatio)||1,
+    regime
+  };
+}
+function runManagerShadow(t,cp){
+  if(!window.CryptoTradeManagerV1)return null;
+  const notes=readTradeNotes(t);
+  const peakR=Math.max(Number(notes.managerPeakR)||0,Number(t.entry)>0
+    ? (t.dir==="LONG"?(cp-t.entry):(t.entry-cp))/Math.max(Math.abs(t.entry-t.sl),0.00000001)
+    : 0);
+  const decision=window.CryptoTradeManagerV1.evaluate(
+    {...t,peakR},
+    managerMarketContext(t,cp)
+  );
+  writeTradeNotes(t,{
+    managerVersion:"shadow-v1",
+    managerMode:"shadow",
+    managerLastAction:decision.action,
+    managerLastReason:decision.reason,
+    managerLastConfidence:Number(decision.confidence)||0,
+    managerLastR:Number(decision.r)||0,
+    managerPeakR:peakR,
+    managerLastCheckedAt:new Date().toISOString()
+  });
+  t.managerDecision=decision.action;
+  t.managerReason=decision.reason;
+  t.managerConfidence=Number(decision.confidence)||0;
+  t.managerR=Number(decision.r)||0;
+  t.managerPeakR=peakR;
+  return decision;
+}
+
 async function updateLivePrices(){
   const openTrades=state.journal.filter(t=>!t.closed);
   const syms=[...new Set(openTrades.map(t=>t.sym))];
@@ -3607,6 +3685,10 @@ async function updateLivePrices(){
     const cp=state.livePrices[t.sym];
     if(!Number.isFinite(cp)) continue;
     t.currentPrice=cp;
+
+    // Manager V1 shadow mode: observe first, execute nothing.
+    // Its recommendation is persisted in trade notes for later analysis.
+    runManagerShadow(t,cp);
 
     // Profit protection: once price reaches 70% of the original TP distance,
     // lock 50% of that original target profit and then ratchet the stop only
@@ -4079,6 +4161,26 @@ function renderTradeCard(t, ri, archived=false){
 
       ${progressHtml}
 
+      ${!archived ? (() => {
+        const action=String(t.managerDecision||"NO_DECISION");
+        const labels={
+          HOLD:"🟢 HOLD — conditions normal",
+          RECOMMEND_TIGHTEN_STOP:"🟡 TIGHTEN STOP — deterioration detected",
+          RECOMMEND_EARLY_EXIT:"🔴 EARLY EXIT — losing + invalidation",
+          RECOMMEND_PROFIT_EXIT:"🟠 PROFIT EXIT — profit + deterioration",
+          STOP_REACHED:"🔴 STOP REACHED",
+          TARGET_REACHED:"🎯 TARGET REACHED",
+          NO_DECISION:"⚪ WAITING FOR MANAGER"
+        };
+        const cls=action.includes("EXIT")?"warn":action==="RECOMMEND_TIGHTEN_STOP"?"watch":action==="HOLD"?"hold":"idle";
+        return '<div class="manager-shadow-box '+cls+'">'+
+          '<div><span>🤖 MANAGER V1 · SHADOW</span><b>'+ (labels[action]||action) +'</b></div>'+
+          '<small>'+String(t.managerReason||"No decision yet").replaceAll("<","&lt;")+
+          ' · Confidence '+Number(t.managerConfidence||0).toFixed(0)+'%'+
+          ' · '+(Number.isFinite(Number(t.managerR))?Number(t.managerR).toFixed(2):"0.00")+'R'+
+          '</small></div>';
+      })() : ""}
+
       <div class="trade-footer">
         <span>${archived
           ? `🕐 Opened: ${t.date || "—"} · Closed: ${t.closedAt ? new Date(t.closedAt).toLocaleString() : (t.closedDate || "Not recorded")}`
@@ -4255,6 +4357,9 @@ async function saveTradeToWallet(trade,signal){
   const result=await dbSaveTrade(trade,signal);
   if(result.error){toast("⚠️ Could not save trade: "+result.error.message);return false;}
   const saved=dbTradeToUI(result.data);
+  // Keep the fee/trailing metadata that was written with the new trade.
+  saved.feeMode=trade.feeMode||state.binanceFeeMode||"taker";
+  saved.feeRate=Number(trade.feeRate)||binanceFeeRate(saved.feeMode);
   const reserve=await reserveWalletForTrade(saved.id,trade.amt);
   if(!reserve.ok){await dbDeleteTrade(saved);toast("⚠️ Wallet reservation failed: "+(reserve.error?.message||"unknown error"));return false;}
   state.journal.unshift(saved);
@@ -4303,10 +4408,20 @@ async function saveTrade(){
 
 async function quickClose(idx,result){
   const t=state.journal[idx]; if(!t||t.closed)return;
-  t.closed=true; t.status=result;
-  t.pnl=calcClosedPnL(t);
-  t.closePrice=state.livePrices[t.sym]||t.entry;
+  const exitPrice=Number(state.livePrices[t.sym]||t.currentPrice||t.entry);
+  if(!Number.isFinite(exitPrice)||exitPrice<=0){
+    toast("⚠️ Cannot close trade: valid live price is unavailable.");
+    return;
+  }
+  t.closed=true;
+  t.status=result;
+  // IMPORTANT: save the actual exit price BEFORE calculating P&L.
+  // Previously calcClosedPnL() ran first, causing manual/quick closes
+  // to calculate P&L from a missing close price and often display ₹0.
+  t.closePrice=exitPrice;
+  t.currentPrice=exitPrice;
   t.closedAt=new Date().toISOString();
+  t.pnl=calcClosedPnL(t);
 
   // V6: Track consecutive losses for cooldown
   if (V6_MODE) {
