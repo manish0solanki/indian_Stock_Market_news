@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-eases-to-6-day-low-as-dii-buying-extends-28-session-streak",
+    "title": "FII Selling Eases to 6-Day Low as DII Buying Extends 28-Session Streak",
+    "excerpt": "FII net selling moderated to ₹4,699.14 Cr, the lowest in six sessions, while DII net buying of ₹5,181.62 Cr lifted combined institutional flows to ₹482.48 Cr. The Nifty 50 rose...",
+    "category": "fiidii-flows",
+    "date": "2026-10-05",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "nykaa-stock-spotlight",
     "title": "Nykaa Surges 4.5% on Nearly 5x Volume, Within 3% of 52-Week High",
     "excerpt": "PRICE ACTION: The stock delivered its strongest single-day gain in recent sessions as volume exploded to nearly five times the daily average, indicating genuine institutional or...",
