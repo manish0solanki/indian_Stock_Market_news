@@ -1513,6 +1513,13 @@ async function dbUpdateTrade(t){
     t.status==="cancelled"?"CANCELLED":
     "RUNNING";
 
+  // Preserve the complete trade notes. Trailing-stop state, manager metadata,
+  // and fee settings must survive every Supabase update/reload.
+  const notes=writeTradeNotes(t,{
+    feeMode:t.feeMode||state.binanceFeeMode||"taker",
+    feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")
+  });
+
   const row={
     symbol:baseSymbolFromPair(t.sym),
     pair:t.sym,
@@ -1526,7 +1533,7 @@ async function dbUpdateTrade(t){
     current_price:Number(t.currentPrice)||Number(t.entry),
     close_price:t.closePrice==null?null:Number(t.closePrice),
     pnl_inr:Number(t.pnl)||0,
-    notes:JSON.stringify({feeMode:t.feeMode||state.binanceFeeMode||"taker",feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")})
+    notes:JSON.stringify(notes)
   };
 
   row.closed_at=t.closed
@@ -1545,6 +1552,7 @@ async function dbUpdateTrade(t){
   if(result.error){
     console.warn("Trade database update failed:",result.error.message);
   }
+  return result;
 }
 
 async function dbDeleteTrade(t){
@@ -4255,6 +4263,9 @@ async function saveTradeToWallet(trade,signal){
   const result=await dbSaveTrade(trade,signal);
   if(result.error){toast("⚠️ Could not save trade: "+result.error.message);return false;}
   const saved=dbTradeToUI(result.data);
+  // Keep the fee/trailing metadata that was written with the new trade.
+  saved.feeMode=trade.feeMode||state.binanceFeeMode||"taker";
+  saved.feeRate=Number(trade.feeRate)||binanceFeeRate(saved.feeMode);
   const reserve=await reserveWalletForTrade(saved.id,trade.amt);
   if(!reserve.ok){await dbDeleteTrade(saved);toast("⚠️ Wallet reservation failed: "+(reserve.error?.message||"unknown error"));return false;}
   state.journal.unshift(saved);
@@ -4303,10 +4314,20 @@ async function saveTrade(){
 
 async function quickClose(idx,result){
   const t=state.journal[idx]; if(!t||t.closed)return;
-  t.closed=true; t.status=result;
-  t.pnl=calcClosedPnL(t);
-  t.closePrice=state.livePrices[t.sym]||t.entry;
+  const exitPrice=Number(state.livePrices[t.sym]||t.currentPrice||t.entry);
+  if(!Number.isFinite(exitPrice)||exitPrice<=0){
+    toast("⚠️ Cannot close trade: valid live price is unavailable.");
+    return;
+  }
+  t.closed=true;
+  t.status=result;
+  // IMPORTANT: save the actual exit price BEFORE calculating P&L.
+  // Previously calcClosedPnL() ran first, causing manual/quick closes
+  // to calculate P&L from a missing close price and often display ₹0.
+  t.closePrice=exitPrice;
+  t.currentPrice=exitPrice;
   t.closedAt=new Date().toISOString();
+  t.pnl=calcClosedPnL(t);
 
   // V6: Track consecutive losses for cooldown
   if (V6_MODE) {
