@@ -175,9 +175,14 @@ function buildHoldings(){
   x.pnl=x.ltp?x.current-x.cost:0;
   x.pct=x.cost?x.pnl/x.cost*100:0;
   const prev=num(feed.previous_close);
-  const perShareChange=Number.isFinite(Number(feed.change))?Number(feed.change):(x.ltp&&prev?x.ltp-prev:NaN);
-  x.dayChange=Number.isFinite(perShareChange)&&x.ltp?x.qty*perShareChange:NaN;
-  x.dayPct=Number.isFinite(Number(feed.change_percent))?Number(feed.change_percent):(x.ltp&&prev?((x.ltp-prev)/prev*100):NaN);
+  // Calculate Day P&L from the actual latest price and previous close.
+  // The upstream change/change_percent fields can be stale around NSE
+  // session boundaries and holidays.
+  const perShareChange=(x.ltp&&prev)?(x.ltp-prev):NaN;
+  x.dayChange=Number.isFinite(perShareChange)?x.qty*perShareChange:NaN;
+  x.dayPct=Number.isFinite(perShareChange)&&prev
+   ?(perShareChange/prev)*100
+   :NaN;
   return x
  })
 }
