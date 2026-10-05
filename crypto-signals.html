@@ -1310,6 +1310,10 @@ async function dbLoadTrades(){
 }
 
 function dbTradeToUI(t){
+  const parsedNotes=(()=>{try{
+    const n=typeof t.notes==="string"?JSON.parse(t.notes||"{}"):(t.notes||{});
+    return n&&typeof n==="object"?n:{};
+  }catch(e){return {};}})();
   return {
     id:t.id,
     signalId:t.signal_id,
@@ -1338,7 +1342,14 @@ function dbTradeToUI(t){
     closedDate:t.closed_at?new Date(t.closed_at).toLocaleString():"",
     feeMode:(()=>{try{return t.notes?JSON.parse(t.notes).feeMode||"taker":"taker"}catch(e){return "taker"}})(),
     feeRate:(()=>{try{return Number(JSON.parse(t.notes||"{}").feeRate)||0.001}catch(e){return 0.001}})(),
-    notes:t.notes||""
+    notes:t.notes||"",
+    managerDecision:parsedNotes.managerLastAction||"NO_DECISION",
+    managerReason:parsedNotes.managerLastReason||"Waiting for first manager check",
+    managerConfidence:Number(parsedNotes.managerLastConfidence)||0,
+    managerR:Number(parsedNotes.managerLastR)||0,
+    managerPeakR:Number(parsedNotes.managerPeakR)||0,
+    managerLastCheckedAt:parsedNotes.managerLastCheckedAt||null,
+    managerVersion:parsedNotes.managerVersion||null
   };
 }
 
