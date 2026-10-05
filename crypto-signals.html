@@ -3546,7 +3546,7 @@ function isProfitableTrailingExit(t){
   const pnl=Number(t?.pnl_inr ?? t?.pnl);
   const entry=Number(t?.entry_price ?? t?.entry);
   const sl=Number(t?.stop_loss ?? t?.sl);
-  const dir=String(t?.direction ?? t?.dir||"").toUpperCase();
+  const dir=String(t?.direction ?? t?.dir ?? "").toUpperCase();
   // Historical rows can predate closeReason/trailingStopHit persistence.
   // A LONG SL above entry (or SHORT SL below entry) is a protected-profit
   // stop, not the original risk stop.
