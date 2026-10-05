@@ -100,74 +100,6 @@ async function refresh(){
 
 let priceRefreshTimer=null;
 
-/*
- * Day P&L guard:
- * The stock-data endpoint supplies the exchange-day change. That value must
- * not jump merely because the browser crosses 00:00 IST while the Indian
- * equity market is closed. We keep the last valid market-session value and
- * only allow a new Day P&L value once the next NSE session begins.
- */
-const DAY_PNL_CACHE_KEY='marketpulse_portfolio_day_pnl_v1';
-function istParts(){
- const p=new Intl.DateTimeFormat('en-IN',{
-  timeZone:'Asia/Kolkata',
-  weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',
-  hour:'2-digit',minute:'2-digit',hour12:false
- }).formatToParts(new Date());
- const o={};p.forEach(x=>o[x.type]=x.value);
- return {
-  year:Number(o.year),month:Number(o.month),day:Number(o.day),
-  hour:Number(o.hour),minute:Number(o.minute),weekday:o.weekday
- };
-}
-function isWeekday(p){return !['Sat','Sun'].includes(p.weekday)}
-function isNseSessionOpen(p){
- return isWeekday(p) && (p.hour>9 || (p.hour===9&&p.minute>=15)) &&
-        (p.hour<15 || (p.hour===15&&p.minute<=30));
-}
-function loadDayPnlCache(){
- try{return JSON.parse(localStorage.getItem(DAY_PNL_CACHE_KEY)||'{}')||{}}
- catch(e){return {}}
-}
-function saveDayPnlCache(cache){
- try{localStorage.setItem(DAY_PNL_CACHE_KEY,JSON.stringify(cache))}
- catch(e){}
-}
-function applyDayPnlGuard(data){
- const p=istParts(), open=isNseSessionOpen(p);
- const cache=loadDayPnlCache();
- const key=clean(data?.symbol||'');
- if(!key)return data;
- const change=Number(data?.change), pct=Number(data?.change_percent);
- if(!Number.isFinite(change))return data;
-
- /*
-  * During an NSE session the feed is authoritative. Save it so the same
-  * exchange-day value can survive midnight while the market is closed.
-  */
- if(open){
-  cache[key]={change,change_percent:Number.isFinite(pct)?pct:null,savedAt:Date.now()};
-  saveDayPnlCache(cache);
-  return data;
- }
-
- /*
-  * Outside the session, prefer the last value captured during the current
-  * exchange day. This prevents a calendar-date/UTC rollover in the upstream
-  * feed from changing Day P&L at midnight.
-  */
- const saved=cache[key];
- if(saved && Number.isFinite(Number(saved.change))){
-  return {
-   ...data,
-   change:Number(saved.change),
-   change_percent:Number.isFinite(Number(saved.change_percent))
-    ?Number(saved.change_percent):data.change_percent
-  };
- }
- return data;
-}
-
 async function refreshLivePrices(){
  if(!portfolio || !transactions.length)return;
  try{
@@ -210,14 +142,13 @@ async function loadPrices(){
    if(!r.ok)throw Error('HTTP '+r.status);
 
    const d=await r.json();
-   const guarded=applyDayPnlGuard({...d,symbol});
-   const price=Number(guarded?.price);
+   const price=Number(d?.price);
 
    if(!d?.success || !Number.isFinite(price) || price<=0){
     throw Error(d?.error||'Invalid stock price');
    }
 
-   return {symbol,data:guarded};
+   return {symbol,data:d};
   }catch(e){
    console.warn('Yahoo stock data unavailable for '+symbol,e);
    return null;
