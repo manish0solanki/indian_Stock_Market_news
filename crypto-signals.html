@@ -184,6 +184,7 @@ button.small{padding:4px 10px;font-size:11px} button.home-btn{border-color:var(-
 .status-running{color:var(--yellow);border-color:rgba(240,185,11,.35);background:rgba(240,185,11,.10)}
 .status-tp{color:var(--green);border-color:rgba(22,199,132,.35);background:rgba(22,199,132,.10)}
 .status-sl{color:var(--red);border-color:rgba(234,57,67,.35);background:rgba(234,57,67,.10)}
+.status-trailing{color:var(--green);border-color:rgba(22,199,132,.35);background:rgba(22,199,132,.10)}
 .status-manual{color:var(--muted);border-color:var(--border);background:var(--card2)}
 .trade-levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:8px}
 .trade-levels>div,.trade-money>div{
@@ -1349,7 +1350,9 @@ function dbTradeToUI(t){
     managerR:Number(parsedNotes.managerLastR)||0,
     managerPeakR:Number(parsedNotes.managerPeakR)||0,
     managerLastCheckedAt:parsedNotes.managerLastCheckedAt||null,
-    managerVersion:parsedNotes.managerVersion||null
+    managerVersion:parsedNotes.managerVersion||null,
+    closeReason:parsedNotes.closeReason||null,
+    trailingStopHit:parsedNotes.trailingStopHit===true
   };
 }
 
@@ -3737,14 +3740,19 @@ async function updateLivePrices(){
 
       // V6: Track consecutive losses for cooldown
       if (V6_MODE) {
-        if(!hitTP) registerV6PairLoss(t.sym);
-        updateConsecutiveLosses(hitTP ? 'win' : 'loss');
+        // A trailing stop can close a trade while it is still profitable.
+        // Do not classify every non-TP exit as a loss.
+        const netClosedPnl=Number(calcClosedPnL(t))||0;
+        if(netClosedPnl<0) registerV6PairLoss(t.sym);
+        updateConsecutiveLosses(netClosedPnl>0 ? 'win' : 'loss');
       }
 
       if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
       toast(hitTP
         ? "🎯 "+t.sym+" "+t.dir+" TP hit — paper trade closed automatically."
-        : "🛑 "+t.sym+" "+t.dir+" SL hit — paper trade closed automatically."
+        : t.trailingStopHit
+          ? "🛡 "+t.sym+" "+t.dir+" trailing stop hit — trade closed with "+(Number(t.pnl||0)>=0?"profit":"loss")+" ."
+          : "🛑 "+t.sym+" "+t.dir+" SL hit — paper trade closed automatically."
       );
     }
   }
@@ -4011,7 +4019,7 @@ function renderTradeListView(panel){
     }else{
       head.innerHTML=listHeader("symbolAZ","PAIR",sort)+listHeader("directionAZ","DIR",sort)+listHeader("entryHigh","ENTRY",sort)+listHeader("currentHigh","EXIT",sort)+listHeader("entryLow","SL",sort)+listHeader("capitalHigh","CAPITAL",sort)+listHeader("pnlHigh","FINAL P&L",sort)+listHeader("newest","CLOSED",sort)+'<th>ACTIONS</th>';
       body.innerHTML=rows.length?rows.map(t=>{
-        const i=state.journal.indexOf(t),p=Number(calcClosedPnL(t))||0,status=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL";
+        const i=state.journal.indexOf(t),p=Number(calcClosedPnL(t))||0,isTrailingExit=t.closeReason==="trailing_stop"||t.trailingStopHit===true,status=t.status==="tp"?"TP HIT":isTrailingExit?"TRAILING STOP":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL";
         return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(t.closePrice||t.currentPrice,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+status+'</td><td><button class="small" onclick="openEdit('+i+')">✏️</button> <button class="small danger" onclick="deleteTrade('+i+')">🗑️</button></td></tr>';
       }).join(""):'<tr><td colspan="9" class="empty">Archive is empty.</td></tr>';
       if(summary)summary.textContent=rows.length+" archived trade"+(rows.length===1?"":"s");
@@ -4103,8 +4111,9 @@ function renderTradeCard(t, ri, archived=false){
 
   if(t.closed){
     const pnl=calcClosedPnL(t), gross=Number(t.grossPnl)||0, fees=Number(t.totalFees)||0;
-    const statusText=t.status==="tp"?"TP HIT":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL CLOSE";
-    statusBadge=`<span class="trade-status ${t.status==="tp"?"status-tp":t.status==="sl"?"status-sl":"status-manual"}">${statusText}</span>`;
+    const isTrailingExit=t.closeReason==="trailing_stop" || t.trailingStopHit===true;
+    const statusText=t.status==="tp"?"TP HIT":isTrailingExit?"TRAILING STOP":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL CLOSE";
+    statusBadge=`<span class="trade-status ${t.status==="tp"?"status-tp":isTrailingExit?"status-trailing":t.status==="sl"?"status-sl":"status-manual"}">${statusText}</span>`;
     pnlHtml=`<div class="trade-pnl ${pnl>=0?"profit":"loss"}">${pnl>=0?"+":""}${fmtINR(pnl)}</div><div class="trade-live-price">Gross ${gross>=0?"+":""}${fmtINR(gross)} · Binance fees -${fmtINR(fees)}</div>`;
   }else{
     const live=calcLivePnL(t), rTxt=live.rMultiple>=0?`+${live.rMultiple.toFixed(1)}R`:`${live.rMultiple.toFixed(1)}R`;
