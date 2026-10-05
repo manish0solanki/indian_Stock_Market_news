@@ -1351,8 +1351,8 @@ function dbTradeToUI(t){
     managerPeakR:Number(parsedNotes.managerPeakR)||0,
     managerLastCheckedAt:parsedNotes.managerLastCheckedAt||null,
     managerVersion:parsedNotes.managerVersion||null,
-    closeReason:parsedNotes.closeReason||((String(t.status||"").toUpperCase()==="SL_HIT" && parsedNotes.profitTrailActivated===true && Number(t.pnl_inr)>0)?"trailing_stop":null),
-    trailingStopHit:parsedNotes.trailingStopHit===true || (String(t.status||"").toUpperCase()==="SL_HIT" && parsedNotes.profitTrailActivated===true && Number(t.pnl_inr)>0)
+    closeReason:isProfitableTrailingExit(t)?"trailing_stop":(parsedNotes.closeReason||null),
+    trailingStopHit:parsedNotes.trailingStopHit===true || isProfitableTrailingExit(t)
   };
 }
 
@@ -3537,6 +3537,23 @@ function writeTradeNotes(t,patch){
   return notes;
 }
 
+function isProfitableTrailingExit(t){
+  const notes=readTradeNotes(t);
+  if(t?.closeReason==="trailing_stop" || t?.trailingStopHit===true) return true;
+  if(notes.profitTrailActivated===true) return true;
+  const status=String(t?.status||"").toUpperCase();
+  if(status!=="SL_HIT" && status!=="SL") return false;
+  const pnl=Number(t?.pnl_inr ?? t?.pnl);
+  const entry=Number(t?.entry_price ?? t?.entry);
+  const sl=Number(t?.stop_loss ?? t?.sl);
+  const dir=String(t?.direction ?? t?.dir||"").toUpperCase();
+  // Historical rows can predate closeReason/trailingStopHit persistence.
+  // A LONG SL above entry (or SHORT SL below entry) is a protected-profit
+  // stop, not the original risk stop.
+  return Number.isFinite(pnl) && pnl>0 && Number.isFinite(entry) && Number.isFinite(sl) &&
+    ((dir==="LONG" && sl>entry) || (dir==="SHORT" && sl<entry));
+}
+
 function manageProfitProtection(t,cp){
   const entry=Number(t.entry),tp=Number(t.tp);
   const dir=String(t.dir||"").toUpperCase();
@@ -4021,7 +4038,7 @@ function renderTradeListView(panel){
     }else{
       head.innerHTML=listHeader("symbolAZ","PAIR",sort)+listHeader("directionAZ","DIR",sort)+listHeader("entryHigh","ENTRY",sort)+listHeader("currentHigh","EXIT",sort)+listHeader("entryLow","SL",sort)+listHeader("capitalHigh","CAPITAL",sort)+listHeader("pnlHigh","FINAL P&L",sort)+listHeader("newest","CLOSED",sort)+'<th>ACTIONS</th>';
       body.innerHTML=rows.length?rows.map(t=>{
-        const i=state.journal.indexOf(t),p=Number(calcClosedPnL(t))||0,isTrailingExit=t.closeReason==="trailing_stop"||t.trailingStopHit===true,status=t.status==="tp"?"TP HIT":isTrailingExit?"TRAILING STOP":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL";
+        const i=state.journal.indexOf(t),p=Number(calcClosedPnL(t))||0,isTrailingExit=isProfitableTrailingExit(t),status=t.status==="tp"?"TP HIT":isTrailingExit?"TRAILING STOP":t.status==="sl"?"SL HIT":t.status==="cancelled"?"CANCELLED":"MANUAL";
         return '<tr><td><div class="list-pair">'+escapeHtml(t.sym)+'</div><div class="list-muted">'+escapeHtml(t.quote||state.quote)+'</div></td><td class="'+(t.dir==="SHORT"?"list-short":"list-long")+'">'+t.dir+'</td><td>'+fmtPrice(t.entry,t.quote)+'</td><td>'+fmtPrice(t.closePrice||t.currentPrice,t.quote)+'</td><td style="color:var(--red)">'+fmtPrice(t.sl,t.quote)+'</td><td>₹'+Number(t.amt||0).toLocaleString("en-IN")+'</td><td class="'+(p>=0?"list-profit":"list-loss")+'">'+(p>=0?"+":"")+fmtINR(p)+'</td><td>'+status+'</td><td><button class="small" onclick="openEdit('+i+')">✏️</button> <button class="small danger" onclick="deleteTrade('+i+')">🗑️</button></td></tr>';
       }).join(""):'<tr><td colspan="9" class="empty">Archive is empty.</td></tr>';
       if(summary)summary.textContent=rows.length+" archived trade"+(rows.length===1?"":"s");
@@ -4749,7 +4766,7 @@ function renderTradeLedger(from,to){
   const trades=state.journal.filter(t=>{const o=t.createdAt||t.created_at||t.date,cl=t.closedAt||t.closed_at||t.closeDate,od=o?new Date(o):null,cd=cl?new Date(cl):null;return(od&&!Number.isNaN(od.getTime())&&od>=start&&od<=end)||(cd&&!Number.isNaN(cd.getTime())&&cd>=start&&cd<=end);}).map(t=>{
     const closed=!!t.closed,openDate=t.createdAt||t.created_at||t.date||null,closeDate=t.closedAt||t.closed_at||t.closeDate||null,live=closed?null:calcLivePnL(t),capital=getTradeWalletCapital(t);
     const netPnl=closed?Number(calcClosedPnL(t)||0):Number(live?.pnl||0);
-    const trailingExit=closed && (t.closeReason==="trailing_stop" || t.trailingStopHit===true || (String(t.status||"").toUpperCase()==="SL_HIT" && readTradeNotes(t).profitTrailActivated===true && netPnl>0));
+    const trailingExit=closed && isProfitableTrailingExit({...t,pnl:netPnl});
     return {t,openDate,closeDate,pair:t.sym||t.pair||"—",dir:t.dir||t.direction||"—",entry:Number(t.entry)||Number(t.entry_price)||0,current:closed?Number(t.closePrice||t.close_price||t.entry):Number(state.livePrices[t.sym]||t.currentPrice||t.current_price||t.entry),sl:Number(t.sl||t.stop_loss)||0,tp:Number(t.tp||t.take_profit)||0,gross:closed?Number(t.grossPnl||0):Number(live?.grossPnl||0),fees:closed?Number(t.totalFees||0):Number(live?.totalFees||0),pnl:netPnl,status:closed?(trailingExit?"TRAILING STOP":String(t.status||"CLOSED").toUpperCase()):"OPEN",capitalBefore:capital.capitalBefore,capitalAfter:capital.capitalAfter};
   });
   if(!trades.length){root.innerHTML='<div class="report-table-wrap"><div class="empty"><b>📋 Trade-by-Trade Report</b><br><span>No trades opened or closed in the selected date range.</span></div></div>';return;}
