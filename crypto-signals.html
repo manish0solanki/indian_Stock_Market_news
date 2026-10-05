@@ -1312,12 +1312,13 @@ function dbTradeToUI(t){
     amt:Number(t.amount_inr)||0,
     lev:Number(t.leverage)||1,
     pnl:Number(t.pnl_inr)||0,
-    closed:["TP_HIT","SL_HIT","MANUAL_CLOSE","CANCELLED"].includes(t.status),
+    closed:["TP_HIT","SL_HIT","MANUAL_CLOSE","CANCELLED","KILL_SWITCH"].includes(t.status),
     status:
       t.status==="TP_HIT"?"tp":
       t.status==="SL_HIT"?"sl":
       t.status==="MANUAL_CLOSE"?"manual":
       t.status==="CANCELLED"?"cancelled":
+      t.status==="KILL_SWITCH"?"kill_switch":
       "running",
     currentPrice:Number(t.current_price)||Number(t.entry_price),
     closePrice:t.close_price==null?null:Number(t.close_price),
@@ -1511,6 +1512,7 @@ async function dbUpdateTrade(t){
     t.status==="sl"?"SL_HIT":
     t.status==="manual"?"MANUAL_CLOSE":
     t.status==="cancelled"?"CANCELLED":
+    t.status==="kill_switch"?"KILL_SWITCH":
     "RUNNING";
 
   // Preserve the complete trade notes. Trailing-stop state, manager metadata,
@@ -1660,6 +1662,7 @@ const V5_MAX_STOP_PCT = 0.04;
    - daily loss lock at 2% of net capital
 */
 const V6_MIN_SCORE = 75;
+const V6_ALLOW_SHORTS = false; // V6 is LONG-only until SHORTs are separately validated.
 const V6_MIN_RSI = 50;
 const V6_MAX_RSI = 74;
 const V6_MIN_VOLUME = 1.10;
@@ -2625,8 +2628,10 @@ function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null,htfCa
   };
 
   const candidates=[];
+  // V6 production contract: LONG only. The direction selector remains available
+  // for the scanner UI, but V6 will not silently create SHORT setups.
   if(direction!=="SHORT"){const x=evaluate("LONG");if(x)candidates.push(x);}
-  if(direction!=="LONG"){const x=evaluate("SHORT");if(x)candidates.push(x);}
+  if(V6_ALLOW_SHORTS && direction!=="LONG"){const x=evaluate("SHORT");if(x)candidates.push(x);}
   candidates.sort((a,b)=>(b.score||0)-(a.score||0));
   return candidates[0]||null;
 }
