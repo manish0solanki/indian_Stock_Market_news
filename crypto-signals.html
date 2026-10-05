@@ -1662,7 +1662,7 @@ const V5_MAX_STOP_PCT = 0.04;
    - daily loss lock at 2% of net capital
 */
 const V6_MIN_SCORE = 75;
-const V6_ALLOW_SHORTS = false; // V6 is LONG-only until SHORTs are separately validated.
+const V6_ALLOW_SHORTS = true; // V6 supports both LONG and SHORT setups.
 const V6_MIN_RSI = 50;
 const V6_MAX_RSI = 74;
 const V6_MIN_VOLUME = 1.10;
@@ -2628,8 +2628,8 @@ function analyzeV6(candles,symbol,ticker,rrCfgOverride=null,btcRegime=null,htfCa
   };
 
   const candidates=[];
-  // V6 production contract: LONG only. The direction selector remains available
-  // for the scanner UI, but V6 will not silently create SHORT setups.
+  // V6 production contract: LONG + SHORT. The direction selector controls which
+  // side is evaluated; BOTH evaluates both and keeps the stronger valid setup.
   if(direction!=="SHORT"){const x=evaluate("LONG");if(x)candidates.push(x);}
   if(V6_ALLOW_SHORTS && direction!=="LONG"){const x=evaluate("SHORT");if(x)candidates.push(x);}
   candidates.sort((a,b)=>(b.score||0)-(a.score||0));
