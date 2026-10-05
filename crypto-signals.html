@@ -779,6 +779,15 @@ img,svg,canvas{max-width:100%}
   .trailing-stop-note{align-items:flex-start;flex-direction:column;gap:3px}
   .trailing-stop-note b{font-size:10px;text-align:left}
 }
+.manager-shadow-box{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+.manager-shadow-box>div{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11px}
+.manager-shadow-box>div span{opacity:.75;font-weight:700}
+.manager-shadow-box>div b{font-size:12px}
+.manager-shadow-box small{display:block;margin-top:5px;opacity:.7;font-size:10px}
+.manager-shadow-box.watch{border-color:#d9a441}
+.manager-shadow-box.warn{border-color:#d95d5d}
+.manager-shadow-box.hold{border-color:#4aa66a}
+.manager-shadow-box.idle{opacity:.8}
 </style>
 <base target="_blank">
 
@@ -4140,6 +4149,26 @@ function renderTradeCard(t, ri, archived=false){
       </div>
 
       ${progressHtml}
+
+      ${!archived ? (() => {
+        const action=String(t.managerDecision||"NO_DECISION");
+        const labels={
+          HOLD:"🟢 HOLD — conditions normal",
+          RECOMMEND_TIGHTEN_STOP:"🟡 TIGHTEN STOP — deterioration detected",
+          RECOMMEND_EARLY_EXIT:"🔴 EARLY EXIT — losing + invalidation",
+          RECOMMEND_PROFIT_EXIT:"🟠 PROFIT EXIT — profit + deterioration",
+          STOP_REACHED:"🔴 STOP REACHED",
+          TARGET_REACHED:"🎯 TARGET REACHED",
+          NO_DECISION:"⚪ WAITING FOR MANAGER"
+        };
+        const cls=action.includes("EXIT")?"warn":action==="RECOMMEND_TIGHTEN_STOP"?"watch":action==="HOLD"?"hold":"idle";
+        return '<div class="manager-shadow-box '+cls+'">'+
+          '<div><span>🤖 MANAGER V1 · SHADOW</span><b>'+ (labels[action]||action) +'</b></div>'+
+          '<small>'+String(t.managerReason||"No decision yet").replaceAll("<","&lt;")+
+          ' · Confidence '+Number(t.managerConfidence||0).toFixed(0)+'%'+
+          ' · '+(Number.isFinite(Number(t.managerR))?Number(t.managerR).toFixed(2):"0.00")+'R'+
+          '</small></div>';
+      })() : ""}
 
       <div class="trade-footer">
         <span>${archived
