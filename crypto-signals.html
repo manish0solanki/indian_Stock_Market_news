@@ -1351,8 +1351,8 @@ function dbTradeToUI(t){
     managerPeakR:Number(parsedNotes.managerPeakR)||0,
     managerLastCheckedAt:parsedNotes.managerLastCheckedAt||null,
     managerVersion:parsedNotes.managerVersion||null,
-    closeReason:parsedNotes.closeReason||null,
-    trailingStopHit:parsedNotes.trailingStopHit===true
+    closeReason:parsedNotes.closeReason||((String(t.status||"").toUpperCase()==="SL_HIT" && parsedNotes.profitTrailActivated===true && Number(t.pnl_inr)>0)?"trailing_stop":null),
+    trailingStopHit:parsedNotes.trailingStopHit===true || (String(t.status||"").toUpperCase()==="SL_HIT" && parsedNotes.profitTrailActivated===true && Number(t.pnl_inr)>0)
   };
 }
 
@@ -4748,7 +4748,9 @@ function renderTradeLedger(from,to){
   const start=new Date(from+"T00:00:00"),end=new Date(to+"T23:59:59.999");
   const trades=state.journal.filter(t=>{const o=t.createdAt||t.created_at||t.date,cl=t.closedAt||t.closed_at||t.closeDate,od=o?new Date(o):null,cd=cl?new Date(cl):null;return(od&&!Number.isNaN(od.getTime())&&od>=start&&od<=end)||(cd&&!Number.isNaN(cd.getTime())&&cd>=start&&cd<=end);}).map(t=>{
     const closed=!!t.closed,openDate=t.createdAt||t.created_at||t.date||null,closeDate=t.closedAt||t.closed_at||t.closeDate||null,live=closed?null:calcLivePnL(t),capital=getTradeWalletCapital(t);
-    return {t,openDate,closeDate,pair:t.sym||t.pair||"—",dir:t.dir||t.direction||"—",entry:Number(t.entry)||Number(t.entry_price)||0,current:closed?Number(t.closePrice||t.close_price||t.entry):Number(state.livePrices[t.sym]||t.currentPrice||t.current_price||t.entry),sl:Number(t.sl||t.stop_loss)||0,tp:Number(t.tp||t.take_profit)||0,gross:closed?Number(t.grossPnl||0):Number(live?.grossPnl||0),fees:closed?Number(t.totalFees||0):Number(live?.totalFees||0),pnl:closed?Number(calcClosedPnL(t)||0):Number(live?.pnl||0),status:closed?(String(t.status||"CLOSED").toUpperCase()):"OPEN",capitalBefore:capital.capitalBefore,capitalAfter:capital.capitalAfter};
+    const netPnl=closed?Number(calcClosedPnL(t)||0):Number(live?.pnl||0);
+    const trailingExit=closed && (t.closeReason==="trailing_stop" || t.trailingStopHit===true || (String(t.status||"").toUpperCase()==="SL_HIT" && readTradeNotes(t).profitTrailActivated===true && netPnl>0));
+    return {t,openDate,closeDate,pair:t.sym||t.pair||"—",dir:t.dir||t.direction||"—",entry:Number(t.entry)||Number(t.entry_price)||0,current:closed?Number(t.closePrice||t.close_price||t.entry):Number(state.livePrices[t.sym]||t.currentPrice||t.current_price||t.entry),sl:Number(t.sl||t.stop_loss)||0,tp:Number(t.tp||t.take_profit)||0,gross:closed?Number(t.grossPnl||0):Number(live?.grossPnl||0),fees:closed?Number(t.totalFees||0):Number(live?.totalFees||0),pnl:netPnl,status:closed?(trailingExit?"TRAILING STOP":String(t.status||"CLOSED").toUpperCase()):"OPEN",capitalBefore:capital.capitalBefore,capitalAfter:capital.capitalAfter};
   });
   if(!trades.length){root.innerHTML='<div class="report-table-wrap"><div class="empty"><b>📋 Trade-by-Trade Report</b><br><span>No trades opened or closed in the selected date range.</span></div></div>';return;}
   const key=tradeLedgerSort.key,dir=tradeLedgerSort.dir==="asc"?1:-1;
