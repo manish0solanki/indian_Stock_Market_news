@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -4288,9 +4285,7 @@ async function loadWatchlist() {
     const details = await Promise.all(rows.map(async row => {
       const symbol = String(row.symbol || '').trim().toUpperCase();
       try {
-        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(symbol));
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return { symbol, stock: await res.json() };
+        return { symbol, stock: await fetchStockDetailFromSupabase(symbol) };
       } catch (error) {
         console.error('[Watchlist] Could not load', symbol, error);
         return { symbol, stock: null };
@@ -4431,9 +4426,7 @@ async function loadAlertStockPrice(symbol) {
   alertSelectedPrice.className = 'alert-selected-price';
 
   try {
-    const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const stock = await res.json();
+    const stock = await fetchStockDetailFromSupabase(cleanSymbol);
     const price = Number(stock?.price);
 
     if (!Number.isFinite(price)) {
@@ -4569,8 +4562,7 @@ async function loadAlerts() {
       const symbol = String(row.symbol || '').trim().toUpperCase();
       let stock = null;
       try {
-        const res = await fetch(STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(symbol));
-        if (res.ok) stock = await res.json();
+        stock = await fetchStockDetailFromSupabase(symbol);
       } catch (e) { console.error('[Alerts] Price fetch failed', symbol, e); }
       return { row, stock };
     }));
@@ -6801,12 +6793,7 @@ async function openStockDetailFromNews(symbol, companyName) {
   stockDetailCard.style.display = 'none';
 
   try {
-    const res = await fetch(
-      STOCK_DETAIL_URL() + '?symbol=' + encodeURIComponent(cleanSymbol)
-    );
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-
-    const data = await res.json();
+    const data = await fetchStockDetailFromSupabase(cleanSymbol);
     renderStockDetail(data);
     sdHint.textContent = '';
 
