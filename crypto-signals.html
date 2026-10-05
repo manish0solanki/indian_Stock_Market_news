@@ -1126,6 +1126,7 @@ img,svg,canvas{max-width:100%}
   <div class="connection-log-head"><b>🔌 Connection Log</b><div><span id="connectionLogStatus">Waiting for scanner…</span> <button class="connection-log-clear" id="clearConnectionLog">Clear</button></div></div>
   <div class="connection-log-body" id="connectionLogBody"><div class="connection-log-empty">No connection attempts yet.</div></div>
 </div>
+<script src="crypto-manager/manager.js"></script>
 <script>
 /* ================= CONFIG ================= */
 
@@ -3604,6 +3605,50 @@ function manageProfitProtection(t,cp){
   return {changed:false,active:true,stop:oldStop,progressPct:targetProgressPct,protectedPct:nextProtectedPct};
 }
 
+function managerMarketContext(t,cp){
+  const dir=String(t.dir||"").toUpperCase();
+  const emaInvalidated=dir==="LONG"
+    ? Number(t.ema20)>0 && cp<Number(t.ema20)
+    : Number(t.ema20)>0 && cp>Number(t.ema20);
+  const momentumAgainst=t.managerMomentumAgainst===true;
+  const regime=t.managerRegime||"neutral";
+  return {
+    price:cp,
+    asOf:new Date().toISOString(),
+    emaInvalidated,
+    momentumAgainst,
+    volumeRatio:Number(t.managerVolumeRatio)||1,
+    regime
+  };
+}
+function runManagerShadow(t,cp){
+  if(!window.CryptoTradeManagerV1)return null;
+  const notes=readTradeNotes(t);
+  const peakR=Math.max(Number(notes.managerPeakR)||0,Number(t.entry)>0
+    ? (t.dir==="LONG"?(cp-t.entry):(t.entry-cp))/Math.max(Math.abs(t.entry-t.sl),0.00000001)
+    : 0);
+  const decision=window.CryptoTradeManagerV1.evaluate(
+    {...t,peakR},
+    managerMarketContext(t,cp)
+  );
+  writeTradeNotes(t,{
+    managerVersion:"shadow-v1",
+    managerMode:"shadow",
+    managerLastAction:decision.action,
+    managerLastReason:decision.reason,
+    managerLastConfidence:Number(decision.confidence)||0,
+    managerLastR:Number(decision.r)||0,
+    managerPeakR:peakR,
+    managerLastCheckedAt:new Date().toISOString()
+  });
+  t.managerDecision=decision.action;
+  t.managerReason=decision.reason;
+  t.managerConfidence=Number(decision.confidence)||0;
+  t.managerR=Number(decision.r)||0;
+  t.managerPeakR=peakR;
+  return decision;
+}
+
 async function updateLivePrices(){
   const openTrades=state.journal.filter(t=>!t.closed);
   const syms=[...new Set(openTrades.map(t=>t.sym))];
@@ -3620,6 +3665,10 @@ async function updateLivePrices(){
     const cp=state.livePrices[t.sym];
     if(!Number.isFinite(cp)) continue;
     t.currentPrice=cp;
+
+    // Manager V1 shadow mode: observe first, execute nothing.
+    // Its recommendation is persisted in trade notes for later analysis.
+    runManagerShadow(t,cp);
 
     // Profit protection: once price reaches 70% of the original TP distance,
     // lock 50% of that original target profit and then ratchet the stop only
