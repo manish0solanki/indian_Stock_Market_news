@@ -9000,7 +9000,7 @@ async function init() {
 }
 
 init();
-setInterval(loadNews, REFRESH_MS * 5); // News refresh: every 5 minutes
+setInterval(loadNews, 120000); // News refresh: every 2 minutes
 
 // Mobile/tablet browsers pause timers in background tabs. Refresh as soon as
 // the tab is visible again (or the network returns) if the data is stale.
