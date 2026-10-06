@@ -4056,7 +4056,11 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    // Never serve cached REST responses: news and other live data must always be fresh.
+    global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) }
+  }
 );
 
 /* ─── Authentication UI ─── */
@@ -6838,6 +6842,7 @@ function toggleNewsGroup(btn) {
   }
 }
 
+let lastNewsLoadAt = 0;
 async function loadNews() {
   try {
     const { data, error } = await supabaseClient
@@ -6848,6 +6853,7 @@ async function loadNews() {
       .order('created_at', { ascending: false });
     if (error) throw error;
     allNewsItems = Array.isArray(data) ? data : [];
+    lastNewsLoadAt = Date.now();
     updateStats(allNewsItems);
     renderNews();
     lastUpdatedEl.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -8994,7 +9000,17 @@ async function init() {
 }
 
 init();
-setInterval(loadNews, 300000); // News refresh: every 5 minutes
+setInterval(loadNews, REFRESH_MS * 5); // News refresh: every 5 minutes
+
+// Mobile/tablet browsers pause timers in background tabs. Refresh as soon as
+// the tab is visible again (or the network returns) if the data is stale.
+function refreshIfStale() {
+  if (document.hidden) return;
+  if (Date.now() - lastNewsLoadAt > 60000) loadNews();
+}
+document.addEventListener('visibilitychange', refreshIfStale);
+window.addEventListener('focus', refreshIfStale);
+window.addEventListener('online', refreshIfStale);
 setInterval(loadPrices, REFRESH_MS);
 setInterval(loadIndices, REFRESH_MS);
 setInterval(loadGlobalHeadlines, REFRESH_MS * 5);
