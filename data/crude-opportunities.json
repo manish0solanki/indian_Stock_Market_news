@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-06T02:01:04.655Z",
+  "generated_at": "2026-10-06T02:31:07.895Z",
   "feed": {
     "name": "MarketPulse Crude Opportunities",
     "version": "1.0",
@@ -70,7 +70,7 @@
       "trigger_data_quality": "NORMAL",
       "opportunity_quality": "NORMAL",
       "quality_flags": [],
-      "generated_at": "2026-10-06T02:01:04.655Z",
+      "generated_at": "2026-10-06T02:31:07.895Z",
       "scanner_version": "1.0",
       "signal_engine_version": "1.1",
       "news_engine_version": "1.1",
@@ -133,7 +133,7 @@
       "trigger_data_quality": "NORMAL",
       "opportunity_quality": "NORMAL",
       "quality_flags": [],
-      "generated_at": "2026-10-06T02:01:04.655Z",
+      "generated_at": "2026-10-06T02:31:07.895Z",
       "scanner_version": "1.0",
       "signal_engine_version": "1.1",
       "news_engine_version": "1.1",
