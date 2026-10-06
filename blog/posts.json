@@ -1,5 +1,25 @@
 [
   {
+    "slug": "kotakbank-stock-spotlight",
+    "title": "Kotak Bank Surges 3.8% on 2.3x Volume, Within 5% of 52-Week High",
+    "excerpt": "PRICE ACTION: Kotak Mahindra Bank rallied sharply with volume more than doubling its average, indicating genuine buying interest rather than thin-market drift. The stock is now...",
+    "category": "stock-spotlight",
+    "date": "2026-10-06",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "KOTAKBANK",
+      "KOTAK MAHINDRA BANK LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-fmcg-gains-1-4-percent-as-large-caps-lead-broad-advance",
     "title": "Nifty FMCG Gains 1.4% as Large Caps Lead Broad Advance",
     "excerpt": "Nifty FMCG rose 1.4% (625.7 points) to 45,205.35, with 72 of 97 stocks advancing against 24 decliners. Large caps outperformed, with the top 10 by market capitalization averaging 2.05% versus 1.23% for smaller stocks.",
@@ -129,26 +149,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "kotakbank-stock-spotlight",
-    "title": "Kotak Mahindra Bank Flat on 4.6x Volume: Buyers Absorb Supply Near 52-Week High",
-    "excerpt": "PRICE ACTION: The stock closed unchanged at ₹418.35 despite volume surging to 4.65x the daily average, suggesting intense two-way activity where buyers fully absorbed selling pr...",
-    "category": "stock-spotlight",
-    "date": "2026-10-02",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "KOTAKBANK",
-      "KOTAK MAHINDRA BANK LTD"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
