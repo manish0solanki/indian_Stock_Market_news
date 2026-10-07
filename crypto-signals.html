@@ -1584,8 +1584,11 @@ async function dbUpdateTrade(t){
     ? (t.closedAt||new Date().toISOString())
     : null;
 
+  // A still-open trade may only update a row that is STILL running. If the server
+  // monitor already closed it while this page was away, never "reopen" it.
+  const guardOpen=t.closed?"":"&status=eq.RUNNING&closed_at=is.null";
   const result=await dbRequest(
-    "crypto_trades?id=eq."+encodeURIComponent(t.id),
+    "crypto_trades?id=eq."+encodeURIComponent(t.id)+guardOpen,
     {
       method:"PATCH",
       headers:{"Prefer":"return=minimal"},
