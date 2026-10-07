@@ -1,5 +1,25 @@
 [
   {
+    "slug": "kotakbank-stock-spotlight",
+    "title": "Kotak Mahindra Bank Surges 1.9% on Near-Double Volume, Nears 52-Week High",
+    "excerpt": "PRICE ACTION: Kotak Mahindra Bank closed at ₹440, gaining 1.88% with volume nearly double its average, indicating genuine institutional participation rather than thin-air specul...",
+    "category": "stock-spotlight",
+    "date": "2026-10-07",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "KOTAKBANK",
+      "KOTAK MAHINDRA BANK LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-metal-falls-2-33-percent-as-large-caps-drag-sector-lower",
     "title": "Nifty Metal Falls 2.33% as Large Caps Drag Sector Lower",
     "excerpt": "Nifty Metal declined 2.33% (293.05 points) to 12,306.70. Weakness was concentrated in large caps, with the top 10 companies by market capitalization averaging -1.95% while smaller stocks averaged 0%. The market-cap-weighted stock-universe change was -1.38%, and the median stock change was -0.43%. Breadth was negative, with 158 of 271 stocks declining and 111 advancing.",
@@ -53,26 +73,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "kotakbank-stock-spotlight",
-    "title": "Kotak Bank Surges 3.8% on 2.3x Volume, Within 5% of 52-Week High",
-    "excerpt": "PRICE ACTION: Kotak Mahindra Bank rallied sharply with volume more than doubling its average, indicating genuine buying interest rather than thin-market drift. The stock is now...",
-    "category": "stock-spotlight",
-    "date": "2026-10-06",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "KOTAKBANK",
-      "KOTAK MAHINDRA BANK LTD"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
