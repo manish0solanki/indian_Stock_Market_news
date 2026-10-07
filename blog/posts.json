@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-intensifies-to-6121-cr-as-nifty-slips-076",
+    "title": "FII Selling Intensifies to ₹6,121 Cr as Nifty Slips 0.76%",
+    "excerpt": "FIIs sold ₹6,121 Cr today, more than double their previous session outflow, while DIIs bought ₹4,597 Cr. The Nifty 50 fell 173 points to 22,603 despite DII support.",
+    "category": "fiidii-flows",
+    "date": "2026-10-07",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "kotakbank-stock-spotlight",
     "title": "Kotak Mahindra Bank Surges 1.9% on Near-Double Volume, Nears 52-Week High",
     "excerpt": "PRICE ACTION: Kotak Mahindra Bank closed at ₹440, gaining 1.88% with volume nearly double its average, indicating genuine institutional participation rather than thin-air specul...",
