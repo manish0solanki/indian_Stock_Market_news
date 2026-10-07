@@ -1017,6 +1017,22 @@ img,svg,canvas{max-width:100%}
     <option value="1">1x</option><option value="2">2x</option>
     <option value="3">3x</option><option value="5" selected>5x</option>
   </select>
+  <div class="settings-info" style="margin-top:14px">🛡 <b>Trade guards</b> — rules applied to every Auto Paper Trade. They exist to stop the loss patterns found in the trade history (many correlated trades at once, short stops that fees eat up, shorts with a very low win rate, stale entries).</div>
+  <label>Max open trades (all directions)</label>
+  <input id="guardMaxOpen" type="number" min="1" max="50" step="1" value="8">
+  <label>Max open trades in the same direction</label>
+  <input id="guardMaxDir" type="number" min="1" max="50" step="1" value="3">
+  <label>Minimum stop-loss distance (% of entry)</label>
+  <input id="guardMinSl" type="number" min="0" max="20" step="0.1" value="1.3">
+  <label>Max entry drift (fraction of the stop distance)</label>
+  <input id="guardMaxDrift" type="number" min="0.05" max="1" step="0.05" value="0.25">
+  <label>Minimum reward : risk at the real fill price</label>
+  <input id="guardMinRR" type="number" min="0.5" max="10" step="0.1" value="1.5">
+  <label>Allowed timeframes for Auto Trades</label>
+  <select id="guardTf"><option value="4h_plus" selected>4H and above only (recommended)</option><option value="all">All timeframes</option></select>
+  <label>Auto SHORT trades</label>
+  <select id="guardShorts"><option value="off" selected>Off (recommended until shorts are proven)</option><option value="on">On</option></select>
+  <div class="settings-info">Entry is booked at the <b>live market price at the moment the trade opens</b> (not the old signal price). Stops and targets fill at their exact level; if the page was closed, hit levels are found afterwards from Binance candle history.</div>
   <label>Auto-trade schedule</label>
   <select id="autoScheduleMode"><option value="default" selected>Default — all days, all day</option><option value="custom">Custom schedule</option></select>
   <div id="autoCustomSchedule" hidden><div class="settings-info">Custom schedule controls when Auto Paper Trades may open new trades. The scanner can still run outside these hours. Times use your device local time.</div><div class="auto-window"><div><label>Start time</label><input id="autoStartTime" type="time" value="00:00"></div><div><label>End time</label><input id="autoEndTime" type="time" value="23:59"></div></div><div style="font-size:10px;color:var(--muted);margin-top:8px">Days</div><div class="auto-days"><label class="auto-day"><input type="checkbox" class="auto-day-check" value="1">Mon</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="2">Tue</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="3">Wed</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="4">Thu</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="5">Fri</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="6">Sat</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="0">Sun</label></div><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" id="autoSelectAllDays">Select All</button><button type="button" id="autoSelectDefaultDays">Select Default</button></div></div>
@@ -1506,7 +1522,7 @@ async function dbSaveTrade(t,signal){
     status:"RUNNING",
     current_price:Number(t.entry),
     pnl_inr:0,
-    notes:JSON.stringify({feeMode:t.feeMode||state.binanceFeeMode||"taker",feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")})
+    notes:JSON.stringify({...readTradeNotes(t),feeMode:t.feeMode||state.binanceFeeMode||"taker",feeRate:Number(t.feeRate)||binanceFeeRate(t.feeMode||state.binanceFeeMode||"taker")})
   };
 
   const result=await dbRequest(
@@ -1869,6 +1885,86 @@ const MAX_HEAT = 3;
 const LIVE_UPDATE_MS = 15000; // 15s live P&L refresh
 
 const state = { signals:[], journal:[], walletTx:[], tf:"1h", quote:"USDT", quotes:["USDT"], scanTime:null, auto:true, scans:0, livePrices:{}, autoTrades:false, autoConfidence:75, autoAmount:1000, autoLeverage:5, binanceFeeMode:"taker", inrPerQuote:null, autoKillSwitch:false, autoScheduleMode:"default", autoStartTime:"00:00", autoEndTime:"23:59", autoDays:[0,1,2,3,4,5,6] };
+
+
+/* ================= TRADE GUARDS (V7) =================
+   Protect Auto Paper Trades from the loss patterns seen in the trade history:
+   correlated clusters, stops too tight for the fees, weak shorts, stale entries. */
+const GUARD_VERSION=7;
+const GUARD_DEFAULTS={maxOpen:8,maxPerDir:3,minSlPct:1.3,maxDriftR:0.25,minRR:1.5,tfMode:"4h_plus",allowShorts:false};
+const GUARD_TF_OK=["4h","6h","8h","12h","1d","3d","1w"];
+let guards={...GUARD_DEFAULTS};
+
+function loadGuards(){
+  try{
+    const g=JSON.parse(localStorage.getItem("cs_guards")||"{}");
+    guards={...GUARD_DEFAULTS,...(g&&typeof g==="object"?g:{})};
+  }catch(e){guards={...GUARD_DEFAULTS};}
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=String(v);};
+  set("guardMaxOpen",guards.maxOpen);
+  set("guardMaxDir",guards.maxPerDir);
+  set("guardMinSl",guards.minSlPct);
+  set("guardMaxDrift",guards.maxDriftR);
+  set("guardMinRR",guards.minRR);
+  set("guardTf",guards.tfMode==="all"?"all":"4h_plus");
+  set("guardShorts",guards.allowShorts?"on":"off");
+}
+
+function saveGuards(){
+  const num=(id,d,min,max)=>{
+    const el=document.getElementById(id);
+    const v=Number(el&&el.value);
+    return Number.isFinite(v)&&el&&el.value!==""?Math.min(max,Math.max(min,v)):d;
+  };
+  guards={
+    maxOpen:Math.round(num("guardMaxOpen",GUARD_DEFAULTS.maxOpen,1,50)),
+    maxPerDir:Math.round(num("guardMaxDir",GUARD_DEFAULTS.maxPerDir,1,50)),
+    minSlPct:num("guardMinSl",GUARD_DEFAULTS.minSlPct,0,20),
+    maxDriftR:num("guardMaxDrift",GUARD_DEFAULTS.maxDriftR,0.05,1),
+    minRR:num("guardMinRR",GUARD_DEFAULTS.minRR,0.5,10),
+    tfMode:(document.getElementById("guardTf")||{}).value==="all"?"all":"4h_plus",
+    allowShorts:(document.getElementById("guardShorts")||{}).value==="on"
+  };
+  localStorage.setItem("cs_guards",JSON.stringify(guards));
+  toast("🛡 Trade guards saved");
+}
+
+/* Returns {ok,reason} or {ok:true,entry,rr,drift}. Entry = real live fill price. */
+async function checkTradeGuards(sig){
+  const tag=sig.sym+" "+sig.dir;
+  const block=reason=>({ok:false,reason:tag+" · "+reason});
+
+  if(sig.dir==="SHORT"&&!guards.allowShorts) return block("auto SHORT trades are switched off");
+
+  const tf=String(sig.timeframe||state.tf||"").toLowerCase();
+  if(guards.tfMode==="4h_plus"&&!GUARD_TF_OK.includes(tf)) return block("timeframe "+tf.toUpperCase()+" is below 4H");
+
+  const open=state.journal.filter(t=>!t.closed);
+  if(open.length>=guards.maxOpen) return block("already "+open.length+" open trades (max "+guards.maxOpen+")");
+  const sameDir=open.filter(t=>t.dir===sig.dir).length;
+  if(sameDir>=guards.maxPerDir) return block("already "+sameDir+" open "+sig.dir+" trades (max "+guards.maxPerDir+")");
+
+  const entry=Number(sig.entry),sl=Number(sig.sl),tp=Number(sig.tp);
+  if(![entry,sl,tp].every(Number.isFinite)||entry<=0) return block("invalid levels");
+  const slPct=Math.abs(entry-sl)/entry*100;
+  if(slPct<guards.minSlPct) return block("stop is only "+slPct.toFixed(2)+"% away (min "+guards.minSlPct+"%) — fees would eat too much");
+
+  const live=await fetchPrice(sig.sym,sig.quote||state.quote);
+  if(!Number.isFinite(live)||live<=0) return block("no live price available");
+
+  const risk=Math.abs(entry-sl);
+  const drift=Math.abs(live-entry);
+  if(drift>risk*guards.maxDriftR) return block("price already moved "+(drift/risk*100).toFixed(0)+"% of the stop distance from the signal (max "+Math.round(guards.maxDriftR*100)+"%)");
+  if(!isLiveSignalTradable(sig,live)) return block("live price is too close to the stop or target");
+
+  const liveRisk=sig.dir==="LONG"?live-sl:sl-live;
+  const liveReward=sig.dir==="LONG"?tp-live:live-tp;
+  if(!(liveRisk>0)||!(liveReward>0)) return block("live price is outside the stop/target range");
+  const rr=liveReward/liveRisk;
+  if(rr<guards.minRR) return block("reward:risk at the live price is only "+rr.toFixed(2)+" (min "+guards.minRR+")");
+
+  return {ok:true,entry:live,rr,drift:drift/risk};
+}
 const recentAlerts = {};
 let autoTimer=null, countdownTimer=null, nextScanAt=null, curIdx=null, editIdx=null, liveTimer=null, scanGeneration=0, scanInProgress=false;
 let liveTradeSort=localStorage.getItem("cs_live_trade_sort")||localStorage.getItem("cs_trade_sort")||"newest";
@@ -2053,6 +2149,7 @@ async function load(){
     if(aa) { state.autoAmount=aa; $("autoAmount").value=String(aa); }
     const al = Number(localStorage.getItem("cs_auto_leverage"));
     if(al) { state.autoLeverage=al; $("autoLeverage").value=String(al); }
+    loadGuards();
     state.binanceFeeMode = localStorage.getItem("cs_binance_fee_mode") || "taker";
     if($("binanceFeeMode")) $("binanceFeeMode").value=state.binanceFeeMode;
     state.autoTrades = localStorage.getItem("cs_auto_trades")==="1"; state.autoKillSwitch=localStorage.getItem("cs_auto_kill_switch")==="1"; state.autoScheduleMode=localStorage.getItem("cs_auto_schedule_mode")||"default"; state.autoStartTime=localStorage.getItem("cs_auto_start_time")||"00:00"; state.autoEndTime=localStorage.getItem("cs_auto_end_time")||"23:59"; try{const d=JSON.parse(localStorage.getItem("cs_auto_days")||"");if(Array.isArray(d))state.autoDays=d.map(Number);}catch(e){} if($("autoScheduleMode"))$("autoScheduleMode").value=state.autoScheduleMode;if($("autoStartTime"))$("autoStartTime").value=state.autoStartTime;if($("autoEndTime"))$("autoEndTime").value=state.autoEndTime;document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=state.autoDays.includes(Number(x.value)));if($("autoCustomSchedule"))$("autoCustomSchedule").hidden=state.autoScheduleMode!=="custom";
@@ -3398,11 +3495,16 @@ async function takeSignalAsPaperTrade(s){
     logConnection("🛑 Trade blocked: "+s.sym+" "+s.dir+" · "+levels.reason,"warn","invalid-trade-levels");
     return false;
   }
+  const guard=await checkTradeGuards(s);
+  if(!guard.ok){
+    logConnection("🛡 Trade guard blocked: "+guard.reason,"warn","guard-block-"+s.sym);
+    return false;
+  }
   const trade={
-    sym:s.sym,dir:s.dir,entry:Number(s.entry),sl:Number(s.sl),tp:Number(s.tp),
+    sym:s.sym,dir:s.dir,entry:Number(guard.entry),sl:Number(s.sl),tp:Number(s.tp),rr:guard.rr,
     amt:state.autoAmount,lev:state.autoLeverage,pnl:0,closed:false,
     status:"running",date:new Date().toLocaleString(),createdAt:new Date().toISOString(),closedAt:null,
-    notes:JSON.stringify({strategy:"V6",engine:"DIRECTION_SELECTABLE",direction:s.dir,version:6}),
+    notes:JSON.stringify({strategy:"V6",engine:"DIRECTION_SELECTABLE",direction:s.dir,version:6,guardVersion:GUARD_VERSION,signalEntry:Number(s.entry),fillPrice:Number(guard.entry),replayedUntil:Date.now()}),
     feeMode:state.binanceFeeMode||"taker",feeRate:binanceFeeRate(state.binanceFeeMode||"taker")
   };
   return await saveTradeToWallet(trade,s);
@@ -3691,11 +3793,119 @@ function runManagerShadow(t,cp){
   return decision;
 }
 
+/* ================= CLOSE AT LEVEL + CANDLE REPLAY (V7) =================
+   Stops and targets are filled at their exact level. If the page was closed or
+   throttled, the missed period is replayed from Binance candles so a hit stop
+   is not recorded at whatever price happened to be live when the page reopened. */
+async function closeTradeAtLevel(t,hitTP,fillPrice,closedAtISO,source){
+  const wasTrailing=!hitTP&&(t.trailingActive||readTradeNotes(t).profitTrailActivated===true);
+  t.closed=true;
+  t.status=hitTP?"tp":"sl";
+  if(wasTrailing){t.closeReason="trailing_stop";t.trailingStopHit=true;}
+  else{t.closeReason=hitTP?"take_profit":"stop_loss";}
+  t.closePrice=Number(fillPrice);
+  t.currentPrice=Number(fillPrice);
+  t.closedAt=closedAtISO||new Date().toISOString();
+  t.date=t.date||new Date().toLocaleString();
+  t.pnl=calcClosedPnL(t);
+  writeTradeNotes(t,{closedBy:source||"live"});
+
+  if(V6_MODE){
+    const netClosedPnl=Number(t.pnl)||0;
+    if(netClosedPnl<0) registerV6PairLoss(t.sym);
+    updateConsecutiveLosses(netClosedPnl>0?"win":"loss");
+  }
+
+  if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
+  toast(hitTP
+    ? "🎯 "+t.sym+" "+t.dir+" TP hit — paper trade closed automatically."
+    : t.trailingStopHit
+      ? "🛡 "+t.sym+" "+t.dir+" trailing stop hit — trade closed with "+(Number(t.pnl||0)>=0?"profit":"loss")+" ."
+      : "🛑 "+t.sym+" "+t.dir+" SL hit — paper trade closed automatically."
+  );
+}
+
+const REPLAY_MIN_GAP_MS=120000;
+let replayBusy=false;
+
+async function fetchReplayCandles(t,fromMs){
+  const isInr=String(t.sym).endsWith("INR")||String(t.quote||"").toUpperCase()==="INR";
+  const source=isInr?baseSymbolFromPair(t.sym)+"USDT":t.sym;
+  const gap=Date.now()-fromMs;
+  const iv=gap<=16*3600e3?"1m":gap<=3.4*86400e3?"5m":"15m";
+  const url="https://api.binance.com/api/v3/klines?symbol="+encodeURIComponent(source)+"&interval="+iv+"&startTime="+Math.floor(fromMs)+"&limit=1000";
+  const r=await fetchWithTimeout(url,{},12000);
+  if(!r.ok) throw new Error("klines HTTP "+r.status);
+  const raw=await r.json();
+  if(!Array.isArray(raw)) return [];
+  const fx=isInr?await getUsdInr():1;
+  const out=[];
+  for(const k of raw){
+    const openT=+k[0],closeT=+k[6];
+    if(openT<fromMs) continue;          // skip the partial candle containing "from"
+    if(closeT>Date.now()) continue;     // skip the candle still forming
+    out.push({t:openT,ct:closeT,h:+k[2]*fx,l:+k[3]*fx});
+  }
+  return out;
+}
+
+/* Replays the unmonitored gap. Conservative rule: if one candle touches both the
+   stop and the target, the stop is assumed to have been hit first. */
+async function replayTradeHistory(t){
+  if(!t||t.closed||!t.sym) return false;
+  const notes=readTradeNotes(t);
+  const opened=t.createdAt?new Date(t.createdAt).getTime():Date.now();
+  let fromBase=Number(notes.replayedUntil);
+  if(!Number.isFinite(fromBase)||fromBase<=0){
+    // Trade predates replay tracking: start tracking from now instead of
+    // re-applying today's (possibly trailed) stop to old candles.
+    if(Date.now()-opened<10*60*1000) fromBase=opened;
+    else { writeTradeNotes(t,{replayedUntil:Date.now()}); return false; }
+  }
+  const from=Math.max(fromBase,opened);
+  if(Date.now()-from<REPLAY_MIN_GAP_MS) return false;
+
+  let candles;
+  try{candles=await fetchReplayCandles(t,from);}
+  catch(e){console.warn("Replay failed for",t.sym,e);return false;}
+
+  let lastT=from;
+  for(const k of candles){
+    const hitSL=t.dir==="LONG"?k.l<=t.sl:k.h>=t.sl;
+    const hitTP=t.dir==="LONG"?k.h>=t.tp:k.l<=t.tp;
+    if(hitSL||hitTP){
+      const tpFirst=hitTP&&!hitSL;
+      logConnection("⏪ Replay: "+t.sym+" "+t.dir+" "+(tpFirst?"TP":"SL")+" was hit while the page was away — filled at the level","info","replay-"+t.id);
+      await closeTradeAtLevel(t,tpFirst,tpFirst?t.tp:t.sl,new Date(k.ct).toISOString(),"replay");
+      return true;
+    }
+    // Profit-protection trail uses the favourable extreme of the candle; the new
+    // stop applies from the NEXT candle (conservative).
+    manageProfitProtection(t,t.dir==="LONG"?k.h:k.l);
+    lastT=k.ct;
+  }
+  writeTradeNotes(t,{replayedUntil:Math.max(lastT,from)});
+  return false;
+}
+
+async function replayAllOpenTrades(){
+  if(replayBusy) return;
+  replayBusy=true;
+  try{
+    for(const t of state.journal.filter(x=>!x.closed)){
+      try{ await replayTradeHistory(t); }catch(e){ console.warn("Replay error",e); }
+    }
+  }finally{ replayBusy=false; }
+}
+
 async function updateLivePrices(){
   const openTrades=state.journal.filter(t=>!t.closed);
   const syms=[...new Set(openTrades.map(t=>t.sym))];
   await refreshINRConversion();
   if(!syms.length){ renderLiveTrades(); renderArchive(); return; }
+
+  // Catch up on anything that happened while the page was closed/throttled.
+  await replayAllOpenTrades();
 
   await Promise.all(syms.map(async sym=>{
     const trade=openTrades.find(x=>x.sym===sym);
@@ -3741,38 +3951,10 @@ async function updateLivePrices(){
     const hitSL=t.dir==="LONG" ? cp<=t.sl : cp>=t.sl;
 
     if(hitTP||hitSL){
-      t.closed=true;
-      t.status=hitTP?"tp":"sl";
-      // If the active SL has moved into profit, this is a trailing-stop
-      // exit. Keep it as an SL-classified exit, but calculate P&L from the
-      // actual executed close price rather than treating it as cancelled.
-      if(!hitTP && t.trailingActive){
-        t.closeReason="trailing_stop";
-        t.trailingStopHit=true;
-      }else{
-        t.closeReason=hitTP?"take_profit":"stop_loss";
-      }
-      t.closePrice=cp;
-      t.closedAt=new Date().toISOString();
-      t.date=t.date||new Date().toLocaleString();
-      t.pnl=calcClosedPnL(t);
-
-      // V6: Track consecutive losses for cooldown
-      if (V6_MODE) {
-        // A trailing stop can close a trade while it is still profitable.
-        // Do not classify every non-TP exit as a loss.
-        const netClosedPnl=Number(calcClosedPnL(t))||0;
-        if(netClosedPnl<0) registerV6PairLoss(t.sym);
-        updateConsecutiveLosses(netClosedPnl>0 ? 'win' : 'loss');
-      }
-
-      if(dbEnabled()){ await dbUpdateTrade(t); await settleWalletTrade(t); await loadWallet(); } else save();
-      toast(hitTP
-        ? "🎯 "+t.sym+" "+t.dir+" TP hit — paper trade closed automatically."
-        : t.trailingStopHit
-          ? "🛡 "+t.sym+" "+t.dir+" trailing stop hit — trade closed with "+(Number(t.pnl||0)>=0?"profit":"loss")+" ."
-          : "🛑 "+t.sym+" "+t.dir+" SL hit — paper trade closed automatically."
-      );
+      await closeTradeAtLevel(t,hitTP,hitTP?t.tp:t.sl,new Date().toISOString(),"live");
+    }else{
+      // Live check done: nothing before "now" needs replaying.
+      writeTradeNotes(t,{replayedUntil:Date.now()});
     }
   }
 
@@ -5589,6 +5771,7 @@ $("autoConfidence").onchange=()=>{
   localStorage.setItem("cs_auto_confidence",String(state.autoConfidence));
   toast("🎯 Auto-trade threshold: "+state.autoConfidence+"%");
 };
+["guardMaxOpen","guardMaxDir","guardMinSl","guardMaxDrift","guardMinRR","guardTf","guardShorts"].forEach(id=>{const el=$(id);if(el)el.onchange=saveGuards;});
 $("autoAmount").onchange=()=>{state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);localStorage.setItem("cs_auto_amount",String(state.autoAmount));};
 $("autoLeverage").onchange=()=>{state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));};
 $("tfSelect").addEventListener("change",()=>{
