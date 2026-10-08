@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-08T12:30:22.366Z",
+  "generated_at": "2026-10-08T18:30:22.117Z",
   "source": {
     "crude": "Snapdata / EIA",
     "fx": "Snapdata / ECB cross-rates",
@@ -8,7 +8,7 @@
   },
   "data_quality": {
     "crude_latest_date": "2026-10-06",
-    "fx_latest_date": "2026-10-07",
+    "fx_latest_date": "2026-10-08",
     "crude_status": "provisional",
     "fx_status": "provisional"
   },
@@ -28,30 +28,30 @@
       "change_1m": 3.99
     },
     "average_5d_change": 5.075,
-    "regime": "HIGH_PRESSURE"
+    "regime": "BULLISH"
   },
   "usdinr": {
-    "rate": 96.7312,
-    "date": "2026-10-07",
-    "change_1d": 0.32,
-    "change_5d": 0.94,
-    "change_1m": 2.37
+    "rate": 96.7848,
+    "date": "2026-10-08",
+    "change_1d": 0.06,
+    "change_5d": 0.47,
+    "change_1m": 2.07
   },
   "sector_impact": {
     "energy": {
-      "score": 5.3,
+      "score": 5.2,
       "label": "POSITIVE"
     },
     "paints": {
-      "score": -5.3,
+      "score": -5.2,
       "label": "NEGATIVE"
     },
     "aviation": {
-      "score": -5.3,
+      "score": -5.2,
       "label": "NEGATIVE"
     },
     "omcs": {
-      "score": -5.3,
+      "score": -5.2,
       "label": "NEGATIVE"
     },
     "tyres": {
@@ -89,18 +89,18 @@
   },
   "marketpulse": {
     "version": "1.0",
-    "generated_at": "2026-10-08T12:30:22.366Z",
+    "generated_at": "2026-10-08T18:30:22.117Z",
     "disclaimer": "Reference data only. Crude and FX snapshots are not live dealing prices.",
-    "crude_regime": "HIGH_PRESSURE",
-    "india_crude_pressure": "HIGH"
+    "crude_regime": "BULLISH",
+    "india_crude_pressure": "MODERATE"
   },
   "beneficiaries": [
     {
       "symbol": "ONGC",
       "name": "Oil & Natural Gas Corporation Limited",
       "sector": "energy",
-      "impact": 5.3,
-      "score": 5.3,
+      "impact": 5.2,
+      "score": 5.2,
       "sensitivity": 1,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -111,8 +111,8 @@
       "symbol": "OIL",
       "name": "Oil India Limited",
       "sector": "energy",
-      "impact": 5.03,
-      "score": 5.03,
+      "impact": 4.94,
+      "score": 4.94,
       "sensitivity": 0.95,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -123,8 +123,8 @@
       "symbol": "HINDOILEXP",
       "name": "Hindustan Oil Exploration Company Limited",
       "sector": "energy",
-      "impact": 4.5,
-      "score": 4.5,
+      "impact": 4.42,
+      "score": 4.42,
       "sensitivity": 0.85,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -135,8 +135,8 @@
       "symbol": "RELIANCE",
       "name": "Reliance Industries Limited",
       "sector": "energy",
-      "impact": 3.44,
-      "score": 3.44,
+      "impact": 3.38,
+      "score": 3.38,
       "sensitivity": 0.65,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -149,8 +149,8 @@
       "symbol": "INDIGO",
       "name": "InterGlobe Aviation Limited",
       "sector": "aviation",
-      "impact": -5.03,
-      "score": -5.03,
+      "impact": -4.94,
+      "score": -4.94,
       "sensitivity": -0.95,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -161,8 +161,8 @@
       "symbol": "ASIANPAINT",
       "name": "Asian Paints Limited",
       "sector": "paints",
-      "impact": -4.77,
-      "score": -4.77,
+      "impact": -4.68,
+      "score": -4.68,
       "sensitivity": -0.9,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -173,8 +173,8 @@
       "symbol": "IOC",
       "name": "Indian Oil Corporation Limited",
       "sector": "omcs",
-      "impact": -4.77,
-      "score": -4.77,
+      "impact": -4.68,
+      "score": -4.68,
       "sensitivity": -0.9,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -185,8 +185,8 @@
       "symbol": "BERGEPAINT",
       "name": "Berger Paints (I) Limited",
       "sector": "paints",
-      "impact": -4.5,
-      "score": -4.5,
+      "impact": -4.42,
+      "score": -4.42,
       "sensitivity": -0.85,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -197,8 +197,8 @@
       "symbol": "BPCL",
       "name": "Bharat Petroleum Corporation Limited",
       "sector": "omcs",
-      "impact": -4.5,
-      "score": -4.5,
+      "impact": -4.42,
+      "score": -4.42,
       "sensitivity": -0.85,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -209,8 +209,8 @@
       "symbol": "HINDPETRO",
       "name": "Hindustan Petroleum Corporation Limited",
       "sector": "omcs",
-      "impact": -4.5,
-      "score": -4.5,
+      "impact": -4.42,
+      "score": -4.42,
       "sensitivity": -0.85,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -221,8 +221,8 @@
       "symbol": "INDIGOPNTS",
       "name": "Indigo Paints Limited",
       "sector": "paints",
-      "impact": -4.24,
-      "score": -4.24,
+      "impact": -4.16,
+      "score": -4.16,
       "sensitivity": -0.8,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -233,8 +233,8 @@
       "symbol": "KANSAINER",
       "name": "Kansai Nerolac Paints Limited",
       "sector": "paints",
-      "impact": -4.24,
-      "score": -4.24,
+      "impact": -4.16,
+      "score": -4.16,
       "sensitivity": -0.8,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -245,8 +245,8 @@
       "symbol": "MRPL",
       "name": "Mangalore Refinery and Petrochemicals Limited",
       "sector": "omcs",
-      "impact": -4.24,
-      "score": -4.24,
+      "impact": -4.16,
+      "score": -4.16,
       "sensitivity": -0.8,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -257,8 +257,8 @@
       "symbol": "SHALPAINTS",
       "name": "Shalimar Paints Limited",
       "sector": "paints",
-      "impact": -3.97,
-      "score": -3.97,
+      "impact": -3.9,
+      "score": -3.9,
       "sensitivity": -0.75,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -269,8 +269,8 @@
       "symbol": "SIRCA",
       "name": "Sirca Paints India Limited",
       "sector": "paints",
-      "impact": -3.71,
-      "score": -3.71,
+      "impact": -3.64,
+      "score": -3.64,
       "sensitivity": -0.7,
       "confidence": "HIGH",
       "classification_method": "EXACT_SYMBOL",
@@ -650,8 +650,8 @@
       "published_duplicate_symbols": 0,
       "published_high_confidence": 19,
       "published_medium_confidence": 0,
-      "generated_at": "2026-10-08T12:30:25.407Z"
+      "generated_at": "2026-10-08T18:30:25.542Z"
     },
-    "generated_at": "2026-10-08T12:30:25.329Z"
+    "generated_at": "2026-10-08T18:30:25.396Z"
   }
 }
