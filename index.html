@@ -8392,7 +8392,12 @@ async function loadPageSectorStocks(key, force = false) {
   const meta = pageSectorIndices.find(x => x.key === key);
   if (title) title.textContent = (meta?.name || key) + ' — Constituents';
   if (status) status.textContent = 'LOADING';
-  if (body) body.innerHTML = '<tr><td colspan="8" class="mp-empty-state">Loading live NSE constituents…</td></tr>';
+  if (body) body.innerHTML = '<tr><td colspan="8" class="mp-empty-state">Loading live NSE constituents for ' + pageSectorEscape(meta?.name || key) + '…</td></tr>';
+  const panel = document.getElementById('pageSectorStocksTitle');
+  if (panel) {
+    const panelBox = panel.closest('.mp-panel');
+    if (panelBox) panelBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   try {
     const res = await fetch(PAGE_SECTOR_API + '?mode=stocks&index=' + encodeURIComponent(key) + (force ? '&t=' + Date.now() : ''), { cache: 'no-store' });
     const data = await res.json();
@@ -8443,9 +8448,17 @@ async function loadPageSectors(force = false) {
   const select = document.getElementById('pageSectorSelect');
   const search = document.getElementById('pageSectorStockSearch');
   const refresh = document.getElementById('pageSectorRefresh');
-  if (select) select.addEventListener('change', e => loadPageSectorStocks(e.target.value));
+  if (select) {
+    select.addEventListener('change', e => {
+      const key = String(e.target.value || '').trim();
+      if (key) loadPageSectorStocks(key, true);
+    });
+  }
   if (search) search.addEventListener('input', e => { pageSectorStockQuery = e.target.value; renderPageSectorStocks(); });
-  if (refresh) refresh.addEventListener('click', () => loadPageSectors(true));
+  if (refresh) refresh.addEventListener('click', () => {
+    if (pageSectorSelected) loadPageSectorStocks(pageSectorSelected, true);
+    else loadPageSectors(true);
+  });
 })();
  
 function renderPageGlobal() {
