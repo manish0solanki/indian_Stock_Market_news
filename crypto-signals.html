@@ -1033,6 +1033,10 @@ img,svg,canvas{max-width:100%}
   <label>Auto SHORT trades</label>
   <select id="guardShorts"><option value="off" selected>Off (recommended until shorts are proven)</option><option value="on">On</option></select>
   <div class="settings-info">Entry is booked at the <b>live market price at the moment the trade opens</b> (not the old signal price). Stops and targets fill at their exact level; if the page was closed, hit levels are found afterwards from Binance candle history.</div>
+  <div class="settings-info" style="margin-top:14px">☁️ <b>Where should Auto Trades run?</b> In <b>Server</b> mode a Supabase job scans the market, opens trades and closes them every 5 minutes — <b>even when this page and your browser are closed</b>. It uses the settings on this screen (timeframe, quotes, confidence, amount, leverage, direction, schedule, guards). Turn <b>Auto Trades ON</b> with the button above to start it.</div>
+  <label>Run Auto Trades on</label>
+  <select id="autoWhere"><option value="page" selected>This page (browser must stay open)</option><option value="server">Server (24/7, works when closed)</option></select>
+  <div class="settings-info" id="botStatus">☁️ Server bot: checking…</div>
   <label>Auto-trade schedule</label>
   <select id="autoScheduleMode"><option value="default" selected>Default — all days, all day</option><option value="custom">Custom schedule</option></select>
   <div id="autoCustomSchedule" hidden><div class="settings-info">Custom schedule controls when Auto Paper Trades may open new trades. The scanner can still run outside these hours. Times use your device local time.</div><div class="auto-window"><div><label>Start time</label><input id="autoStartTime" type="time" value="00:00"></div><div><label>End time</label><input id="autoEndTime" type="time" value="23:59"></div></div><div style="font-size:10px;color:var(--muted);margin-top:8px">Days</div><div class="auto-days"><label class="auto-day"><input type="checkbox" class="auto-day-check" value="1">Mon</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="2">Tue</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="3">Wed</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="4">Thu</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="5">Fri</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="6">Sat</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="0">Sun</label></div><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" id="autoSelectAllDays">Select All</button><button type="button" id="autoSelectDefaultDays">Select Default</button></div></div>
@@ -2153,6 +2157,7 @@ async function load(){
     const al = Number(localStorage.getItem("cs_auto_leverage"));
     if(al) { state.autoLeverage=al; $("autoLeverage").value=String(al); }
     loadGuards();
+    loadAutoWhere();
     state.binanceFeeMode = localStorage.getItem("cs_binance_fee_mode") || "taker";
     if($("binanceFeeMode")) $("binanceFeeMode").value=state.binanceFeeMode;
     state.autoTrades = localStorage.getItem("cs_auto_trades")==="1"; state.autoKillSwitch=localStorage.getItem("cs_auto_kill_switch")==="1"; state.autoScheduleMode=localStorage.getItem("cs_auto_schedule_mode")||"default"; state.autoStartTime=localStorage.getItem("cs_auto_start_time")||"00:00"; state.autoEndTime=localStorage.getItem("cs_auto_end_time")||"23:59"; try{const d=JSON.parse(localStorage.getItem("cs_auto_days")||"");if(Array.isArray(d))state.autoDays=d.map(Number);}catch(e){} if($("autoScheduleMode"))$("autoScheduleMode").value=state.autoScheduleMode;if($("autoStartTime"))$("autoStartTime").value=state.autoStartTime;if($("autoEndTime"))$("autoEndTime").value=state.autoEndTime;document.querySelectorAll(".auto-day-check").forEach(x=>x.checked=state.autoDays.includes(Number(x.value)));if($("autoCustomSchedule"))$("autoCustomSchedule").hidden=state.autoScheduleMode!=="custom";
@@ -3587,6 +3592,10 @@ function updateAutoTradeButton(){
   b.className=state.autoTrades?"primary":"";
 }
 async function autoTradeFromSignals(){
+  if(autoWhere==="server"){
+    logConnection("☁️ Server mode: trades are opened by the server — this page only scans and displays.","info","server-mode-note");
+    return 0;
+  }
   if(!state.autoTrades||state.autoKillSwitch||!autoTradeScheduleAllowed())return 0;
   logConnection("🤖 Auto Trades checking "+state.signals.length+" signals at ≥"+state.autoConfidence+"% confidence","info","auto-trade-check");
   try{
@@ -3794,6 +3803,137 @@ function runManagerShadow(t,cp){
   t.managerR=Number(decision.r)||0;
   t.managerPeakR=peakR;
   return decision;
+}
+
+/* ================= SERVER BOT SYNC =================
+   In Server mode the Supabase "crypto-bot" job scans, opens and closes trades. This page only
+   shares its settings with it and shows its status. The database is the source of truth. */
+let autoWhere="page";
+let botAdopted=false,lastBotSync="",lastBotStatusAt=0,lastServerTradeMerge=0;
+
+function setAutoWhere(v,persist=true){
+  autoWhere=v==="server"?"server":"page";
+  if(persist) localStorage.setItem("cs_auto_where",autoWhere);
+  const el=$("autoWhere"); if(el) el.value=autoWhere;
+}
+function loadAutoWhere(){ setAutoWhere(localStorage.getItem("cs_auto_where")==="server"?"server":"page",false); }
+
+function buildBotConfig(){
+  return {
+    where:autoWhere,
+    tf:$("tfSelect").value,
+    quotes:getSelectedQuotes(),
+    scanMode:$("scanModeSelect").value,
+    pairs:getCheckedValues("pairSelect"),
+    currencies:getCheckedValues("currencySelect"),
+    direction:selectedDirection(),
+    risk:Number($("riskSelect").value)||1,
+    reward:Number($("rewardSelect").value)||2,
+    confidence:Math.min(95,Math.max(0,Number($("autoConfidence").value)||75)),
+    amount:Math.max(1,Number($("autoAmount").value)||1000),
+    leverage:Math.max(1,Number($("autoLeverage").value)||5),
+    feeMode:state.binanceFeeMode||"taker",
+    v6Limits:!!v6TradeLimitsEnabled,
+    tzOffsetMin:-new Date().getTimezoneOffset(),
+    schedule:{mode:state.autoScheduleMode||"default",start:state.autoStartTime||"00:00",end:state.autoEndTime||"23:59",days:(state.autoDays&&state.autoDays.length?state.autoDays:[0,1,2,3,4,5,6])},
+    guards:{...guards}
+  };
+}
+
+async function syncBotSettings(force=false,forceWrite=false){
+  try{
+    if(!dbEnabled()||!currentUser||!currentUser.id) return;
+    // Only a device in Server mode writes (or the device that just switched back to Page mode).
+    if(autoWhere!=="server"&&!forceWrite) return;
+    const enabled=autoWhere==="server"&&!!state.autoTrades&&!state.autoKillSwitch;
+    const config=buildBotConfig();
+    const sig=JSON.stringify({enabled,config});
+    if(!force&&sig===lastBotSync) return;
+    const r=await dbRequest("crypto_bot_settings?on_conflict=user_id",{
+      method:"POST",
+      headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
+      body:JSON.stringify({user_id:currentUser.id,enabled,config,updated_at:new Date().toISOString()})
+    });
+    if(r.error){ console.warn("Bot settings sync failed:",r.error.message); return; }
+    lastBotSync=sig;
+    refreshBotStatus();
+  }catch(e){ console.warn("Bot settings sync error",e); }
+}
+
+async function adoptBotModeFromDb(){
+  try{
+    const r=await dbRequest("crypto_bot_settings?select=enabled,config&user_id=eq."+encodeURIComponent(currentUser.id));
+    if(r.error) return false;
+    botAdopted=true;
+    const row=Array.isArray(r.data)?r.data[0]:null;
+    if(row&&row.config&&row.config.where==="server"){
+      // The server is already running Auto Trades for this account: never run a second engine here.
+      setAutoWhere("server");
+      if(!!row.enabled!==state.autoTrades){
+        state.autoTrades=!!row.enabled;
+        localStorage.setItem("cs_auto_trades",state.autoTrades?"1":"0");
+        updateAutoTradeButton();
+      }
+    }
+    return true;
+  }catch(e){ return false; }
+}
+
+async function refreshBotStatus(){
+  const el=$("botStatus");
+  if(!el||!dbEnabled()||!currentUser||!currentUser.id) return;
+  const r=await dbRequest("crypto_bot_settings?select=enabled,config,last_run_at,last_summary&user_id=eq."+encodeURIComponent(currentUser.id));
+  const row=Array.isArray(r.data)?r.data[0]:null;
+  if(!row){ el.textContent="☁️ Server bot: not set up yet — choose Server above."; return; }
+  const on=!!row.enabled&&row.config&&row.config.where==="server";
+  let t="☁️ Server bot: "+(on?"ON":"OFF");
+  if(row.last_run_at){
+    t+=" · last run "+new Date(row.last_run_at).toLocaleTimeString();
+    const sm=row.last_summary||{};
+    if(sm.error) t+=" · error: "+sm.error;
+    else{
+      t+=" · "+(sm.signals??0)+" signals";
+      if(sm.opened&&sm.opened.length) t+=" · opened "+sm.opened.map(x=>x.pair+" "+x.dir).join(", ");
+      else if(sm.blocked&&sm.blocked.length) t+=" · "+sm.blocked[0];
+      else if(sm.skipped) t+=" · "+sm.skipped;
+    }
+  }
+  el.textContent=t;
+}
+
+// Server-opened/closed trades show up in an open page without a reload.
+async function mergeServerTrades(){
+  try{
+    const raw=await dbLoadTrades();
+    if(!Array.isArray(raw)||!raw.length) return;
+    const rows=raw.map(dbTradeToUI);
+    const byId=new Map(state.journal.map(t=>[String(t.id),t]));
+    let changed=false;
+    for(const r of rows){
+      const local=byId.get(String(r.id));
+      if(!local){ state.journal.unshift(r); changed=true; }
+      else if(!local.closed&&r.closed){ Object.assign(local,r); changed=true; }
+    }
+    if(changed){ render(); try{await loadWallet();}catch(e){} }
+  }catch(e){ console.warn("Server trade merge failed",e); }
+}
+
+async function botTick(){
+  if(!dbEnabled()||!currentUser||!currentUser.id) return;
+  if(!botAdopted) await adoptBotModeFromDb();
+  await syncBotSettings(false);
+  const now=Date.now();
+  if(now-lastBotStatusAt>60000){ lastBotStatusAt=now; await refreshBotStatus(); }
+  if(autoWhere==="server"&&!document.hidden&&now-lastServerTradeMerge>60000){ lastServerTradeMerge=now; await mergeServerTrades(); }
+}
+
+function saveAutoWhere(){
+  const v=($("autoWhere")||{}).value==="server"?"server":"page";
+  setAutoWhere(v);
+  syncBotSettings(true,true);
+  toast(v==="server"
+    ? "☁️ Server mode ON — turn Auto Trades ON with the button above. The server will scan, open and close trades even when this page is closed."
+    : "🖥 Page mode — Auto Trades run only while this page is open. Server bot switched off.");
 }
 
 /* ================= CLOSE AT LEVEL + CANDLE REPLAY (V7) =================
@@ -5775,6 +5915,10 @@ $("autoConfidence").onchange=()=>{
   toast("🎯 Auto-trade threshold: "+state.autoConfidence+"%");
 };
 ["guardMaxOpen","guardMaxDir","guardMinSl","guardMaxDrift","guardMinRR","guardTf","guardShorts"].forEach(id=>{const el=$(id);if(el)el.onchange=saveGuards;});
+if($("autoWhere")) $("autoWhere").onchange=saveAutoWhere;
+setInterval(botTick,15000);
+setTimeout(botTick,4000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) botTick(); });
 $("autoAmount").onchange=()=>{state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);localStorage.setItem("cs_auto_amount",String(state.autoAmount));};
 $("autoLeverage").onchange=()=>{state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));};
 $("tfSelect").addEventListener("change",()=>{
