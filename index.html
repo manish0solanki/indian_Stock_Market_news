@@ -3210,6 +3210,7 @@ body {
 .crypto-dash-empty{padding:12px;text-align:center;color:var(--text-muted);font-size:10px;background:var(--bg);border-radius:var(--radius-sm)}
 .crypto-dash-note{margin-top:7px;color:var(--text-muted);font-size:9px;line-height:1.4}
 @media(max-width:640px){.crypto-dash-metrics{grid-template-columns:1fr 1fr}.crypto-dash-trade{grid-template-columns:1fr auto auto}}
+/* Sector dashboard */.sector-page-toolbar{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md)}.sector-page-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);font-weight:800;margin-bottom:6px}.sector-page-select{min-width:250px;height:36px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 10px;font:12px var(--font-body)}.sector-page-updated{font:11px var(--font-mono);color:var(--text-muted)}.sector-page-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}.sector-page-metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;min-width:0}.sector-page-metric span{display:block;font-size:9px;color:var(--text-muted);font-weight:800;letter-spacing:.07em}.sector-page-metric strong{display:block;margin-top:6px;font:800 16px var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sector-page-metric small{display:block;margin-top:3px;font-size:10px;color:var(--text-muted)}.positive-text{color:var(--positive)!important}.negative-text{color:var(--negative)!important}.page-sector-heatmap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-height:240px}.page-sector-heat-tile{border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;transition:transform .15s ease}.page-sector-heat-tile:hover{transform:translateY(-1px)}.page-sector-heat-tile .name{font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.page-sector-heat-tile .pct{font:800 13px var(--font-mono);margin-top:5px}.page-sector-heat-tile .state{font-size:8px;text-transform:uppercase;color:var(--text-muted);margin-top:3px}.page-sector-ranking tbody tr{cursor:pointer}.page-sector-ranking tbody tr:hover,.page-sector-stocks tbody tr:hover{background:var(--surface-hover)}.page-sector-ranking td,.page-sector-ranking th,.page-sector-stocks td,.page-sector-stocks th{font-size:11px}.sector-page-stock-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}#pageSectorStockSearch{flex:1;min-width:220px;height:34px;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 10px;font:12px var(--font-body)}.sector-page-filter-group{display:flex;gap:5px}.sector-page-filter{border:1px solid var(--border);background:var(--bg);color:var(--text-muted);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer}.sector-page-filter.active{color:var(--text);border-color:var(--indigo-light);background:var(--surface-hover)}.sector-page-stock-summary{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font:10px var(--font-mono);color:var(--text-muted)}@media(max-width:1000px){.sector-page-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:700px){.sector-page-toolbar{align-items:stretch;flex-direction:column}.sector-page-select{width:100%;min-width:0}.sector-page-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.page-sector-heatmap{grid-template-columns:repeat(2,minmax(0,1fr))}.sector-page-grid .mp-panel{grid-column:span 12!important}.page-sector-stocks{min-width:760px}}
 </style>
   <base target="_blank">
 </head>
@@ -3483,46 +3484,13 @@ body {
 
   <!-- SECTORS PAGE -->
   <section class="mp-page hidden" id="page-sectors" data-page-view="sectors">
-    <div class="mp-page-header">
-      <div class="mp-page-kicker">Market Structure</div>
-      <h1 class="mp-page-title">Sector Dashboard</h1>
-      <p class="mp-page-subtitle">
-        A dedicated sector view is now separated from the home dashboard. The existing sector data can be wired into this page without changing the underlying feed.
-      </p>
-    </div>
-
-    <div class="mp-page-grid">
-      <div class="mp-panel span-12">
-        <div class="mp-panel-title">
-          <span>Sector Performance</span>
-          <span class="widget-badge positive">LIVE DATA</span>
-        </div>
-        <div class="mp-table-wrap">
-          <table class="mp-table">
-            <thead>
-              <tr><th>Sector</th><th>Index</th><th>Price</th><th>Change</th><th>Trend</th></tr>
-            </thead>
-            <tbody id="pageSectorBody">
-              <tr><td colspan="5" class="mp-empty-state">Loading sector data from the existing MarketPulse feed…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Crude-sensitive</span></div>
-        <p class="mp-panel-note">Airlines, paints, tyres, chemicals and other petroleum-linked users can face higher input costs when crude rises sharply.</p>
-      </div>
-
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Defensive watch</span></div>
-        <p class="mp-panel-note">Use the existing sector breadth and price data to identify areas showing relative strength rather than assuming a macro theme will persist.</p>
-      </div>
-
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Confirmation</span></div>
-        <p class="mp-panel-note">Sector movement should be checked against price trend and volume before treating it as a usable market signal.</p>
-      </div>
+    <div class="mp-page-header"><div class="mp-page-kicker">Market Structure</div><h1 class="mp-page-title">Sector Dashboard</h1><p class="mp-page-subtitle">Track sector leadership, weakness and constituent stocks from the same MarketPulse feeds used across the dashboard.</p></div>
+    <div class="sector-page-toolbar"><div><div class="sector-page-label">Sector universe</div><select id="pageSectorSelect" class="sector-page-select"><option value="">Select a sector…</option></select></div><div class="sector-page-updated" id="pageSectorUpdated">Waiting for market data…</div></div>
+    <div class="sector-page-metrics"><div class="sector-page-metric"><span>SECTORS</span><strong id="pageSectorCount">—</strong></div><div class="sector-page-metric"><span>ADVANCERS</span><strong class="positive-text" id="pageSectorAdvancers">—</strong></div><div class="sector-page-metric"><span>DECLINERS</span><strong class="negative-text" id="pageSectorDecliners">—</strong></div><div class="sector-page-metric"><span>AVG CHANGE</span><strong id="pageSectorAverage">—</strong></div><div class="sector-page-metric"><span>LEADER</span><strong id="pageSectorLeader">—</strong><small id="pageSectorLeaderPct">—</small></div><div class="sector-page-metric"><span>WEAKEST</span><strong id="pageSectorWeakest">—</strong><small id="pageSectorWeakestPct">—</small></div></div>
+    <div class="mp-page-grid sector-page-grid">
+      <div class="mp-panel span-5"><div class="mp-panel-title"><span>Sector Heatmap</span><span class="widget-badge neutral" id="pageSectorHeatBadge">—</span></div><div id="pageSectorHeatmap" class="page-sector-heatmap"><div class="mp-empty-state">Loading sector heatmap…</div></div></div>
+      <div class="mp-panel span-7"><div class="mp-panel-title"><span>Sector Ranking</span><span class="widget-badge positive">LATEST DATA</span></div><div class="mp-table-wrap"><table class="mp-table page-sector-ranking"><thead><tr><th>#</th><th>Sector</th><th>Price</th><th>Chg%</th><th>Trend</th></tr></thead><tbody id="pageSectorRankingBody"><tr><td colspan="5" class="mp-empty-state">Loading sector data…</td></tr></tbody></table></div></div>
+      <div class="mp-panel span-12"><div class="mp-panel-title"><span id="pageSectorStocksTitle">Sector Constituents</span><span class="widget-badge neutral" id="pageSectorStocksBadge">Select a sector</span></div><div class="sector-page-stock-toolbar"><input id="pageSectorStockSearch" type="search" placeholder="Search symbol or company…"><div class="sector-page-filter-group"><button type="button" class="sector-page-filter active" data-page-sector-filter="all">All</button><button type="button" class="sector-page-filter" data-page-sector-filter="positive">Bull</button><button type="button" class="sector-page-filter" data-page-sector-filter="negative">Bear</button><button type="button" class="sector-page-filter" data-page-sector-filter="neutral">Flat</button></div></div><div class="mp-table-wrap"><table class="mp-table page-sector-stocks"><thead><tr><th>Symbol</th><th>Company</th><th>Price</th><th>Chg%</th><th>P/E</th><th>Market Cap</th><th>Promoters</th></tr></thead><tbody id="pageSectorStocksBody"><tr><td colspan="7" class="mp-empty-state">Choose a sector to inspect its constituents.</td></tr></tbody></table></div><div class="sector-page-stock-summary" id="pageSectorStockSummary"></div></div>
     </div>
   </section>
 
@@ -8301,57 +8269,21 @@ function escapeHtml(value) {
 }
 
 /* ─── Sector / Global Page Adapters ─── */
-function renderPageSectors() {
-  const source = document.getElementById('sectorIndicesBody');
-  const target = document.getElementById('pageSectorBody');
-  if (!source || !target) return;
+let pageSectorLoaded=false,pageSectorLoading=false,pageSectorIndices=[],pageSectorNames=[],pageSelectedSector='',pageSectorStocks=[],pageSectorStockFilter='all',pageSectorStockQuery='';
+function unwrapMarketPulsePayload(raw){let d=raw;if(Array.isArray(d)&&d.length===1&&d[0]?.json)d=d[0].json;if(d?.json)d=d.json;if(Array.isArray(d))return d;if(Array.isArray(d?.data))return d.data;if(Array.isArray(d?.items))return d.items;return d}
+function pageSectorChange(r){let n=Number(r?.change_percent??r?.changePercent??r?.percent??r?.pct);if(Number.isFinite(n))return n;const p=Number(r?.price??r?.last??r?.value),x=Number(r?.change);return Number.isFinite(p)&&p&&Number.isFinite(x)?x/(p-x)*100:NaN}
+function pageSectorName(r){return String(r?.display_name||r?.index_name||r?.index||r?.name||r?.sector||'Sector').trim()}
+function pageSectorKey(label){const raw=String(label||'').trim(),norm=x=>String(x||'').toLowerCase().replace(/^nifty\s+/,'').replace(/\bindex\b/g,'').replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').trim(),t=norm(raw);return pageSectorNames.find(x=>norm(x)===t)||pageSectorNames.find(x=>t.includes(norm(x))||norm(x).includes(t))||raw}
+function renderPageSectorMetrics(rows){const v=rows.map(r=>({n:pageSectorName(r),p:pageSectorChange(r)})).filter(x=>Number.isFinite(x.p)),avg=v.length?v.reduce((a,x)=>a+x.p,0)/v.length:NaN,lead=v.slice().sort((a,b)=>b.p-a.p)[0],weak=v.slice().sort((a,b)=>a.p-b.p)[0],set=(id,x)=>{const e=document.getElementById(id);if(e)e.textContent=x};set('pageSectorCount',rows.length);set('pageSectorAdvancers',v.filter(x=>x.p>0).length);set('pageSectorDecliners',v.filter(x=>x.p<0).length);set('pageSectorAverage',Number.isFinite(avg)?(avg>=0?'+':'')+avg.toFixed(2)+'%':'—');set('pageSectorLeader',lead?.n||'—');set('pageSectorLeaderPct',lead?((lead.p>=0?'+':'')+lead.p.toFixed(2)+'%'):'—');set('pageSectorWeakest',weak?.n||'—');set('pageSectorWeakestPct',weak?((weak.p>=0?'+':'')+weak.p.toFixed(2)+'%'):'—')}
+function renderPageSectorRanking(rows){const b=document.getElementById('pageSectorRankingBody');if(!b)return;const a=rows.slice().sort((x,y)=>(pageSectorChange(y)||-Infinity)-(pageSectorChange(x)||-Infinity));b.innerHTML=a.length?a.map((r,i)=>{const p=pageSectorChange(r),n=pageSectorName(r),k=pageSectorKey(r?.sector||r?.sector_name||n),pr=Number(r?.price??r?.last??r?.value);return '<tr data-sector-key="'+escapeHtml(k)+'"><td>'+ (i+1) +'</td><td><strong>'+escapeHtml(n)+'</strong></td><td>'+ (Number.isFinite(pr)?'₹'+pr.toLocaleString('en-IN',{maximumFractionDigits:2}):'—') +'</td><td class="'+(p>0?'positive-text':p<0?'negative-text':'')+'">'+(Number.isFinite(p)?(p>=0?'+':'')+p.toFixed(2)+'%':'—')+'</td><td class="'+(p>0?'positive-text':p<0?'negative-text':'')+'">'+(p>0?'Bullish':p<0?'Bearish':'Flat')+'</td></tr>'}).join(''):'<tr><td colspan="5" class="mp-empty-state">No sector data available.</td></tr>';b.querySelectorAll('[data-sector-key]').forEach(x=>x.addEventListener('click',()=>loadPageSectorStocks(x.dataset.sectorKey)))}
+function renderPageSectorHeatmap(raw){const box=document.getElementById('pageSectorHeatmap'),badge=document.getElementById('pageSectorHeatBadge');if(!box)return;let a=unwrapMarketPulsePayload(raw);if(!Array.isArray(a))a=Object.entries(a||{}).map(([k,v])=>typeof v==='object'?{sector:k,...v}:{sector:k,change_percent:v});a=a.map(r=>({r,n:String(r?.sector||r?.sector_name||r?.name||r?.index||'Sector').replace(/^NIFTY\s+/i,'').trim(),p:pageSectorChange(r)})).filter(x=>x.n).sort((x,y)=>(y.p||-Infinity)-(x.p||-Infinity));const nums=a.filter(x=>Number.isFinite(x.p)),avg=nums.length?nums.reduce((s,x)=>s+x.p,0)/nums.length:0;if(badge)badge.textContent=(avg>=0?'+':'')+avg.toFixed(2)+'% AVG';box.innerHTML=a.slice(0,18).map(x=>{const k=pageSectorKey(x.r?.sector||x.n),bg=x.p>0?'var(--positive-bg)':x.p<0?'var(--negative-bg)':'var(--neutral-bg)';return '<div class="page-sector-heat-tile" data-sector-key="'+escapeHtml(k)+'" style="background:'+bg+'"><div class="name">'+escapeHtml(x.n)+'</div><div class="pct '+(x.p>0?'positive-text':x.p<0?'negative-text':'')+'">'+(Number.isFinite(x.p)?(x.p>=0?'+':'')+x.p.toFixed(2)+'%':'—')+'</div><div class="state">'+(x.p>0?'Strength':x.p<0?'Weakness':'Flat')+'</div></div>'}).join('');box.querySelectorAll('[data-sector-key]').forEach(x=>x.addEventListener('click',()=>loadPageSectorStocks(x.dataset.sectorKey))}
+function renderPageSectorStocks(){const b=document.getElementById('pageSectorStocksBody');if(!b)return;if(!pageSelectedSector){b.innerHTML='<tr><td colspan="7" class="mp-empty-state">Choose a sector to inspect its constituents.</td></tr>';return}let a=pageSectorStocks.slice(),q=pageSectorStockQuery.trim().toLowerCase();if(q)a=a.filter(x=>String(x.symbol||'').toLowerCase().includes(q)||String(x.company_name||x.name||'').toLowerCase().includes(q));if(pageSectorStockFilter!=='all')a=a.filter(x=>{const p=Number(x.change_percent);return pageSectorStockFilter==='positive'?p>0:pageSectorStockFilter==='negative'?p<0:p===0});b.innerHTML=a.length?a.map(x=>{const p=Number(x.change_percent),pr=Number(x.price);return '<tr><td><strong>'+escapeHtml(x.symbol||'—')+'</strong></td><td>'+escapeHtml(x.company_name||x.name||'—')+'</td><td>'+ (Number.isFinite(pr)?'₹'+pr.toLocaleString('en-IN',{maximumFractionDigits:2}):'—') +'</td><td class="'+(p>0?'positive-text':p<0?'negative-text':'')+'">'+(Number.isFinite(p)?(p>=0?'+':'')+p.toFixed(2)+'%':'—')+'</td><td>'+ (x.pe??'—') +'</td><td>'+ (x.market_cap?fmtNum(x.market_cap,1):'—') +'</td><td>'+fmtPromoter(x.last_quarter_promoters)+'</td></tr>'}).join(''):'<tr><td colspan="7" class="mp-empty-state">No stocks match your filter.</td></tr>';const vals=pageSectorStocks.map(x=>Number(x.change_percent)).filter(Number.isFinite),avg=vals.length?vals.reduce((s,x)=>s+x,0)/vals.length:NaN;document.getElementById('pageSectorStockSummary').innerHTML=pageSectorStocks.length?'<span>'+pageSectorStocks.length+' STOCKS</span><span class="positive-text">'+vals.filter(x=>x>0).length+' UP</span><span class="negative-text">'+vals.filter(x=>x<0).length+' DOWN</span><span>AVG '+(Number.isFinite(avg)?(avg>=0?'+':'')+avg.toFixed(2)+'%':'—')+'</span>':''}
+async function loadPageSectorStocks(sector){const k=pageSectorKey(sector);if(!k)return;pageSelectedSector=k;const sel=document.getElementById('pageSectorSelect');if(sel)sel.value=k;document.getElementById('pageSectorStocksTitle').textContent=k+' — Constituents';document.getElementById('pageSectorStocksBadge').textContent='LOADING';document.getElementById('pageSectorStocksBody').innerHTML='<tr><td colspan="7" class="mp-empty-state">Loading constituents…</td></tr>';try{const r=await fetch(SECTOR_STOCKS_URL()+'?sector='+encodeURIComponent(k),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);pageSectorStocks=unwrapMarketPulsePayload(await r.json());if(!Array.isArray(pageSectorStocks))pageSectorStocks=[];document.getElementById('pageSectorStocksBadge').textContent=pageSectorStocks.length+' STOCKS';renderPageSectorStocks()}catch(e){pageSectorStocks=[];document.getElementById('pageSectorStocksBadge').textContent='UNAVAILABLE';document.getElementById('pageSectorStocksBody').innerHTML='<tr><td colspan="7" class="mp-empty-state">Could not load constituents.</td></tr>';console.error('[Page Sector Stocks]',e)}}
+async function loadPageSectors(force=false){if(pageSectorLoading)return;if(pageSectorLoaded&&!force)return;pageSectorLoading=true;try{const [ir,lr,hr]=await Promise.all([fetch(SECTOR_INDICES_URL(),{cache:'no-store'}),fetch(SECTOR_LIST_URL(),{cache:'no-store'}),fetch(HEATMAP_URL(),{cache:'no-store'})]);if(!ir.ok)throw Error('Sector indices HTTP '+ir.status);pageSectorIndices=unwrapMarketPulsePayload(await ir.json());if(!Array.isArray(pageSectorIndices))pageSectorIndices=[];const ld=lr.ok?unwrapMarketPulsePayload(await lr.json()):[];pageSectorNames=Array.isArray(ld)?[...new Set(ld.map(x=>typeof x==='string'?x:x?.sector||x?.name).filter(Boolean).map(String))]:[];const sel=document.getElementById('pageSectorSelect');if(sel)sel.innerHTML='<option value="">Select a sector…</option>'+pageSectorNames.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join('');renderPageSectorMetrics(pageSectorIndices);renderPageSectorRanking(pageSectorIndices);if(hr.ok)renderPageSectorHeatmap(await hr.json());document.getElementById('pageSectorUpdated').textContent='Updated '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});pageSectorLoaded=true;if(pageSelectedSector)await loadPageSectorStocks(pageSelectedSector)}catch(e){console.error('[Sector Dashboard]',e);document.getElementById('pageSectorRankingBody').innerHTML='<tr><td colspan="5" class="mp-empty-state">Sector data is currently unavailable.</td></tr>'}finally{pageSectorLoading=false}}
+function renderPageSectors(){loadPageSectors()}
+(function(){const s=document.getElementById('pageSectorSelect'),q=document.getElementById('pageSectorStockSearch');if(s)s.addEventListener('change',e=>loadPageSectorStocks(e.target.value));if(q)q.addEventListener('input',e=>{pageSectorStockQuery=e.target.value;renderPageSectorStocks()});document.querySelectorAll('[data-page-sector-filter]').forEach(x=>x.addEventListener('click',()=>{pageSectorStockFilter=x.dataset.pageSectorFilter;document.querySelectorAll('[data-page-sector-filter]').forEach(y=>y.classList.toggle('active',x===y));renderPageSectorStocks()}));setInterval(()=>{if(location.hash==='#sectors')loadPageSectors(true)},30000)})();
+function renderPageGlobal(){const source=document.getElementById('globalIndicesBody'),target=document.getElementById('pageGlobalBody');if(source&&target){const rows=Array.from(source.querySelectorAll('tr'));target.innerHTML=rows.map(row=>{const cells=Array.from(row.querySelectorAll('td'));if(cells.length<3)return'';return '<tr><td>'+cells[0].innerHTML+'</td><td class="mono">'+cells[1].innerHTML+'</td><td class="mono">'+cells[2].innerHTML+'</td><td>Live</td></tr>'}).filter(Boolean).join('')}const sn=document.getElementById('globalHeadlines'),tn=document.getElementById('pageGlobalHeadlines');if(sn&&tn)tn.innerHTML=sn.innerHTML}
 
-  const rows = Array.from(source.querySelectorAll('tr'));
-  if (!rows.length) return;
-
-  const html = rows.map(row => {
-    const cells = Array.from(row.querySelectorAll('td'));
-    if (cells.length < 4) return '';
-    return `
-      <tr>
-        <td>${cells[0].innerHTML}</td>
-        <td class="mono">${cells[1].innerHTML}</td>
-        <td class="mono">${cells[2].innerHTML}</td>
-        <td class="mono">${cells[3].innerHTML}</td>
-        <td>Live</td>
-      </tr>
-    `;
-  }).filter(Boolean).join('');
-
-  if (html) target.innerHTML = html;
-}
-
-function renderPageGlobal() {
-  const source = document.getElementById('globalIndicesBody');
-  const target = document.getElementById('pageGlobalBody');
-  if (source && target) {
-    const rows = Array.from(source.querySelectorAll('tr'));
-    const html = rows.map(row => {
-      const cells = Array.from(row.querySelectorAll('td'));
-      if (cells.length < 3) return '';
-      return `
-        <tr>
-          <td>${cells[0].innerHTML}</td>
-          <td class="mono">${cells[1].innerHTML}</td>
-          <td class="mono">${cells[2].innerHTML}</td>
-          <td>Live</td>
-        </tr>
-      `;
-    }).filter(Boolean).join('');
-    if (html) target.innerHTML = html;
-  }
-
-  const sourceNews = document.getElementById('globalHeadlines');
-  const targetNews = document.getElementById('pageGlobalHeadlines');
-  if (sourceNews && targetNews) {
-    targetNews.innerHTML = sourceNews.innerHTML;
-  }
-}
 
 /* ─── Filter Chips ─── */
 const filterChips = document.querySelectorAll('[data-filter]');
