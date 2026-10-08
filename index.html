@@ -3275,7 +3275,7 @@ body {
   <nav class="page-nav" id="pageNav" aria-label="MarketPulse pages">
     <button class="page-nav-link active" data-page="home" type="button">⌂ Home</button>
     <button class="page-nav-link" data-page="crude" type="button">🛢 Crude Impact</button>
-    <a class="page-nav-link" href="/sectors.html">▦ Sectors</a>
+    <button class="page-nav-link" data-page="sectors" type="button">▦ Sectors</button>
     <button class="page-nav-link" data-page="global" type="button">🌐 Global Market</button>
     <button class="page-nav-link" type="button" onclick="window.location.href='/crypto-signals.html'">₿ Crypto Signals</button>
   </nav>
@@ -3486,42 +3486,48 @@ body {
     <div class="mp-page-header">
       <div class="mp-page-kicker">Market Structure</div>
       <h1 class="mp-page-title">Sector Dashboard</h1>
-      <p class="mp-page-subtitle">
-        A dedicated sector view is now separated from the home dashboard. The existing sector data can be wired into this page without changing the underlying feed.
-      </p>
+      <p class="mp-page-subtitle">Live NSE sectoral indices and their constituent stocks. Data is fetched directly through the isolated MarketPulse sector-data service.</p>
     </div>
 
     <div class="mp-page-grid">
       <div class="mp-panel span-12">
         <div class="mp-panel-title">
           <span>Sector Performance</span>
-          <span class="widget-badge positive">LIVE DATA</span>
+          <span class="widget-badge positive" id="pageSectorStatus">LIVE</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--border);">
+          <select id="pageSectorSelect" style="min-width:260px;max-width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font:600 12px var(--font-body);">
+            <option value="">Select a sector…</option>
+          </select>
+          <span id="pageSectorUpdated" style="font:10px var(--font-mono);color:var(--text-muted);">Loading…</span>
         </div>
         <div class="mp-table-wrap">
           <table class="mp-table">
-            <thead>
-              <tr><th>Sector</th><th>Index</th><th>Price</th><th>Change</th><th>Trend</th></tr>
-            </thead>
+            <thead><tr><th>#</th><th>Sector</th><th>Index</th><th>Price</th><th>Change</th><th>Trend</th></tr></thead>
             <tbody id="pageSectorBody">
-              <tr><td colspan="5" class="mp-empty-state">Loading sector data from the existing MarketPulse feed…</td></tr>
+              <tr><td colspan="6" class="mp-empty-state">Loading NSE sector data…</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Crude-sensitive</span></div>
-        <p class="mp-panel-note">Airlines, paints, tyres, chemicals and other petroleum-linked users can face higher input costs when crude rises sharply.</p>
-      </div>
-
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Defensive watch</span></div>
-        <p class="mp-panel-note">Use the existing sector breadth and price data to identify areas showing relative strength rather than assuming a macro theme will persist.</p>
-      </div>
-
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Confirmation</span></div>
-        <p class="mp-panel-note">Sector movement should be checked against price trend and volume before treating it as a usable market signal.</p>
+      <div class="mp-panel span-12">
+        <div class="mp-panel-title">
+          <span id="pageSectorStocksTitle">Sector Constituents</span>
+          <span class="widget-badge" id="pageSectorStocksStatus">SELECT A SECTOR</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--border);">
+          <input id="pageSectorStockSearch" type="search" placeholder="Search symbol or company…" style="flex:1;min-width:220px;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font:12px var(--font-body);">
+          <button type="button" class="page-nav-link" id="pageSectorRefresh" style="border:1px solid var(--border);">↻ Refresh</button>
+        </div>
+        <div class="mp-table-wrap">
+          <table class="mp-table">
+            <thead><tr><th>Symbol</th><th>Company</th><th>Price</th><th>Change</th><th>Open</th><th>High</th><th>Low</th><th>Volume</th></tr></thead>
+            <tbody id="pageSectorStocksBody">
+              <tr><td colspan="8" class="mp-empty-state">Choose a sector to inspect its constituents.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </section>
@@ -8037,7 +8043,7 @@ function showVoiceHint(msg, isError) {
     }
 
     if (page === 'sectors') {
-      renderPageSectors();
+      loadPageSectors();
     }
 
     if (page === 'global') {
@@ -8301,31 +8307,147 @@ function escapeHtml(value) {
 }
 
 /* ─── Sector / Global Page Adapters ─── */
-function renderPageSectors() {
-  const source = document.getElementById('sectorIndicesBody');
-  const target = document.getElementById('pageSectorBody');
-  if (!source || !target) return;
+let pageSectorIndices = [];
+let pageSectorStocks = [];
+let pageSectorSelected = '';
+let pageSectorStockQuery = '';
 
-  const rows = Array.from(source.querySelectorAll('tr'));
-  if (!rows.length) return;
+const PAGE_SECTOR_API = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/sector-data';
 
-  const html = rows.map(row => {
-    const cells = Array.from(row.querySelectorAll('td'));
-    if (cells.length < 4) return '';
-    return `
-      <tr>
-        <td>${cells[0].innerHTML}</td>
-        <td class="mono">${cells[1].innerHTML}</td>
-        <td class="mono">${cells[2].innerHTML}</td>
-        <td class="mono">${cells[3].innerHTML}</td>
-        <td>Live</td>
-      </tr>
-    `;
-  }).filter(Boolean).join('');
-
-  if (html) target.innerHTML = html;
+function pageSectorEscape(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
 }
 
+function pageSectorNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function pageSectorPrice(value) {
+  const n = pageSectorNumber(value);
+  return n === null ? '—' : '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function pageSectorChange(value) {
+  const n = pageSectorNumber(value);
+  if (n === null) return '—';
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+}
+
+function pageSectorClass(value) {
+  const n = pageSectorNumber(value);
+  return n > 0 ? 'positive' : n < 0 ? 'negative' : '';
+}
+
+function renderPageSectorRows() {
+  const body = document.getElementById('pageSectorBody');
+  if (!body) return;
+  const rows = [...pageSectorIndices].sort((a,b) => (Number(b.change_percent)||-Infinity) - (Number(a.change_percent)||-Infinity));
+  body.innerHTML = rows.length ? rows.map((r,i) => {
+    const cls = pageSectorClass(r.change_percent);
+    return '<tr data-sector-key="' + pageSectorEscape(r.key) + '" style="cursor:pointer">' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><b>' + pageSectorEscape(r.name) + '</b></td>' +
+      '<td class="mono">' + pageSectorEscape(r.nse_name || '—') + '</td>' +
+      '<td class="mono">' + pageSectorPrice(r.price) + '</td>' +
+      '<td class="mono ' + cls + '">' + pageSectorChange(r.change_percent) + '</td>' +
+      '<td class="' + cls + '">' + (Number(r.change_percent) > 0 ? 'Bullish' : Number(r.change_percent) < 0 ? 'Bearish' : 'Flat') + '</td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="6" class="mp-empty-state">No sector data returned by NSE.</td></tr>';
+  body.querySelectorAll('[data-sector-key]').forEach(row => {
+    row.addEventListener('click', () => loadPageSectorStocks(row.dataset.sectorKey));
+  });
+}
+
+function renderPageSectorStocks() {
+  const body = document.getElementById('pageSectorStocksBody');
+  if (!body) return;
+  const q = pageSectorStockQuery.trim().toLowerCase();
+  const rows = pageSectorStocks.filter(r =>
+    !q ||
+    String(r.symbol || '').toLowerCase().includes(q) ||
+    String(r.company_name || '').toLowerCase().includes(q)
+  );
+  body.innerHTML = rows.length ? rows.map(r => {
+    const cls = pageSectorClass(r.change_percent);
+    return '<tr>' +
+      '<td class="mono"><b>' + pageSectorEscape(r.symbol || '—') + '</b></td>' +
+      '<td>' + pageSectorEscape(r.company_name || '—') + '</td>' +
+      '<td class="mono">' + pageSectorPrice(r.price) + '</td>' +
+      '<td class="mono ' + cls + '">' + pageSectorChange(r.change_percent) + '</td>' +
+      '<td class="mono">' + pageSectorPrice(r.open) + '</td>' +
+      '<td class="mono">' + pageSectorPrice(r.high) + '</td>' +
+      '<td class="mono">' + pageSectorPrice(r.low) + '</td>' +
+      '<td class="mono">' + (Number.isFinite(Number(r.volume)) ? Number(r.volume).toLocaleString('en-IN') : '—') + '</td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="8" class="mp-empty-state">No constituents match your search.</td></tr>';
+}
+
+async function loadPageSectorStocks(key, force = false) {
+  if (!key) return;
+  pageSectorSelected = key;
+  const status = document.getElementById('pageSectorStocksStatus');
+  const title = document.getElementById('pageSectorStocksTitle');
+  const body = document.getElementById('pageSectorStocksBody');
+  const meta = pageSectorIndices.find(x => x.key === key);
+  if (title) title.textContent = (meta?.name || key) + ' — Constituents';
+  if (status) status.textContent = 'LOADING';
+  if (body) body.innerHTML = '<tr><td colspan="8" class="mp-empty-state">Loading live NSE constituents…</td></tr>';
+  try {
+    const res = await fetch(PAGE_SECTOR_API + '?mode=stocks&index=' + encodeURIComponent(key) + (force ? '&t=' + Date.now() : ''), { cache: 'no-store' });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Sector constituent request failed');
+    pageSectorStocks = Array.isArray(data.data) ? data.data : [];
+    if (status) status.textContent = pageSectorStocks.length + ' STOCKS';
+    renderPageSectorStocks();
+  } catch (error) {
+    console.error('[Sectors]', error);
+    pageSectorStocks = [];
+    if (status) status.textContent = 'UNAVAILABLE';
+    if (body) body.innerHTML = '<tr><td colspan="8" class="mp-empty-state">Could not load constituents from NSE.</td></tr>';
+  }
+}
+
+async function loadPageSectors(force = false) {
+  const body = document.getElementById('pageSectorBody');
+  const status = document.getElementById('pageSectorStatus');
+  const updated = document.getElementById('pageSectorUpdated');
+  if (!body) return;
+  if (status) status.textContent = 'LOADING';
+  if (!pageSectorIndices.length) body.innerHTML = '<tr><td colspan="6" class="mp-empty-state">Loading live NSE sector data…</td></tr>';
+  try {
+    const res = await fetch(PAGE_SECTOR_API + '?mode=indices' + (force ? '&t=' + Date.now() : ''), { cache: 'no-store' });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Sector request failed');
+    pageSectorIndices = Array.isArray(data.data) ? data.data : [];
+    renderPageSectorRows();
+    const select = document.getElementById('pageSectorSelect');
+    if (select) {
+      const current = pageSectorSelected;
+      select.innerHTML = '<option value="">Select a sector…</option>' +
+        pageSectorIndices.map(r => '<option value="' + pageSectorEscape(r.key) + '">' + pageSectorEscape(r.name) + '</option>').join('');
+      if (current && pageSectorIndices.some(r => r.key === current)) select.value = current;
+    }
+    if (status) status.textContent = 'LIVE DATA';
+    if (updated) updated.textContent = 'Updated ' + new Date(data.updated_at || Date.now()).toLocaleTimeString('en-IN');
+    if (pageSectorSelected) await loadPageSectorStocks(pageSectorSelected, force);
+  } catch (error) {
+    console.error('[Sectors]', error);
+    if (status) status.textContent = 'UNAVAILABLE';
+    if (updated) updated.textContent = 'Sector feed unavailable';
+    body.innerHTML = '<tr><td colspan="6" class="mp-empty-state">NSE sector data is temporarily unavailable.</td></tr>';
+  }
+}
+
+(function initPageSectorControls() {
+  const select = document.getElementById('pageSectorSelect');
+  const search = document.getElementById('pageSectorStockSearch');
+  const refresh = document.getElementById('pageSectorRefresh');
+  if (select) select.addEventListener('change', e => loadPageSectorStocks(e.target.value));
+  if (search) search.addEventListener('input', e => { pageSectorStockQuery = e.target.value; renderPageSectorStocks(); });
+  if (refresh) refresh.addEventListener('click', () => loadPageSectors(true));
+})();
+ 
 function renderPageGlobal() {
   const source = document.getElementById('globalIndicesBody');
   const target = document.getElementById('pageGlobalBody');
