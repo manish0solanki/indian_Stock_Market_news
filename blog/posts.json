@@ -1,5 +1,25 @@
 [
   {
+    "slug": "tcs-stock-spotlight",
+    "title": "TCS Surges 3.85% on 3.5x Volume, Reclaims 20-Day Moving Average",
+    "excerpt": "PRICE ACTION: TCS posted its sharpest single-day advance in recent sessions, with volume surging to more than triple the daily average, indicating genuine institutional particip...",
+    "category": "stock-spotlight",
+    "date": "2026-10-09",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "TCS",
+      "TATA CONSULTANCY SERV LT"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-jumps-2-94-percent-as-large-caps-lead-broad-rally",
     "title": "Nifty IT Jumps 2.94% as Large Caps Lead Broad Rally",
     "excerpt": "Nifty IT gained 2.94% (817.1 points) to 28,574.9, with 93 of 145 stocks advancing versus 48 declining. Large caps outperformed, with the top 10 averaging 2.97% against 1.15% for smaller stocks; Persistent Systems rose 5.52% and TCS gained 3.85%.",
