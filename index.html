@@ -1491,6 +1491,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .sector-table .st-symbol { font-weight: 600; font-size: 11px; }
 .sector-table .st-name { color: var(--text-secondary); font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
 .sector-table .st-change.up { color: var(--positive); font-weight: 600; }
+.mp-table .up { color: var(--positive); font-weight: 600; }
+.mp-table .down { color: var(--negative); font-weight: 600; }
 .sector-table .st-change.down { color: var(--negative); font-weight: 600; }
 .sector-table .st-promoters { color: var(--indigo-light); font-weight: 600; }
 [data-theme="light"] .sector-table .st-promoters { color: var(--indigo); }
@@ -3490,8 +3492,8 @@ body {
     <div class="mp-page-header">
       <div class="mp-page-kicker">Market Structure</div>
       <h1 class="mp-page-title">Sector Dashboard</h1>
-      <p class="mp-page-subtitle">
-        A dedicated sector view is now separated from the home dashboard. The existing sector data can be wired into this page without changing the underlying feed.
+      <p class="mp-page-subtitle" id="sectorMeta">
+        Loading live sector data…
       </p>
     </div>
 
@@ -3507,8 +3509,41 @@ body {
               <tr><th>Sector</th><th>Index</th><th>Price</th><th>Change</th><th>Trend</th></tr>
             </thead>
             <tbody id="pageSectorBody">
-              <tr><td colspan="5" class="mp-empty-state">Loading sector data from the existing MarketPulse feed…</td></tr>
+              <tr><td colspan="5" class="mp-empty-state">Loading sector data…</td></tr>
             </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mp-panel span-12" id="industryPanel">
+        <div class="mp-panel-title">
+          <span>Industry Strength <span style="font-weight:400;font-size:11px;color:var(--text-muted)">· equal-weight average of every stock in the industry</span></span>
+          <span class="widget-badge neutral" id="industryBadge">—</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px">
+          <div class="filter-chip positive active" id="indSortStrong" role="button" tabindex="0"><span class="fc-dot"></span><span class="fc-label">Strongest</span></div>
+          <div class="filter-chip negative" id="indSortWeak" role="button" tabindex="0"><span class="fc-dot"></span><span class="fc-label">Weakest</span></div>
+          <div class="filter-chip total" id="indSortSize" role="button" tabindex="0"><span class="fc-dot"></span><span class="fc-label">Largest groups</span></div>
+          <input type="text" id="industrySearch" placeholder="Find an industry…" style="flex:1;min-width:150px;max-width:260px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:12px;color:var(--text)">
+        </div>
+        <div class="mp-table-wrap" style="max-height:440px;overflow:auto">
+          <table class="mp-table">
+            <thead><tr><th>Industry</th><th>Stocks</th><th>Avg change</th><th>Up / Down</th><th>Best</th><th>Worst</th></tr></thead>
+            <tbody id="industryBody"><tr><td colspan="6" class="mp-empty-state">Loading industry data…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="mp-panel-note" style="margin-top:8px">Click an industry to see its stocks.</p>
+      </div>
+
+      <div class="mp-panel span-12" id="industryStocksPanel" style="display:none">
+        <div class="mp-panel-title">
+          <span id="industryStocksTitle">—</span>
+          <span class="widget-badge neutral" role="button" style="cursor:pointer" onclick="document.getElementById('industryStocksPanel').style.display='none'">Close ✕</span>
+        </div>
+        <div class="mp-table-wrap" style="max-height:420px;overflow:auto">
+          <table class="mp-table">
+            <thead><tr><th>Symbol</th><th>Company</th><th>Price</th><th>Change</th><th>Market cap</th><th>P/E</th></tr></thead>
+            <tbody id="industryStocksBody"></tbody>
           </table>
         </div>
       </div>
@@ -6090,25 +6125,21 @@ function renderSectorIndices(items) {
   }).join('');
 }
 
+let sectorIndexItems = [];
 async function loadSectorIndices() {
   try {
-    const res = await fetch(SECTOR_INDICES_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const raw = await res.json();
-    let data = raw;
-    if (Array.isArray(data) && data.length === 1 && data[0].json) {
-      data = data[0].json;
-    } else if (!Array.isArray(data) && data.json) {
-      data = data.json;
-    }
-    const items = Array.isArray(data) ? data : (data.data || data.items || []);
+    const { data, error } = await supabaseClient.rpc('sector_indices');
+    if (error) throw error;
+    const items = Array.isArray(data) ? data : [];
     if (items.length === 0) {
       document.getElementById('sectorIndicesSection').style.display = 'none';
       return;
     }
     document.getElementById('sectorIndicesSection').style.display = 'block';
+    sectorIndexItems = items;
     renderSectorIndices(items);
     sectorLastUpdateTime = Date.now();
+    renderPageSectors();
   } catch (e) {
     document.getElementById('sectorIndicesSection').style.display = 'none';
     console.error('[Sector Indices]', e);
@@ -6241,19 +6272,9 @@ function renderHeatmap(data) {
 
 async function loadHeatmap() {
   try {
-    const res = await fetch(HEATMAP_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const raw = await res.json();
-    let data = raw;
-    if (Array.isArray(raw)) {
-      if (raw.length === 1 && (raw[0].json || raw[0].data || raw[0].sectors)) {
-        data = raw[0];
-      } else {
-        data = raw;
-      }
-    }
-    if (data && data.json) data = data.json;
-    renderHeatmap(data);
+    const { data, error } = await supabaseClient.rpc('sector_indices');
+    if (error) throw error;
+    renderHeatmap(Array.isArray(data) ? data : []);
   } catch (e) {
     console.error('[Heatmap]', e);
     const el = document.getElementById('heatmapContent');
@@ -6546,12 +6567,13 @@ function renderSectorTable() {
   tbody.innerHTML = stocks.map((s, i) => {
     const rawChange = s.change_percent;
     const changeNum = Number(rawChange);
-    const isValid = !isNaN(changeNum);
+    const isValid = rawChange !== null && rawChange !== undefined && rawChange !== '' && !isNaN(changeNum);
     const isUp = isValid && changeNum >= 0;
-    const price = Number(s.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const hasPrice = s.price !== null && s.price !== undefined && Number(s.price) > 0;
+    const price = hasPrice ? Number(s.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
     const changeStr = isValid ? (isUp ? '+' : '') + changeNum.toFixed(2) + '%' : '—';
     const promoStr = fmtPromoter(s.last_quarter_promoters);
-    return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.02}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top:0,behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}${s.symbol && fnoSymbols.has(s.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>₹${price}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap ? fmtNum(s.market_cap, 1) : '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
+    return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.02}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top:0,behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}${s.symbol && fnoSymbols.has(s.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>${hasPrice ? '₹' + price : '—'}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap ? fmtCapCr(s.market_cap) : '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
   }).join('');
 }
 
@@ -6580,30 +6602,24 @@ function analyzeSectorSentiment(sectorName, stocks) {
   document.getElementById('sectorSentiment').style.display = 'block';
 }
 
+let industryData = [];
 async function loadSectorList() {
   const select = document.getElementById('sectorSelect');
   try {
-    const res = await fetch(SECTOR_LIST_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    let sectors = [];
-    if (Array.isArray(data)) {
-      sectors = data.map(x => {
-        if (x.sector) return x.sector;
-        if (x.json?.sector) return x.json.sector;
-        if (typeof x === 'string') return x;
-        return null;
-      }).filter(s => s && typeof s === 'string');
-    } else if (data && typeof data === 'object') {
-      if (data.sector) sectors = [data.sector];
-      else if (Array.isArray(data.items)) sectors = data.items.map(x => x.sector || x.json?.sector).filter(Boolean);
-      else if (Array.isArray(data.sectors)) sectors = data.sectors;
-    }
-    if (sectors.length === 0) {
+    const { data, error } = await supabaseClient.rpc('sector_list');
+    if (error) throw error;
+    industryData = Array.isArray(data) ? data : [];
+    const names = industryData.map(x => x.sector).filter(Boolean);
+    if (names.length === 0) {
       select.innerHTML = '<option value="">No sectors</option>';
       return;
     }
-    select.innerHTML = '<option value="">Select a sector…</option>' + sectors.map(s => `<option value="${s}">${s}</option>`).join('');
+    const keep = select.value;
+    const esc = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    select.innerHTML = '<option value="">Select a sector…</option>' +
+      industryData.map(x => `<option value="${esc(x.sector)}">${esc(x.sector)} (${x.stocks})</option>`).join('');
+    if (keep) select.value = keep;
+    renderIndustryPanel();
   } catch (e) {
     console.error('[Sector List]', e);
     select.innerHTML = '<option value="">Error loading sectors</option>';
@@ -6629,12 +6645,9 @@ async function loadSectorStocks(sector) {
   }
   tbody.innerHTML = '<tr><td colspan="7" class="sector-empty">Loading…</td></tr>';
   try {
-    const res = await fetch(SECTOR_STOCKS_URL() + '?sector=' + encodeURIComponent(sector));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    let stocks = [];
-    if (Array.isArray(data)) stocks = data;
-    else if (data.items && Array.isArray(data.items)) stocks = data.items;
+    const { data, error } = await supabaseClient.rpc('sector_stocks', { p_sector: sector });
+    if (error) throw error;
+    const stocks = Array.isArray(data) ? data : [];
     currentSectorStocks = stocks;
     analyzeSectorSentiment(sector, stocks);
     renderSectorTable();
@@ -8046,6 +8059,9 @@ function showVoiceHint(msg, isError) {
 
     if (page === 'sectors') {
       renderPageSectors();
+      loadSectorIndices();
+      loadSectorList();
+      loadSectorMeta();
     }
 
     if (page === 'global') {
@@ -8309,30 +8325,132 @@ function escapeHtml(value) {
 }
 
 /* ─── Sector / Global Page Adapters ─── */
-function renderPageSectors() {
-  const source = document.getElementById('sectorIndicesBody');
-  const target = document.getElementById('pageSectorBody');
-  if (!source || !target) return;
-
-  const rows = Array.from(source.querySelectorAll('tr'));
-  if (!rows.length) return;
-
-  const html = rows.map(row => {
-    const cells = Array.from(row.querySelectorAll('td'));
-    if (cells.length < 4) return '';
-    return `
-      <tr>
-        <td>${cells[0].innerHTML}</td>
-        <td class="mono">${cells[1].innerHTML}</td>
-        <td class="mono">${cells[2].innerHTML}</td>
-        <td class="mono">${cells[3].innerHTML}</td>
-        <td>Live</td>
-      </tr>
-    `;
-  }).filter(Boolean).join('');
-
-  if (html) target.innerHTML = html;
+function fmtCapCr(n) {
+  const cr = Number(n) / 1e7;
+  if (!isFinite(cr) || cr <= 0) return '—';
+  if (cr >= 1e5) return (cr / 1e5).toFixed(2) + ' L Cr';
+  return cr.toLocaleString('en-IN', { maximumFractionDigits: 0 }) + ' Cr';
 }
+
+function renderPageSectors() {
+  const target = document.getElementById('pageSectorBody');
+  if (!target) return;
+  const items = sectorIndexItems;
+  if (!items.length) return;
+  const rows = items.slice().sort((a, b) => Number(b.change_percent) - Number(a.change_percent));
+  const maxAbs = Math.max(0.5, ...rows.map(r => Math.abs(Number(r.change_percent) || 0)));
+  target.innerHTML = rows.map(r => {
+    const pct = Number(r.change_percent) || 0;
+    const chg = Number(r.change) || 0;
+    const up = pct >= 0;
+    const w = Math.round(Math.abs(pct) / maxAbs * 100);
+    const price = Number(r.price).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    return `<tr>
+      <td><b>${r.display_name || r.name}</b></td>
+      <td class="mono">${r.name}</td>
+      <td class="mono">${price}</td>
+      <td class="mono ${up ? 'up' : 'down'}">${up ? '+' : ''}${chg.toFixed(2)} (${up ? '+' : ''}${pct.toFixed(2)}%)</td>
+      <td><div style="height:8px;width:100%;max-width:140px;background:var(--bg);border-radius:99px;overflow:hidden"><div style="height:100%;width:${w}%;background:${up ? 'var(--positive)' : 'var(--negative)'}"></div></div></td>
+    </tr>`;
+  }).join('');
+  renderIndustryPanel();
+}
+
+let industrySortMode = 'strong';
+let industryQuery = '';
+function renderIndustryPanel() {
+  const body = document.getElementById('industryBody');
+  if (!body) return;
+  const badge = document.getElementById('industryBadge');
+  if (!industryData.length) { body.innerHTML = '<tr><td colspan="6" class="mp-empty-state">Loading industry data…</td></tr>'; return; }
+  let rows = industryData.filter(x => x.priced > 0);
+  const q = industryQuery.trim().toLowerCase();
+  if (q) rows = rows.filter(x => x.sector.toLowerCase().includes(q));
+  if (industrySortMode === 'strong') rows.sort((a, b) => (b.avg_change ?? -99) - (a.avg_change ?? -99));
+  else if (industrySortMode === 'weak') rows.sort((a, b) => (a.avg_change ?? 99) - (b.avg_change ?? 99));
+  else rows.sort((a, b) => b.stocks - a.stocks);
+  const advancers = industryData.reduce((t, x) => t + (x.up || 0), 0);
+  const decliners = industryData.reduce((t, x) => t + (x.down || 0), 0);
+  if (badge) badge.textContent = `${advancers.toLocaleString('en-IN')} up · ${decliners.toLocaleString('en-IN')} down`;
+  const fmtBW = b => (b && b.symbol && b.change_percent !== null && b.change_percent !== undefined)
+    ? `${b.symbol} <span class="${b.change_percent >= 0 ? 'up' : 'down'}">${b.change_percent >= 0 ? '+' : ''}${Number(b.change_percent).toFixed(2)}%</span>` : '—';
+  body.innerHTML = rows.slice(0, q ? 200 : 40).map(x => {
+    const avg = x.avg_change;
+    const up = (avg ?? 0) >= 0;
+    const tot = Math.max(1, (x.up || 0) + (x.down || 0));
+    const upW = Math.round((x.up || 0) / tot * 100);
+    const safe = String(x.sector).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `<tr style="cursor:pointer" onclick="openIndustryStocks('${safe}')" title="Click to see the stocks">
+      <td><b>${x.sector}</b></td>
+      <td class="mono">${x.stocks}</td>
+      <td class="mono ${up ? 'up' : 'down'}">${avg === null || avg === undefined ? '—' : (up ? '+' : '') + Number(avg).toFixed(2) + '%'}</td>
+      <td><div style="display:flex;align-items:center;gap:6px"><span class="mono" style="font-size:10px">${x.up || 0}/${x.down || 0}</span><div style="height:6px;width:70px;background:var(--negative);border-radius:99px;overflow:hidden"><div style="height:100%;width:${upW}%;background:var(--positive)"></div></div></div></td>
+      <td class="mono" style="font-size:10px">${fmtBW(x.best)}</td>
+      <td class="mono" style="font-size:10px">${fmtBW(x.worst)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" class="mp-empty-state">No industries match.</td></tr>';
+}
+
+async function openIndustryStocks(name) {
+  const panel = document.getElementById('industryStocksPanel');
+  const body = document.getElementById('industryStocksBody');
+  const title = document.getElementById('industryStocksTitle');
+  if (!panel || !body) return;
+  panel.style.display = '';
+  title.textContent = name + ' — loading…';
+  body.innerHTML = '<tr><td colspan="6" class="mp-empty-state">Loading…</td></tr>';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  try {
+    const { data, error } = await supabaseClient.rpc('sector_stocks', { p_sector: name });
+    if (error) throw error;
+    const list = Array.isArray(data) ? data : [];
+    title.textContent = `${name} — ${list.length} stocks (largest first)`;
+    body.innerHTML = list.map(s => {
+      const hasP = s.price !== null && s.price !== undefined;
+      const pct = Number(s.change_percent);
+      const valid = s.change_percent !== null && s.change_percent !== undefined && !isNaN(pct);
+      const up = valid && pct >= 0;
+      return `<tr style="cursor:pointer" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top:0,behavior:'smooth'});">
+        <td><b>${s.symbol}</b></td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(s.company_name || '').replace(/"/g, '&quot;')}">${s.company_name || '—'}</td>
+        <td class="mono">${hasP ? '₹' + Number(s.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</td>
+        <td class="mono ${up ? 'up' : (valid ? 'down' : '')}">${valid ? (up ? '+' : '') + pct.toFixed(2) + '%' : '—'}</td>
+        <td class="mono">${s.market_cap ? fmtCapCr(s.market_cap) : '—'}</td>
+        <td class="mono">${s.pe || '—'}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" class="mp-empty-state">No stocks.</td></tr>';
+  } catch (e) {
+    title.textContent = name;
+    body.innerHTML = '<tr><td colspan="6" class="mp-empty-state">Could not load stocks.</td></tr>';
+    console.error('[Industry stocks]', e);
+  }
+}
+
+async function loadSectorMeta() {
+  const el = document.getElementById('sectorMeta');
+  if (!el) return;
+  try {
+    const { data, error } = await supabaseClient.rpc('sector_meta');
+    if (error || !data) return;
+    const now = new Date(data.server_now).getTime();
+    const ago = t => { if (!t) return null; const s = Math.max(0, (now - new Date(t).getTime()) / 1000); return s < 90 ? Math.round(s) + 's' : s < 5400 ? Math.round(s / 60) + ' min' : Math.round(s / 3600) + ' h'; };
+    const qa = ago(data.quotes_updated_at), ia = ago(data.indices_updated_at);
+    el.textContent = `Live prices from Yahoo Finance, refreshed by a Supabase job every 3 minutes while the market is open · ${Number(data.priced || 0).toLocaleString('en-IN')} of ${Number(data.total || 0).toLocaleString('en-IN')} stocks priced · stocks updated ${qa || 'never'} ago · indices updated ${ia || 'never'} ago`;
+  } catch (e) { /* ignore */ }
+}
+
+(function wireIndustryControls() {
+  const setMode = (mode, id) => {
+    industrySortMode = mode;
+    ['indSortStrong', 'indSortWeak', 'indSortSize'].forEach(x => { const el = document.getElementById(x); if (el) el.classList.toggle('active', x === id); });
+    renderIndustryPanel();
+  };
+  const bind = (id, mode) => { const el = document.getElementById(id); if (el) el.addEventListener('click', () => setMode(mode, id)); };
+  bind('indSortStrong', 'strong'); bind('indSortWeak', 'weak'); bind('indSortSize', 'size');
+  const inp = document.getElementById('industrySearch');
+  if (inp) inp.addEventListener('input', () => { industryQuery = inp.value; renderIndustryPanel(); });
+  setInterval(() => { if (!document.hidden) { loadSectorMeta(); } }, 60000);
+})();
 
 function renderPageGlobal() {
   const source = document.getElementById('globalIndicesBody');
