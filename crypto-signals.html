@@ -873,6 +873,7 @@ img,svg,canvas{max-width:100%}
 <div class="statusbar">
   <span><span class="dot on" id="connDot"></span><span id="connTxt">Starting...</span></span>
   <span>⏱ Next: <b class="mono" id="nextScan">—</b></span>
+  <span id="srvChip" class="mono" title="Heartbeat of the 24/7 server jobs (scanner + trade monitor)">☁️ Server: checking…</span>
   <span>📡 Scans: <b class="mono" id="scanCount">0</b></span>
   <span>🔔 <b class="mono" id="alertStatus">Off</b></span>
   <span id="heatStat"></span>
@@ -1036,7 +1037,9 @@ img,svg,canvas{max-width:100%}
   <div class="settings-info" style="margin-top:14px">☁️ <b>Where should Auto Trades run?</b> In <b>Server</b> mode a Supabase job scans the market, opens trades and closes them every 5 minutes — <b>even when this page and your browser are closed</b>. It uses the settings on this screen (timeframe, quotes, confidence, amount, leverage, direction, schedule, guards). Turn <b>Auto Trades ON</b> with the button above to start it.</div>
   <label>Run Auto Trades on</label>
   <select id="autoWhere"><option value="page" selected>This page (browser must stay open)</option><option value="server">Server (24/7, works when closed)</option></select>
+  <div class="settings-info" id="botHealth">☁️ Server heartbeat: checking…</div>
   <div class="settings-info" id="botStatus">☁️ Server bot: checking…</div>
+  <div class="settings-info" id="botRuns" style="font-family:var(--mono,monospace);font-size:11px;white-space:pre-wrap"></div>
   <label>Auto-trade schedule</label>
   <select id="autoScheduleMode"><option value="default" selected>Default — all days, all day</option><option value="custom">Custom schedule</option></select>
   <div id="autoCustomSchedule" hidden><div class="settings-info">Custom schedule controls when Auto Paper Trades may open new trades. The scanner can still run outside these hours. Times use your device local time.</div><div class="auto-window"><div><label>Start time</label><input id="autoStartTime" type="time" value="00:00"></div><div><label>End time</label><input id="autoEndTime" type="time" value="23:59"></div></div><div style="font-size:10px;color:var(--muted);margin-top:8px">Days</div><div class="auto-days"><label class="auto-day"><input type="checkbox" class="auto-day-check" value="1">Mon</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="2">Tue</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="3">Wed</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="4">Thu</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="5">Fri</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="6">Sat</label><label class="auto-day"><input type="checkbox" class="auto-day-check" value="0">Sun</label></div><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" id="autoSelectAllDays">Select All</button><button type="button" id="autoSelectDefaultDays">Select Default</button></div></div>
@@ -3936,6 +3939,82 @@ function saveAutoWhere(){
     : "🖥 Page mode — Auto Trades run only while this page is open. Server bot switched off.");
 }
 
+/* ================= SERVER HEARTBEAT (is the 24/7 server really running?) =================
+   The two Supabase jobs (crypto-bot = scanner/opener, crypto-monitor = stop/target watcher)
+   run every 60 s and write a heartbeat. This reads it and shows last run / next run. */
+let srvStatus=null,srvOffset=0;
+
+async function pollServerStatus(){
+  try{
+    if(dbEnabled()&&currentUser&&currentUser.id){
+      const r=await dbRequest("rpc/crypto_bot_status",{method:"POST",body:"{}"});
+      if(!r.error&&r.data&&typeof r.data==="object"){
+        srvStatus=r.data;
+        srvOffset=new Date(r.data.server_now).getTime()-Date.now();
+      }
+    }
+  }catch(e){}
+  renderServerStatus();
+}
+function srvJob(name){ return srvStatus&&Array.isArray(srvStatus.jobs)?srvStatus.jobs.find(j=>j.job===name):null; }
+function srvAgo(sec){
+  sec=Math.max(0,Math.round(sec));
+  if(sec<60) return sec+"s";
+  if(sec<3600) return Math.floor(sec/60)+"m "+(sec%60)+"s";
+  return Math.floor(sec/3600)+"h "+Math.floor((sec%3600)/60)+"m";
+}
+function srvHealth(){
+  const bot=srvJob("bot");
+  if(!bot||!bot.last_run_at) return {level:"none"};
+  const nowSrv=Date.now()+srvOffset;
+  const last=new Date(bot.last_run_at).getTime();
+  const age=(nowSrv-last)/1000;
+  const interval=Number(bot.interval_sec)||60;
+  const next=((Math.floor(last/60000)+1)*60000-nowSrv)/1000;
+  const level=age<=interval*2.5?"ok":age<=interval*6?"warn":"bad";
+  return {level,age,next,bot,interval};
+}
+function renderServerStatus(){
+  const chip=$("srvChip"); if(!chip) return;
+  const h=srvHealth();
+  const col={ok:"#34d399",warn:"#f5a623",bad:"#f87171",none:"#8e8ea8"}[h.level];
+  if(h.level==="none"){
+    chip.innerHTML='☁️ Server: <b style="color:'+col+'">● no heartbeat yet</b>';
+  }else{
+    const mode=(h.bot.summary&&h.bot.summary.accounts>0)?"trading ON":"idle (Server mode OFF)";
+    const nextTxt=h.next>1?"next in "+Math.ceil(h.next)+"s":(h.bot.running?"running now…":"due now");
+    const state=h.level==="ok"?"LIVE":h.level==="warn"?"DELAYED":"NOT RUNNING";
+    chip.innerHTML='☁️ Server: <b style="color:'+col+'">● '+state+'</b> · '+mode+' · last run '+srvAgo(h.age)+' ago · '+nextTxt;
+  }
+  const hb=$("botHealth");
+  if(hb){
+    if(h.level==="none") hb.textContent="☁️ Server heartbeat: none received yet. If this stays empty for more than 2 minutes, the Supabase jobs are not running.";
+    else{
+      const b=h.bot, sm=b.summary||{}, mon=srvJob("monitor"), ms=(mon&&mon.summary)||{};
+      const lines=[];
+      lines.push("☁️ Server heartbeat: "+(h.level==="ok"?"✅ RUNNING":h.level==="warn"?"⚠️ DELAYED":"❌ NOT RUNNING")+" · scanner ran "+srvAgo(h.age)+" ago · checks every "+h.interval+"s · "+(h.next>1?"next run in "+Math.ceil(h.next)+"s":"next run due now"));
+      lines.push("Scanner: "+(sm.error?"error — "+sm.error:(sm.skipped?sm.skipped:((sm.scanned??0)+" markets scanned · "+(sm.signals??0)+" signals · "+(sm.qualified??0)+" qualified"+(sm.opened&&sm.opened.length?" · opened "+sm.opened.join(", "):(sm.blocked&&sm.blocked.length?" · "+sm.blocked[0]:""))))));
+      if(mon&&mon.last_run_at){
+        const mage=(Date.now()+srvOffset-new Date(mon.last_run_at).getTime())/1000;
+        lines.push("Trade monitor: ran "+srvAgo(mage)+" ago · watching "+(ms.watching??0)+" open trade(s)"+(ms.pageActive?" · "+ms.pageActive+" handled by this page":"")+(ms.closed?" · closed "+(ms.closedTrades||[]).join(", "):"")+(ms.error?" · error: "+ms.error:""));
+      }else lines.push("Trade monitor: no heartbeat yet");
+      hb.textContent=lines.join("\n");
+      hb.style.whiteSpace="pre-wrap";
+    }
+  }
+  const rb=$("botRuns");
+  if(rb&&srvStatus&&Array.isArray(srvStatus.runs)){
+    rb.textContent=srvStatus.runs.length?("Recent server runs\n"+srvStatus.runs.slice(0,8).map(r=>{
+      const t=new Date(r.ran_at).toLocaleTimeString();
+      const sm=r.summary||{};
+      const what=r.job==="bot"
+        ?(sm.error?"error: "+sm.error:(sm.skipped?sm.skipped:(sm.scanned??0)+" scanned, "+(sm.signals??0)+" signals"+(sm.opened&&sm.opened.length?", opened "+sm.opened.join(", "):"")))
+        :(sm.error?"error: "+sm.error:"closed "+(sm.closedTrades||[]).join(", "));
+      return t+"  "+(r.ok===false?"✗":"✓")+" "+r.job.padEnd(7)+" "+what+(r.duration_ms?" ("+(r.duration_ms/1000).toFixed(1)+"s)":"");
+    }).join("\n")):"";
+  }
+}
+
 /* ================= CLOSE AT LEVEL + CANDLE REPLAY (V7) =================
    Stops and targets are filled at their exact level. If the page was closed or
    throttled, the missed period is replayed from Binance candles so a hit stop
@@ -5918,6 +5997,9 @@ $("autoConfidence").onchange=()=>{
 if($("autoWhere")) $("autoWhere").onchange=saveAutoWhere;
 setInterval(botTick,15000);
 setTimeout(botTick,4000);
+setInterval(pollServerStatus,10000);
+setInterval(renderServerStatus,1000);
+setTimeout(pollServerStatus,2500);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) botTick(); });
 $("autoAmount").onchange=()=>{state.autoAmount=Math.max(1,Number($("autoAmount").value)||1000);localStorage.setItem("cs_auto_amount",String(state.autoAmount));};
 $("autoLeverage").onchange=()=>{state.autoLeverage=Math.max(1,Number($("autoLeverage").value)||5);localStorage.setItem("cs_auto_leverage",String(state.autoLeverage));};
