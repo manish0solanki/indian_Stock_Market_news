@@ -3548,19 +3548,39 @@ body {
         </div>
       </div>
 
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Crude-sensitive</span></div>
-        <p class="mp-panel-note">Airlines, paints, tyres, chemicals and other petroleum-linked users can face higher input costs when crude rises sharply.</p>
+      <div class="mp-panel span-6" id="insightCrude">
+        <div class="mp-panel-title"><span>Crude-sensitive</span><span class="widget-badge neutral" id="crudeBadge">—</span></div>
+        <div id="crudeVerdict" class="mp-panel-note" style="margin:0 0 8px">Loading crude data…</div>
+        <div class="mp-table-wrap" style="max-height:340px;overflow:auto">
+          <table class="mp-table">
+            <thead><tr><th>Group</th><th>Stocks</th><th>Avg</th><th>Up/Down</th><th>Reaction</th></tr></thead>
+            <tbody id="crudeBody"></tbody>
+          </table>
+        </div>
+        <p class="mp-panel-note" style="margin-top:6px">Input-cost users (airlines, paints, tyres, chemicals, plastics) normally fall when crude rises; oil producers normally gain. "Reaction" checks whether today's move matches that.</p>
       </div>
 
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Defensive watch</span></div>
-        <p class="mp-panel-note">Use the existing sector breadth and price data to identify areas showing relative strength rather than assuming a macro theme will persist.</p>
+      <div class="mp-panel span-6" id="insightDefensive">
+        <div class="mp-panel-title"><span>Defensive watch</span><span class="widget-badge neutral" id="defBadge">—</span></div>
+        <div id="defVerdict" class="mp-panel-note" style="margin:0 0 8px">Loading defensive data…</div>
+        <div class="mp-table-wrap" style="max-height:340px;overflow:auto">
+          <table class="mp-table">
+            <thead><tr><th>Theme</th><th>Avg</th><th>vs market</th><th>Up/Down</th></tr></thead>
+            <tbody id="defBody"></tbody>
+          </table>
+        </div>
+        <p class="mp-panel-note" style="margin-top:6px">Defensives = FMCG &amp; food, healthcare, utilities, telecom and insurance. "vs market" is the theme's average move minus the average of all stocks.</p>
       </div>
 
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Confirmation</span></div>
-        <p class="mp-panel-note">Sector movement should be checked against price trend and volume before treating it as a usable market signal.</p>
+      <div class="mp-panel span-12" id="insightConfirm">
+        <div class="mp-panel-title"><span>Confirmation</span><span class="widget-badge neutral" id="confirmBadge">—</span></div>
+        <div class="mp-table-wrap" style="max-height:420px;overflow:auto">
+          <table class="mp-table">
+            <thead><tr><th>Industry (biggest movers)</th><th>Move</th><th>Breadth</th><th>Trend</th><th>Volume</th><th>Verdict</th></tr></thead>
+            <tbody id="confirmBody"><tr><td colspan="6" class="mp-empty-state">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="mp-panel-note" style="margin-top:6px">A sector move is only a usable signal when it is confirmed. <b>Breadth</b>: at least 65% of its stocks moved the same way. <b>Trend</b>: at least 55% of its stocks are on the matching side of their 50-day average. <b>Volume</b>: trading at least 1.15× the market's normal relative volume. Click a row to see the stocks.</p>
       </div>
     </div>
   </section>
@@ -8062,6 +8082,7 @@ function showVoiceHint(msg, isError) {
       loadSectorIndices();
       loadSectorList();
       loadSectorMeta();
+      loadSectorInsights();
     }
 
     if (page === 'global') {
@@ -8439,6 +8460,135 @@ async function loadSectorMeta() {
   } catch (e) { /* ignore */ }
 }
 
+let sectorInsights = null;
+async function loadSectorInsights() {
+  try {
+    const { data, error } = await supabaseClient.rpc('sector_insights');
+    if (error) throw error;
+    sectorInsights = data;
+    renderSectorInsights();
+  } catch (e) {
+    console.error('[Sector insights]', e);
+    const v = document.getElementById('crudeVerdict');
+    if (v && !sectorInsights) v.textContent = 'Could not load insight data.';
+  }
+}
+
+function insSign(n) { return n > 0 ? '+' : ''; }
+function insWeighted(rows) {
+  let w = 0, t = 0;
+  rows.forEach(r => { if (r.avg_change !== null && r.avg_change !== undefined && r.priced > 0) { w += r.priced; t += Number(r.avg_change) * r.priced; } });
+  return w ? t / w : null;
+}
+function insSafeName(n) { return String(n).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+function insCell(v, digits = 2) { return v === null || v === undefined || isNaN(v) ? '—' : `<span class="${v >= 0 ? 'up' : 'down'}">${insSign(v)}${Number(v).toFixed(digits)}%</span>`; }
+
+function renderSectorInsights() {
+  const d = sectorInsights;
+  if (!d) return;
+  const q = d.quotes || {}, mk = d.market || {};
+
+  /* ---------- Crude-sensitive ---------- */
+  const brent = q.brent, wti = q.wti, fx = q.usdinr;
+  const move = brent ? Number(brent.change_percent) : null;
+  const crudeBadge = document.getElementById('crudeBadge');
+  if (crudeBadge && brent) {
+    crudeBadge.textContent = `Brent $${Number(brent.price).toFixed(2)} ${insSign(move)}${move.toFixed(2)}%`;
+    crudeBadge.className = 'widget-badge ' + (Math.abs(move) < 0.3 ? 'neutral' : move > 0 ? 'negative' : 'positive');
+  }
+  const inputRows = (d.crude || []).filter(r => r.kind === 'input');
+  const prodRows = (d.crude || []).filter(r => r.kind === 'producer');
+  const inputAvg = insWeighted(inputRows), prodAvg = insWeighted(prodRows);
+  const flat = move === null || Math.abs(move) < 0.3;
+  let verdict;
+  if (move === null) verdict = 'Crude price unavailable right now.';
+  else if (flat) verdict = `Crude is little changed (Brent ${insSign(move)}${move.toFixed(2)}%${wti ? ', WTI ' + insSign(wti.change_percent) + Number(wti.change_percent).toFixed(2) + '%' : ''}), so there is no strong crude signal today. Input-cost users average ${inputAvg === null ? '—' : insSign(inputAvg) + inputAvg.toFixed(2) + '%'}, producers ${prodAvg === null ? '—' : insSign(prodAvg) + prodAvg.toFixed(2) + '%'}.`;
+  else if (move > 0) verdict = `Crude is rising (Brent +${move.toFixed(2)}%). Expect pressure on input-cost users and support for oil producers. Input-cost users average ${inputAvg === null ? '—' : insSign(inputAvg) + inputAvg.toFixed(2) + '%'}; producers ${prodAvg === null ? '—' : insSign(prodAvg) + prodAvg.toFixed(2) + '%'}.`;
+  else verdict = `Crude is falling (Brent ${move.toFixed(2)}%). Expect relief for input-cost users and pressure on oil producers. Input-cost users average ${inputAvg === null ? '—' : insSign(inputAvg) + inputAvg.toFixed(2) + '%'}; producers ${prodAvg === null ? '—' : insSign(prodAvg) + prodAvg.toFixed(2) + '%'}.`;
+  if (fx && fx.price) verdict += ` USD/INR ${Number(fx.price).toFixed(2)} (${insSign(fx.change_percent)}${Number(fx.change_percent).toFixed(2)}%).`;
+  const cv = document.getElementById('crudeVerdict'); if (cv) cv.textContent = verdict;
+  const kindLabel = { input: 'Input-cost user', producer: 'Oil producer', mixed: 'Refiner / OMC' };
+  const cb = document.getElementById('crudeBody');
+  if (cb) cb.innerHTML = (d.crude || []).map(r => {
+    const avg = r.avg_change === null ? null : Number(r.avg_change);
+    let tag = '<span style="color:var(--text-muted)">—</span>';
+    if (r.kind !== 'mixed' && !flat && avg !== null) {
+      const expected = (r.kind === 'input' ? -1 : 1) * (move > 0 ? 1 : -1);
+      if (Math.abs(avg) < 0.2) tag = '<span style="color:var(--text-muted)">· muted</span>';
+      else if (Math.sign(avg) === expected) tag = '<span class="up">✓ as expected</span>';
+      else tag = '<span class="down">✗ diverging</span>';
+    }
+    return `<tr style="cursor:pointer" onclick="openIndustryStocks('${insSafeName(r.sector)}')" title="${kindLabel[r.kind]} — click for stocks">
+      <td><b>${r.sector}</b><div style="font-size:9px;color:var(--text-muted)">${kindLabel[r.kind]}</div></td>
+      <td class="mono">${r.stocks}</td><td class="mono">${insCell(avg)}</td><td class="mono">${r.up}/${r.down}</td><td style="font-size:11px">${tag}</td></tr>`;
+  }).join('');
+
+  /* ---------- Defensive watch ---------- */
+  const themes = {};
+  (d.defensive || []).forEach(r => { (themes[r.theme] = themes[r.theme] || []).push(r); });
+  const marketAvg = mk.avg_all === null || mk.avg_all === undefined ? null : Number(mk.avg_all);
+  const rowsT = Object.keys(themes).map(t => {
+    const rs = themes[t];
+    return { theme: t, avg: insWeighted(rs), up: rs.reduce((a, r) => a + r.up, 0), down: rs.reduce((a, r) => a + r.down, 0), stocks: rs.reduce((a, r) => a + r.stocks, 0), rows: rs };
+  }).filter(r => r.avg !== null).sort((a, b) => (b.avg - marketAvg) - (a.avg - marketAvg));
+  const defAvg = insWeighted(d.defensive || []);
+  const diff = defAvg !== null && marketAvg !== null ? defAvg - marketAvg : null;
+  const nifty = q.nifty, vix = q.vix;
+  const defBadge = document.getElementById('defBadge');
+  if (defBadge && diff !== null) {
+    defBadge.textContent = `${insSign(diff)}${diff.toFixed(2)}% vs market`;
+    defBadge.className = 'widget-badge ' + (diff >= 0.5 ? 'positive' : diff <= -0.5 ? 'negative' : 'neutral');
+  }
+  let dv;
+  if (diff === null) dv = 'Not enough data yet.';
+  else {
+    const niftyTxt = nifty ? `Nifty 50 ${insSign(nifty.change_percent)}${Number(nifty.change_percent).toFixed(2)}%` : 'Nifty n/a';
+    const vixTxt = vix ? `, India VIX ${Number(vix.price).toFixed(2)} (${insSign(vix.change_percent)}${Number(vix.change_percent).toFixed(2)}%)` : '';
+    if (diff >= 0.5) dv = `Defensive tilt: defensive stocks average ${insSign(defAvg)}${defAvg.toFixed(2)}%, beating the market's ${insSign(marketAvg)}${marketAvg.toFixed(2)}% by ${diff.toFixed(2)} points. ${niftyTxt}${vixTxt}.`;
+    else if (diff <= -0.5) dv = `Risk-on: defensives average ${insSign(defAvg)}${defAvg.toFixed(2)}%, lagging the market's ${insSign(marketAvg)}${marketAvg.toFixed(2)}% by ${Math.abs(diff).toFixed(2)} points. ${niftyTxt}${vixTxt}.`;
+    else dv = `Defensives are moving in line with the market (${insSign(defAvg)}${defAvg.toFixed(2)}% vs ${insSign(marketAvg)}${marketAvg.toFixed(2)}%), so no clear rotation. ${niftyTxt}${vixTxt}.`;
+    if (mk.has50_all) dv += ` ${Math.round(mk.above50_all / mk.has50_all * 100)}% of all stocks are above their 50-day average.`;
+  }
+  const dvEl = document.getElementById('defVerdict'); if (dvEl) dvEl.textContent = dv;
+  const db = document.getElementById('defBody');
+  if (db) db.innerHTML = rowsT.map(r => {
+    const rel = marketAvg !== null ? r.avg - marketAvg : null;
+    const best = r.rows.filter(x => x.avg_change !== null).sort((a, b) => b.avg_change - a.avg_change)[0];
+    return `<tr style="cursor:pointer" onclick="openIndustryStocks('${insSafeName(best ? best.sector : r.rows[0].sector)}')" title="Click to open ${best ? best.sector : ''}">
+      <td><b>${r.theme}</b><div style="font-size:9px;color:var(--text-muted)">${r.rows.length} industries · ${r.stocks} stocks${best ? ' · best: ' + best.sector : ''}</div></td>
+      <td class="mono">${insCell(r.avg)}</td><td class="mono">${insCell(rel)}</td><td class="mono">${r.up}/${r.down}</td></tr>`;
+  }).join('');
+
+  /* ---------- Confirmation ---------- */
+  const relMkt = Number(mk.rel_vol_mkt) || 0;
+  const rows = (d.movers || []).map(r => {
+    const mv = Number(r.avg_change), dir = mv >= 0 ? 1 : -1;
+    const moved = r.up + r.down;
+    const breadth = moved ? (dir > 0 ? r.up : r.down) / moved : 0;
+    const trend = r.has50 ? (dir > 0 ? r.above50 : r.has50 - r.above50) / r.has50 : 0;
+    const volRatio = relMkt > 0 && r.rel_vol !== null && r.rel_vol !== undefined ? Number(r.rel_vol) / relMkt : null;
+    const okB = breadth >= 0.65, okT = trend >= 0.55, okV = volRatio !== null && volRatio >= 1.15;
+    const score = (okB ? 1 : 0) + (okT ? 1 : 0) + (okV ? 1 : 0);
+    return { r, mv, breadth, trend, volRatio, okB, okT, okV, score };
+  });
+  const nConf = rows.filter(x => x.score === 3).length;
+  const cbadge = document.getElementById('confirmBadge');
+  if (cbadge) { cbadge.textContent = `${nConf} of ${rows.length} confirmed`; cbadge.className = 'widget-badge ' + (nConf ? 'positive' : 'neutral'); }
+  const tick = ok => ok ? '<span class="up">✓</span>' : '<span class="down">✗</span>';
+  const cfb = document.getElementById('confirmBody');
+  if (cfb) cfb.innerHTML = rows.map(x => {
+    const verdictTxt = x.score === 3 ? 'Confirmed' : x.score === 2 ? 'Partly confirmed' : 'Not confirmed';
+    const verdictCls = x.score === 3 ? 'up' : x.score === 2 ? '' : 'down';
+    return `<tr style="cursor:pointer" onclick="openIndustryStocks('${insSafeName(x.r.sector)}')">
+      <td><b>${x.r.sector}</b><div style="font-size:9px;color:var(--text-muted)">${x.r.priced} stocks</div></td>
+      <td class="mono">${insCell(x.mv)}</td>
+      <td class="mono">${tick(x.okB)} ${Math.round(x.breadth * 100)}%</td>
+      <td class="mono">${tick(x.okT)} ${Math.round(x.trend * 100)}%</td>
+      <td class="mono">${tick(x.okV)} ${x.volRatio === null ? '—' : x.volRatio.toFixed(2) + '×'}</td>
+      <td class="${verdictCls}" style="font-size:11px;font-weight:600">${verdictTxt}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="mp-empty-state">No data yet.</td></tr>';
+}
+
 (function wireIndustryControls() {
   const setMode = (mode, id) => {
     industrySortMode = mode;
@@ -8449,7 +8599,10 @@ async function loadSectorMeta() {
   bind('indSortStrong', 'strong'); bind('indSortWeak', 'weak'); bind('indSortSize', 'size');
   const inp = document.getElementById('industrySearch');
   if (inp) inp.addEventListener('input', () => { industryQuery = inp.value; renderIndustryPanel(); });
-  setInterval(() => { if (!document.hidden) { loadSectorMeta(); } }, 60000);
+  setInterval(() => {
+    const pg = document.getElementById('page-sectors');
+    if (!document.hidden && pg && !pg.classList.contains('hidden')) { loadSectorMeta(); loadSectorInsights(); loadSectorIndices(); loadSectorList(); }
+  }, 60000);
 })();
 
 function renderPageGlobal() {
