@@ -1,5 +1,25 @@
 [
   {
+    "slug": "upl-stock-spotlight",
+    "title": "UPL Surges 5.4% on Above-Average Volume but Remains Deep in 52-Week Downtrend",
+    "excerpt": "PRICE ACTION: UPL posted its strongest single-day gain in recent sessions with volume running 27% above average, suggesting genuine buying interest rather than thin-market noise...",
+    "category": "stock-spotlight",
+    "date": "2026-10-12",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "UPL",
+      "UPL LIMITED"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-media-jumps-4-6-percent-as-28-of-44-stocks-advance",
     "title": "Nifty Media Jumps 4.6% as 28 of 44 Stocks Advance",
     "excerpt": "Nifty Media gained 4.6% (71.5 points) to 1624.8, with 28 of 44 stocks advancing versus 15 declining. Smaller stocks averaged 56.43% against 3.78% for the top 10 by market cap, while the market-cap-weighted change was 3.59% and the median stock rose 1.23%.",
