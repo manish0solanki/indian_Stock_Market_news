@@ -6107,15 +6107,9 @@ function renderSnapshot(items) {
 
 async function loadIndices() {
   try {
-    const res = await fetch(INDICES_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    let items;
-    if (Array.isArray(data)) items = data;
-    else if (data.items && Array.isArray(data.items)) items = data.items;
-    else if (typeof data === 'object' && data !== null && data.symbol) items = [data];
-    else items = [];
-    renderSnapshot(items);
+    const { data, error } = await supabaseClient.rpc('market_snapshot');
+    if (error) throw error;
+    renderSnapshot(Array.isArray(data) ? data : []);
     lastUpdateTime = Date.now();
   } catch (e) {
     document.getElementById('snapshotBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:12px;">Error</td></tr>';
@@ -6184,16 +6178,9 @@ function renderGlobalIndices(items) {
 
 async function loadGlobalIndices() {
   try {
-    const res = await fetch(GLOBAL_INDICES_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const raw = await res.json();
-    let data = raw;
-    if (Array.isArray(data) && data.length === 1 && data[0].json) {
-      data = data[0].json;
-    } else if (!Array.isArray(data) && data.json) {
-      data = data.json;
-    }
-    const items = Array.isArray(data) ? data : (data.data || data.items || []);
+    const { data, error } = await supabaseClient.rpc('global_indices');
+    if (error) throw error;
+    const items = Array.isArray(data) ? data : [];
     if (items.length === 0) {
       document.getElementById('globalIndicesSection').style.display = 'none';
       return;
@@ -6951,14 +6938,9 @@ function renderPrices(items) {
 
 async function loadPrices() {
   try {
-    const res = await fetch(PRICES_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    let items;
-    if (Array.isArray(data)) items = data;
-    else if (data.items && Array.isArray(data.items)) items = data.items;
-    else if (typeof data === 'object' && data !== null && data.symbol) items = [data];
-    else items = [];
+    const { data, error } = await supabaseClient.rpc('price_feed');
+    if (error) throw error;
+    const items = Array.isArray(data) ? data : [];
     priceMap = {};
     items.forEach(p => { priceMap[p.symbol] = p; });
     renderPrices(getPriceItems());
