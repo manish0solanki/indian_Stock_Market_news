@@ -1,5 +1,26 @@
 [
   {
+    "slug": "nifty-rises-16-as-dii-buying-offsets-fii-selling-for-12th-straight-session",
+    "title": "Nifty Rises 1.6% as DII Buying Offsets FII Selling for 12th Straight Session",
+    "excerpt": "FIIs net sold ₹1,305.13 Cr while DIIs net bought ₹2,439.24 Cr on 13 Oct, with combined institutional flows at ₹1,134.11 Cr positive. The Nifty 50 gained 358.6 points to close at...",
+    "category": "fiidii-flows",
+    "date": "2026-10-13",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "hcltech-stock-spotlight",
     "title": "HCL Tech Surges 9% on Nearly 8x Volume: Clears Key Moving Averages With Force",
     "excerpt": "PRICE ACTION: HCL Technologies delivered its strongest single-session move in recent memory, rallying 8.98% to ₹1,326 on volume nearly eight times the daily average. The surge p...",
