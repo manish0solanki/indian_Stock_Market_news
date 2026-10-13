@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-13-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 13 Oct 2026: Gains 1.60%",
+    "excerpt": "Bullish day on Dalal Street. Nifty 50 surged 358 points to close at 22,721.95, a solid 1.6% gain with 46 of 50 stocks in the green. IT stocks led the charge after strong US economic data eased recession fears. HCLTech jumped ₹103 (8.42%) to ₹1,326 — its best single-day move in months — while TCS rallied ₹144 (6.79%) to ₹2,269.",
+    "category": "daily-wrap",
+    "date": "2026-10-13T17:35:16+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bullish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-selling-eases-to-11-day-low-as-dii-buying-extends-33-session-streak",
     "title": "FII Selling Eases to 11-Day Low as DII Buying Extends 33-Session Streak",
     "excerpt": "FII net selling moderated sharply to ₹1,708.48 Cr, the smallest outflow during an 11-session selling streak, while DII net buying of ₹3,045.02 Cr pushed combined institutional f...",
