@@ -25,7 +25,20 @@ function setMarketStatus(text, status='warn') {
   el.innerHTML='<span class="dot '+(status==='ok'?'ok':status==='bad'?'bad':'')+'"></span><span>'+esc(text)+'</span>';
 }
 function esc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function money(value) { return Number(value).toLocaleString('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}); }
+function safeNumberFormat(value, options={}) {
+  const n=Number(value);
+  if (!Number.isFinite(n)) return '—';
+  try { return n.toLocaleString('en-IN',options); } catch (_) { return String(n); }
+}
+function safeNow() {
+  try { return (typeof Date !== 'undefined' && Date.now) ? new Date(Date.now()).toISOString() : 'time unavailable'; }
+  catch (_) { return 'time unavailable'; }
+}
+function money(value) {
+  const n=Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return safeNumberFormat(n,{style:'currency',currency:'INR',maximumFractionDigits:2});
+}
 function num(value) { const n=Number(value); return Number.isFinite(n)?n:null; }
 function quoteTime(data) { return data?.quote_time || data?.updated_at || data?.timestamp || data?.as_of || null; }
 
@@ -73,7 +86,7 @@ async function getUniverse() {
   const preferred=['RELIANCE','HDFCBANK','ICICIBANK','SBIN','INFY','TCS','BHARTIARTL','LT','AXISBANK','KOTAKBANK','ITC','BAJFINANCE','MARUTI','TATAMOTORS','SUNPHARMA','HINDUNILVR','TITAN','NTPC','POWERGRID','ONGC','TATASTEEL','ADANIENT','JSWSTEEL','WIPRO','TECHM','INDUSINDBK','ULTRACEMCO','ASIANPAINT','COALINDIA','BAJAJFINSV','TRENT','BEL','HAL','DLF','PIDILITIND'];
   const rank=new Map(preferred.map((s,i)=>[s,i]));
   unique.sort((a,b)=>(rank.get(a.symbol)??999)-(rank.get(b.symbol)??999)||a.symbol.localeCompare(b.symbol));
-  $('eligibleCount').textContent=unique.length.toLocaleString('en-IN');
+  $('eligibleCount').textContent=safeNumberFormat(unique.length);
   setCheck('universeCheck',unique.length+' symbols · '+Math.min(unique.length,FNO_LIMIT)+' scanned per run','ok');
   return unique.slice(0,FNO_LIMIT);
 }
@@ -184,7 +197,7 @@ function renderSignals(signals,blocked) {
     host.innerHTML='<div class="empty-state"><strong>No qualified setups</strong><span>'+esc(blocked.length?blocked.length+' symbols were blocked by data-quality gates.':'No stock met all trend, momentum, volume and risk rules on this scan.')+' This is preferable to manufacturing a trade.</span></div>';
     return;
   }
-  host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · Daily candles</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty by risk</span><strong>'+s.qty.toLocaleString('en-IN')+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+s.rsi.toFixed(1)+'</strong></div></div><p class="reason">'+s.reasons.map(esc).join(' · ')+'</p><div class="signal-foot"><span>Last daily candle: '+esc(s.barDate)+'</span><span>Quote age: '+Math.max(0,Math.round(s.quoteAgeH))+'h</span><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
+  host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · Daily candles</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty by risk</span><strong>'+safeNumberFormat(s.qty)+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+s.rsi.toFixed(1)+'</strong></div></div><p class="reason">'+s.reasons.map(esc).join(' · ')+'</p><div class="signal-foot"><span>Last daily candle: '+esc(s.barDate)+'</span><span>Quote age: '+Math.max(0,Math.round(s.quoteAgeH))+'h</span><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
   host.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{
     const s=latestSignals.find(x=>x.symbol===btn.dataset.copy);if(!s)return;
     const plan=[s.symbol+' '+s.side+' ('+s.tf+')','Entry reference: '+s.entry,'SL: '+s.stop,'Target 1: '+s.target1,'Target 2: '+s.target2,'Qty by risk: '+s.qty,'Setup: '+s.setup,'Score: '+s.score+'/100','Quote time: '+s.quoteTime].join('\n');
@@ -214,7 +227,7 @@ async function scan() {
       setCheck('quoteCheck','Daily quote endpoint available; intraday quote not sufficient','warn');
       setCheck('dailyCheck','Not scanned in intraday mode','warn');
       setCheck('intradayCheck','No verified 5-minute endpoint — disabled','bad');
-      $('feedState').textContent='BLOCKED';$('feedChecked').textContent=new Date().toLocaleString('en-IN');
+      $('feedState').textContent='BLOCKED';$('feedChecked').textContent=safeNow();
       setMarketStatus('Intraday data unavailable','bad');
       $('dataNotice').className='notice bad';
       $('dataNotice').innerHTML='<strong>Intraday recommendations are not available yet.</strong><span>No verified 5-minute OHLCV feed was found in the repository contract. Add a reliable licensed/official intraday feed before enabling this mode.</span>';
@@ -251,7 +264,7 @@ async function scan() {
     await persistSignals(signals);
   } catch(e) {
     $('feedState').textContent='BLOCKED';$('feedChecked').textContent=new Date().toLocaleString('en-IN');
-    setMarketStatus('Feed error','bad');setCheck('universeCheck',String(e.message||e),'bad');
+    setMarketStatus('Feed error','bad');setCheck('universeCheck',String((e&&e.message)||e)+' · '+String((e&&e.stack)||'').slice(0,180),'bad');
     setCheck('quoteCheck','Not validated','bad');setCheck('dailyCheck','Not validated','bad');
     $('dataNotice').className='notice bad';$('dataNotice').innerHTML='<strong>Scanner stopped safely.</strong><span>'+esc(String(e.message||e))+'</span>';
     $('scanSummary').textContent='No signals generated.';renderSignals([],[]);
