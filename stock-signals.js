@@ -7,7 +7,7 @@
 'use strict';
 const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
-const STOCK_DATA_URL = SUPABASE_URL + '/functions/v1/stock-data';
+const STOCK_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-data';
 const FNO_LIMIT = 35;
 const MAX_QUOTE_AGE_HOURS = 96;
 const $ = id => document.getElementById(id);
@@ -40,7 +40,11 @@ function money(value) {
   return safeNumberFormat(n,{style:'currency',currency:'INR',maximumFractionDigits:2});
 }
 function num(value) { const n=Number(value); return Number.isFinite(n)?n:null; }
-function quoteTime(data) { return data?.quote_time || data?.updated_at || data?.timestamp || data?.as_of || null; }
+function quoteTime(data) {
+  const marketTs=Number(data?.latest_trading_timestamp);
+  if(Number.isFinite(marketTs)&&marketTs>0) return new Date(marketTs*1000).toISOString();
+  return data?.quote_time || data?.updated_at || data?.timestamp || data?.as_of || data?.fetched_at || null;
+}
 
 async function init() {
   try {
