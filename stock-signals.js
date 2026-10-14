@@ -196,9 +196,9 @@ async function persistSignals(signals) {
   try {
     const {data:{session},error:authError}=await supabase.auth.getSession();
     if(authError||!session?.user){setCheck('storageCheck','Sign in to save signals','warn');return;}
-    const rows=signals.map(s=>({symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:s.qty,risk_budget:s.riskBudget,rr_target_1:s.rr1,rr_target_2:s.rr2,quote_time:s.quoteTime,candle_time:s.barDate,source:s.source,indicators:{rsi:s.rsi,atr:s.atr,ema20:s.ema20,ema50:s.ema50,volume_ratio:s.volRatio},status:'ACTIVE',strategy_version:'swing-v1'}));
+    const rows=signals.map(s=>({user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:s.qty,risk_budget:s.riskBudget,rr_target_1:s.rr1,rr_target_2:s.rr2,quote_time:s.quoteTime,candle_time:s.barDate,source:s.source,indicators:{rsi:s.rsi,atr:s.atr,ema20:s.ema20,ema50:s.ema50,volume_ratio:s.volRatio},status:'ACTIVE',strategy_version:'swing-v1'}));
     if(!rows.length){setCheck('storageCheck','No qualified signals to save','warn');return;}
-    const {error}=await supabase.from('stock_trade_signals').upsert(rows,{onConflict:'symbol,timeframe,direction,candle_time,strategy_version'});
+    const {error}=await supabase.from('stock_trade_signals').upsert(rows,{onConflict:'user_id,symbol,timeframe,direction,candle_time,strategy_version'});
     if(error) throw error;
     setCheck('storageCheck',rows.length+' signal(s) saved','ok');
   } catch(e) {setCheck('storageCheck','Not saved: '+String(e.message||e).slice(0,100),'bad');}
