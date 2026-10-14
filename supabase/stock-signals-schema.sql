@@ -27,7 +27,7 @@ create table if not exists public.stock_trade_signals (
   strategy_version text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique(symbol,timeframe,direction,candle_time,strategy_version)
+  unique(user_id,symbol,timeframe,direction,candle_time,strategy_version)
 );
 
 create index if not exists stock_trade_signals_user_created_idx
