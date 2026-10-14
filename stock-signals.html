@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <title>Stock Signals | MarketPulse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/stock-signals.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="MarketPulse home"><span class="diamond"></span> MarketPulse <span class="brand-sub">STOCK SIGNALS</span></a>
+    <nav><a href="/">Dashboard</a><a href="/sectors.html">Sectors</a><a href="/portfolio.html">Portfolio</a></nav>
+  </header>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">RULE-BASED DECISION SUPPORT</p>
+        <h1>Stock Trading Signals</h1>
+        <p class="subhead">Intraday and swing setups for liquid NSE F&amp;O stocks. Manual execution only.</p>
+      </div>
+      <div class="market-status" id="marketStatus"><span class="dot warn"></span><span>Checking data feed…</span></div>
+    </section>
+
+    <section class="notice warning" id="dataNotice" role="status">
+      <strong>Data validation is running.</strong>
+      <span>Signals stay disabled until price freshness and candle fields are verified.</span>
+    </section>
+
+    <section class="control-panel">
+      <div class="control">
+        <label for="timeframe">Timeframe</label>
+        <select id="timeframe"><option value="intraday">Intraday (5-minute candles)</option><option value="swing" selected>Swing (daily candles)</option></select>
+      </div>
+      <div class="control">
+        <label for="riskPct">Risk per trade</label>
+        <select id="riskPct"><option value="0.25">0.25% of capital</option><option value="0.5" selected>0.50% of capital</option><option value="1">1.00% of capital</option></select>
+      </div>
+      <div class="control">
+        <label for="capital">Trading capital (₹)</label>
+        <input id="capital" type="number" min="1" step="1000" value="100000" inputmode="decimal">
+      </div>
+      <button id="scanBtn" class="primary" type="button">Validate feed &amp; scan</button>
+    </section>
+
+    <section class="stats-grid" aria-label="Signal summary">
+      <article class="stat"><span>Eligible F&amp;O symbols</span><strong id="eligibleCount">—</strong><small>From existing MarketPulse feed</small></article>
+      <article class="stat"><span>Valid candles</span><strong id="candleCount">—</strong><small id="candleWindow">Awaiting validation</small></article>
+      <article class="stat"><span>Qualified setups</span><strong id="signalCount">0</strong><small>No setup is forced</small></article>
+      <article class="stat"><span>Feed status</span><strong id="feedState" class="status-text">CHECKING</strong><small id="feedChecked">Not verified yet</small></article>
+    </section>
+
+    <section class="section-head">
+      <div><p class="eyebrow">SETUPS</p><h2>Trade candidates</h2></div>
+      <span class="muted" id="scanSummary">Run validation to begin.</span>
+    </section>
+    <div id="signals" class="signals-grid">
+      <div class="empty-state"><strong>No signals yet</strong><span>The scanner will only show a setup when the required candle data passes validation and the rules agree.</span></div>
+    </div>
+
+    <section class="section-head"><div><p class="eyebrow">TRUST BEFORE TRADING</p><h2>Market-data diagnostics</h2></div></section>
+    <section class="diagnostics" id="diagnostics" aria-live="polite">
+      <div class="diagnostic-row"><span>Current quote endpoint</span><strong id="quoteCheck">Not checked</strong></div>
+      <div class="diagnostic-row"><span>Daily OHLCV history</span><strong id="dailyCheck">Not checked</strong></div>
+      <div class="diagnostic-row"><span>Intraday 5-minute candles</span><strong id="intradayCheck">Not checked</strong></div>
+      <div class="diagnostic-row"><span>F&amp;O universe feed</span><strong id="universeCheck">Not checked</strong></div>
+      <div class="diagnostic-row"><span>Signal persistence</span><strong id="storageCheck">Schema required</strong></div>
+    </section>
+
+    <section class="method">
+      <h2>How signals are calculated</h2>
+      <div class="method-grid">
+        <div><strong>Trend filter</strong><p>EMA 20 / EMA 50 alignment and higher-timeframe direction.</p></div>
+        <div><strong>Momentum confirmation</strong><p>RSI and MACD must support the direction; indicators alone never trigger a trade.</p></div>
+        <div><strong>Volatility-aware risk</strong><p>ATR and recent swing structure define the invalidation level. Targets are calculated from actual risk.</p></div>
+        <div><strong>Quality gates</strong><p>Freshness, OHLC consistency, minimum reward-to-risk and liquid-symbol eligibility must pass.</p></div>
+      </div>
+      <p class="disclaimer">Decision-support software, not a guarantee of returns. Signals can lose money. Validate historical performance and paper-trade before risking capital. Prices may be delayed. No orders are placed by this page.</p>
+    </section>
+  </main>
+  <script src="/stock-signals.js"></script>
+</body>
+</html>
