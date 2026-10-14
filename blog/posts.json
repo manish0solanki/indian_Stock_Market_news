@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-extends-to-13-sessions-as-dii-buying-hits-35-day-streak",
+    "title": "FII Selling Extends to 13 Sessions as DII Buying Hits 35-Day Streak",
+    "excerpt": "FIIs net sold ₹1,857.44 Cr while DIIs net bought ₹2,670.44 Cr, resulting in a combined institutional net inflow of ₹813 Cr. The Nifty 50 declined 0.44% to ₹22,622.7 despite posi...",
+    "category": "fiidii-flows",
+    "date": "2026-10-14",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "canbk-stock-spotlight",
     "title": "Canara Bank Surges 3.6% on 4x Volume: Reclaims 20-Day Average as Buying Intensifies",
     "excerpt": "PRICE ACTION: Canara Bank rallied sharply with volume surging to more than four times its daily average, indicating genuine institutional or aggressive retail participation rath...",
