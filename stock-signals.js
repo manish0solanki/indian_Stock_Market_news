@@ -339,9 +339,13 @@ async function markOpenTradesFromScan(){
   let updated=0;const failed=[];
   for(const t of trades){
    try{
-    const quote=await getStock(t.symbol),bars=normalizeBars(quote.history),valid=validateQuote(quote.data,bars);
-    if(!valid.ok)throw new Error(valid.reason);
-    const mark=valid.price,now=new Date().toISOString(),snap={...(t.signal_snapshot||{}),mark_price:mark,mark_time:valid.quoteTime,mark_checked_at:now,mark_source:'validated stock-signal-data quote',estimated_cost_bps:paperAccountSettings.costBps};
+    const quote=await getStock(t.symbol),data=quote.data;
+    // Marking an existing position needs a valid fresh quote, not the scanner's 60-candle indicator-history gate.
+    const mark=num(data?.price),qt=quoteTime(data),quoteMs=qt?Date.parse(qt):NaN,ageH=(Date.now()-quoteMs)/3600000;
+    if(!(mark>0))throw new Error('Quote endpoint returned no valid price');
+    if(!Number.isFinite(quoteMs))throw new Error('Quote timestamp missing or invalid');
+    if(ageH < -1 || ageH > MAX_QUOTE_AGE_HOURS)throw new Error('Quote stale ('+Math.round(ageH)+'h old)');
+    const now=new Date().toISOString(),snap={...(t.signal_snapshot||{}),mark_price:mark,mark_time:qt,mark_checked_at:now,mark_source:'validated fresh quote from stock-data endpoint',estimated_cost_bps:paperAccountSettings.costBps};
     const buy=t.direction==='BUY',sl=Number(t.stop_loss),t1=Number(t.target_1),t2=Number(t.target_2),qty=Number(t.quantity),entry=Number(t.entry_price);
     const stopHit=buy?mark<=sl:mark>=sl,target2Hit=buy?mark>=t2:mark<=t2,target1Hit=buy?mark>=t1:mark<=t1;
     let patch={signal_snapshot:snap};
@@ -357,7 +361,7 @@ async function markOpenTradesFromScan(){
    }catch(e){failed.push(t.symbol+': '+String(e.message||e));}
   }
   await loadPaperTrades();
-  if($('paperSummary'))$('paperSummary').textContent=updated+' trade(s) marked from validated quotes; '+failed.length+' quote/update failure(s).';
+  if($('paperSummary'))$('paperSummary').textContent=updated+' trade(s) marked from fresh quotes; '+failed.length+' quote/update failure(s).'+(failed.length?' First issue: '+failed[0]:'');
   if(failed.length)alert('Trades not updated because a valid quote could not be verified:\n'+failed.slice(0,5).join('\n'));
  }catch(e){alert('Could not mark paper trades: '+String(e.message||e));}
  finally{if(button){button.disabled=false;button.textContent='Mark with latest validated quote';}}
