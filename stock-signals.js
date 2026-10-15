@@ -332,7 +332,7 @@ async function markOpenTradesFromScan(){
  let updated=0;
  for(const t of paperRowsCache.filter(x=>x.status==='OPEN')){
   const s=latestSignals.find(x=>x.symbol===t.symbol);if(!s||!Number.isFinite(Number(s.entry)))continue;
-  const snap={...(t.signal_snapshot||{}),mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'latest validated scan',estimated_cost_bps:paperAccountSettings.costBps};
+  const snap={...(t.signal_snapshot||{}),mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'latest signal reference',estimated_cost_bps:paperAccountSettings.costBps};
   const res=await supabase.from('stock_paper_trades').update({signal_snapshot:snap}).eq('id',t.id).eq('user_id',id);if(res.error)throw res.error;updated++;
  }
  await loadPaperTrades();if($('paperSummary'))$('paperSummary').textContent=updated+' open trade(s) marked using latest scan prices. May be delayed; not tick-by-tick live.';
@@ -348,9 +348,9 @@ async function loadPaperTrades(){
   if($('paperBalanceInput'))$('paperBalanceInput').value=paperAccountSettings.balance;
   if($('paperCostBps'))$('paperCostBps').value=paperAccountSettings.costBps;
   let q=supabase.from('stock_paper_trades').select('*').order('created_at',{ascending:false}).limit(200);
-  if(currentPaperFilter!=='ALL')q=q.eq('status',currentPaperFilter);
   const result=await q;if(result.error)throw result.error;
-  const rows=result.data||[];paperRowsCache=rows;renderPaperAccount(rows);
+  const allRows=result.data||[];paperRowsCache=allRows;renderPaperAccount(allRows);
+  const rows=currentPaperFilter==='ALL'?allRows:allRows.filter(t=>t.status===currentPaperFilter);
   if($('paperSummary'))$('paperSummary').textContent=rows.length+' '+currentPaperFilter.toLowerCase()+' paper trade(s)';
   if(!rows.length){host.innerHTML='<div class="empty-state"><strong>No '+currentPaperFilter.toLowerCase()+' paper trades</strong><span>Use Paper trade on a candidate above.</span></div>';return;}
   host.innerHTML=rows.map(t=>{
