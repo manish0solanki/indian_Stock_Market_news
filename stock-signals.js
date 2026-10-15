@@ -9,7 +9,9 @@ const SUPABASE_KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
 const STOCK_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-data';
 const INTRADAY_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-intraday';
 const FNO_LIMIT = 35;
-const MAX_QUOTE_AGE_HOURS = 96;
+const MAX_QUOTE_AGE_HOURS = 36;
+const MAX_MARK_QUOTE_AGE_HOURS = 8;
+const MAX_FUTURE_QUOTE_MINUTES = 5;
 const $ = id => document.getElementById(id);
 let apiBase = '';
 let supabase = null;
@@ -140,6 +142,15 @@ async function getStock(symbol) {
   const history=Array.isArray(data.history)?data.history:[];
   return {data,history};
 }
+
+// Keep Edge Function calls bounded rather than requesting every symbol at once.
+async function mapWithConcurrency(items, limit, worker) {
+  let next=0;
+  const count=Math.min(Math.max(1,limit),items.length);
+  await Promise.all(Array.from({length:count},async()=>{
+    while(next<items.length){const index=next++;await worker(items[index],index);}
+  }));
+}
 function normalizeBars(history) {
   return history.map(b=>{
     const date=String(b.date||b.datetime||b.timestamp||b.time||'').slice(0,10);
@@ -156,7 +167,7 @@ function validateQuote(data, bars) {
   const ms=Date.parse(t);
   if(!Number.isFinite(ms)) return {ok:false,reason:'Unparseable quote timestamp'};
   const ageH=(Date.now()-ms)/3600000;
-  if(ageH < -1 || ageH > MAX_QUOTE_AGE_HOURS) return {ok:false,reason:'Quote stale ('+Math.round(ageH)+'h old)'};
+  if(ageH < -(MAX_FUTURE_QUOTE_MINUTES/60) || ageH > MAX_QUOTE_AGE_HOURS) return {ok:false,reason:'Quote stale or timestamp is in the future ('+Math.round(ageH)+'h old)'};
   if(bars.length<60) return {ok:false,reason:'Need at least 60 valid daily OHLCV candles; got '+bars.length};
   const last=bars[bars.length-1], lastDate=Date.parse(last.date+'T00:00:00Z');
   const days=(Date.now()-lastDate)/86400000;
@@ -228,8 +239,9 @@ function analyse(symbol,name,data,history,tf) {
   const target2=side==='BUY'?entry+2*risk:entry-2*risk;
   if(side==='SELL'&&target2<=0) return null;
   const capital=Math.max(0,num($('capital').value)||0),riskBudget=capital*(Number($('riskPct').value)/100);
-  const qty=Math.max(0,Math.floor(riskBudget/risk));
-  if(!qty) return null;
+  const qtyByRisk=Math.floor(riskBudget/risk);
+  const qty=side==='BUY'?Math.min(qtyByRisk,Math.floor(capital/entry)):qtyByRisk;
+  if(qty<1) return null;
   return {symbol,name,side,setup,score,entry,stop,target1,target2,riskPerShare:risk,qty,riskBudget,rr1:1.5,rr2:2,rsi:r,atr:a,ema20:e20.at(-1),ema50:e50.at(-1),volRatio,barDate:last.date,quoteTime:valid.quoteTime,quoteAgeH:valid.ageH,reasons,tf:'swing',source:'stock-data/history'};
 }
 
@@ -243,7 +255,7 @@ function analyseIntraday(symbol,name,data) {
   const bars=normalizeIntradayBars(data.history||[]);
   if(bars.length<60) return {blocked:true,symbol,reason:'Need at least 60 valid 5-minute candles; got '+bars.length};
   const last=bars.at(-1), ageMin=(Date.now()-last.timestamp*1000)/60000;
-  if(!Number.isFinite(ageMin)||ageMin < -2||ageMin>30) return {blocked:true,symbol,reason:'Latest 5-minute candle is stale ('+Math.round(ageMin)+' minutes old)'};
+  if(!Number.isFinite(ageMin)||ageMin < -2||ageMin>10) return {blocked:true,symbol,reason:'Latest 5-minute candle is stale ('+Math.round(ageMin)+' minutes old)'};
   const closes=bars.map(b=>b.close), e9=ema(closes,9),e21=ema(closes,21), r=rsi(closes), a=atr(bars,14),m=macd(closes);
   if(!Number.isFinite(a)||a<=0||!Number.isFinite(r)||!Number.isFinite(m.line)||!Number.isFinite(m.signal)||!Number.isFinite(e9.at(-1))||!Number.isFinite(e21.at(-1))) return {blocked:true,symbol,reason:'Intraday indicators incomplete'};
   const avgVol=bars.slice(-21,-1).reduce((s,b)=>s+b.volume,0)/20;
@@ -259,7 +271,8 @@ function analyseIntraday(symbol,name,data) {
   const risk=Math.abs(entry-stop),riskPct=risk/entry*100;
   if(!Number.isFinite(risk)||risk<=0||riskPct<0.1||riskPct>2) return null;
   const target1=side==='BUY'?entry+1.5*risk:entry-1.5*risk,target2=side==='BUY'?entry+2*risk:entry-2*risk;
-  const capital=Math.max(0,num($('capital').value)||0),riskBudget=capital*(Number($('riskPct').value)/100),qty=Math.floor(riskBudget/risk);
+  const capital=Math.max(0,num($('capital').value)||0),riskBudget=capital*(Number($('riskPct').value)/100),qtyByRisk=Math.floor(riskBudget/risk);
+  const qty=side==='BUY'?Math.min(qtyByRisk,Math.floor(capital/entry)):qtyByRisk;
   if(qty<1||target2<=0) return null;
   const score=60+(breakout||breakdown?10:0)+(volRatio>=1.5?10:0)+(r>=55&&r<=65?10:0)+10;
   if(score<75)return null;
@@ -285,7 +298,7 @@ function renderSignals(signals,blocked) {
   latestSignals=signals;
   $('signalCount').textContent=signals.length;
   if(!signals.length){host.innerHTML='<div class="empty-state"><strong>No qualified setups</strong><span>Signals with incomplete indicator values were rejected. Check the diagnostics and source history.</span></div>';return;}
-  host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · Daily candles</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty by risk</span><strong>'+safeNumberFormat(s.qty)+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+safeNumberFormat(s.rsi,{minimumFractionDigits:1,maximumFractionDigits:1})+'</strong></div></div><p class="reason">'+(Array.isArray(s.reasons)?s.reasons:[]).map(esc).join(' · ')+'</p><div class="signal-foot"><span>Last daily candle: '+esc(s.barDate)+'</span><span>Quote age: '+Math.max(0,Math.round(s.quoteAgeH))+'h</span><button class="small-button" data-paper="'+esc(s.symbol)+'" type="button">Paper trade</button><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
+  host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · '+(s.tf==='intraday'?'5-minute candles':'Daily candles')+'</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty (risk/capital cap)</span><strong>'+safeNumberFormat(s.qty)+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+safeNumberFormat(s.rsi,{minimumFractionDigits:1,maximumFractionDigits:1})+'</strong></div></div><p class="reason">'+(Array.isArray(s.reasons)?s.reasons:[]).map(esc).join(' · ')+'</p><div class="signal-foot"><span>'+(s.tf==='intraday'?'Last 5-minute candle: ':'Last daily candle: ')+esc(s.barDate)+'</span><span>Quote age: '+(s.tf==='intraday'?Math.max(0,Math.round(s.quoteAgeH*60))+'m':Math.max(0,Math.round(s.quoteAgeH))+'h')+'</span><button class="small-button" data-paper="'+esc(s.symbol)+'" type="button">Paper trade</button><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
   host.querySelectorAll('[data-paper]').forEach(btn=>btn.addEventListener('click',async()=>{const s=latestSignals.find(x=>x.symbol===btn.dataset.paper);if(!s)return;btn.disabled=true;try{await savePaperTrade(s);btn.textContent='Paper traded';}catch(e){alert('Paper trade failed: '+String(e.message||e));}finally{btn.disabled=false;}}));
   host.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{
     const s=latestSignals.find(x=>x.symbol===btn.dataset.copy);if(!s)return;
@@ -344,14 +357,14 @@ async function markOpenTradesFromScan(){
     const mark=num(data?.price),qt=quoteTime(data),quoteMs=qt?Date.parse(qt):NaN,ageH=(Date.now()-quoteMs)/3600000;
     if(!(mark>0))throw new Error('Quote endpoint returned no valid price');
     if(!Number.isFinite(quoteMs))throw new Error('Quote timestamp missing or invalid');
-    if(ageH < -1 || ageH > MAX_QUOTE_AGE_HOURS)throw new Error('Quote stale ('+Math.round(ageH)+'h old)');
+    if(ageH < -(MAX_FUTURE_QUOTE_MINUTES/60) || ageH > MAX_MARK_QUOTE_AGE_HOURS)throw new Error('Quote stale or timestamp is in the future ('+Math.round(ageH)+'h old)');
     const now=new Date().toISOString(),snap={...(t.signal_snapshot||{}),mark_price:mark,mark_time:qt,mark_checked_at:now,mark_source:'validated fresh quote from stock-data endpoint',estimated_cost_bps:paperAccountSettings.costBps};
     const buy=t.direction==='BUY',sl=Number(t.stop_loss),t1=Number(t.target_1),t2=Number(t.target_2),qty=Number(t.quantity),entry=Number(t.entry_price);
     const stopHit=buy?mark<=sl:mark>=sl,target2Hit=buy?mark>=t2:mark<=t2,target1Hit=buy?mark>=t1:mark<=t1;
     let patch={signal_snapshot:snap};
     if(stopHit||target2Hit){
      const reason=stopHit?'STOP_LOSS':'TARGET_2',gross=(mark-entry)*qty*(buy?1:-1),cost=tradeCosts(t,mark);
-     patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
+     patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:Number(t.realized_pnl||0)+gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
     }else if(target1Hit&&!snap.target1_partial_filled&&qty>=2){
      const exitQty=Math.floor(qty/2),gross=(mark-entry)*exitQty*(buy?1:-1),cost=tradeCosts({...t,quantity:exitQty},mark);
      patch={...patch,quantity:qty-exitQty,realized_pnl:Number(t.realized_pnl||0)+gross-cost,signal_snapshot:{...snap,target1_partial_filled:true,target1_exit_price:mark,target1_exit_quantity:exitQty,target1_realized_gross:gross,target1_exit_cost:cost,target1_exit_time:now,fill_model:'validated quote; simulated partial fill'}};
@@ -383,17 +396,19 @@ async function loadPaperTrades(){
   if($('paperSummary'))$('paperSummary').textContent=rows.length+' '+currentPaperFilter.toLowerCase()+' paper trade(s)';
   if(!rows.length){host.innerHTML='<div class="empty-state"><strong>No '+currentPaperFilter.toLowerCase()+' paper trades</strong><span>Use Paper trade on a candidate above.</span></div>';return;}
   host.innerHTML=rows.map(t=>{
-   const mark=Number(t.signal_snapshot?.mark_price)||Number(t.entry_price);
+   const hasValidatedMark=String(t.signal_snapshot?.mark_source||'').includes('validated fresh quote');
+   const mark=hasValidatedMark?Number(t.signal_snapshot?.mark_price):Number(t.entry_price);
+   const markLabel=hasValidatedMark?'Last mark':'Last mark (entry ref)';
    const gross=(mark-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1);
    const unreal=t.status==='OPEN'?gross-tradeCosts(t,mark):null;
-   return '<article class="paper-trade"><div class="paper-trade-head"><strong>'+esc(t.symbol)+' · '+esc(t.direction)+'</strong><span class="pill">'+esc(t.status)+'</span></div><div class="paper-trade-grid"><span>Entry<b>'+money(t.entry_price)+'</b></span><span>Last mark<b>'+money(mark)+'</b></span><span>Unrealized P&amp;L<b class="'+(unreal>=0?'pnl-positive':'pnl-negative')+'">'+(unreal==null?'—':money(unreal))+'</b></span><span>Stop-loss<b>'+money(t.stop_loss)+'</b></span><span>Target 1<b>'+money(t.target_1)+'</b></span><span>Target 2<b>'+money(t.target_2)+'</b></span><span>Quantity<b>'+safeNumberFormat(t.quantity)+'</b></span><span>Realized P&amp;L<b>'+(t.realized_pnl==null?'—':money(t.realized_pnl))+'</b></span></div><div class="paper-trade-foot"><small>'+esc(t.timeframe||'')+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString():'')+'</small>'+(t.status==='OPEN'?'<button type="button" class="small-button" data-close-paper="'+esc(t.id)+'">Close trade</button>':'<small>Exit '+money(t.exit_price)+'</small>')+'</div></article>';
+   return '<article class="paper-trade"><div class="paper-trade-head"><strong>'+esc(t.symbol)+' · '+esc(t.direction)+'</strong><span class="pill">'+esc(t.status)+'</span></div><div class="paper-trade-grid"><span>Entry<b>'+money(t.entry_price)+'</b></span><span>'+markLabel+'<b>'+money(mark)+'</b></span><span>Unrealized P&amp;L<b class="'+(unreal>=0?'pnl-positive':'pnl-negative')+'">'+(unreal==null?'—':money(unreal))+'</b></span><span>Stop-loss<b>'+money(t.stop_loss)+'</b></span><span>Target 1<b>'+money(t.target_1)+'</b></span><span>Target 2<b>'+money(t.target_2)+'</b></span><span>Quantity<b>'+safeNumberFormat(t.quantity)+'</b></span><span>Realized P&amp;L<b>'+(t.realized_pnl==null?'—':money(t.realized_pnl))+'</b></span></div><div class="paper-trade-foot"><small>'+esc(t.timeframe||'')+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString():'')+'</small>'+(t.status==='OPEN'?'<button type="button" class="small-button" data-close-paper="'+esc(t.id)+'">Close trade</button>':'<small>Exit '+money(t.exit_price)+'</small>')+'</div></article>';
   }).join('');
   host.querySelectorAll('[data-close-paper]').forEach(btn=>btn.addEventListener('click',async()=>{
    const val=prompt('Enter simulated exit price (₹). No broker order is placed.');if(val===null)return;
    const exit=Number(val);if(!Number.isFinite(exit)||exit<=0){alert('Enter a valid price.');return;}
    btn.disabled=true;
    try{const t=rows.find(x=>String(x.id)===btn.dataset.closePaper);const gross=(exit-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1);const costs=tradeCosts(t,exit);const net=gross-costs;
-    const upd=await supabase.from('stock_paper_trades').update({status:'CLOSED',exit_price:exit,realized_pnl:net,closed_at:new Date().toISOString(),signal_snapshot:{...(t.signal_snapshot||{}),exit_cost:costs,exit_reason:'MANUAL',gross_pnl:gross}}).eq('id',t.id).eq('user_id',session.user.id);
+    const upd=await supabase.from('stock_paper_trades').update({status:'CLOSED',exit_price:exit,realized_pnl:Number(t.realized_pnl||0)+net,closed_at:new Date().toISOString(),signal_snapshot:{...(t.signal_snapshot||{}),exit_cost:costs,exit_reason:'MANUAL',gross_pnl:gross}}).eq('id',t.id).eq('user_id',session.user.id);
     if(upd.error)throw upd.error;await loadPaperTrades();
    }catch(e){alert('Could not close trade: '+String(e.message||e));}finally{btn.disabled=false;}
   }));
@@ -403,7 +418,7 @@ async function loadPaperTrades(){
 async function savePaperTrade(s){
  if(!supabase)throw new Error('Supabase client unavailable');
  const result=await supabase.auth.getSession();const session=result.data?.session;if(result.error)throw result.error;if(!session?.user)throw new Error('Please sign in on the main MarketPulse page first.');
- const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:Math.max(1,Number(s.qty)||1),risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2,mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'signal entry reference',estimated_cost_bps:paperAccountSettings.costBps},status:'OPEN'};
+ const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:Math.max(1,Number(s.qty)||1),risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2,mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'entry reference — refresh quote to mark',estimated_cost_bps:paperAccountSettings.costBps},status:'OPEN'};
  const saved=await supabase.from('stock_paper_trades').upsert(row,{onConflict:'user_id,symbol,timeframe,direction,signal_time',ignoreDuplicates:true});if(saved.error)throw saved.error;
  const summary=document.getElementById('paperSummary');if(summary)summary.textContent='Paper trade saved: '+s.symbol+' · '+s.side;
 }
@@ -437,7 +452,7 @@ async function scan() {
       setCheck('quoteCheck','Using latest 5-minute candle as entry reference','warn');
       setCheck('dailyCheck','Daily history not used in intraday mode','warn');
       setCheck('intradayCheck','Validating 5-minute candles','warn');
-      const jobs=universe.map(async stock=>{
+      await mapWithConcurrency(universe,4,async stock=>{
         try {
           const data=await getIntraday(stock.symbol);
           quoteOk++;
@@ -446,7 +461,6 @@ async function scan() {
           if(Array.isArray(data.history)&&data.history.length>=60)candleOk++;
         } catch(e) {blocked.push({symbol:stock.symbol,reason:String(e.message||e)});}
       });
-      await Promise.all(jobs);
       signals.sort((a,b)=>b.score-a.score);
       $('candleCount').textContent=String(candleOk);
       $('candleWindow').textContent='of '+universe.length+' symbols passed 5-minute candle gates';
@@ -461,7 +475,7 @@ async function scan() {
       renderSignals(signals,blocked);await persistSignals(signals);return;
     }
     setCheck('quoteCheck','Testing '+Math.min(universe.length,5)+' quote responses','warn');
-    const jobs=universe.map(async stock=>{
+    await mapWithConcurrency(universe,4,async stock=>{
       try {
         const {data,history}=await getStock(stock.symbol);
         const bars=normalizeBars(history);
@@ -472,7 +486,6 @@ async function scan() {
         if(signal) signals.push(signal); else if(!validation.ok) blocked.push({symbol:stock.symbol,reason:validation.reason});
       } catch(e) {blocked.push({symbol:stock.symbol,reason:String(e.message||e)});}
     });
-    await Promise.all(jobs);
     signals.sort((a,b)=>b.score-a.score);
     $('candleCount').textContent=candleOk.toString();
     $('candleWindow').textContent='of '+universe.length+' symbols passed quote + daily OHLCV gates';
