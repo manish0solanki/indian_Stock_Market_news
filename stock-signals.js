@@ -1,13 +1,13 @@
 /* MarketPulse Stock Signals v1.0
  * Isolated from crypto signals. No broker orders are sent.
- * Daily history comes from the existing Supabase stock-data Edge Function.
- * Intraday is deliberately disabled until a verified 5-minute OHLCV endpoint exists.
+ * Daily and intraday feeds are isolated Supabase Edge Functions. Yahoo-derived data may be delayed.
  */
 (() => {
 'use strict';
 const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
 const STOCK_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-data';
+const INTRADAY_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-intraday';
 const FNO_LIMIT = 35;
 const MAX_QUOTE_AGE_HOURS = 96;
 const $ = id => document.getElementById(id);
@@ -152,7 +152,6 @@ function macd(values) {
   return {line:line[line.length-1],signal:sig[sig.length-1]};
 }
 function analyse(symbol,name,data,history,tf) {
-  if(tf==='intraday') return {blocked:true,reason:'No verified 5-minute candle source configured'};
   const bars=normalizeBars(history),valid=validateQuote(data,bars);
   if(!valid.ok) return {blocked:true,symbol,reason:valid.reason};
   const closes=bars.map(b=>b.close), last=bars[bars.length-1], prev=bars[bars.length-2];
@@ -193,6 +192,45 @@ function analyse(symbol,name,data,history,tf) {
   if(!qty) return null;
   return {symbol,name,side,setup,score,entry,stop,target1,target2,riskPerShare:risk,qty,riskBudget,rr1:1.5,rr2:2,rsi:r,atr:a,ema20:e20.at(-1),ema50:e50.at(-1),volRatio,barDate:last.date,quoteTime:valid.quoteTime,quoteAgeH:valid.ageH,reasons,tf:'swing',source:'stock-data/history'};
 }
+
+function normalizeIntradayBars(history) {
+  return history.map(b=>({timestamp:Number(b.timestamp)||Date.parse(b.date||b.datetime||b.time||'' )/1000,
+    date:b.date||b.datetime||'',open:num(b.open),high:num(b.high),low:num(b.low),close:num(b.close),volume:num(b.volume)}))
+    .filter(b=>Number.isFinite(b.timestamp)&&[b.open,b.high,b.low,b.close,b.volume].every(Number.isFinite)&&b.open>0&&b.high>0&&b.low>0&&b.close>0&&b.volume>0&&b.high>=Math.max(b.open,b.close,b.low)&&b.low<=Math.min(b.open,b.close,b.high))
+    .sort((a,b)=>a.timestamp-b.timestamp);
+}
+function analyseIntraday(symbol,name,data) {
+  const bars=normalizeIntradayBars(data.history||[]);
+  if(bars.length<60) return {blocked:true,symbol,reason:'Need at least 60 valid 5-minute candles; got '+bars.length};
+  const last=bars.at(-1), ageMin=(Date.now()-last.timestamp*1000)/60000;
+  if(!Number.isFinite(ageMin)||ageMin < -2||ageMin>30) return {blocked:true,symbol,reason:'Latest 5-minute candle is stale ('+Math.round(ageMin)+' minutes old)'};
+  const closes=bars.map(b=>b.close), e9=ema(closes,9),e21=ema(closes,21), r=rsi(closes), a=atr(bars,14),m=macd(closes);
+  if(!Number.isFinite(a)||a<=0||!Number.isFinite(r)||!Number.isFinite(m.line)||!Number.isFinite(m.signal)||!Number.isFinite(e9.at(-1))||!Number.isFinite(e21.at(-1))) return {blocked:true,symbol,reason:'Intraday indicators incomplete'};
+  const avgVol=bars.slice(-21,-1).reduce((s,b)=>s+b.volume,0)/20;
+  const volRatio=avgVol>0?last.volume/avgVol:0;
+  const priorHigh=Math.max(...bars.slice(-13,-1).map(b=>b.high)),priorLow=Math.min(...bars.slice(-13,-1).map(b=>b.low));
+  const up=last.close>e9.at(-1)&&e9.at(-1)>e21.at(-1), down=last.close<e9.at(-1)&&e9.at(-1)<e21.at(-1);
+  const breakout=last.close>priorHigh&&volRatio>=1.15, breakdown=last.close<priorLow&&volRatio>=1.15;
+  const buy=up&&(breakout||(last.low<=e9.at(-1)*1.003&&last.close>last.open))&&r>=52&&r<=72&&m.line>m.signal;
+  const sell=down&&(breakdown||(last.high>=e9.at(-1)*0.997&&last.close<last.open))&&r>=28&&r<=48&&m.line<m.signal;
+  if(!buy&&!sell) return null;
+  const side=buy?'BUY':'SELL',entry=last.close;
+  let stop=side==='BUY'?Math.min(last.low,entry-1.2*a):Math.max(last.high,entry+1.2*a);
+  const risk=Math.abs(entry-stop),riskPct=risk/entry*100;
+  if(!Number.isFinite(risk)||risk<=0||riskPct<0.1||riskPct>2) return null;
+  const target1=side==='BUY'?entry+1.5*risk:entry-1.5*risk,target2=side==='BUY'?entry+2*risk:entry-2*risk;
+  const capital=Math.max(0,num($('capital').value)||0),riskBudget=capital*(Number($('riskPct').value)/100),qty=Math.floor(riskBudget/risk);
+  if(qty<1||target2<=0) return null;
+  const score=60+(breakout||breakdown?10:0)+(volRatio>=1.5?10:0)+(r>=55&&r<=65?10:0)+10;
+  if(score<75)return null;
+  return {symbol,name,side,setup:breakout?'5m breakout':breakdown?'5m breakdown':'5m EMA pullback',score,entry,stop,target1,target2,riskPerShare:risk,qty,riskBudget,rr1:1.5,rr2:2,rsi:r,atr:a,ema20:e9.at(-1),ema50:e21.at(-1),volRatio,barDate:new Date(last.timestamp*1000).toISOString(),quoteTime:new Date(last.timestamp*1000).toISOString(),quoteAgeH:ageMin/60,reasons:[up?'5m EMA9 above EMA21':'5m EMA9 below EMA21', 'RSI and MACD confirm momentum',volRatio>=1.15?'Volume expansion confirmed':'Volume confirmation'],tf:'intraday',source:'stock-signal-intraday/5m'};
+}
+async function getIntraday(symbol) {
+ const data=await fetchJson(INTRADAY_DATA_URL+'?symbol='+encodeURIComponent(symbol),'Intraday '+symbol);
+ if(!data||data.success!==true) throw new Error(data?.error||'No intraday candle response');
+ return data;
+}
+
 function renderSignals(signals,blocked) {
   latestSignals=signals;
   $('signalCount').textContent=signals.length;
@@ -233,18 +271,35 @@ async function scan() {
   $('feedState').textContent='CHECKING';setMarketStatus('Checking data feed');
   const signals=[],blocked=[];let quoteOk=0,candleOk=0;
   try {
-    if($('timeframe').value==='intraday') {
-      setCheck('quoteCheck','Daily quote endpoint available; intraday quote not sufficient','warn');
-      setCheck('dailyCheck','Not scanned in intraday mode','warn');
-      setCheck('intradayCheck','No verified 5-minute endpoint — disabled','bad');
-      $('feedState').textContent='BLOCKED';$('feedChecked').textContent=safeNow();
-      setMarketStatus('Intraday data unavailable','bad');
-      $('dataNotice').className='notice bad';
-      $('dataNotice').innerHTML='<strong>Intraday recommendations are not available yet.</strong><span>No verified 5-minute OHLCV feed was found in the repository contract. Add a reliable licensed/official intraday feed before enabling this mode.</span>';
-      $('scanSummary').textContent='No intraday signals generated; data source missing.';
-      renderSignals([],[]);return;
-    }
+    const timeframe=$('timeframe').value;
     const universe=await getUniverse();
+    if(timeframe==='intraday') {
+      setCheck('quoteCheck','Using latest 5-minute candle as entry reference','warn');
+      setCheck('dailyCheck','Daily history not used in intraday mode','warn');
+      setCheck('intradayCheck','Validating 5-minute candles','warn');
+      const jobs=universe.map(async stock=>{
+        try {
+          const data=await getIntraday(stock.symbol);
+          quoteOk++;
+          const sig=analyseIntraday(stock.symbol,stock.name,data);
+          if(sig)signals.push(sig);else blocked.push({symbol:stock.symbol,reason:'No setup or risk gate failed'});
+          if(Array.isArray(data.history)&&data.history.length>=60)candleOk++;
+        } catch(e) {blocked.push({symbol:stock.symbol,reason:String(e.message||e)});}
+      });
+      await Promise.all(jobs);
+      signals.sort((a,b)=>b.score-a.score);
+      $('candleCount').textContent=String(candleOk);
+      $('candleWindow').textContent='of '+universe.length+' symbols passed 5-minute candle gates';
+      $('feedState').textContent=candleOk?'PARTIAL':'BLOCKED';$('feedChecked').textContent=safeNow();
+      setCheck('quoteCheck',quoteOk+' / '+universe.length+' intraday responses received',quoteOk?'ok':'bad');
+      setCheck('dailyCheck','Not required for intraday','warn');
+      setCheck('intradayCheck',candleOk+' / '+universe.length+' returned at least 60 five-minute candles',candleOk?'ok':'bad');
+      setMarketStatus(candleOk?'Intraday data validated; verify broker price':'Intraday data unavailable',candleOk?'warn':'bad');
+      $('dataNotice').className='notice warning';
+      $('dataNotice').innerHTML='<strong>Intraday data is Yahoo-derived and may be delayed.</strong><span>Only use signals when the latest candle is fresh. Confirm entry and stop with your broker; no orders are placed.</span>';
+      $('scanSummary').textContent=signals.length+' intraday setup(s) · '+blocked.length+' blocked/no setup · '+universe.length+' scanned';
+      renderSignals(signals,blocked);await persistSignals(signals);return;
+    }
     setCheck('quoteCheck','Testing '+Math.min(universe.length,5)+' quote responses','warn');
     const jobs=universe.map(async stock=>{
       try {
