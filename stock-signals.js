@@ -10,7 +10,7 @@ const STOCK_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-data';
 const INTRADAY_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-intraday';
 const FNO_LIMIT = 35;
 const MAX_QUOTE_AGE_HOURS = 36;
-const MAX_MARK_QUOTE_AGE_HOURS = 24;
+const MAX_MARK_QUOTE_AGE_HOURS = 8;
 const MAX_FUTURE_QUOTE_MINUTES = 5;
 const $ = id => document.getElementById(id);
 let apiBase = '';
@@ -364,7 +364,7 @@ async function markOpenTradesFromScan(){
     let patch={signal_snapshot:snap};
     if(stopHit||target2Hit){
      const reason=stopHit?'STOP_LOSS':'TARGET_2',gross=(mark-entry)*qty*(buy?1:-1),cost=tradeCosts(t,mark);
-     patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
+     patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:Number(t.realized_pnl||0)+gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
     }else if(target1Hit&&!snap.target1_partial_filled&&qty>=2){
      const exitQty=Math.floor(qty/2),gross=(mark-entry)*exitQty*(buy?1:-1),cost=tradeCosts({...t,quantity:exitQty},mark);
      patch={...patch,quantity:qty-exitQty,realized_pnl:Number(t.realized_pnl||0)+gross-cost,signal_snapshot:{...snap,target1_partial_filled:true,target1_exit_price:mark,target1_exit_quantity:exitQty,target1_realized_gross:gross,target1_exit_cost:cost,target1_exit_time:now,fill_model:'validated quote; simulated partial fill'}};
