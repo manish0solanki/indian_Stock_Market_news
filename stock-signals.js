@@ -302,7 +302,7 @@ function renderSignals(signals,blocked) {
   $('signalCount').textContent=signals.length;
   if(!signals.length){host.innerHTML='<div class="empty-state"><strong>No qualified setups</strong><span>Signals with incomplete indicator values were rejected. Check the diagnostics and source history.</span></div>';return;}
   host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · '+(s.tf==='intraday'?'5-minute candles':'Daily candles')+'</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty (risk/capital cap)</span><strong>'+safeNumberFormat(s.qty)+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+safeNumberFormat(s.rsi,{minimumFractionDigits:1,maximumFractionDigits:1})+'</strong></div></div><p class="reason">'+(Array.isArray(s.reasons)?s.reasons:[]).map(esc).join(' · ')+'</p><div class="signal-foot"><span>'+(s.tf==='intraday'?'Last 5-minute candle: ':'Last daily candle: ')+esc(s.barDate)+'</span><span>Quote age: '+(s.tf==='intraday'?Math.max(0,Math.round(s.quoteAgeH*60))+'m':Math.max(0,Math.round(s.quoteAgeH))+'h')+'</span><button class="small-button" data-paper="'+esc(s.symbol)+'" type="button">Paper trade</button><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
-  host.querySelectorAll('[data-paper]').forEach(btn=>btn.addEventListener('click',async()=>{const s=latestSignals.find(x=>x.symbol===btn.dataset.paper);if(!s)return;btn.disabled=true;try{await savePaperTrade(s);btn.textContent='Paper traded';}catch(e){alert('Paper trade failed: '+String(e.message||e));}finally{btn.disabled=false;}}));
+  host.querySelectorAll('[data-paper]').forEach(btn=>btn.addEventListener('click',async()=>{const s=latestSignals.find(x=>x.symbol===btn.dataset.paper);if(!s)return;const q=prompt('Quantity in whole shares:',String(s.qty));if(q===null)return;const qty=Number(q);if(!Number.isInteger(qty)||qty<1){alert('Enter a whole-share quantity of at least 1.');return;}btn.disabled=true;try{await savePaperTrade({...s,qty});btn.textContent='Paper traded';}catch(e){alert('Paper trade failed: '+String(e.message||e));}finally{btn.disabled=false;}}));
   host.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{
     const s=latestSignals.find(x=>x.symbol===btn.dataset.copy);if(!s)return;
     const plan=[s.symbol+' '+s.side+' ('+s.tf+')','Entry reference: '+s.entry,'SL: '+s.stop,'Target 1: '+s.target1,'Target 2: '+s.target2,'Qty by risk: '+s.qty,'Setup: '+s.setup,'Score: '+s.score+'/100','Quote time: '+s.quoteTime].join('\n');
@@ -409,23 +409,41 @@ async function loadPaperTrades(){
   if($('paperSummary'))$('paperSummary').textContent=rows.length+' '+currentPaperFilter.toLowerCase()+' paper trade(s)';
   if(!rows.length){host.innerHTML='<div class="empty-state"><strong>No '+currentPaperFilter.toLowerCase()+' paper trades</strong><span>Use Paper trade on a candidate above.</span></div>';return;}
   host.innerHTML=rows.map(t=>{
-   const hasValidatedMark=String(t.signal_snapshot?.mark_source||'').includes('validated fresh quote');
-   const mark=hasValidatedMark?Number(t.signal_snapshot?.mark_price):Number(t.entry_price);
-   const markLabel=hasValidatedMark?'Last mark':'Last mark (entry ref)';
-   const gross=(mark-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1);
-   const unreal=t.status==='OPEN'?gross-tradeCosts(t,mark):null;
-   return '<article class="paper-trade"><div class="paper-trade-head"><strong>'+esc(t.symbol)+' · '+esc(t.direction)+'</strong><span class="pill">'+esc(t.status)+'</span></div><div class="paper-trade-grid"><span>Entry<b>'+money(t.entry_price)+'</b></span><span>'+markLabel+'<b>'+money(mark)+'</b></span><span>Unrealized P&amp;L<b class="'+(unreal>=0?'pnl-positive':'pnl-negative')+'">'+(unreal==null?'—':money(unreal))+'</b></span><span>Stop-loss<b>'+money(t.stop_loss)+'</b></span><span>Target 1<b>'+money(t.target_1)+'</b></span><span>Target 2<b>'+money(t.target_2)+'</b></span><span>Quantity<b>'+safeNumberFormat(t.quantity)+'</b></span><span>Realized P&amp;L<b>'+(t.realized_pnl==null?'—':money(t.realized_pnl))+'</b></span></div><div class="paper-trade-foot"><small>'+esc(t.timeframe||'')+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString():'')+'</small>'+(t.status==='OPEN'?'<button type="button" class="small-button" data-close-paper="'+esc(t.id)+'">Close trade</button>':'<small>Exit '+money(t.exit_price)+'</small>')+'</div></article>';
-  }).join('');
-  host.querySelectorAll('[data-close-paper]').forEach(btn=>btn.addEventListener('click',async()=>{
-   const val=prompt('Enter simulated exit price (₹). No broker order is placed.');if(val===null)return;
-   const exit=Number(val);if(!Number.isFinite(exit)||exit<=0){alert('Enter a valid price.');return;}
-   btn.disabled=true;
-   try{const t=rows.find(x=>String(x.id)===btn.dataset.closePaper);const gross=(exit-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1);const costs=tradeCosts(t,exit);const net=gross-costs;
-    const upd=await supabase.from('stock_paper_trades').update({status:'CLOSED',exit_price:exit,realized_pnl:Number(t.realized_pnl||0)+net,closed_at:new Date().toISOString(),signal_snapshot:{...(t.signal_snapshot||{}),exit_cost:costs,exit_reason:'MANUAL',gross_pnl:gross}}).eq('id',t.id).eq('user_id',session.user.id);
-    if(upd.error)throw upd.error;await loadPaperTrades();
-   }catch(e){alert('Could not close trade: '+String(e.message||e));}finally{btn.disabled=false;}
-  }));
- }catch(e){host.innerHTML='<div class="empty-state"><strong>Could not load paper trades</strong><span>'+esc(String(e.message||e))+'</span></div>';if($('paperSummary'))$('paperSummary').textContent='Paper-trade loading error';}
+    const hasValidatedMark=String(t.signal_snapshot?.mark_source||'').includes('validated fresh quote');
+    const mark=hasValidatedMark?Number(t.signal_snapshot?.mark_price):Number(t.entry_price);
+    const markLabel=hasValidatedMark?'Last mark':'Last mark (entry ref)';
+    const gross=(mark-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1);
+    const unreal=t.status==='OPEN'?gross-tradeCosts(t,mark):null;
+    const exitLabel=t.direction==='SELL'?'Buy to cover at market':'Sell at market';
+    return '<article class="paper-trade"><div class="paper-trade-head"><strong>'+esc(t.symbol)+' · '+esc(t.direction)+'</strong><span class="pill">'+esc(t.status)+'</span></div><div class="paper-trade-grid"><span>Entry<b>'+money(t.entry_price)+'</b></span><span>'+markLabel+'<b>'+money(mark)+'</b></span><span>Unrealized P&amp;L<b class="'+(unreal>=0?'pnl-positive':'pnl-negative')+'">'+(unreal==null?'—':money(unreal))+'</b></span><span>Stop-loss<b>'+money(t.stop_loss)+'</b></span><span>Target 1<b>'+money(t.target_1)+'</b></span><span>Target 2<b>'+money(t.target_2)+'</b></span><span>Quantity<b>'+safeNumberFormat(t.quantity)+'</b></span><span>Realized P&amp;L<b>'+(t.realized_pnl==null?'—':money(t.realized_pnl))+'</b></span></div><div class="paper-trade-foot"><small>'+esc(t.timeframe||'')+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString():'')+'</small>'+(t.status==='OPEN'?'<button type="button" class="small-button" data-edit-paper="'+esc(t.id)+'">Edit qty / TP / SL</button><button type="button" class="small-button" data-close-paper="'+esc(t.id)+'">'+exitLabel+'</button>':'<small>Exit '+money(t.exit_price)+'</small>')+'</div></article>';
+   }).join('');
+   host.querySelectorAll('[data-edit-paper]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const t=rows.find(x=>String(x.id)===btn.dataset.editPaper);if(!t)return;
+    const q=prompt('Quantity (whole shares):',String(t.quantity));if(q===null)return;const qty=Number(q);if(!Number.isInteger(qty)||qty<1){alert('Enter a whole-share quantity of at least 1.');return;}
+    const slv=prompt('Stop-loss price (₹):',String(t.stop_loss));if(slv===null)return;const sl=Number(slv);if(!(sl>0)){alert('Enter a valid stop-loss price.');return;}
+    const t1v=prompt('Target 1 price (₹):',String(t.target_1));if(t1v===null)return;const t1=Number(t1v);if(!(t1>0)){alert('Enter a valid Target 1 price.');return;}
+    const t2v=prompt('Target 2 price (₹):',String(t.target_2));if(t2v===null)return;const t2=Number(t2v);if(!(t2>0)){alert('Enter a valid Target 2 price.');return;}
+    if(t.direction==='BUY'&&!(sl<t.entry_price&&t1>t.entry_price&&t2>=t1)){alert('For BUY trades, stop-loss must be below entry and targets above entry, with Target 2 at or above Target 1.');return;}
+    if(t.direction==='SELL'&&!(sl>t.entry_price&&t1<t.entry_price&&t2<=t1)){alert('For SELL/short simulations, stop-loss must be above entry and targets below entry, with Target 2 at or below Target 1.');return;}
+    btn.disabled=true;try{
+     const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;if(!id)throw new Error('Sign in first.');
+     if(t.direction==='BUY'){const r=await supabase.from('stock_paper_trades').select('id,entry_price,quantity').eq('user_id',id).eq('status','OPEN').eq('direction','BUY').limit(200);if(r.error)throw r.error;const used=(r.data||[]).reduce((sum,x)=>sum+(String(x.id)===String(t.id)?0:Math.max(0,Number(x.entry_price)||0)*Math.max(0,Number(x.quantity)||0)),0);if(Number(t.entry_price)*qty>Math.max(0,Number(paperAccountSettings.balance)-used))throw new Error('Quantity exceeds available virtual cash.');}
+     const upd=await supabase.from('stock_paper_trades').update({quantity:qty,stop_loss:sl,target_1:t1,target_2:t2}).eq('id',t.id).eq('user_id',id).eq('status','OPEN');if(upd.error)throw upd.error;await loadPaperTrades();
+    }catch(e){alert('Could not update trade: '+String(e.message||e));}finally{btn.disabled=false;}
+   }));
+   host.querySelectorAll('[data-close-paper]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const t=rows.find(x=>String(x.id)===btn.dataset.closePaper);if(!t)return;btn.disabled=true;
+    try{
+     const quote=await getStock(t.symbol),data=quote.data,exit=num(data?.price),qt=quoteTime(data),ms=qt?Date.parse(qt):NaN,ageH=(Date.now()-ms)/3600000;
+     if(!(exit>0)||!Number.isFinite(ms)||ageH<-(MAX_FUTURE_QUOTE_MINUTES/60)||ageH>MAX_MARK_QUOTE_AGE_HOURS)throw new Error('A fresh validated market quote is unavailable. Trade was not closed.');
+     const action=t.direction==='SELL'?'Buy to cover':'Sell';
+     if(!confirm(action+' '+safeNumberFormat(t.quantity)+' '+t.symbol+' at current simulated market price '+money(exit)+'?\n\nThis closes only the paper trade. No broker order will be placed.'))return;
+     const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;if(!id)throw new Error('Sign in first.');
+     const gross=(exit-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1),costs=tradeCosts(t,exit),net=gross-costs,now=new Date().toISOString();
+     const upd=await supabase.from('stock_paper_trades').update({status:'CLOSED',exit_price:exit,realized_pnl:Number(t.realized_pnl||0)+net,closed_at:now,signal_snapshot:{...(t.signal_snapshot||{}),mark_price:exit,mark_time:qt,mark_checked_at:now,mark_source:'validated fresh quote from stock-data endpoint',exit_cost:costs,exit_reason:'MANUAL_MARKET_EXIT',gross_pnl:gross,exit_time:now,fill_model:'validated quote; simulated market exit'}}).eq('id',t.id).eq('user_id',id).eq('status','OPEN');if(upd.error)throw upd.error;await loadPaperTrades();
+    }catch(e){alert('Could not close trade: '+String(e.message||e));}finally{btn.disabled=false;}
+   }));
+   }catch(e){host.innerHTML='<div class="empty-state"><strong>Could not load paper trades</strong><span>'+esc(String(e.message||e))+'</span></div>';if($('paperSummary'))$('paperSummary').textContent='Paper-trade loading error';}
 }
 
 async function savePaperTrade(s){
