@@ -327,15 +327,40 @@ async function savePaperSettings(){
  try{const auth=await supabase.auth.getSession();const id=auth.data?.session?.user?.id;if(!id)throw new Error('Sign in first.');localStorage.setItem('marketpulse-paper-settings-'+id,JSON.stringify(paperAccountSettings));renderPaperAccount(paperRowsCache);if($('paperSummary'))$('paperSummary').textContent='Paper account settings saved on this device.';}catch(e){alert(String(e.message||e));}
 }
 async function markOpenTradesFromScan(){
- if(!latestSignals.length){alert('Run a successful scan first. No fresh prices are available to mark trades.');return;}
- const auth=await supabase.auth.getSession();const id=auth.data?.session?.user?.id;if(!id){alert('Sign in on MarketPulse first.');return;}
- let updated=0;
- for(const t of paperRowsCache.filter(x=>x.status==='OPEN')){
-  const s=latestSignals.find(x=>x.symbol===t.symbol);if(!s||!Number.isFinite(Number(s.entry)))continue;
-  const snap={...(t.signal_snapshot||{}),mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'latest signal reference',estimated_cost_bps:paperAccountSettings.costBps};
-  const res=await supabase.from('stock_paper_trades').update({signal_snapshot:snap}).eq('id',t.id).eq('user_id',id);if(res.error)throw res.error;updated++;
- }
- await loadPaperTrades();if($('paperSummary'))$('paperSummary').textContent=updated+' open trade(s) marked using latest scan prices. May be delayed; not tick-by-tick live.';
+ const button=$('markPricesBtn');
+ if(button){button.disabled=true;button.textContent='Fetching quotes…';}
+ try{
+  const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;
+  if(!id)throw new Error('Sign in on MarketPulse first.');
+  const result=await supabase.from('stock_paper_trades').select('*').eq('user_id',id).eq('status','OPEN').limit(200);
+  if(result.error)throw result.error;
+  const trades=result.data||[];
+  if(!trades.length){if($('paperSummary'))$('paperSummary').textContent='No open paper trades to mark.';return;}
+  let updated=0;const failed=[];
+  for(const t of trades){
+   try{
+    const quote=await getStock(t.symbol),bars=normalizeBars(quote.history),valid=validateQuote(quote.data,bars);
+    if(!valid.ok)throw new Error(valid.reason);
+    const mark=valid.price,now=new Date().toISOString(),snap={...(t.signal_snapshot||{}),mark_price:mark,mark_time:valid.quoteTime,mark_checked_at:now,mark_source:'validated stock-signal-data quote',estimated_cost_bps:paperAccountSettings.costBps};
+    const buy=t.direction==='BUY',sl=Number(t.stop_loss),t1=Number(t.target_1),t2=Number(t.target_2),qty=Number(t.quantity),entry=Number(t.entry_price);
+    const stopHit=buy?mark<=sl:mark>=sl,target2Hit=buy?mark>=t2:mark<=t2,target1Hit=buy?mark>=t1:mark<=t1;
+    let patch={signal_snapshot:snap};
+    if(stopHit||target2Hit){
+     const reason=stopHit?'STOP_LOSS':'TARGET_2',gross=(mark-entry)*qty*(buy?1:-1),cost=tradeCosts(t,mark);
+     patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
+    }else if(target1Hit&&!snap.target1_partial_filled&&qty>=2){
+     const exitQty=Math.floor(qty/2),gross=(mark-entry)*exitQty*(buy?1:-1),cost=tradeCosts({...t,quantity:exitQty},mark);
+     patch={...patch,quantity:qty-exitQty,realized_pnl:Number(t.realized_pnl||0)+gross-cost,signal_snapshot:{...snap,target1_partial_filled:true,target1_exit_price:mark,target1_exit_quantity:exitQty,target1_realized_gross:gross,target1_exit_cost:cost,target1_exit_time:now,fill_model:'validated quote; simulated partial fill'}};
+    }
+    const saved=await supabase.from('stock_paper_trades').update(patch).eq('id',t.id).eq('user_id',id);
+    if(saved.error)throw saved.error;updated++;
+   }catch(e){failed.push(t.symbol+': '+String(e.message||e));}
+  }
+  await loadPaperTrades();
+  if($('paperSummary'))$('paperSummary').textContent=updated+' trade(s) marked from validated quotes; '+failed.length+' quote/update failure(s).';
+  if(failed.length)alert('Trades not updated because a valid quote could not be verified:\n'+failed.slice(0,5).join('\n'));
+ }catch(e){alert('Could not mark paper trades: '+String(e.message||e));}
+ finally{if(button){button.disabled=false;button.textContent='Mark with latest validated quote';}}
 }
 async function loadPaperTrades(){
  const host=$('paperTrades');if(!host)return;
