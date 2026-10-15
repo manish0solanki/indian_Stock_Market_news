@@ -14,6 +14,7 @@ const $ = id => document.getElementById(id);
 let apiBase = '';
 let supabase = null;
 let latestSignals = [];
+let currentAuthSession = null;
 
 function setCheck(id, text, status='warn') {
   const el = $(id); if (!el) return;
@@ -51,13 +52,38 @@ async function init() {
     const response=await fetch('/config.json?ts='+Date.now(),{cache:'no-store'});
     if(response.ok) { const cfg=await response.json(); apiBase=String(cfg.apiBase||'').replace(/\/$/,''); }
   } catch (_) {}
-  try { supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); setCheck('storageCheck','Client ready; schema required','warn'); }
-  catch(e) { setCheck('storageCheck','Client unavailable','bad'); }
+  try {
+    // Same Supabase project, publishable key and default auth storage as index.html:
+    // Supabase JS restores the existing MarketPulse login automatically.
+    supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const {data,error}=await supabase.auth.getSession();
+    if(error) throw error;
+    currentAuthSession=data?.session||null;
+    renderSharedAuthState();
+    supabase.auth.onAuthStateChange((_event,session)=>{
+      currentAuthSession=session||null;
+      renderSharedAuthState();
+    });
+    setCheck('storageCheck','Using shared MarketPulse account session','ok');
+  } catch(e) {
+    setCheck('storageCheck','Auth session unavailable: '+String(e.message||e),'bad');
+  }
   $('timeframe').addEventListener('change', renderTimeframeState);
   $('scanBtn').addEventListener('click', scan);
   renderTimeframeState();
   await scan();
 }
+
+function renderSharedAuthState(){
+  const signed=!!currentAuthSession?.user;
+  const state=document.getElementById('paperAuthState');
+  const hint=document.getElementById('paperAuthHint');
+  const link=document.getElementById('paperLoginLink');
+  if(state) state.textContent=signed?'Signed in with your MarketPulse account':'Not signed in to MarketPulse';
+  if(hint) hint.textContent=signed?'Paper trades will use this same logged-in account.':'Please sign in on the main MarketPulse page, then return here. No separate Stock Signals login is used.';
+  if(link) link.hidden=signed;
+}
+
 function renderTimeframeState() {
   const intraday=$('timeframe').value==='intraday';
   if(intraday) {
