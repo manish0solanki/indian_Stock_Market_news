@@ -271,14 +271,26 @@ function renderSignals(signals,blocked) {
   latestSignals=signals;
   $('signalCount').textContent=signals.length;
   if(!signals.length){host.innerHTML='<div class="empty-state"><strong>No qualified setups</strong><span>Signals with incomplete indicator values were rejected. Check the diagnostics and source history.</span></div>';return;}
-  host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · Daily candles</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty by risk</span><strong>'+safeNumberFormat(s.qty)+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+safeNumberFormat(s.rsi,{minimumFractionDigits:1,maximumFractionDigits:1})+'</strong></div></div><p class="reason">'+(Array.isArray(s.reasons)?s.reasons:[]).map(esc).join(' · ')+'</p><div class="signal-foot"><span>Last daily candle: '+esc(s.barDate)+'</span><span>Quote age: '+Math.max(0,Math.round(s.quoteAgeH))+'h</span><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
+  host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · Daily candles</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty by risk</span><strong>'+safeNumberFormat(s.qty)+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+safeNumberFormat(s.rsi,{minimumFractionDigits:1,maximumFractionDigits:1})+'</strong></div></div><p class="reason">'+(Array.isArray(s.reasons)?s.reasons:[]).map(esc).join(' · ')+'</p><div class="signal-foot"><span>Last daily candle: '+esc(s.barDate)+'</span><span>Quote age: '+Math.max(0,Math.round(s.quoteAgeH))+'h</span><button class="small-button" data-paper="'+esc(s.symbol)+'" type="button">Paper trade</button><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
+  host.querySelectorAll('[data-paper]').forEach(btn=>btn.addEventListener('click',async()=>{const s=latestSignals.find(x=>x.symbol===btn.dataset.paper);if(!s)return;btn.disabled=true;try{await savePaperTrade(s);btn.textContent='Paper traded';}catch(e){alert('Paper trade failed: '+String(e.message||e));}finally{btn.disabled=false;}}));
   host.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{
     const s=latestSignals.find(x=>x.symbol===btn.dataset.copy);if(!s)return;
     const plan=[s.symbol+' '+s.side+' ('+s.tf+')','Entry reference: '+s.entry,'SL: '+s.stop,'Target 1: '+s.target1,'Target 2: '+s.target2,'Qty by risk: '+s.qty,'Setup: '+s.setup,'Score: '+s.score+'/100','Quote time: '+s.quoteTime].join('\n');
     navigator.clipboard?.writeText(plan).then(()=>btn.textContent='Copied').catch(()=>{btn.textContent='Copy unavailable';});
   }));
 }
+
+async function savePaperTrade(s){
+ if(!supabase)throw new Error('Supabase client unavailable');
+ const result=await supabase.auth.getSession();const session=result.data?.session;if(result.error)throw result.error;if(!session?.user)throw new Error('Please sign in on the main MarketPulse page first.');
+ const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:Math.max(1,Number(s.qty)||1),risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2},status:'OPEN'};
+ const saved=await supabase.from('stock_paper_trades').upsert(row,{onConflict:'user_id,symbol,timeframe,direction,signal_time',ignoreDuplicates:true});if(saved.error)throw saved.error;
+ const summary=document.getElementById('paperSummary');if(summary)summary.textContent='Paper trade saved: '+s.symbol+' · '+s.side;
+}
+
 async function persistSignals(signals) {
+  setCheck('storageCheck','Optional signal-history table is not configured; individual paper trades save separately','warn'); return;
+  /*
   if(!supabase) {setCheck('storageCheck','Supabase client unavailable','bad');return;}
   try {
     const {data:{session},error:authError}=await supabase.auth.getSession();
@@ -289,6 +301,8 @@ async function persistSignals(signals) {
     if(error) throw error;
     setCheck('storageCheck',rows.length+' signal(s) saved','ok');
   } catch(e) {setCheck('storageCheck','Not saved: '+String(e.message||e).slice(0,100),'bad');}
+}
+  */
 }
 async function scan() {
   const btn=$('scanBtn');btn.disabled=true;btn.textContent='Validating…';
