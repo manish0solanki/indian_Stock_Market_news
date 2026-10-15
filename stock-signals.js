@@ -20,6 +20,8 @@ let currentAuthSession = null;
 let currentPaperFilter = 'OPEN';
 let paperAccountSettings={balance:100000,costBps:10};
 let paperRowsCache=[];
+let autoMarkTimer=null;
+let autoMarkInProgress=false;
 
 function setCheck(id, text, status='warn') {
   const el = $(id); if (!el) return;
@@ -88,6 +90,7 @@ async function init() {
   renderTimeframeState();
   await loadPaperTrades();
   await scan();
+  startAutoPaperMarking();
 }
 
 function renderSharedAuthState(){
@@ -329,7 +332,8 @@ function renderPaperAccount(rows){
  const unreal=open.reduce((a,t)=>{const mark=Number(t.signal_snapshot?.mark_price)||Number(t.entry_price);return a+(mark-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1)-tradeCosts(t,mark);},0);
  const used=open.filter(t=>t.direction==='BUY').reduce((a,t)=>a+Number(t.entry_price)*Number(t.quantity),0);
  if($('paperStartingBalance'))$('paperStartingBalance').textContent=money(balance);
- if($('paperAvailableCash'))$('paperAvailableCash').textContent=money(balance-used);
+ const available=Math.max(0,balance-used);
+ if($('paperAvailableCash')){$('paperAvailableCash').textContent=money(available);$('paperAvailableCash').className=used>balance?'pnl-negative':'';$('paperAvailableCash').title=used>balance?'Existing open BUY trades exceed the starting virtual balance. New BUY paper trades will be blocked until exposure is reduced.':'';}
  if($('paperUnrealized')){$('paperUnrealized').textContent=money(unreal);$('paperUnrealized').className=unreal>=0?'pnl-positive':'pnl-negative';}
  if($('paperRealized')){$('paperRealized').textContent=money(realized);$('paperRealized').className=realized>=0?'pnl-positive':'pnl-negative';}
 }
@@ -339,45 +343,54 @@ async function savePaperSettings(){
  paperAccountSettings={balance,costBps};
  try{const auth=await supabase.auth.getSession();const id=auth.data?.session?.user?.id;if(!id)throw new Error('Sign in first.');localStorage.setItem('marketpulse-paper-settings-'+id,JSON.stringify(paperAccountSettings));renderPaperAccount(paperRowsCache);if($('paperSummary'))$('paperSummary').textContent='Paper account settings saved on this device.';}catch(e){alert(String(e.message||e));}
 }
-async function markOpenTradesFromScan(){
- const button=$('markPricesBtn');
- if(button){button.disabled=true;button.textContent='Fetching quotes…';}
- try{
-  const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;
-  if(!id)throw new Error('Sign in on MarketPulse first.');
-  const result=await supabase.from('stock_paper_trades').select('*').eq('user_id',id).eq('status','OPEN').limit(200);
-  if(result.error)throw result.error;
-  const trades=result.data||[];
-  if(!trades.length){if($('paperSummary'))$('paperSummary').textContent='No open paper trades to mark.';return;}
-  let updated=0;const failed=[];
-  for(const t of trades){
-   try{
-    const quote=await getStock(t.symbol),data=quote.data;
-    // Marking an existing position needs a valid fresh quote, not the scanner's 60-candle indicator-history gate.
-    const mark=num(data?.price),qt=quoteTime(data),quoteMs=qt?Date.parse(qt):NaN,ageH=(Date.now()-quoteMs)/3600000;
-    if(!(mark>0))throw new Error('Quote endpoint returned no valid price');
-    if(!Number.isFinite(quoteMs))throw new Error('Quote timestamp missing or invalid');
-    if(ageH < -(MAX_FUTURE_QUOTE_MINUTES/60) || ageH > MAX_MARK_QUOTE_AGE_HOURS)throw new Error('Quote stale or timestamp is in the future ('+Math.round(ageH)+'h old)');
-    const now=new Date().toISOString(),snap={...(t.signal_snapshot||{}),mark_price:mark,mark_time:qt,mark_checked_at:now,mark_source:'validated fresh quote from stock-data endpoint',estimated_cost_bps:paperAccountSettings.costBps};
-    const buy=t.direction==='BUY',sl=Number(t.stop_loss),t1=Number(t.target_1),t2=Number(t.target_2),qty=Number(t.quantity),entry=Number(t.entry_price);
-    const stopHit=buy?mark<=sl:mark>=sl,target2Hit=buy?mark>=t2:mark<=t2,target1Hit=buy?mark>=t1:mark<=t1;
-    let patch={signal_snapshot:snap};
-    if(stopHit||target2Hit){
-     const reason=stopHit?'STOP_LOSS':'TARGET_2',gross=(mark-entry)*qty*(buy?1:-1),cost=tradeCosts(t,mark);
-     patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:Number(t.realized_pnl||0)+gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
-    }else if(target1Hit&&!snap.target1_partial_filled&&qty>=2){
-     const exitQty=Math.floor(qty/2),gross=(mark-entry)*exitQty*(buy?1:-1),cost=tradeCosts({...t,quantity:exitQty},mark);
-     patch={...patch,quantity:qty-exitQty,realized_pnl:Number(t.realized_pnl||0)+gross-cost,signal_snapshot:{...snap,target1_partial_filled:true,target1_exit_price:mark,target1_exit_quantity:exitQty,target1_realized_gross:gross,target1_exit_cost:cost,target1_exit_time:now,fill_model:'validated quote; simulated partial fill'}};
-    }
-    const saved=await supabase.from('stock_paper_trades').update(patch).eq('id',t.id).eq('user_id',id);
-    if(saved.error)throw saved.error;updated++;
-   }catch(e){failed.push(t.symbol+': '+String(e.message||e));}
-  }
-  await loadPaperTrades();
-  if($('paperSummary'))$('paperSummary').textContent=updated+' trade(s) marked from fresh quotes; '+failed.length+' quote/update failure(s).'+(failed.length?' First issue: '+failed[0]:'');
-  if(failed.length)alert('Trades not updated because a valid quote could not be verified:\n'+failed.slice(0,5).join('\n'));
- }catch(e){alert('Could not mark paper trades: '+String(e.message||e));}
- finally{if(button){button.disabled=false;button.textContent='Mark with latest validated quote';}}
+async function markOpenTradesFromScan(options={}){
+  if(autoMarkInProgress)return;
+  autoMarkInProgress=true;
+  const automatic=options.automatic===true;
+  const button=$('markPricesBtn');
+  if(button){button.disabled=true;button.textContent=automatic?'Auto-marking…':'Fetching quotes…';}
+  try{
+   const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;
+   if(!id)throw new Error('Sign in on MarketPulse first.');
+   const result=await supabase.from('stock_paper_trades').select('*').eq('user_id',id).eq('status','OPEN').limit(200);
+   if(result.error)throw result.error;
+   const trades=result.data||[];
+   if(!trades.length){if($('paperSummary'))$('paperSummary').textContent='No open paper trades to mark.';return;}
+   let updated=0;const failed=[];
+   for(const t of trades){
+    try{
+     const quote=await getStock(t.symbol),data=quote.data;
+     const mark=num(data?.price),qt=quoteTime(data),quoteMs=qt?Date.parse(qt):NaN,ageH=(Date.now()-quoteMs)/3600000;
+     if(!(mark>0))throw new Error('Quote endpoint returned no valid price');
+     if(!Number.isFinite(quoteMs))throw new Error('Quote timestamp missing or invalid');
+     if(ageH < -(MAX_FUTURE_QUOTE_MINUTES/60) || ageH > MAX_MARK_QUOTE_AGE_HOURS)throw new Error('Quote stale or timestamp is in the future ('+Math.round(ageH)+'h old)');
+     const now=new Date().toISOString(),snap={...(t.signal_snapshot||{}),mark_price:mark,mark_time:qt,mark_checked_at:now,mark_source:'validated fresh quote from stock-data endpoint',estimated_cost_bps:paperAccountSettings.costBps};
+     const buy=t.direction==='BUY',sl=Number(t.stop_loss),t1=Number(t.target_1),t2=Number(t.target_2),qty=Number(t.quantity),entry=Number(t.entry_price);
+     const stopHit=buy?mark<=sl:mark>=sl,target2Hit=buy?mark>=t2:mark<=t2,target1Hit=buy?mark>=t1:mark<=t1;
+     let patch={signal_snapshot:snap};
+     if(stopHit||target2Hit){
+      const reason=stopHit?'STOP_LOSS':'TARGET_2',gross=(mark-entry)*qty*(buy?1:-1),cost=tradeCosts(t,mark);
+      patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:Number(t.realized_pnl||0)+gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
+     }else if(target1Hit&&!snap.target1_partial_filled&&qty>=2){
+      const exitQty=Math.floor(qty/2),gross=(mark-entry)*exitQty*(buy?1:-1),cost=tradeCosts({...t,quantity:exitQty},mark);
+      patch={...patch,quantity:qty-exitQty,realized_pnl:Number(t.realized_pnl||0)+gross-cost,signal_snapshot:{...snap,target1_partial_filled:true,target1_exit_price:mark,target1_exit_quantity:exitQty,target1_realized_gross:gross,target1_exit_cost:cost,target1_exit_time:now,fill_model:'validated quote; simulated partial fill'}};
+     }
+     const saved=await supabase.from('stock_paper_trades').update(patch).eq('id',t.id).eq('user_id',id);
+     if(saved.error)throw saved.error;updated++;
+    }catch(e){failed.push(t.symbol+': '+String(e.message||e));}
+   }
+   await loadPaperTrades();
+   if($('paperSummary'))$('paperSummary').textContent=updated+' trade(s) marked from fresh quotes; '+failed.length+' quote/update failure(s).'+(failed.length?' First issue: '+failed[0]:'');
+   if(failed.length&&!automatic)alert('Trades not updated because a valid quote could not be verified:\n'+failed.slice(0,5).join('\n'));
+  }catch(e){if(!automatic)alert('Could not mark paper trades: '+String(e.message||e));else console.warn('Automatic paper mark failed:',e);}
+  finally{autoMarkInProgress=false;if(button){button.disabled=false;button.textContent='Mark with latest validated quote';}}
+}
+function startAutoPaperMarking(){
+ if(autoMarkTimer!==null)clearInterval(autoMarkTimer);
+ const tick=()=>{if(document.visibilityState==='visible'&&!autoMarkInProgress)void markOpenTradesFromScan({automatic:true});};
+ document.addEventListener('visibilitychange',tick);
+ tick();
+ autoMarkTimer=setInterval(tick,30000);
 }
 async function loadPaperTrades(){
  const host=$('paperTrades');if(!host)return;
@@ -416,11 +429,20 @@ async function loadPaperTrades(){
 }
 
 async function savePaperTrade(s){
- if(!supabase)throw new Error('Supabase client unavailable');
- const result=await supabase.auth.getSession();const session=result.data?.session;if(result.error)throw result.error;if(!session?.user)throw new Error('Please sign in on the main MarketPulse page first.');
- const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:Math.max(1,Number(s.qty)||1),risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2,mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'entry reference — refresh quote to mark',estimated_cost_bps:paperAccountSettings.costBps},status:'OPEN'};
- const saved=await supabase.from('stock_paper_trades').upsert(row,{onConflict:'user_id,symbol,timeframe,direction,signal_time',ignoreDuplicates:true});if(saved.error)throw saved.error;
- const summary=document.getElementById('paperSummary');if(summary)summary.textContent='Paper trade saved: '+s.symbol+' · '+s.side;
+  if(!supabase)throw new Error('Account service unavailable');
+  const result=await supabase.auth.getSession();const session=result.data?.session;if(result.error)throw result.error;if(!session?.user)throw new Error('Please sign in on the main MarketPulse page first.');
+  let qty=Math.max(1,Math.floor(Number(s.qty)||1));
+  if(s.side==='BUY'){
+    const openResult=await supabase.from('stock_paper_trades').select('entry_price,quantity').eq('user_id',session.user.id).eq('status','OPEN').eq('direction','BUY').limit(200);
+    if(openResult.error)throw openResult.error;
+    const used=(openResult.data||[]).reduce((sum,t)=>sum+Math.max(0,Number(t.entry_price)||0)*Math.max(0,Number(t.quantity)||0),0);
+    const available=Math.max(0,Number(paperAccountSettings.balance)-used);
+    qty=Math.min(qty,Math.floor(available/Number(s.entry)));
+    if(qty<1)throw new Error('Insufficient available virtual cash. Close/reduce an open BUY trade or increase the starting virtual balance.');
+  }
+  const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:qty,risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2,mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'entry reference — auto-mark fetches quotes every 30 seconds while page is visible',estimated_cost_bps:paperAccountSettings.costBps},status:'OPEN'};
+  const saved=await supabase.from('stock_paper_trades').upsert(row,{onConflict:'user_id,symbol,timeframe,direction,signal_time',ignoreDuplicates:true});if(saved.error)throw saved.error;
+  const summary=document.getElementById('paperSummary');if(summary)summary.textContent='Paper trade saved: '+s.symbol+' · '+s.side+(qty<Number(s.qty)?' · quantity capped by available cash':'');
 }
 
 async function persistSignals(signals) {
