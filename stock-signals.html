@@ -55,12 +55,17 @@
 
     <section class="section-head">
       <div><p class="eyebrow">SETUPS</p><h2>Trade candidates</h2></div>
-      <span class="muted" id="scanSummary">Run validation to begin.</span>
+      <div class="paper-actions"><span class="muted" id="scanSummary">Run validation to begin.</span><button id="paperAllBtn" class="primary" type="button" disabled>Paper trade all listed</button></div>
     </section>
     <div id="signals" class="signals-grid">
       <div class="empty-state"><strong>No signals yet</strong><span>The scanner will only show a setup when the required candle data passes validation and the rules agree.</span></div>
     </div>
 
+    <section class="section-head"><div><p class="eyebrow">SIMULATED EXECUTION</p><h2>My paper trades</h2></div><span class="muted" id="paperSummary">Sign in to save and review your paper trades.</span></section>
+    <section class="diagnostics paper-panel">
+      <div class="paper-toolbar"><div class="paper-tabs"><button type="button" class="small-button active" data-paper-filter="OPEN">Open</button><button type="button" class="small-button" data-paper-filter="CLOSED">Closed</button><button type="button" class="small-button" data-paper-filter="ALL">All</button></div><button type="button" class="small-button" id="refreshPaperBtn">Refresh</button></div>
+      <div id="paperTrades" class="paper-trades"><div class="empty-state"><strong>No paper trades loaded</strong><span>Sign in, then add a trade from the candidates above.</span></div></div>
+    </section>
     <section class="section-head"><div><p class="eyebrow">TRUST BEFORE TRADING</p><h2>Market-data diagnostics</h2></div></section>
     <section class="diagnostics" id="diagnostics" aria-live="polite">
       <div class="diagnostic-row"><span>Current quote endpoint</span><strong id="quoteCheck">Not checked</strong></div>
