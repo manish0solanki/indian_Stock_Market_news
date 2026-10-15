@@ -62,7 +62,7 @@ function renderTimeframeState() {
   const intraday=$('timeframe').value==='intraday';
   if(intraday) {
     $('dataNotice').className='notice warning';
-    $('dataNotice').innerHTML='<strong>Intraday signals are blocked.</strong><span>The current stock-data function exposes daily history, but no verified 5-minute candle contract was found in this repository. The scanner will not fake intraday entries from daily prices.</span>';
+    $('dataNotice').innerHTML='<strong>Intraday mode selected.</strong><span>The scanner will request five-minute candles from the separate intraday endpoint. It will block stale, incomplete or unavailable data; Yahoo-derived data may be delayed.</span>';
     setCheck('intradayCheck','Not available — blocked','bad');
   } else {
     $('dataNotice').className='notice warning';
