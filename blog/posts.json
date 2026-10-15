@@ -1,5 +1,26 @@
 [
   {
+    "slug": "nifty-rises-166-as-dii-buying-offsets-fii-selling-for-14th-straight-session",
+    "title": "Nifty Rises 1.66% as DII Buying Offsets FII Selling for 14th Straight Session",
+    "excerpt": "FIIs sold ₹5,285.37 Cr while DIIs bought ₹3,319.39 Cr on 15 Oct, extending their respective streaks to 14 and 36 sessions. The Nifty 50 gained 374.65 points to close at ₹22,997....",
+    "category": "fiidii-flows",
+    "date": "2026-10-15",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "techm-stock-spotlight",
     "title": "Tech Mahindra Surges 4.75% on Nearly 4x Volume, Reclaims 50-Day Average",
     "excerpt": "PRICE ACTION: Tech Mahindra posted its strongest single-session gain in recent sessions with volume nearly quadruple the daily average, indicating genuine institutional particip...",
