@@ -15,6 +15,7 @@ let apiBase = '';
 let supabase = null;
 let latestSignals = [];
 let currentAuthSession = null;
+let currentPaperFilter = 'OPEN';
 
 function setCheck(id, text, status='warn') {
   const el = $(id); if (!el) return;
@@ -63,7 +64,15 @@ async function init() {
     supabase.auth.onAuthStateChange((_event,session)=>{
       currentAuthSession=session||null;
       renderSharedAuthState();
+      loadPaperTrades();
     });
+    $('refreshPaperBtn')?.addEventListener('click',loadPaperTrades);
+    document.querySelectorAll('[data-paper-filter]').forEach(btn=>btn.addEventListener('click',()=>{
+      currentPaperFilter=btn.dataset.paperFilter;
+      document.querySelectorAll('[data-paper-filter]').forEach(b=>b.classList.toggle('active',b===btn));
+      loadPaperTrades();
+    }));
+    $('paperAllBtn')?.addEventListener('click',paperTradeAll);
     setCheck('storageCheck','Using shared MarketPulse account session','ok');
   } catch(e) {
     setCheck('storageCheck','Auth session unavailable: '+String(e.message||e),'bad');
@@ -71,6 +80,7 @@ async function init() {
   $('timeframe').addEventListener('change', renderTimeframeState);
   $('scanBtn').addEventListener('click', scan);
   renderTimeframeState();
+  await loadPaperTrades();
   await scan();
 }
 
@@ -278,6 +288,34 @@ function renderSignals(signals,blocked) {
     const plan=[s.symbol+' '+s.side+' ('+s.tf+')','Entry reference: '+s.entry,'SL: '+s.stop,'Target 1: '+s.target1,'Target 2: '+s.target2,'Qty by risk: '+s.qty,'Setup: '+s.setup,'Score: '+s.score+'/100','Quote time: '+s.quoteTime].join('\n');
     navigator.clipboard?.writeText(plan).then(()=>btn.textContent='Copied').catch(()=>{btn.textContent='Copy unavailable';});
   }));
+}
+
+
+async function paperTradeAll(){
+ const btn=$('paperAllBtn');if(!currentAuthSession?.user){alert('Please sign in on MarketPulse first.');return;}
+ if(!latestSignals.length){alert('Run a scan and wait for trade candidates first.');return;}
+ btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';let ok=0,failed=[];
+ for(const s of latestSignals){try{await savePaperTrade(s);ok++;}catch(e){failed.push(s.symbol+': '+String(e.message||e));}}
+ btn.textContent=old;btn.disabled=false;
+ if($('paperSummary'))$('paperSummary').textContent=ok+' paper trade(s) saved'+(failed.length?' · '+failed.length+' failed':'');
+ await loadPaperTrades();
+ if(failed.length)alert('Saved '+ok+' trade(s). Failures: '+failed.slice(0,3).join('\n'));
+}
+async function loadPaperTrades(){
+ const host=$('paperTrades');if(!host)return;
+ if(!supabase){host.innerHTML='<div class="empty-state"><strong>Account service unavailable</strong><span>Refresh the page and try again.</span></div>';return;}
+ try{
+  const auth=await supabase.auth.getSession();const session=auth.data?.session;if(auth.error)throw auth.error;
+  if(!session?.user){host.innerHTML='<div class="empty-state"><strong>Sign in to view paper trades</strong><span>Use your main MarketPulse account, then return here.</span></div>';if($('paperSummary'))$('paperSummary').textContent='Not signed in';return;}
+  let q=supabase.from('stock_paper_trades').select('*').order('created_at',{ascending:false}).limit(200);
+  if(currentPaperFilter!=='ALL')q=q.eq('status',currentPaperFilter);
+  const result=await q;if(result.error)throw result.error;
+  const rows=result.data||[];
+  if($('paperSummary'))$('paperSummary').textContent=rows.length+' '+currentPaperFilter.toLowerCase()+' paper trade(s)';
+  if(!rows.length){host.innerHTML='<div class="empty-state"><strong>No '+currentPaperFilter.toLowerCase()+' paper trades</strong><span>Use Paper trade on a candidate above. If you just saved one, press Refresh.</span></div>';return;}
+  host.innerHTML=rows.map(t=>'<article class="paper-trade"><div class="paper-trade-head"><strong>'+esc(t.symbol)+' · '+esc(t.direction)+'</strong><span class="pill">'+esc(t.status)+'</span></div><div class="paper-trade-grid"><span>Entry<b>'+money(t.entry_price)+'</b></span><span>Stop-loss<b>'+money(t.stop_loss)+'</b></span><span>Target 1<b>'+money(t.target_1)+'</b></span><span>Target 2<b>'+money(t.target_2)+'</b></span><span>Quantity<b>'+safeNumberFormat(t.quantity)+'</b></span><span>Realized P&amp;L<b>'+(t.realized_pnl==null?'—':money(t.realized_pnl))+'</b></span></div><div class="paper-trade-foot"><small>'+esc(t.timeframe||'')+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString():'')+'</small>'+(t.status==='OPEN'?'<button type="button" class="small-button" data-close-paper="'+esc(t.id)+'">Close trade</button>':'<small>Exit '+money(t.exit_price)+'</small>')+'</div></article>').join('');
+  host.querySelectorAll('[data-close-paper]').forEach(btn=>btn.addEventListener('click',async()=>{const val=prompt('Enter simulated exit price (₹). No broker order is placed.');if(val===null)return;const exit=Number(val);if(!Number.isFinite(exit)||exit<=0){alert('Enter a valid price.');return;}btn.disabled=true;try{const t=rows.find(x=>String(x.id)===btn.dataset.closePaper);const signed=(exit-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1);const upd=await supabase.from('stock_paper_trades').update({status:'CLOSED',exit_price:exit,realized_pnl:signed,closed_at:new Date().toISOString()}).eq('id',t.id).eq('user_id',session.user.id);if(upd.error)throw upd.error;await loadPaperTrades();}catch(e){alert('Could not close trade: '+String(e.message||e));}finally{btn.disabled=false;}}));
+ }catch(e){host.innerHTML='<div class="empty-state"><strong>Could not load paper trades</strong><span>'+esc(String(e.message||e))+'</span></div>';if($('paperSummary'))$('paperSummary').textContent='Paper-trade loading error';}
 }
 
 async function savePaperTrade(s){
