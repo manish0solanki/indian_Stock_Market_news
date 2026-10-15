@@ -374,7 +374,7 @@ async function loadPaperTrades(){
 async function savePaperTrade(s){
  if(!supabase)throw new Error('Supabase client unavailable');
  const result=await supabase.auth.getSession();const session=result.data?.session;if(result.error)throw result.error;if(!session?.user)throw new Error('Please sign in on the main MarketPulse page first.');
- const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:Math.max(1,Number(s.qty)||1),risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2},status:'OPEN'};
+ const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:Math.max(1,Number(s.qty)||1),risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2,mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'signal entry reference',estimated_cost_bps:paperAccountSettings.costBps},status:'OPEN'};
  const saved=await supabase.from('stock_paper_trades').upsert(row,{onConflict:'user_id,symbol,timeframe,direction,signal_time',ignoreDuplicates:true});if(saved.error)throw saved.error;
  const summary=document.getElementById('paperSummary');if(summary)summary.textContent='Paper trade saved: '+s.symbol+' · '+s.side;
 }
