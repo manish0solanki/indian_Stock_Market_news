@@ -66,8 +66,23 @@
       <div class="empty-state"><strong>No signals yet</strong><span>The scanner will only show a setup when the required candle data passes validation and the rules agree.</span></div>
     </div>
 
-    <section class="section-head"><div><p class="eyebrow">SIMULATED EXECUTION</p><h2>My paper trades</h2></div><span class="muted" id="paperSummary">Sign in to save and review your paper trades.</span></section>
+    <section class="section-head"><div><p class="eyebrow">SIMULATED EXECUTION</p><h2>Paper trading account</h2></div><span class="muted" id="paperSummary">Sign in to save and review your paper trades.</span></section>
+    <section class="stats-grid paper-account-stats" aria-label="Paper trading account">
+      <article class="stat"><span>Virtual starting balance</span><strong id="paperStartingBalance">₹100,000.00</strong><small>Simulation only</small></article>
+      <article class="stat"><span>Available cash</span><strong id="paperAvailableCash">—</strong><small>Starting balance minus open buys</small></article>
+      <article class="stat"><span>Unrealized P&amp;L</span><strong id="paperUnrealized">—</strong><small>Open positions at last marked price</small></article>
+      <article class="stat"><span>Realized P&amp;L</span><strong id="paperRealized">—</strong><small>Closed simulated trades, net of entered costs</small></article>
+    </section>
     <section class="diagnostics paper-panel">
+      <div class="paper-account-controls">
+        <label for="paperBalanceInput">Starting virtual balance (₹)</label>
+        <input id="paperBalanceInput" type="number" min="1000" step="1000" value="100000">
+        <label for="paperCostBps">Estimated costs per side (bps)</label>
+        <input id="paperCostBps" type="number" min="0" max="200" step="1" value="10">
+        <button type="button" class="small-button" id="savePaperSettings">Save settings</button>
+        <span class="muted">Cost estimate only; actual taxes/brokerage vary.</span>
+      </div>
+      <div class="paper-toolbar"><div class="paper-tabs"><button type="button" class="small-button active" data-paper-filter="OPEN">Open</button><button type="button" class="small-button" data-paper-filter="CLOSED">Closed</button><button type="button" class="small-button" data-paper-filter="ALL">All</button></div><div class="paper-actions"><button type="button" class="small-button" id="markPricesBtn">Update marks from latest scan</button><button type="button" class="small-button" id="refreshPaperBtn">Refresh</button></div></div>
       <div class="paper-toolbar"><div class="paper-tabs"><button type="button" class="small-button active" data-paper-filter="OPEN">Open</button><button type="button" class="small-button" data-paper-filter="CLOSED">Closed</button><button type="button" class="small-button" data-paper-filter="ALL">All</button></div><button type="button" class="small-button" id="refreshPaperBtn">Refresh</button></div>
       <div id="paperTrades" class="paper-trades"><div class="empty-state"><strong>No paper trades loaded</strong><span>Sign in, then add a trade from the candidates above.</span></div></div>
     </section>
