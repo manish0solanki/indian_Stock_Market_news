@@ -332,8 +332,8 @@ function renderPaperAccount(rows){
  const unreal=open.reduce((a,t)=>{const mark=Number(t.signal_snapshot?.mark_price)||Number(t.entry_price);return a+(mark-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1)-tradeCosts(t,mark);},0);
  const used=open.filter(t=>t.direction==='BUY').reduce((a,t)=>a+Number(t.entry_price)*Number(t.quantity),0);
  if($('paperStartingBalance'))$('paperStartingBalance').textContent=money(balance);
- const available=Math.max(0,balance-used);
- if($('paperAvailableCash')){$('paperAvailableCash').textContent=money(available);$('paperAvailableCash').className=used>balance?'pnl-negative':'';$('paperAvailableCash').title=used>balance?'Existing open BUY trades exceed the starting virtual balance. New BUY paper trades will be blocked until exposure is reduced.':'';}
+ const available=balance-used;
+ if($('paperAvailableCash')){$('paperAvailableCash').textContent=money(available);$('paperAvailableCash').className=available<0?'pnl-negative':'';$('paperAvailableCash').title=available<0?'Open BUY positions exceed the starting virtual balance. No new BUY trades will be allowed until sufficient cash is available.':'';}
  if($('paperUnrealized')){$('paperUnrealized').textContent=money(unreal);$('paperUnrealized').className=unreal>=0?'pnl-positive':'pnl-negative';}
  if($('paperRealized')){$('paperRealized').textContent=money(realized);$('paperRealized').className=realized>=0?'pnl-positive':'pnl-negative';}
 }
