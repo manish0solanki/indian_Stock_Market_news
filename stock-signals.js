@@ -461,7 +461,6 @@ async function scan() {
           if(Array.isArray(data.history)&&data.history.length>=60)candleOk++;
         } catch(e) {blocked.push({symbol:stock.symbol,reason:String(e.message||e)});}
       });
-      );
       signals.sort((a,b)=>b.score-a.score);
       $('candleCount').textContent=String(candleOk);
       $('candleWindow').textContent='of '+universe.length+' symbols passed 5-minute candle gates';
@@ -487,7 +486,6 @@ async function scan() {
         if(signal) signals.push(signal); else if(!validation.ok) blocked.push({symbol:stock.symbol,reason:validation.reason});
       } catch(e) {blocked.push({symbol:stock.symbol,reason:String(e.message||e)});}
     });
-    );
     signals.sort((a,b)=>b.score-a.score);
     $('candleCount').textContent=candleOk.toString();
     $('candleWindow').textContent='of '+universe.length+' symbols passed quote + daily OHLCV gates';
