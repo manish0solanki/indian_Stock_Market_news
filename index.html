@@ -3394,7 +3394,7 @@ body {
       <h1 class="mp-page-title">Crude Opportunities</h1>
       <p class="mp-page-subtitle">
         MarketPulse publishes validated technical setups identified from the crude-impact scanner.
-        The feed below is sourced directly from <span class="mono">data/crude-opportunities.json</span>.
+        The feed below is generated every 30 minutes by a Supabase job (Brent/WTI + liquid crude-sensitive stocks).
       </p>
     </div>
 
@@ -3458,7 +3458,7 @@ body {
           <span class="widget-badge positive" id="crudeDataStatus">LIVE FEED</span>
         </div>
         <div class="mp-panel-note">
-          <strong>Source:</strong> <span class="mono">/data/crude-opportunities.json</span>
+          <strong>Source:</strong> <span class="mono">Supabase crude feed (Yahoo Finance prices)</span>
         </div>
         <div class="mp-panel-note" style="margin-top:10px;">
           Trigger levels are calculated technical levels. They are reference data and not investment advice.
@@ -6341,9 +6341,8 @@ function renderBreadth(data) {
 
 async function loadBreadth() {
   try {
-    const res = await fetch(BREADTH_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const raw = await res.json();
+    const { data: raw, error } = await supabaseClient.rpc('market_breadth');
+    if (error) throw error;
     const data = Array.isArray(raw) ? raw[0] : raw;
     renderBreadth(data);
   } catch (e) {
@@ -6508,9 +6507,8 @@ if (fiidiiTotalEl) {
 
 async function loadFiiDii() {
   try {
-    const res = await fetch(FIIDII_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const raw = await res.json();
+    const { data: raw, error } = await supabaseClient.rpc('fii_dii');
+    if (error) throw error;
     const data = Array.isArray(raw) ? (raw[0] || raw) : raw;
     const payload = Array.isArray(data) ? data : (data.data || data.items || data);
     if (!payload || (Array.isArray(payload) && payload.length === 0)) throw new Error('Empty response');
@@ -6956,9 +6954,8 @@ async function loadPrices() {
 async function loadGlobalHeadlines() {
   const container = document.getElementById('globalHeadlines');
   try {
-    const res = await fetch(GLOBAL_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    const { data, error } = await supabaseClient.rpc('global_headlines_feed', { p_limit: 20 });
+    if (error) throw error;
     const articles = Array.isArray(data) ? data : (data.articles || []);
     if (articles.length === 0) {
       container.innerHTML = '<div class="global-loading">No global headlines</div>';
@@ -8134,18 +8131,24 @@ async function loadCrudeOpportunities(force = false) {
     list.innerHTML = '<div class="mp-empty-state">Loading opportunity feed…</div>';
   }
 
-  const urls = [
-    `/data/crude-opportunities.json?v=${Date.now()}`,
-    `/crude-opportunities.json?v=${Date.now()}`,
-    `crude-opportunities.json?v=${Date.now()}`
+  const loaders = [
+    async () => {
+      const { data, error } = await supabaseClient.rpc('crude_opportunities');
+      return (!error && data && Array.isArray(data.opportunities)) ? data : null;
+    },
+    ...[
+      `/data/crude-opportunities.json?v=${Date.now()}`,
+      `/crude-opportunities.json?v=${Date.now()}`
+    ].map(url => async () => {
+      const res = await fetch(url, { cache: 'no-store' });
+      return res.ok ? await res.json() : null;
+    })
   ];
 
-  for (const url of urls) {
+  for (const load of loaders) {
     try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) continue;
-
-      const data = await res.json();
+      const data = await load();
+      if (!data) continue;
       renderCrudeOpportunities(data);
       crudeOpportunitiesLoaded = true;
 
@@ -8219,8 +8222,8 @@ function renderCrudeOpportunities(data) {
   setText('crudeGeneratedAt', formatOpportunityDateTime(data?.generated_at));
 
   const first = opportunities[0] || {};
-  const regime = String(first?.crude_regime || 'DATA PENDING').toUpperCase();
-  const pressure = String(first?.india_crude_pressure || '—').toUpperCase();
+  const regime = String(first?.crude_regime || data?.crude?.regime || 'DATA PENDING').toUpperCase();
+  const pressure = String(first?.india_crude_pressure || data?.crude?.india_crude_pressure || '—').toUpperCase();
   setText('crudeRegimeName', regime);
   setText('crudeRegimeDescription', regimeDescription(regime, pressure));
   setText('crudeRegimeScore', pressure === 'HIGH' ? 'HIGH' : pressure === 'LOW' ? 'LOW' : '—');
@@ -8634,11 +8637,10 @@ filterChips.forEach(chip => {
 /* ─── F&O List ─── */
 async function loadFnoList() {
   try {
-    const res = await fetch(FNO_URL());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    const { data, error } = await supabaseClient.rpc('fno_list');
+    if (error) throw error;
     let symbols = [];
-    if (Array.isArray(data)) symbols = data;
+    if (Array.isArray(data)) symbols = data.map(x => (x && typeof x === 'object') ? x.symbol : x);
     else if (data.symbols && Array.isArray(data.symbols)) symbols = data.symbols;
     else if (data.items && Array.isArray(data.items)) symbols = data.items.map(x => x.fnoRows || x.Symbol || x.symbol);
     fnoSymbols = new Set(symbols.map(s => String(s).trim().toUpperCase()).filter(Boolean));
