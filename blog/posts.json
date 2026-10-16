@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-buying-returns-after-8-day-lull-as-dii-selling-deepens",
+    "title": "FII Buying Returns After 8-Day Lull as DII Selling Deepens",
+    "excerpt": "FII turned net buyers at ₹1,165.92 Cr after selling ₹5,285.37 Cr yesterday, while DII posted their largest single-session net sale at ₹3,661.28 Cr. Nifty rose 0.65% to ₹23,146.1...",
+    "category": "fiidii-flows",
+    "date": "2026-10-16",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "techm-stock-spotlight",
     "title": "Tech Mahindra Surges 8.5% on 8x Volume, Within Striking Distance of 52-Week High",
     "excerpt": "PRICE ACTION: The stock delivered its strongest single-day advance in recent sessions, propelled by extraordinary volume that signals genuine institutional participation rather...",
