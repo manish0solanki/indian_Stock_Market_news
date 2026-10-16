@@ -6368,7 +6368,7 @@ function renderFiiDii(data) {
   let fiiData = [], diiData = [], labels = [];
 
   if (data && data.history && Array.isArray(data.history)) {
-    const sliced = data.history.slice(-5);
+    const sliced = data.history.slice(-1);
     labels = sliced.map((d, i) => {
   const raw = d.date || `Day ${i+1}`;
   const parts = String(raw).split('-');
@@ -6387,21 +6387,21 @@ function renderFiiDii(data) {
       if (cat.includes('FII')) byDate[date].fii = net;
       else if (cat.includes('DII')) byDate[date].dii = net;
     });
-    const entries = Object.entries(byDate).reverse().slice(0, 5).reverse();
+    const entries = Object.entries(byDate).slice(-1);
     labels = entries.map(([d]) => d);
     fiiData = entries.map(([, v]) => v.fii);
     diiData = entries.map(([, v]) => v.dii);
   }
   else if (Array.isArray(data) && data.length > 0 && (data[0].fii_net !== undefined || data[0].fiiNet !== undefined)) {
-    const sliced = data.slice(-5);
+    const sliced = data.slice(-1);
     labels = sliced.map((d, i) => d.date || d.Date || `Day ${i+1}`);
     fiiData = sliced.map(d => parseMoney(d.fii_net ?? d.fiiNet ?? d.FIINet ?? d.fii ?? 0));
     diiData = sliced.map(d => parseMoney(d.dii_net ?? d.diiNet ?? d.DIINet ?? d.dii ?? 0));
   }
   else if (data && typeof data === 'object' && (Array.isArray(data.fii) || Array.isArray(data.dii))) {
-    labels = (data.labels || data.dates || data.fii?.map((_, i) => `Day ${i+1}`) || []).slice(-5);
-    fiiData = (data.fii || []).slice(-5).map(parseMoney);
-    diiData = (data.dii || []).slice(-5).map(parseMoney);
+    labels = (data.labels || data.dates || data.fii?.map((_, i) => `Day ${i+1}`) || []).slice(-1);
+    fiiData = (data.fii || []).slice(-1).map(parseMoney);
+    diiData = (data.dii || []).slice(-1).map(parseMoney);
   }
   else if (data && typeof data === 'object' && !Array.isArray(data)) {
     labels = [data.date || data.Date || 'Latest'];
