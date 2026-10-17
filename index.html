@@ -9616,5 +9616,64 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 
+
+<style id="mp-reference-layout-refinement">
+/* Align the real site with the approved dashboard reference. */
+@media (min-width:1000px){
+  .topbar{position:sticky;top:0;z-index:160}
+  .ticker-wrap{display:none!important}
+  .mp-feature-sidebar{top:62px;width:276px}
+  .controls-bar{
+    margin:14px 24px 12px 296px!important;
+    width:auto!important;max-width:none!important;
+    display:flex;justify-content:flex-end;box-sizing:border-box;
+  }
+  .controls-bar .search-wrap{width:min(100%,540px);flex:0 1 540px}
+  .latest-blog-snapshots{
+    margin:0 24px 14px 296px!important;
+    max-width:none!important;width:auto!important;padding:0!important;
+  }
+  #homeDashboard,.mp-page,.stock-detail-card{
+    margin-left:296px!important;margin-right:24px!important;
+    max-width:none!important;width:auto!important;
+  }
+  #homeDashboard.dashboard{
+    display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:start;gap:14px;
+  }
+  #homeDashboard .left-col,#homeDashboard .right-col{min-width:0;width:auto;max-width:100%}
+  #homeDashboard .widget-card,#homeDashboard .news-card{min-width:0;max-width:100%;box-sizing:border-box}
+  .latest-blog-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px}
+  .latest-blog-card{min-width:0!important}
+  .latest-blog-card h3,.latest-blog-card p{overflow-wrap:anywhere}
+}
+@media (min-width:1280px){
+  #homeDashboard.dashboard{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .latest-blog-snapshots{padding:0!important}
+}
+@media (min-width:1000px) and (max-width:1250px){
+  .latest-blog-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media (max-width:999px){
+  .ticker-wrap{display:none!important}
+  .controls-bar{margin:12px 12px 14px!important;width:auto!important;max-width:none!important}
+  .latest-blog-snapshots{margin:0 12px 14px!important;padding:0!important;width:auto!important}
+  #homeDashboard,.mp-page,.stock-detail-card{margin:0 12px 14px!important;max-width:none!important;width:auto!important}
+  #homeDashboard.dashboard{display:grid!important;grid-template-columns:minmax(0,1fr);gap:12px}
+  #homeDashboard .left-col,#homeDashboard .right-col{width:100%;max-width:100%;min-width:0}
+  .latest-blog-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+}
+@media (max-width:560px){
+  .topbar-inner{align-items:center}
+  .topbar-right{gap:5px}
+  .topbar-status{display:none!important}
+  .latest-blog-grid{grid-template-columns:minmax(0,1fr)!important}
+  .latest-blog-card{padding:12px!important}
+  .controls-bar .search-wrap{flex:1 1 100%;width:100%}
+  .controls-bar .search-btn{flex:0 0 auto}
+  #homeDashboard .compact-table{min-width:0}
+}
+</style>
+
 </body>
 </html>   
