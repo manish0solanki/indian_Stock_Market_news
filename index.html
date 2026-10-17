@@ -3466,6 +3466,37 @@ input,select,textarea{min-width:0;}
     <button class="page-nav-link" data-page="crypto" type="button">⚡ Crypto Bot</button>
   </nav>
 
+ 
+  <aside class="mp-feature-sidebar" id="mpFeatureSidebar" aria-label="Market features">
+    <button class="mp-feature-link active" data-page="home" type="button"><span>⌂</span>Market Overview</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="latestInsights"><span>▤</span>Market News</button>
+    <button class="mp-feature-link" data-page="sectors" type="button"><span>▥</span>Sector Analysis</button>
+    <button class="mp-feature-link" data-page="global" type="button"><span>◎</span>Global Market</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="stockScreener"><span>⌕</span>Stock Screener</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="fiiDii"><span>♙</span>FII / DII Data</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="optionsData"><span>♧</span>Options Data</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="ipoListings"><span>↗</span>IPO &amp; Listings</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="earningsCalendar"><span>▦</span>Earnings Calendar</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="economicCalendar"><span>▣</span>Economic Calendar</button>
+    <button class="mp-feature-link" data-page="crude" type="button"><span>◉</span>Commodities / Crude</button>
+    <button class="mp-feature-link" data-page="global" type="button"><span>◎</span>Currency &amp; Bonds</button>
+    <button class="mp-feature-link" data-page="home" type="button" data-scroll-target="toolsCalculators"><span>❀</span>Tools &amp; Calculators</button>
+    <div class="mp-side-panel">
+      <div class="mp-side-panel-title">📈 Index View</div>
+      <div class="mp-side-tabs"><button class="active" type="button" data-mp-index="indices">Indices</button><button type="button" data-mp-index="sectors">Sectors</button><button type="button" data-mp-index="global">Global</button></div>
+      <div id="mpSidebarIndexRows"></div>
+    </div>
+    <div class="mp-side-panel mp-reference">
+      <div class="mp-side-panel-title">📖 Market Reference</div>
+      <details><summary>Key Terms Glossary</summary><p>Common market terminology and definitions.</p></details>
+      <details><summary>How Indices are Calculated</summary><p>Indices track a defined basket using published weighting methods.</p></details>
+      <details><summary>Market Timings (NSE)</summary><p>Regular equity market session: 9:15 AM–3:30 PM IST on trading days.</p></details>
+      <details><summary>Data Sources &amp; Updates</summary><p>Prices and indicators may be delayed depending on the source.</p></details>
+      <details><summary>Risk Disclaimer</summary><p>Market data and signals are informational and are not guaranteed returns.</p></details>
+    </div>
+  </aside>
+  <button class="mp-sidebar-menu" id="mpSidebarMenu" type="button" aria-label="Open feature menu">☰ Menu</button>
+
   <!-- Stock Detail Card -->
   <div class="stock-detail-card" id="stockDetailCard">
     <div class="stock-detail-inner">
@@ -9542,5 +9573,48 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
+
+<style id="mp-feature-sidebar-styles">
+:root{--mp-side-bg:#0b1322;--mp-side-panel:#0e1728;--mp-side-line:#253550;--mp-side-text:#dce5f8}
+.mp-feature-sidebar{position:fixed;z-index:40;left:0;top:64px;bottom:0;width:276px;overflow-y:auto;overflow-x:hidden;padding:8px 7px 16px;background:var(--mp-side-bg);border-right:1px solid #1e2b43;scrollbar-width:thin;scrollbar-color:#2c3b59 transparent}
+.mp-feature-link{width:100%;height:37px;display:flex;align-items:center;gap:12px;padding:0 12px;margin:0 0 1px;border:0;border-radius:8px;background:transparent;color:var(--mp-side-text);text-align:left;font:500 13px/1.2 inherit;cursor:pointer}
+.mp-feature-link span{width:18px;flex:0 0 18px;text-align:center;font-size:17px}
+.mp-feature-link:hover{background:#17233a}.mp-feature-link.active{background:linear-gradient(100deg,#4e36ec,#30249b);color:#fff;font-weight:750}
+.mp-side-panel{margin-top:12px;border:1px solid var(--mp-side-line);border-radius:11px;overflow:hidden;background:var(--mp-side-panel)}
+.mp-side-panel-title{padding:10px 11px;font-weight:750;font-size:13px;background:#121d30;border-bottom:1px solid #1d2b42}
+.mp-side-tabs{display:flex;gap:4px;padding:6px}.mp-side-tabs button{flex:1;min-width:0;padding:7px 2px;border:1px solid #2d3d5c;border-radius:8px;background:#101b30;color:#dce5f8;font-size:11px}
+.mp-side-tabs button.active{background:#5e45ff;border-color:#8a7cff}
+.mp-side-index-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;padding:7px 8px;border-top:1px solid #1d2b42;font-size:10px;align-items:center}
+.mp-side-index-row strong{white-space:nowrap;font-variant-numeric:tabular-nums}.mp-up{color:#00e88f}.mp-down{color:#ff4c5d}
+.mp-reference details{border-top:1px solid #1e2b43;color:#c4d0e7;font-size:11px}.mp-reference summary{cursor:pointer;list-style:none;padding:9px 10px}.mp-reference summary:after{content:'›';float:right}.mp-reference details[open] summary:after{content:'⌄'}.mp-reference p{margin:0;padding:0 10px 10px;color:#9aaaca;line-height:1.45}
+.mp-sidebar-menu{display:none;position:fixed;left:10px;bottom:12px;z-index:50;padding:9px 12px;border:1px solid #354365;border-radius:9px;background:#111b30;color:#fff}
+@media(min-width:1000px){.page-nav{display:none!important}#homeDashboard,.mp-page,.stock-detail-card,.home-footer{margin-left:286px!important;max-width:calc(100% - 300px)!important}.controls-bar{margin-left:286px!important;max-width:calc(100% - 300px)!important}.ticker-wrap{margin-left:286px!important;max-width:calc(100% - 300px)!important}}
+@media(max-width:999px){.mp-feature-sidebar{top:0;width:min(300px,86vw);max-width:86vw;transform:translateX(-105%);transition:transform .2s ease;z-index:150;padding-top:18px;box-shadow:18px 0 50px #0008}.mp-feature-sidebar.mobile-open{transform:translateX(0)}.mp-sidebar-menu{display:block}.page-nav{overflow-x:auto}}
+@media(max-width:600px){.mp-sidebar-menu{bottom:12px;left:10px}.mp-feature-link{height:39px}}
+</style>
+<script id="mp-feature-sidebar-script">
+(function(){
+ const side=document.getElementById('mpFeatureSidebar'),menu=document.getElementById('mpSidebarMenu');
+ if(!side)return;
+ const data={
+  indices:[['NIFTY 50','23,146.15','+0.65%'],['NIFTY BANK','55,844.00','+0.95%'],['SENSEX','74,733.15','+2.68%'],['BANKEX','62,738.78','-0.26%'],['NIFTY MIDCAP 50','16,946.30','-0.30%'],['NIFTY FIN SERVICE','25,387.10','+0.09%']],
+  sectors:[['NIFTY IT','—'],['NIFTY AUTO','—'],['NIFTY PHARMA','—'],['NIFTY METAL','—'],['NIFTY FMCG','—']],
+  global:[['S&P 500','—'],['NASDAQ','—'],['DOW JONES','—'],['FTSE 100','—'],['NIKKEI 225','—']]
+ };
+ function render(which){const host=document.getElementById('mpSidebarIndexRows');if(!host)return;host.innerHTML=(data[which]||data.indices).map(r=>{const value=r[1],pct=r[2]||'';const cls=(pct||value).startsWith('+')?'mp-up':(pct||value).startsWith('-')?'mp-down':'';return '<div class="mp-side-index-row"><span>'+r[0]+'</span><strong class="'+cls+'">'+(which==='indices'?value+' ': '')+pct+'</strong></div>'}).join('');}
+ render('indices');
+ side.querySelectorAll('[data-mp-index]').forEach(b=>b.addEventListener('click',()=>{side.querySelectorAll('[data-mp-index]').forEach(x=>x.classList.toggle('active',x===b));render(b.dataset.mpIndex)}));
+ if(menu)menu.addEventListener('click',()=>side.classList.toggle('mobile-open'));
+ side.addEventListener('click',e=>{
+   const link=e.target.closest('.mp-feature-link');if(!link)return;
+   side.querySelectorAll('.mp-feature-link').forEach(x=>x.classList.toggle('active',x===link));
+   if(link.dataset.scrollTarget){const target=document.getElementById(link.dataset.scrollTarget);if(target)target.scrollIntoView({behavior:'smooth',block:'start'});}
+   else {const nav=document.querySelector('.page-nav-link[data-page="'+link.dataset.page+'"]');if(nav)nav.click();}
+   if(innerWidth<1000)side.classList.remove('mobile-open');
+ });
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')side.classList.remove('mobile-open')});
+})();
+</script>
+
 </body>
 </html>   
