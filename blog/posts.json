@@ -1,5 +1,26 @@
 [
   {
+    "slug": "dii-buying-absorbs-fii-outflows-as-nifty-slips-111",
+    "title": "DII Buying Absorbs FII Outflows as Nifty Slips 1.11%",
+    "excerpt": "DII net buying of ₹3,201.19 Cr offset FII net selling of ₹1,148.64 Cr, resulting in positive combined institutional flow of ₹2,052.55 Cr despite the Nifty 50 declining 257.2 poi...",
+    "category": "fiidii-flows",
+    "date": "2026-10-19",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "pnb-stock-spotlight",
     "title": "PNB Surges 4.8% on 5.6x Volume, Reclaims Key Moving Averages",
     "excerpt": "PRICE ACTION: Punjab National Bank jumped 4.82% to close at ₹121.9, its strongest single-day advance in recent sessions, with volume swelling to nearly six times the daily avera...",
