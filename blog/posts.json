@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-19-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 19 Oct 2026: Drops 1.11%",
+    "excerpt": "The mood turned cautious as NIFTY 50 shed 257 points to close at 22,888.95, down 1.11%. Breadth was weak with just 9 stocks advancing against 41 decliners — a clear sign of selling pressure across the board. Key movers: Axis Bank crashed 4.19% to ₹1,236, dragging the private banking pack down.",
+    "category": "daily-wrap",
+    "date": "2026-10-19T19:59:29+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-buying-returns-after-8-day-lull-as-dii-selling-deepens",
     "title": "FII Buying Returns After 8-Day Lull as DII Selling Deepens",
     "excerpt": "FII turned net buyers at ₹1,165.92 Cr after selling ₹5,285.37 Cr yesterday, while DII posted their largest single-session net sale at ₹3,661.28 Cr. Nifty rose 0.65% to ₹23,146.1...",
