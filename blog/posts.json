@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-21-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 21 Oct 2026: Drops 0.34%",
+    "excerpt": "Markets closed cautious as NIFTY 50 slipped 78 points to 22,811, with just 16 stocks advancing against 34 decliners. The narrow breadth signals weak conviction despite IT's strong showing. IT stocks carried the day after solid Q2 results and improved US demand On the flip side, BajFinance cracked 3.3% to ₹926 on profit-booking after recent outperformance.",
+    "category": "daily-wrap",
+    "date": "2026-10-21T17:59:53+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "dii-buying-absorbs-fii-outflows-as-nifty-slips-111",
     "title": "DII Buying Absorbs FII Outflows as Nifty Slips 1.11%",
     "excerpt": "DII net buying of ₹3,201.19 Cr offset FII net selling of ₹1,148.64 Cr, resulting in positive combined institutional flow of ₹2,052.55 Cr despite the Nifty 50 declining 257.2 poi...",
