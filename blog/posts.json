@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-return-to-net-buying-after-single-day-outflow-as-nifty-slips-77-points",
+    "title": "FII Return to Net Buying After Single-Day Outflow as Nifty Slips 77 Points",
+    "excerpt": "FII net buying resumed at ₹1022.32 Cr after a ₹1148.64 Cr sell-off in the previous session, while DII buying continued for a second straight day at ₹1614.32 Cr. Combined institu...",
+    "category": "fiidii-flows",
+    "date": "2026-10-21",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "techm-stock-spotlight",
     "title": "Tech Mahindra Surges 3.1% on Heavy Volume, Within 1% of 52-Week High",
     "excerpt": "PRICE ACTION: Tech Mahindra rallied 3.13% to ₹1834.7 on volume nearly 1.5 times its average, indicating genuine buying interest rather than thin-market drift. The stock now sits...",
