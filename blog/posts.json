@@ -1,5 +1,25 @@
 [
   {
+    "slug": "techm-stock-spotlight",
+    "title": "Tech Mahindra Surges 3.1% on Heavy Volume to Within 1% of 52-Week High",
+    "excerpt": "PRICE ACTION: Tech Mahindra rallied 3.13% to ₹1,834.7 with volume surging to 1.48x the daily average, indicating genuine buying participation rather than thin-air momentum. The...",
+    "category": "stock-spotlight",
+    "date": "2026-10-21",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "TECHM",
+      "TECH MAHINDRA LIMITED"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-it-jumps-2-88-percent-as-large-caps-rally-amid-broad-small-cap-weakness",
     "title": "Nifty IT Jumps 2.88% as Large Caps Rally Amid Broad Small-Cap Weakness",
     "excerpt": "Nifty IT surged 2.88% (906.2 points) to 32,422.5, driven by large-cap strength with the top 10 stocks averaging 2.48% gains and market-cap-weighted returns at 2.28%. However, 101 of 145 stocks declined with a median drop of 1.92%, indicating narrow, large-cap-driven leadership.",
@@ -129,26 +149,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "techm-stock-spotlight",
-    "title": "Tech Mahindra Surges 8.5% on 8x Volume, Within Striking Distance of 52-Week High",
-    "excerpt": "PRICE ACTION: The stock delivered its strongest single-day advance in recent sessions, propelled by extraordinary volume that signals genuine institutional participation rather...",
-    "category": "stock-spotlight",
-    "date": "2026-10-16",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "TECHM",
-      "TECH MAHINDRA LIMITED"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
