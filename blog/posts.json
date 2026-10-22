@@ -1,5 +1,25 @@
 [
   {
+    "slug": "icicibank-stock-spotlight",
+    "title": "ICICI Bank Rises 1% on Above-Average Volume, Holding Within 6% of 52-Week High",
+    "excerpt": "PRICE ACTION: ICICI Bank closed at ₹1398.5, up nearly 1% with volume running 34% above its average, indicating genuine participation in the move. The stock sits just 5.5% below...",
+    "category": "stock-spotlight",
+    "date": "2026-10-22",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "ICICIBANK",
+      "ICICI BANK LTD."
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-energy-drops-2-43-percent-as-broad-based-selling-hits-sector",
     "title": "Nifty Energy Drops 2.43% as Broad-Based Selling Hits Sector",
     "excerpt": "Nifty Energy declined 2.43% (872.95 points) to 35,101.45, with 66 of 86 stocks declining against 20 advancing. The top 10 companies by market capitalization averaged -0.58%, while smaller stocks averaged -1.09%, indicating broad-based weakness across the sector universe.",
