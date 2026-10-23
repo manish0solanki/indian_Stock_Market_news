@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-23-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 23 Oct 2026: Drops 0.54%",
+    "excerpt": "The mood turned cautious as NIFTY 50 shed 124 points to close at 22,688, with selling pressure across 36 of 50 stocks. Weak global cues and profit-booking in heavyweights dragged the index below key support levels.",
+    "category": "daily-wrap",
+    "date": "2026-10-23T15:35:19+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-selling-resumes-as-dii-buying-extends-to-third-session-nifty-slips-054",
     "title": "FII Selling Resumes as DII Buying Extends to Third Session; Nifty Slips 0.54%",
     "excerpt": "FII net selling returned at ₹3,458.7 Cr after one day of inflows, while DII buying continued for a third straight session at ₹2,891.32 Cr. The Nifty 50 declined 123.7 points to...",
