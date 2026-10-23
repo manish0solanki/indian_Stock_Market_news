@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-return-to-net-buying-after-single-day-outflow-dii-buying-extends-to-four-sessions",
+    "title": "FII Return to Net Buying After Single-Day Outflow; DII Buying Extends to Four Sessions",
+    "excerpt": "FII net buying resumed at ₹887.65 Cr after selling ₹3,458.7 Cr in the previous session, while DII inflows accelerated to ₹3,235.36 Cr. Combined institutional net buying of ₹4,12...",
+    "category": "fiidii-flows",
+    "date": "2026-10-23",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "coforge-stock-spotlight",
     "title": "Coforge Drops 0.4% on 1.6x Volume as Stock Holds Within 6% of 52-Week High",
     "excerpt": "PRICE ACTION: The stock posted a modest decline with notably elevated turnover, suggesting active participation despite the lack of directional conviction. Price remains comfort...",
