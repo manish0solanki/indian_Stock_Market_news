@@ -1,5 +1,25 @@
 [
   {
+    "slug": "coforge-stock-spotlight",
+    "title": "Coforge Drops 0.4% on 1.6x Volume as Stock Holds Within 6% of 52-Week High",
+    "excerpt": "PRICE ACTION: The stock posted a modest decline with notably elevated turnover, suggesting active participation despite the lack of directional conviction. Price remains comfort...",
+    "category": "stock-spotlight",
+    "date": "2026-10-23",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "COFORGE",
+      "COFORGE LIMITED"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-metal-slides-2-71-percent-as-broad-sell-off-hits-241-stocks",
     "title": "Nifty Metal Slides 2.71% as Broad Sell-Off Hits 241 Stocks",
     "excerpt": "Nifty Metal dropped 320.15 points (2.71%) to 11,478.20 with 241 of 271 stocks declining. Large caps averaged -2.82% versus -2.73% for smaller stocks, indicating balanced weakness across the sector.",
@@ -995,26 +1015,6 @@
       "heatmap-data",
       "market-breadth",
       "fii-dii-data"
-    ]
-  },
-  {
-    "slug": "coforge-stock-spotlight",
-    "title": "Coforge Surges 4.4% on Above-Average Volume, Nears 52-Week High as Moving Averages Align",
-    "excerpt": "PRICE ACTION: Coforge rallied 4.4% to ₹1826 with volume running 39% above its average, indicating genuine buying interest rather than thin-market drift. The stock now sits just...",
-    "category": "stock-spotlight",
-    "date": "2026-10-01",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "COFORGE",
-      "COFORGE LIMITED"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
