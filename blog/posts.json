@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-26-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 26 Oct 2026: Drops 0.39%",
+    "excerpt": "The mood turned cautious as Nifty 50 slipped 87 points to close at 22,600. Bears dominated with 36 stocks falling against just 14 gainers — a weak breadth that signals broad-based selling pressure. Eternal (formerly Zomato) was the standout, surging 4.25% to ₹317 on heavy volumes of 5.5 crore shares.",
+    "category": "daily-wrap",
+    "date": "2026-10-26T15:35:18+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-return-to-net-buying-after-single-day-outflow-dii-buying-extends-to-four-sessions",
     "title": "FII Return to Net Buying After Single-Day Outflow; DII Buying Extends to Four Sessions",
     "excerpt": "FII net buying resumed at ₹887.65 Cr after selling ₹3,458.7 Cr in the previous session, while DII inflows accelerated to ₹3,235.36 Cr. Combined institutional net buying of ₹4,12...",
