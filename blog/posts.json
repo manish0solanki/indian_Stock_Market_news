@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-selling-resumes-as-dii-buying-extends-to-fifth-straight-session",
+    "title": "FII Selling Resumes as DII Buying Extends to Fifth Straight Session",
+    "excerpt": "FIIs turned net sellers with ₹1,462.49 Cr outflow after one day of buying, while DIIs continued their five-session buying streak with ₹2,609.57 Cr inflow. The Nifty 50 edged dow...",
+    "category": "fiidii-flows",
+    "date": "2026-10-26",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "tataconsum-stock-spotlight",
     "title": "Tata Consumer Surges 6.8% on 5x Volume, Reclaims 50-Day Moving Average",
     "excerpt": "PRICE ACTION: Tata Consumer staged its sharpest single-day advance in recent sessions, closing at ₹1000 with volume surging to more than five times the daily average. The move l...",
