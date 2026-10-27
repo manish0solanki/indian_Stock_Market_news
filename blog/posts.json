@@ -1,5 +1,25 @@
 [
   {
+    "slug": "tataconsum-stock-spotlight",
+    "title": "Tata Consumer Surges 6.8% on 5x Volume, Reclaims 50-Day Moving Average",
+    "excerpt": "PRICE ACTION: Tata Consumer staged its sharpest single-day advance in recent sessions, closing at ₹1000 with volume surging to more than five times the daily average. The move l...",
+    "category": "stock-spotlight",
+    "date": "2026-10-27",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "TATACONSUM",
+      "TATA CONSUMER PRODUCT LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-pharma-jumps-3-7-percent-as-108-of-130-stocks-advance",
     "title": "Nifty Pharma Jumps 3.7% as 108 of 130 Stocks Advance",
     "excerpt": "Nifty Pharma gained 3.7% (937.85 points) to 26,267.25, with 108 of 130 stocks advancing against 21 declining. Smaller stocks averaged 2.6%, slightly ahead of the top 10 companies at 2.22%, indicating balanced participation.",
