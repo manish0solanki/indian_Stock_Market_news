@@ -1,110 +1,100 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111827">
-  <title>Stock Signals | MarketPulse</title>
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/stock-signals.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2E1F82">
+<title>Stock Signals · MarketPulse</title>
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="stylesheet" href="stock-signals.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/" aria-label="MarketPulse home"><span class="diamond"></span> MarketPulse <span class="brand-sub">STOCK SIGNALS</span></a>
-    <nav><a href="/">Dashboard</a><a href="/sectors.html">Sectors</a><a href="/portfolio.html">Portfolio</a></nav>
-  </header>
-  <main class="page">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">RULE-BASED DECISION SUPPORT</p>
-        <h1>Stock Trading Signals</h1>
-        <p class="subhead">Intraday and swing setups for liquid NSE F&amp;O stocks. Manual execution only.</p>
-      </div>
-      <div class="market-status" id="marketStatus"><span class="dot warn"></span><span>Checking data feed…</span></div>
-    </section>
 
-    <section class="notice warning" id="dataNotice" role="status">
-      <strong>Data validation is running.</strong>
-      <span>Signals stay disabled until price freshness and candle fields are verified.</span>
-    </section>
+<header class="appbar">
+  <a class="back" href="/" aria-label="Back to MarketPulse">‹</a>
+  <div class="apptitle">
+    <h1>Stock Signals</h1>
+    <span class="mkt" id="marketChip"><i class="dot"></i><span id="marketText">Checking market…</span></span>
+  </div>
+  <button class="iconbtn" id="themeBtn" aria-label="Toggle theme">◐</button>
+</header>
 
-    <section class="paper-auth">
-      <div><strong id="paperAuthState">Checking your MarketPulse session…</strong><p id="paperAuthHint">Stock Signals uses the same account as the main MarketPulse website. No separate sign-in is required.</p></div>
-      <a class="small-button" id="paperLoginLink" href="/#login">Sign in on MarketPulse</a>
-    </section>
-    <section class="control-panel">
-      <div class="control">
-        <label for="timeframe">Timeframe</label>
-        <select id="timeframe"><option value="intraday">Intraday (5-minute candles)</option><option value="swing" selected>Swing (daily candles)</option></select>
-      </div>
-      <div class="control">
-        <label for="riskPct">Risk per trade</label>
-        <select id="riskPct"><option value="0.25">0.25% of capital</option><option value="0.5" selected>0.50% of capital</option><option value="1">1.00% of capital</option></select>
-      </div>
-      <div class="control">
-        <label for="capital">Trading capital (₹)</label>
-        <input id="capital" type="number" min="1" step="1000" value="100000" inputmode="decimal">
-      </div>
-      <button id="scanBtn" class="primary" type="button">Validate feed &amp; scan</button>
-    </section>
+<div class="indexstrip" id="indexStrip" aria-label="Market indices"></div>
 
-    <section class="stats-grid" aria-label="Signal summary">
-      <article class="stat"><span>Eligible F&amp;O symbols</span><strong id="eligibleCount">—</strong><small>From existing MarketPulse feed</small></article>
-      <article class="stat"><span>Valid candles</span><strong id="candleCount">—</strong><small id="candleWindow">Awaiting validation</small></article>
-      <article class="stat"><span>Qualified setups</span><strong id="signalCount">0</strong><small>No setup is forced</small></article>
-      <article class="stat"><span>Feed status</span><strong id="feedState" class="status-text">CHECKING</strong><small id="feedChecked">Not verified yet</small></article>
-    </section>
+<main id="app">
+  <div class="gate" id="gate" hidden>
+    <h2>Sign in to trade signals</h2>
+    <p>Stock Signals uses your MarketPulse login for your paper-trading account.</p>
+    <a class="btn primary" href="/#login">Sign in on MarketPulse</a>
+  </div>
 
-    <section class="section-head">
-      <div><p class="eyebrow">SETUPS</p><h2>Trade candidates</h2></div>
-      <div class="paper-actions"><span class="muted" id="scanSummary">Run validation to begin.</span><button id="paperAllBtn" class="primary" type="button" disabled>Paper trade all listed</button></div>
-    </section>
-    <div id="signals" class="signals-grid">
-      <div class="empty-state"><strong>No signals yet</strong><span>The scanner will only show a setup when the required candle data passes validation and the rules agree.</span></div>
+  <!-- ============ SIGNALS ============ -->
+  <section class="tab active" id="tab-signals" aria-label="Signals">
+    <div class="toolbar">
+      <div class="seg" id="tfSeg" role="tablist">
+        <button data-v="all" class="on">All</button><button data-v="swing">Swing</button><button data-v="intraday">Intraday</button>
+      </div>
+      <div class="seg" id="sideSeg">
+        <button data-v="all" class="on">Both</button><button data-v="BUY">Buy</button><button data-v="SELL">Sell</button>
+      </div>
+      <select id="sortSel" aria-label="Sort signals">
+        <option value="score">Sort: Score</option><option value="rr">Sort: Risk/Reward</option>
+        <option value="near">Sort: Closest to entry</option><option value="chg">Sort: Day change</option>
+      </select>
     </div>
+    <input id="searchBox" class="search" type="search" placeholder="Search symbol or company" autocomplete="off">
+    <div class="note" id="signalNote"></div>
+    <div id="signalList" class="list"></div>
+  </section>
 
-    <section class="section-head"><div><p class="eyebrow">SIMULATED EXECUTION</p><h2>Paper trading account</h2></div><span class="muted" id="paperSummary">Sign in to save and review your paper trades.</span></section>
-    <section class="stats-grid paper-account-stats" aria-label="Paper trading account">
-      <article class="stat"><span>Virtual starting balance</span><strong id="paperStartingBalance">₹100,000.00</strong><small>Simulation only</small></article>
-      <article class="stat"><span>Available cash</span><strong id="paperAvailableCash">—</strong><small>Starting balance minus open buys</small></article>
-      <article class="stat"><span>Unrealized P&amp;L</span><strong id="paperUnrealized">—</strong><small>Open positions at last marked price</small></article>
-      <article class="stat"><span>Realized P&amp;L</span><strong id="paperRealized">—</strong><small>Closed simulated trades, net of entered costs</small></article>
-    </section>
-    <section class="diagnostics paper-panel">
-      <div class="paper-account-controls">
-        <label for="paperBalanceInput">Starting virtual balance (₹)</label>
-        <input id="paperBalanceInput" type="number" min="1000" step="1000" value="100000">
-        <label for="paperCostBps">Estimated costs per side (bps)</label>
-        <input id="paperCostBps" type="number" min="0" max="200" step="1" value="10">
-        <button type="button" class="small-button" id="savePaperSettings">Save settings</button>
-        <span class="muted">Cost estimate only; actual taxes/brokerage vary.</span>
-      </div>
-      <div class="paper-toolbar"><div class="paper-tabs"><button type="button" class="small-button active" data-paper-filter="OPEN">Open</button><button type="button" class="small-button" data-paper-filter="CLOSED">Closed</button><button type="button" class="small-button" data-paper-filter="ALL">All</button></div><div class="paper-actions"><button type="button" class="small-button" id="markPricesBtn">Mark with latest validated quote</button><button type="button" class="small-button" id="refreshPaperBtn">Refresh</button></div></div>
-      <div id="paperTrades" class="paper-trades"><div class="empty-state"><strong>No paper trades loaded</strong><span>Sign in, then add a trade from the candidates above.</span></div></div>
-    </section>
-    <section class="section-head"><div><p class="eyebrow">TRUST BEFORE TRADING</p><h2>Market-data diagnostics</h2></div></section>
-    <section class="diagnostics" id="diagnostics" aria-live="polite">
-      <div class="diagnostic-row"><span>Current quote endpoint</span><strong id="quoteCheck">Not checked</strong></div>
-      <div class="diagnostic-row"><span>Daily OHLCV history</span><strong id="dailyCheck">Not checked</strong></div>
-      <div class="diagnostic-row"><span>Intraday 5-minute candles</span><strong id="intradayCheck">Not checked</strong></div>
-      <div class="diagnostic-row"><span>F&amp;O universe feed</span><strong id="universeCheck">Not checked</strong></div>
-      <div class="diagnostic-row"><span>Signal persistence</span><strong id="storageCheck">Schema required</strong></div>
-    </section>
+  <!-- ============ POSITIONS ============ -->
+  <section class="tab" id="tab-positions" aria-label="Positions">
+    <div class="summary" id="posSummary"></div>
+    <div id="posList" class="list"></div>
+  </section>
 
-    <section class="method">
-      <h2>How signals are calculated</h2>
-      <div class="method-grid">
-        <div><strong>Trend filter</strong><p>EMA 20 / EMA 50 alignment and higher-timeframe direction.</p></div>
-        <div><strong>Momentum confirmation</strong><p>RSI and MACD must support the direction; indicators alone never trigger a trade.</p></div>
-        <div><strong>Volatility-aware risk</strong><p>ATR and recent swing structure define the invalidation level. Targets are calculated from actual risk.</p></div>
-        <div><strong>Quality gates</strong><p>Freshness, OHLC consistency, minimum reward-to-risk and liquid-symbol eligibility must pass.</p></div>
-      </div>
-      <p class="disclaimer">Decision-support software, not a guarantee of returns. Signals can lose money. Validate historical performance and paper-trade before risking capital. Prices may be delayed. No orders are placed by this page. SELL means a bearish/short setup, not an instruction to hold a short cash-equity position overnight. Quantity is share-equivalent risk sizing, not F&O lot sizing; verify instrument, lot size, margin and trading rules with your broker.</p>
-    </section>
-  </main>
-  <script src="/stock-signals.js"></script>
+  <!-- ============ HISTORY ============ -->
+  <section class="tab" id="tab-history" aria-label="History">
+    <div class="summary" id="histSummary"></div>
+    <div class="card" id="equityCard"></div>
+    <div class="toolbar">
+      <div class="seg" id="histSeg"><button data-v="all" class="on">All</button><button data-v="win">Wins</button><button data-v="loss">Losses</button></div>
+    </div>
+    <div id="histList" class="list"></div>
+  </section>
+
+  <!-- ============ ACCOUNT ============ -->
+  <section class="tab" id="tab-account" aria-label="Account">
+    <div class="summary" id="acctSummary"></div>
+    <div class="card">
+      <h3>Paper account settings</h3>
+      <label class="field"><span>Starting balance (₹)</span><input id="setBalance" type="number" min="1000" step="1000" inputmode="decimal"></label>
+      <label class="field"><span>Risk per trade (% of equity)</span><input id="setRisk" type="number" min="0.1" max="5" step="0.1" inputmode="decimal"></label>
+      <label class="field"><span>Charges per side (bps)</span><input id="setBps" type="number" min="0" max="100" step="1" inputmode="decimal"></label>
+      <button class="btn primary block" id="saveSettings">Save settings</button>
+      <p class="hint">Settings are stored in your account, so every device shows the same balance.</p>
+    </div>
+    <div class="card" id="healthCard"></div>
+    <div class="card danger">
+      <h3>Reset paper account</h3>
+      <p class="hint">Deletes all paper trades and starts again from your starting balance. This cannot be undone.</p>
+      <button class="btn outline-red block" id="resetBtn">Reset account…</button>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Sections">
+  <button data-tab="signals" class="on"><b>◎</b><span>Signals</span></button>
+  <button data-tab="positions"><b>▤</b><span>Positions</span><em id="posBadge" hidden>0</em></button>
+  <button data-tab="history"><b>↺</b><span>History</span></button>
+  <button data-tab="account"><b>☰</b><span>Account</span></button>
+</nav>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="stock-signals.js"></script>
 </body>
 </html>
