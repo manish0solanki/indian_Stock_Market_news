@@ -53,6 +53,7 @@
 </div><div class="foot"><button class="btn" type="button" data-close="importModal">Cancel</button><button class="btn primary" id="importConfirm" disabled>Import</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/stock-search.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
@@ -271,18 +272,10 @@ function normalizeCompanyName(value){
   .replace(/\b(limited|ltd|private|pvt|incorporated|inc|corporation|corp|company|co)\b/g,' ')
   .replace(/\s+/g,' ').trim();
 }
-function stockSearchItems(data){
- if(Array.isArray(data)) return data;
- if(Array.isArray(data?.items)) return data.items;
- if(data&&typeof data==='object'&&(data.symbol||data.company_name||data.name)) return [data];
- return [];
-}
 async function searchImportStocks(query){
  const q=String(query||'').trim();
  if(!q) return [];
- const res=await fetch(API_BASE+"/stock-search?q="+encodeURIComponent(q),{cache:'no-store'});
- if(!res.ok) throw new Error('Stock search HTTP '+res.status);
- return stockSearchItems(await res.json());
+ return mpSearchStocks(q,{url:API_BASE+"/stock-search",client:sb});
 }
 function chooseImportStock(items,company){
  const target=normalizeCompanyName(company);
@@ -459,15 +452,9 @@ async function searchPortfolioSymbols(query){
   box.classList.add('open');
 
   try{
-    const res=await fetch(API_BASE+"/stock-search?q="+encodeURIComponent(q),{cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data=await res.json();
+    // Worker results merged with the NSE-synced `stocks` table (see /stock-search.js).
+    const stocks=await mpSearchStocks(q,{url:API_BASE+"/stock-search",client:sb});
     if(requestId!==symbolSearchRequestId) return;
-
-    let stocks=[];
-    if(Array.isArray(data)) stocks=data;
-    else if(Array.isArray(data.items)) stocks=data.items;
-    else if(data && typeof data==='object' && (data.symbol||data.company_name)) stocks=[data];
 
     if(!stocks.length){
       box.innerHTML='<div class="symbol-suggestion-empty">No matching stocks</div>';

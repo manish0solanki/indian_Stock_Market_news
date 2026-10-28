@@ -4409,6 +4409,7 @@ input,select,textarea{min-width:0;}
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/stock-search.js?v=1"></script>
 
 <script>
 
@@ -4831,14 +4832,7 @@ async function searchAlertStocks(query) {
   alertSearchDropdown.classList.add('open');
 
   try {
-    const res = await fetch(STOCK_SEARCH_URL() + '?q=' + encodeURIComponent(q));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-
-    let stocks = [];
-    if (Array.isArray(data)) stocks = data;
-    else if (data.items && Array.isArray(data.items)) stocks = data.items;
-    else if (typeof data === 'object' && data !== null && (data.symbol || data.company_name)) stocks = [data];
+    const stocks = await mpSearchStocks(q, { url: STOCK_SEARCH_URL(), client: supabaseClient });
 
     if (!stocks.length) {
       alertSearchDropdown.innerHTML = '<div class="alert-search-empty">No matches</div>';
@@ -8143,13 +8137,8 @@ async function searchStock(query) {
   }
   sdHint.textContent = 'Searching…';
   try {
-    const res = await fetch(STOCK_SEARCH_URL() + '?q=' + encodeURIComponent(query));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    let stocks = [];
-    if (Array.isArray(data)) stocks = data;
-    else if (data.items && Array.isArray(data.items)) stocks = data.items;
-    else if (typeof data === 'object' && data !== null && (data.symbol || data.company_name)) stocks = [data];
+    // Worker results merged with the NSE-synced `stocks` table (see /stock-search.js).
+    const stocks = await mpSearchStocks(query, { url: STOCK_SEARCH_URL(), client: supabaseClient });
 
     if (!dropdown) return;
     dropdown.innerHTML = '';
@@ -8165,7 +8154,7 @@ async function searchStock(query) {
       const div = document.createElement('div');
       div.className = 'search-dropdown-item';
       const isFnoSearch = stock.symbol && fnoSymbols.has(stock.symbol.toUpperCase());
-      div.innerHTML = `<span class="dd-name">${stock.company_name || stock.name || '—'}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${stock.symbol || '—'}</span>`;
+      div.innerHTML = `<span class="dd-name">${escapeHtml(stock.company_name || stock.name || '—')}${isFnoSearch ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="dd-symbol">${escapeHtml(stock.symbol || '—')}</span>`;
       div.addEventListener('click', () => {
         dropdown.classList.remove('open');
         searchInput.value = stock.company_name || stock.symbol || '';

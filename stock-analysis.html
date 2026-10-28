@@ -364,6 +364,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/stock-search.js?v=1"></script>
 <script>
 (() => {
 'use strict';
@@ -466,8 +467,8 @@ async function loadStock(sym, {fresh = false} = {}) {
  return data;
 }
 async function searchStocks(q) {
- const d = await getJSON(API_BASE + '/stock-search?q=' + encodeURIComponent(q));
- const list = Array.isArray(d) ? d : (d?.items || d?.results || d?.data || (d?.symbol ? [d] : []));
+ // Worker results merged with the NSE-synced `stocks` table (see /stock-search.js).
+ const list = await window.mpSearchStocks(q, {url: API_BASE + '/stock-search', client: sb});
  return list.map(s => ({symbol: String(s.symbol || s.ticker || '').toUpperCase(), name: s.company_name || s.name || s.companyName || ''})).filter(s => s.symbol).slice(0, 8);
 }
 
