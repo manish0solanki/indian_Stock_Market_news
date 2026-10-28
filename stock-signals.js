@@ -1,552 +1,505 @@
-/* MarketPulse Stock Signals v1.0
- * Isolated from crypto signals. No broker orders are sent.
- * Daily and intraday feeds are isolated Supabase Edge Functions. Yahoo-derived data may be delayed.
- */
-(() => {
+/* Stock Signals — broker-style paper trading app.
+   Signals are produced on the server (Supabase job); paper trades are managed on the server too
+   (stops/targets fill at their exact level, intraday positions are squared off at 15:20 IST).
+   This page only displays data and places/modifies/exits paper orders. */
+(function () {
 'use strict';
+
 const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
-const STOCK_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-data';
-const INTRADAY_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-intraday';
-const FNO_LIMIT = 35;
-const MAX_QUOTE_AGE_HOURS = 36;
-const MAX_MARK_QUOTE_AGE_HOURS = 8;
-const MAX_FUTURE_QUOTE_MINUTES = 5;
-const $ = id => document.getElementById(id);
-let apiBase = '';
-let supabase = null;
-let latestSignals = [];
-let currentAuthSession = null;
-let currentPaperFilter = 'OPEN';
-let paperAccountSettings={balance:100000,costBps:10};
-let paperRowsCache=[];
-let autoMarkTimer=null;
-let autoMarkInProgress=false;
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function setCheck(id, text, status='warn') {
-  const el = $(id); if (!el) return;
-  el.textContent = text;
-  el.className = status === 'ok' ? 'ok-text' : status === 'bad' ? 'bad-text' : 'warn-text';
-}
-function setMarketStatus(text, status='warn') {
-  const el=$('marketStatus');
-  el.innerHTML='<span class="dot '+(status==='ok'?'ok':status==='bad'?'bad':'')+'"></span><span>'+esc(text)+'</span>';
-}
-function esc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function safeNumberFormat(value, options={}) {
-  const n=Number(value);
-  if (!Number.isFinite(n)) return '—';
-  try { return n.toLocaleString('en-IN',options); } catch (_) { return String(n); }
-}
-function safeNow() {
-  try { return (typeof Date !== 'undefined' && Date.now) ? new Date(Date.now()).toISOString() : 'time unavailable'; }
-  catch (_) { return 'time unavailable'; }
-}
-function money(value) {
-  const n=Number(value);
-  if (!Number.isFinite(n)) return '—';
-  return safeNumberFormat(n,{style:'currency',currency:'INR',maximumFractionDigits:2});
-}
-function num(value) { const n=Number(value); return Number.isFinite(n)?n:null; }
-function quoteTime(data) {
-  const marketTs=Number(data?.latest_trading_timestamp);
-  if(Number.isFinite(marketTs)&&marketTs>0) return new Date(marketTs*1000).toISOString();
-  return data?.quote_time || data?.updated_at || data?.timestamp || data?.as_of || data?.fetched_at || null;
-}
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const num = (v) => { if (v === null || v === undefined || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
+const fmt = (n, d = 2) => n === null || n === undefined ? '—' : Number(n).toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+const inr = (n, d = 2) => n === null || n === undefined ? '—' : (n < 0 ? '-₹' : '₹') + fmt(Math.abs(n), d);
+const sinr = (n, d = 0) => n === null || n === undefined ? '—' : (n >= 0 ? '+' : '-') + '₹' + fmt(Math.abs(n), d);
+const pct = (n) => n === null || n === undefined ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
+const cls = (n) => (n > 0 ? 'up' : n < 0 ? 'down' : 'muted');
 
-async function init() {
-  try {
-    const response=await fetch('/config.json?ts='+Date.now(),{cache:'no-store'});
-    if(response.ok) { const cfg=await response.json(); apiBase=String(cfg.apiBase||'').replace(/\/$/,''); }
-  } catch (_) {}
-  try {
-    // Same Supabase project, publishable key and default auth storage as index.html:
-    // Supabase JS restores the existing MarketPulse login automatically.
-    supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-    const {data,error}=await supabase.auth.getSession();
-    if(error) throw error;
-    currentAuthSession=data?.session||null;
-    renderSharedAuthState();
-    supabase.auth.onAuthStateChange((_event,session)=>{
-      currentAuthSession=session||null;
-      renderSharedAuthState();
-      loadPaperTrades();
-    });
-    $('refreshPaperBtn')?.addEventListener('click',loadPaperTrades);
-    $('savePaperSettings')?.addEventListener('click',savePaperSettings);
-    $('markPricesBtn')?.addEventListener('click',markOpenTradesFromScan);
-    document.querySelectorAll('[data-paper-filter]').forEach(btn=>btn.addEventListener('click',()=>{
-      currentPaperFilter=btn.dataset.paperFilter;
-      document.querySelectorAll('[data-paper-filter]').forEach(b=>b.classList.toggle('active',b===btn));
-      loadPaperTrades();
-    }));
-    $('paperAllBtn')?.addEventListener('click',paperTradeAll);
-    setCheck('storageCheck','Using shared MarketPulse account session','ok');
-  } catch(e) {
-    setCheck('storageCheck','Auth session unavailable: '+String(e.message||e),'bad');
-  }
-  $('timeframe').addEventListener('change', renderTimeframeState);
-  $('scanBtn').addEventListener('click', scan);
-  renderTimeframeState();
-  await loadPaperTrades();
-  await scan();
-  startAutoPaperMarking();
+const S = {
+  user: null,
+  signals: [], feedAt: null, srvOffset: 0,
+  quotes: {},
+  account: { starting_balance: 100000, cost_bps: 10, risk_pct: 1 },
+  trades: [],
+  indices: [],
+  status: null,
+  tab: 'signals',
+  f: { tf: 'all', side: 'all', sort: 'score', q: '', hist: 'all' },
+  loaded: { feed: 0, trades: 0 },
+};
+
+/* ===================== time / market ===================== */
+function ist(ms) { const t = new Date(ms + 330 * 60000); return { dow: t.getUTCDay(), min: t.getUTCHours() * 60 + t.getUTCMinutes(), date: t.toISOString().slice(0, 10) }; }
+function marketState(ms) {
+  const p = ist(ms), wk = p.dow >= 1 && p.dow <= 5;
+  const OPEN = 9 * 60 + 15, CLOSE = 15 * 60 + 30;
+  if (wk && p.min >= OPEN && p.min < CLOSE) return { open: true, text: 'Market open · closes in ' + dur((CLOSE - p.min) * 60) };
+  let mins;
+  if (wk && p.min < OPEN) mins = OPEN - p.min;
+  else { let add = 1, d = (p.dow + 1) % 7; while (d === 0 || d === 6) { add++; d = (d + 1) % 7; } mins = (24 * 60 - p.min) + (add - 1) * 24 * 60 + OPEN; }
+  return { open: false, text: 'Market closed · opens in ' + dur(mins * 60) };
+}
+function dur(sec) { sec = Math.max(0, Math.round(sec)); const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60); return d ? d + 'd ' + h + 'h' : h ? h + 'h ' + m + 'm' : m + 'm'; }
+function ago(iso) { if (!iso) return '—'; const s = (Date.now() + S.srvOffset - new Date(iso).getTime()) / 1000; if (s < 5) return 'just now'; if (s < 90) return Math.round(s) + 's ago'; if (s < 5400) return Math.round(s / 60) + ' min ago'; if (s < 172800) return Math.round(s / 3600) + ' h ago'; return Math.round(s / 86400) + ' d ago'; }
+const nowMs = () => Date.now() + S.srvOffset;
+
+/* ===================== toast / sheet ===================== */
+let toastTimer = null;
+function toast(msg, err) { const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' err' : ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = 'toast'; }, 3200); }
+function openSheet(html) { const s = $('sheet'); s.innerHTML = '<div class="grab"></div>' + html; $('backdrop').hidden = false; s.setAttribute('aria-hidden', 'false'); requestAnimationFrame(() => s.classList.add('open')); s.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeSheet)); }
+function closeSheet() { S.ticketTick = null; const s = $('sheet'); s.classList.remove('open'); s.setAttribute('aria-hidden', 'true'); $('backdrop').hidden = true; setTimeout(() => { if (!s.classList.contains('open')) s.innerHTML = ''; }, 250); }
+
+/* ===================== data helpers ===================== */
+function ltpOf(symbol, fallback) {
+  const q = S.quotes[symbol]; if (q && num(q.price) > 0) return num(q.price);
+  const s = S.signals.find((x) => x.symbol === symbol); if (s && num(s.ltp) > 0) return num(s.ltp);
+  return fallback ?? null;
+}
+function chgOf(symbol) { const q = S.quotes[symbol]; if (q && num(q.change_percent) !== null) return num(q.change_percent); const s = S.signals.find((x) => x.symbol === symbol); return s ? num(s.change_percent) : null; }
+const costBpsOf = (t) => { const v = num(t && t.signal_snapshot && t.signal_snapshot.estimated_cost_bps); return v !== null ? v : num(S.account.cost_bps) ?? 10; };
+
+function posMetrics(t) {
+  const qty = num(t.quantity) || 0, entry = num(t.entry_price) || 0, buy = t.direction === 'BUY';
+  const mark = num(t.signal_snapshot && t.signal_snapshot.mark_price);
+  const px = ltpOf(t.symbol, mark ?? entry);
+  const gross = (px - entry) * qty * (buy ? 1 : -1);
+  const estCost = (entry * qty + px * qty) * costBpsOf(t) / 10000;
+  const net = gross - estCost;
+  return { qty, entry, px, gross, net, netPct: entry * qty ? net / (entry * qty) * 100 : 0, booked: num(t.realized_pnl) || 0, invested: entry * qty, value: px * qty, risk: Math.abs(entry - (num(t.stop_loss) || entry)) * qty };
+}
+function acctNumbers() {
+  const open = S.trades.filter((t) => t.status === 'OPEN'), closed = S.trades.filter((t) => t.status !== 'OPEN');
+  const realized = S.trades.reduce((s, t) => s + (num(t.realized_pnl) || 0), 0);
+  let invested = 0, unreal = 0, value = 0, openRisk = 0, booked = 0;
+  open.forEach((t) => { const m = posMetrics(t); invested += m.invested; unreal += m.net; value += m.value; openRisk += m.risk; booked += m.booked; });
+  const start = num(S.account.starting_balance) || 100000;
+  return { open, closed, realized, invested, unreal, value, openRisk, booked, start, cash: start + realized - invested, equity: start + realized + unreal };
 }
 
-function renderSharedAuthState(){
-  const signed=!!currentAuthSession?.user;
-  const state=document.getElementById('paperAuthState');
-  const hint=document.getElementById('paperAuthHint');
-  const link=document.getElementById('paperLoginLink');
-  if(state) state.textContent=signed?'Signed in with your MarketPulse account':'Not signed in to MarketPulse';
-  if(hint) hint.textContent=signed?'Paper trades will use this same logged-in account.':'Please sign in on the main MarketPulse page, then return here. No separate Stock Signals login is used.';
-  if(link) link.hidden=signed;
+/* ===================== loaders ===================== */
+async function loadFeed() {
+  const { data, error } = await sb.rpc('stock_signals_feed');
+  if (error) { console.warn('feed', error); return; }
+  S.signals = (data && data.signals) || [];
+  S.feedAt = data && data.generated_at;
+  if (data && data.server_now) S.srvOffset = new Date(data.server_now).getTime() - Date.now();
+  S.loaded.feed = Date.now();
+  S.signals.forEach((s) => { if (num(s.ltp) > 0) S.quotes[s.symbol] = Object.assign({}, S.quotes[s.symbol], { price: s.ltp, change_percent: s.change_percent }); });
+}
+async function loadIndices() {
+  const { data } = await sb.rpc('market_snapshot');
+  S.indices = Array.isArray(data) ? data.slice(0, 4) : [];
+}
+async function loadStatus() {
+  const { data } = await sb.rpc('stock_signals_status');
+  S.status = data || null;
+}
+async function loadAccount() {
+  const { data, error } = await sb.from('stock_paper_accounts').select('*').eq('user_id', S.user.id).maybeSingle();
+  if (error) { console.warn('account', error); return; }
+  if (data) { S.account = { starting_balance: num(data.starting_balance) ?? 100000, cost_bps: num(data.cost_bps) ?? 10, risk_pct: num(data.risk_pct) ?? 1 }; return; }
+  // first run: migrate the old per-device settings if present, otherwise defaults
+  let legacy = null;
+  try { legacy = JSON.parse(localStorage.getItem('marketpulse-paper-settings-' + S.user.id) || 'null'); } catch (e) { /* ignore */ }
+  S.account = { starting_balance: num(legacy && legacy.balance) || 100000, cost_bps: num(legacy && legacy.costBps) ?? 10, risk_pct: 1 };
+  await sb.from('stock_paper_accounts').upsert({ user_id: S.user.id, starting_balance: S.account.starting_balance, cost_bps: S.account.cost_bps, risk_pct: S.account.risk_pct }, { onConflict: 'user_id' });
+}
+async function loadTrades() {
+  const { data, error } = await sb.from('stock_paper_trades').select('*').eq('user_id', S.user.id).order('opened_at', { ascending: false }).limit(500);
+  if (error) { console.warn('trades', error); return; }
+  S.trades = data || [];
+  S.loaded.trades = Date.now();
+}
+async function loadQuotes() {
+  const syms = [...new Set(S.trades.filter((t) => t.status === 'OPEN').map((t) => t.symbol))];
+  if (!syms.length) return;
+  const { data } = await sb.rpc('stock_quotes_for', { p_symbols: syms });
+  (data || []).forEach((q) => { S.quotes[q.symbol] = q; });
+}
+async function refresh(full) {
+  await Promise.all([loadFeed(), loadIndices(), full ? loadAccount() : null, loadTrades(), loadStatus()]);
+  await loadQuotes();
+  renderAll();
+  if (S.ticketTick) S.ticketTick();
 }
 
-function renderTimeframeState() {
-  const intraday=$('timeframe').value==='intraday';
-  if(intraday) {
-    $('dataNotice').className='notice warning';
-    $('dataNotice').innerHTML='<strong>Intraday mode selected.</strong><span>The scanner will request five-minute candles from the separate intraday endpoint. It will block stale, incomplete or unavailable data; Yahoo-derived data may be delayed.</span>';
-    setCheck('intradayCheck','Not available — blocked','bad');
-  } else {
-    $('dataNotice').className='notice warning';
-    $('dataNotice').innerHTML='<strong>Daily history validation required.</strong><span>Signal candidates will only be shown if the current quote, history dates, OHLC values and volume pass validation. Yahoo-derived data may be delayed.</span>';
-  }
+/* ===================== rendering: shared bits ===================== */
+function ladder(levels, ltp) {
+  const vals = [levels.stop, levels.entry, levels.t1, levels.t2].filter((v) => v !== null && v !== undefined);
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.12 || hi * 0.005; lo -= pad; hi += pad;
+  const p = (v) => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+  const tick = (k, label, v) => v === null || v === undefined ? '' : `<div class="tick ${k}" style="left:${p(v).toFixed(1)}%"><span>${label}</span><em>${fmt(v, v < 100 ? 2 : 1)}</em></div>`;
+  return `<div class="ladder"><div class="rail"></div>${tick('sl', 'SL', levels.stop)}${tick('en', 'ENTRY', levels.entry)}${tick('t1', 'T1', levels.t1)}${tick('t2', 'T2', levels.t2)}${ltp !== null && ltp !== undefined ? `<div class="ltp" style="left:${p(ltp).toFixed(1)}%" title="LTP"></div>` : ''}</div>`;
 }
-async function fetchJson(url, label) {
-  const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});
-  if(!r.ok) throw new Error(label+' HTTP '+r.status);
-  return r.json();
+function zone(s, L) {
+  const buy = s.side === 'BUY', risk = num(s.risk_per_share) || 1;
+  if (L === null) return { label: 'No live price', cls: 'warn', tradable: false };
+  if (buy ? L <= s.stop : L >= s.stop) return { label: 'Stop level breached', cls: 'sell', tradable: false };
+  if (buy ? L >= s.target1 : L <= s.target1) return { label: 'Target 1 already reached', cls: 'warn', tradable: false };
+  const fav = (buy ? L - s.entry : s.entry - L) / risk;
+  if (fav > 0.5) return { label: 'Extended ' + fav.toFixed(1) + 'R — wait for pullback', cls: 'warn', tradable: true };
+  if (Math.abs(fav) <= 0.25) return { label: 'In entry zone', cls: 'buy', tradable: true };
+  if (fav < -0.25) return { label: 'Below entry — better price', cls: 'buy', tradable: true };
+  return { label: 'Near entry', cls: '', tradable: true };
 }
-async function getUniverse() {
-  if(!apiBase) throw new Error('config.json has no API base URL; cannot retrieve the F&O universe');
-  const data=await fetchJson(apiBase+'/fno-list','F&O list');
-  let list=Array.isArray(data)?data:(data.items||data.stocks||data.symbols||data.data||[]);
-  if(!Array.isArray(list)) throw new Error('F&O feed returned an unknown format');
-  list=list.map(x=>{
-    if(typeof x==='string') return {symbol:x.toUpperCase(),name:x.toUpperCase()};
-    const symbol=String(x.symbol||x.trading_symbol||x.ticker||x.stock_symbol||'').toUpperCase().replace(/\.NS$/,'');
-    return {symbol,name:x.company_name||x.name||symbol};
-  }).filter(x=>/^[A-Z0-9&-]{1,30}$/.test(x.symbol));
-  const unique=[...new Map(list.map(x=>[x.symbol,x])).values()];
-  if(!unique.length) throw new Error('F&O feed returned zero recognized symbols');
-  // Cap requests to avoid hammering the quote function. Prioritize common liquid F&O names.
-  const preferred=['RELIANCE','HDFCBANK','ICICIBANK','SBIN','INFY','TCS','BHARTIARTL','LT','AXISBANK','KOTAKBANK','ITC','BAJFINANCE','MARUTI','TATAMOTORS','SUNPHARMA','HINDUNILVR','TITAN','NTPC','POWERGRID','ONGC','TATASTEEL','ADANIENT','JSWSTEEL','WIPRO','TECHM','INDUSINDBK','ULTRACEMCO','ASIANPAINT','COALINDIA','BAJAJFINSV','TRENT','BEL','HAL','DLF','PIDILITIND'];
-  const rank=new Map(preferred.map((s,i)=>[s,i]));
-  unique.sort((a,b)=>(rank.get(a.symbol)??999)-(rank.get(b.symbol)??999)||a.symbol.localeCompare(b.symbol));
-  $('eligibleCount').textContent=safeNumberFormat(unique.length);
-  setCheck('universeCheck',unique.length+' symbols · '+Math.min(unique.length,FNO_LIMIT)+' scanned per run','ok');
-  return unique.slice(0,FNO_LIMIT);
+function sparkPath(vals, w, h, lo, hi) {
+  if (vals.length < 2) return '';
+  return vals.map((v, i) => (i ? 'L' : 'M') + (i / (vals.length - 1) * w).toFixed(1) + ' ' + (h - (v - lo) / (hi - lo) * h).toFixed(1)).join(' ');
 }
-async function getStock(symbol) {
-  const data=await fetchJson(STOCK_DATA_URL+'?symbol='+encodeURIComponent(symbol),'Quote '+symbol);
-  if(!data || data.success!==true) throw new Error(data?.error||'No successful quote response');
-  const history=Array.isArray(data.history)?data.history:[];
-  return {data,history};
+function priceChart(s, L) {
+  const closes = (Array.isArray(s.closes) ? s.closes : []).map(Number).filter(Number.isFinite);
+  if (closes.length < 5) return '';
+  const lv = [s.stop, s.entry, s.target1, s.target2, L].filter((v) => v !== null && v !== undefined);
+  let lo = Math.min(...closes, ...lv), hi = Math.max(...closes, ...lv); const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
+  const W = 320, H = 150, y = (v) => (H - (v - lo) / (hi - lo) * H).toFixed(1);
+  const line = (v, c, dash, lab) => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="1" ${dash ? 'stroke-dasharray="4 3"' : ''}/><text x="${W - 2}" y="${Number(y(v)) - 3}" text-anchor="end" font-size="9" fill="${c}" font-family="monospace">${lab} ${fmt(v, v < 100 ? 2 : 1)}</text>`;
+  const last = closes[closes.length - 1];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price chart with stop and targets">
+    ${line(s.stop, 'var(--red)', true, 'SL')}${line(s.entry, 'var(--muted)', true, 'ENTRY')}${line(s.target1, 'var(--green)', true, 'T1')}${line(s.target2, 'var(--green)', true, 'T2')}
+    <path d="${sparkPath(closes, W, H, lo, hi)}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${W}" cy="${y(L !== null && L !== undefined ? L : last)}" r="3.5" fill="var(--accent)"/></svg>`;
 }
 
-// Keep Edge Function calls bounded rather than requesting every symbol at once.
-async function mapWithConcurrency(items, limit, worker) {
-  let next=0;
-  const count=Math.min(Math.max(1,limit),items.length);
-  await Promise.all(Array.from({length:count},async()=>{
-    while(next<items.length){const index=next++;await worker(items[index],index);}
-  }));
+/* ===================== SIGNALS tab ===================== */
+function filteredSignals() {
+  let list = S.signals.slice();
+  if (S.f.tf !== 'all') list = list.filter((s) => s.tf === S.f.tf);
+  if (S.f.side !== 'all') list = list.filter((s) => s.side === S.f.side);
+  const q = S.f.q.trim().toLowerCase();
+  if (q) list = list.filter((s) => s.symbol.toLowerCase().includes(q) || String(s.name || '').toLowerCase().includes(q));
+  const rr = (s) => (num(s.target2) !== null && num(s.risk_per_share) ? Math.abs(s.target2 - s.entry) / s.risk_per_share : 0);
+  const near = (s) => { const L = ltpOf(s.symbol, s.entry); return Math.abs((L - s.entry) / (s.risk_per_share || 1)); };
+  const key = { score: (a, b) => b.score - a.score || a.symbol.localeCompare(b.symbol), rr: (a, b) => rr(b) - rr(a), near: (a, b) => near(a) - near(b), chg: (a, b) => Math.abs(num(chgOf(b.symbol)) || 0) - Math.abs(num(chgOf(a.symbol)) || 0) }[S.f.sort] || ((a, b) => b.score - a.score);
+  return list.sort(key);
 }
-function normalizeBars(history) {
-  return history.map(b=>{
-    const date=String(b.date||b.datetime||b.timestamp||b.time||'').slice(0,10);
-    return {date,open:num(b.open),high:num(b.high),low:num(b.low),close:num(b.close??b.adjclose),volume:num(b.volume)};
-  }).filter(b=>b.date && b.open>0 && b.high>0 && b.low>0 && b.close>0 && b.volume!==null)
-    .filter(b=>b.high>=Math.max(b.open,b.close,b.low) && b.low<=Math.min(b.open,b.close,b.high))
-    .sort((a,b)=>a.date.localeCompare(b.date));
-}
-function validateQuote(data, bars) {
-  const price=num(data.price);
-  if(!(price>0)) return {ok:false,reason:'Invalid current price'};
-  const t=quoteTime(data);
-  if(!t) return {ok:false,reason:'Quote timestamp missing; freshness cannot be verified'};
-  const ms=Date.parse(t);
-  if(!Number.isFinite(ms)) return {ok:false,reason:'Unparseable quote timestamp'};
-  const ageH=(Date.now()-ms)/3600000;
-  if(ageH < -(MAX_FUTURE_QUOTE_MINUTES/60) || ageH > MAX_QUOTE_AGE_HOURS) return {ok:false,reason:'Quote stale or timestamp is in the future ('+Math.round(ageH)+'h old)'};
-  if(bars.length<60) return {ok:false,reason:'Need at least 60 valid daily OHLCV candles; got '+bars.length};
-  const last=bars[bars.length-1], lastDate=Date.parse(last.date+'T00:00:00Z');
-  const days=(Date.now()-lastDate)/86400000;
-  if(!Number.isFinite(lastDate)||days>7||days< -1) return {ok:false,reason:'Daily history is stale or has an invalid date'};
-  if(Math.abs(price-last.close)/price>0.12) return {ok:false,reason:'Quote/history mismatch exceeds 12%; refusing to signal'};
-  return {ok:true,price,quoteTime:t,ageH,last};
-}
-function ema(values, period) {
-  if(values.length<period) return [];
-  const out=[]; let prev=values.slice(0,period).reduce((a,b)=>a+b,0)/period; out[period-1]=prev;
-  const k=2/(period+1);
-  for(let i=period;i<values.length;i++){prev=values[i]*k+prev*(1-k);out[i]=prev;}
-  return out;
-}
-function rsi(values,period=14) {
-  if(values.length<=period) return null;
-  let gains=0,losses=0;
-  for(let i=1;i<=period;i++){const d=values[i]-values[i-1];if(d>0)gains+=d;else losses-=d;}
-  let avgG=gains/period,avgL=losses/period;
-  for(let i=period+1;i<values.length;i++){const d=values[i]-values[i-1];avgG=((avgG*(period-1))+Math.max(d,0))/period;avgL=((avgL*(period-1))+Math.max(-d,0))/period;}
-  if(avgL===0) return 100;
-  return 100-(100/(1+avgG/avgL));
-}
-function atr(bars,period=14) {
-  if(bars.length<=period) return null;
-  const tr=[];
-  for(let i=1;i<bars.length;i++){const b=bars[i],p=bars[i-1].close;tr.push(Math.max(b.high-b.low,Math.abs(b.high-p),Math.abs(b.low-p)));}
-  return tr.slice(-period).reduce((a,b)=>a+b,0)/period;
-}
-function macd(values) {
-  const a=ema(values,12),b=ema(values,26),line=values.map((_,i)=>a[i]!==undefined&&b[i]!==undefined?a[i]-b[i]:null);
-  const valid=line.filter(v=>v!==null); const sig=ema(valid,9);
-  return {line:line[line.length-1],signal:sig[sig.length-1]};
-}
-function analyse(symbol,name,data,history,tf) {
-  const bars=normalizeBars(history),valid=validateQuote(data,bars);
-  if(!valid.ok) return {blocked:true,symbol,reason:valid.reason};
-  const closes=bars.map(b=>b.close), last=bars[bars.length-1], prev=bars[bars.length-2];
-  const e20=ema(closes,20),e50=ema(closes,50),r=rsi(closes),a=atr(bars),m=macd(closes);
-  if(!Number.isFinite(a)||a<=0||!Number.isFinite(r)||!Number.isFinite(m.line)||!Number.isFinite(m.signal)||!Number.isFinite(e20.at(-1))||!Number.isFinite(e50.at(-1))) return {blocked:true,symbol,reason:'Indicators missing or non-finite (ATR/RSI/EMA/MACD)'};
-  const avgVol=bars.slice(-21,-1).reduce((s,b)=>s+b.volume,0)/20;
-  const volRatio=avgVol>0?last.volume/avgVol:0;
-  const priorHigh=Math.max(...bars.slice(-21,-1).map(b=>b.high));
-  const priorLow=Math.min(...bars.slice(-21,-1).map(b=>b.low));
-  const trendUp=last.close>e20.at(-1)&&e20.at(-1)>e50.at(-1);
-  const trendDown=last.close<e20.at(-1)&&e20.at(-1)<e50.at(-1);
-  const breakout=last.close>priorHigh&&volRatio>=1.15;
-  const breakdown=last.close<priorLow&&volRatio>=1.15;
-  const pullbackBuy=trendUp&&last.low<=e20.at(-1)*1.015&&last.close>e20.at(-1)&&last.close>last.open;
-  const pullbackSell=trendDown&&last.high>=e20.at(-1)*0.985&&last.close<e20.at(-1)&&last.close<last.open;
-  const buyMomentum=r>=52&&r<=70&&m.line>m.signal;
-  const sellMomentum=r>=30&&r<=48&&m.line<m.signal;
-  let side=null,setup='',score=0,reasons=[];
-  if((breakout||pullbackBuy)&&buyMomentum) {
-    side='BUY';setup=breakout?'20-day breakout':'Trend pullback';score=60+(breakout?10:0)+(volRatio>=1.5?10:0)+(r>=55&&r<=65?10:0)+(m.line>m.signal?10:0);
-    reasons=[trendUp?'Price above rising trend EMAs':'Breakout above 20-session high',buyMomentum?'RSI and MACD confirm bullish momentum':'Momentum confirmation',volRatio>=1.15?'Volume above recent average':'Volume confirmation is limited'];
-  } else if((breakdown||pullbackSell)&&sellMomentum) {
-    side='SELL';setup=breakdown?'20-day breakdown':'Bear trend pullback';score=60+(breakdown?10:0)+(volRatio>=1.5?10:0)+(r>=35&&r<=45?10:0)+(m.line<m.signal?10:0);
-    reasons=[trendDown?'Price below falling trend EMAs':'Breakdown below 20-session low',sellMomentum?'RSI and MACD confirm bearish momentum':'Momentum confirmation',volRatio>=1.15?'Volume above recent average':'Volume confirmation is limited'];
-  } else return null;
-  if(score<75) return null;
-  // Use structure and ATR for a stop; targets are at least 1.5R and 2R.
-  const entry=valid.price;
-  let stop=side==='BUY'?Math.min(last.low,entry-1.5*a):Math.max(last.high,entry+1.5*a);
-  if(side==='BUY'&&stop>=entry || side==='SELL'&&stop<=entry) return null;
-  const risk=Math.abs(entry-stop), riskPct=risk/entry*100;
-  if(riskPct<0.25||riskPct>6) return null;
-  const target1=side==='BUY'?entry+1.5*risk:entry-1.5*risk;
-  const target2=side==='BUY'?entry+2*risk:entry-2*risk;
-  if(side==='SELL'&&target2<=0) return null;
-  const capital=Math.max(0,num($('capital').value)||0),riskBudget=capital*(Number($('riskPct').value)/100);
-  const qtyByRisk=Math.floor(riskBudget/risk);
-  const qty=side==='BUY'?Math.min(qtyByRisk,Math.floor(capital/entry)):qtyByRisk;
-  if(qty<1) return null;
-  return {symbol,name,side,setup,score,entry,stop,target1,target2,riskPerShare:risk,qty,riskBudget,rr1:1.5,rr2:2,rsi:r,atr:a,ema20:e20.at(-1),ema50:e50.at(-1),volRatio,barDate:last.date,quoteTime:valid.quoteTime,quoteAgeH:valid.ageH,reasons,tf:'swing',source:'stock-data/history'};
-}
+function renderSignals() {
+  const m = marketState(nowMs());
+  const stale = S.feedAt && (nowMs() - new Date(S.feedAt).getTime()) > 20 * 60000 && m.open;
+  const note = $('signalNote');
+  const parts = [];
+  parts.push(S.feedAt ? 'Scanned ' + ago(S.feedAt) : 'Waiting for the first scan');
+  parts.push(m.open ? 'prices refresh about every 3 min' : 'based on the last market close');
+  note.textContent = parts.join(' · ') + ' · paper trading only, not investment advice';
+  note.className = 'note' + (stale ? ' warn' : '');
+  if (stale) note.textContent = '⚠ Scanner delayed (' + ago(S.feedAt) + '). ' + note.textContent;
 
-function normalizeIntradayBars(history) {
-  return history.map(b=>({timestamp:Number(b.timestamp)||Date.parse(b.date||b.datetime||b.time||'' )/1000,
-    date:b.date||b.datetime||'',open:num(b.open),high:num(b.high),low:num(b.low),close:num(b.close),volume:num(b.volume)}))
-    .filter(b=>Number.isFinite(b.timestamp)&&[b.open,b.high,b.low,b.close,b.volume].every(Number.isFinite)&&b.open>0&&b.high>0&&b.low>0&&b.close>0&&b.volume>0&&b.high>=Math.max(b.open,b.close,b.low)&&b.low<=Math.min(b.open,b.close,b.high))
-    .sort((a,b)=>a.timestamp-b.timestamp);
-}
-function analyseIntraday(symbol,name,data) {
-  const bars=normalizeIntradayBars(data.history||[]);
-  if(bars.length<60) return {blocked:true,symbol,reason:'Need at least 60 valid 5-minute candles; got '+bars.length};
-  const last=bars.at(-1), ageMin=(Date.now()-last.timestamp*1000)/60000;
-  if(!Number.isFinite(ageMin)||ageMin < -2||ageMin>10) return {blocked:true,symbol,reason:'Latest 5-minute candle is stale ('+Math.round(ageMin)+' minutes old)'};
-  const closes=bars.map(b=>b.close), e9=ema(closes,9),e21=ema(closes,21), r=rsi(closes), a=atr(bars,14),m=macd(closes);
-  if(!Number.isFinite(a)||a<=0||!Number.isFinite(r)||!Number.isFinite(m.line)||!Number.isFinite(m.signal)||!Number.isFinite(e9.at(-1))||!Number.isFinite(e21.at(-1))) return {blocked:true,symbol,reason:'Intraday indicators incomplete'};
-  const avgVol=bars.slice(-21,-1).reduce((s,b)=>s+b.volume,0)/20;
-  const volRatio=avgVol>0?last.volume/avgVol:0;
-  const priorHigh=Math.max(...bars.slice(-13,-1).map(b=>b.high)),priorLow=Math.min(...bars.slice(-13,-1).map(b=>b.low));
-  const up=last.close>e9.at(-1)&&e9.at(-1)>e21.at(-1), down=last.close<e9.at(-1)&&e9.at(-1)<e21.at(-1);
-  const breakout=last.close>priorHigh&&volRatio>=1.15, breakdown=last.close<priorLow&&volRatio>=1.15;
-  const buy=up&&(breakout||(last.low<=e9.at(-1)*1.003&&last.close>last.open))&&r>=52&&r<=72&&m.line>m.signal;
-  const sell=down&&(breakdown||(last.high>=e9.at(-1)*0.997&&last.close<last.open))&&r>=28&&r<=48&&m.line<m.signal;
-  if(!buy&&!sell) return null;
-  const side=buy?'BUY':'SELL',entry=last.close;
-  let stop=side==='BUY'?Math.min(last.low,entry-1.2*a):Math.max(last.high,entry+1.2*a);
-  const risk=Math.abs(entry-stop),riskPct=risk/entry*100;
-  if(!Number.isFinite(risk)||risk<=0||riskPct<0.1||riskPct>2) return null;
-  const target1=side==='BUY'?entry+1.5*risk:entry-1.5*risk,target2=side==='BUY'?entry+2*risk:entry-2*risk;
-  const capital=Math.max(0,num($('capital').value)||0),riskBudget=capital*(Number($('riskPct').value)/100),qtyByRisk=Math.floor(riskBudget/risk);
-  const qty=side==='BUY'?Math.min(qtyByRisk,Math.floor(capital/entry)):qtyByRisk;
-  if(qty<1||target2<=0) return null;
-  const score=60+(breakout||breakdown?10:0)+(volRatio>=1.5?10:0)+(r>=55&&r<=65?10:0)+10;
-  if(score<75)return null;
-  return {symbol,name,side,setup:breakout?'5m breakout':breakdown?'5m breakdown':'5m EMA pullback',score,entry,stop,target1,target2,riskPerShare:risk,qty,riskBudget,rr1:1.5,rr2:2,rsi:r,atr:a,ema20:e9.at(-1),ema50:e21.at(-1),volRatio,barDate:new Date(last.timestamp*1000).toISOString(),quoteTime:new Date(last.timestamp*1000).toISOString(),quoteAgeH:ageMin/60,reasons:[up?'5m EMA9 above EMA21':'5m EMA9 below EMA21', 'RSI and MACD confirm momentum',volRatio>=1.15?'Volume expansion confirmed':'Volume confirmation'],tf:'intraday',source:'stock-signal-intraday/5m'};
-}
-async function getIntraday(symbol) {
- const data=await fetchJson(INTRADAY_DATA_URL+'?symbol='+encodeURIComponent(symbol),'Intraday '+symbol);
- if(!data||data.success!==true) throw new Error(data?.error||'No intraday candle response');
- return data;
-}
-
-function renderSignals(signals,blocked) {
-  latestSignals=signals;
-  $('signalCount').textContent=signals.length;
-  const host=$('signals');
-  if(!signals.length) {
-    host.innerHTML='<div class="empty-state"><strong>No qualified setups</strong><span>'+esc(blocked.length?blocked.length+' symbols were blocked by data-quality gates.':'No stock met all trend, momentum, volume and risk rules on this scan.')+' This is preferable to manufacturing a trade.</span></div>';
+  const list = filteredSignals();
+  const host = $('signalList');
+  if (!list.length) {
+    host.innerHTML = `<div class="empty"><b>No signals right now</b><br>${S.signals.length ? 'Nothing matches your filters.' : (m.open ? 'The strategy is strict — setups appear when trend, momentum and volume all line up.' : 'New signals are generated during market hours.')}</div>`;
     return;
   }
-  const safeSignals=signals.filter(s=>s&&Number.isFinite(s.entry)&&Number.isFinite(s.stop)&&Number.isFinite(s.target1)&&Number.isFinite(s.target2)&&Number.isFinite(s.rsi)&&Number.isFinite(s.qty)&&Number.isFinite(s.score));
-  if(safeSignals.length!==signals.length) console.warn('Stock Signals: dropped malformed signal cards',signals.length-safeSignals.length);
-  signals=safeSignals;
-  latestSignals=signals;
-  $('signalCount').textContent=signals.length;
-  if(!signals.length){host.innerHTML='<div class="empty-state"><strong>No qualified setups</strong><span>Signals with incomplete indicator values were rejected. Check the diagnostics and source history.</span></div>';return;}
-  host.innerHTML=signals.map(s=>'<article class="signal-card"><div class="signal-top"><div><div class="symbol">'+esc(s.symbol)+' · '+esc(s.name)+'</div><div class="company">'+esc(s.setup)+' · '+(s.tf==='intraday'?'5-minute candles':'Daily candles')+'</div></div><span class="pill '+(s.side==='SELL'?'sell':'')+'">'+s.side+' · '+s.score+'/100</span></div><div class="entry-row"><div class="price-box"><span>Entry reference</span><strong>'+money(s.entry)+'</strong></div><div class="price-box stop"><span>Stop-loss</span><strong>'+money(s.stop)+'</strong></div><div class="price-box target"><span>Target 1</span><strong>'+money(s.target1)+'</strong></div></div><div class="entry-row"><div class="price-box target"><span>Target 2</span><strong>'+money(s.target2)+'</strong></div><div class="price-box"><span>Qty (risk/capital cap)</span><strong>'+safeNumberFormat(s.qty)+'</strong></div><div class="price-box"><span>Risk budget</span><strong>'+money(s.riskBudget)+'</strong></div></div><div class="signal-meta"><div><span>Risk / share</span><strong>'+money(s.riskPerShare)+'</strong></div><div><span>Reward : risk</span><strong>1 : 1.5 / 1 : 2</strong></div><div><span>RSI (14)</span><strong>'+safeNumberFormat(s.rsi,{minimumFractionDigits:1,maximumFractionDigits:1})+'</strong></div></div><p class="reason">'+(Array.isArray(s.reasons)?s.reasons:[]).map(esc).join(' · ')+'</p><div class="signal-foot"><span>'+(s.tf==='intraday'?'Last 5-minute candle: ':'Last daily candle: ')+esc(s.barDate)+'</span><span>Quote age: '+(s.tf==='intraday'?Math.max(0,Math.round(s.quoteAgeH*60))+'m':Math.max(0,Math.round(s.quoteAgeH))+'h')+'</span><button class="small-button" data-paper="'+esc(s.symbol)+'" type="button">Paper trade</button><button class="small-button" data-copy="'+esc(s.symbol)+'" type="button">Copy plan</button></div></article>').join('');
-  host.querySelectorAll('[data-paper]').forEach(btn=>btn.addEventListener('click',async()=>{const s=latestSignals.find(x=>x.symbol===btn.dataset.paper);if(!s)return;const q=prompt('Quantity in whole shares:',String(s.qty));if(q===null)return;const qty=Number(q);if(!Number.isInteger(qty)||qty<1){alert('Enter a whole-share quantity of at least 1.');return;}btn.disabled=true;try{await savePaperTrade({...s,qty});btn.textContent='Paper traded';}catch(e){alert('Paper trade failed: '+String(e.message||e));}finally{btn.disabled=false;}}));
-  host.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{
-    const s=latestSignals.find(x=>x.symbol===btn.dataset.copy);if(!s)return;
-    const plan=[s.symbol+' '+s.side+' ('+s.tf+')','Entry reference: '+s.entry,'SL: '+s.stop,'Target 1: '+s.target1,'Target 2: '+s.target2,'Qty by risk: '+s.qty,'Setup: '+s.setup,'Score: '+s.score+'/100','Quote time: '+s.quoteTime].join('\n');
-    navigator.clipboard?.writeText(plan).then(()=>btn.textContent='Copied').catch(()=>{btn.textContent='Copy unavailable';});
+  host.innerHTML = list.map((s) => {
+    const L = ltpOf(s.symbol, null), c = chgOf(s.symbol), z = zone(s, L), buy = s.side === 'BUY';
+    const held = S.trades.some((t) => t.status === 'OPEN' && t.symbol === s.symbol);
+    const rr2 = num(s.risk_per_share) ? Math.abs(s.target2 - s.entry) / s.risk_per_share : 0;
+    return `<article class="scard" data-sig="${esc(s.symbol)}|${esc(s.tf)}">
+      <div class="srow"><div><div class="sym">${esc(s.symbol)}</div><div class="nm">${esc(s.name)}</div></div>
+        <div class="px"><div class="l">${L === null ? '—' : fmt(L)}</div><div class="c ${cls(c)}">${pct(c)}</div></div></div>
+      <div class="tags"><span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span><span class="tag">${s.tf === 'intraday' ? 'Intraday' : 'Swing'}</span><span class="tag">${esc(s.setup)}</span>${z.label ? `<span class="tag ${z.cls}">${esc(z.label)}</span>` : ''}${held ? '<span class="tag warn">Holding</span>' : ''}</div>
+      ${ladder({ stop: s.stop, entry: s.entry, t1: s.target1, t2: s.target2 }, L)}
+      <div class="srow2"><div class="metrics"><span>Risk <b>${fmt(s.risk_pct, 2)}%</b></span><span>Reward <b>${fmt(rr2, 1)}R</b></span><span>Vol <b>${fmt(s.vol_ratio, 1)}×</b></span><span>RSI <b>${fmt(s.rsi, 0)}</b></span></div>
+        <div style="display:flex;gap:8px;align-items:center"><span class="score" style="--p:${Math.min(100, s.score)}%" data-s="${s.score}"></span>
+        <button class="btn small ${buy ? 'buy' : 'sell'}" data-order="${esc(s.symbol)}|${esc(s.tf)}" ${z.tradable && !held ? '' : 'disabled'}>${buy ? 'Buy' : 'Sell'}</button></div></div>
+    </article>`;
+  }).join('');
+}
+const sigByKey = (k) => { const [sym, tf] = String(k).split('|'); return S.signals.find((s) => s.symbol === sym && s.tf === tf); };
+
+/* ---- signal detail sheet ---- */
+function openSignal(s) {
+  const L = ltpOf(s.symbol, null), c = chgOf(s.symbol), z = zone(s, L), buy = s.side === 'BUY';
+  const held = S.trades.some((t) => t.status === 'OPEN' && t.symbol === s.symbol);
+  openSheet(`<div class="hd"><div><h2>${esc(s.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span></h2><div class="sub">${esc(s.name)} · ${s.tf === 'intraday' ? 'Intraday' : 'Swing'} · ${esc(s.setup)}</div></div>
+      <button class="x" data-close aria-label="Close">×</button></div>
+    <div class="srow" style="margin-top:10px"><div class="px" style="text-align:left"><div class="l" style="font-size:22px">${L === null ? '—' : inr(L)}</div><div class="c ${cls(c)}">${pct(c)} today</div></div><span class="score" style="--p:${Math.min(100, s.score)}%;width:46px;height:46px" data-s="${s.score}"></span></div>
+    ${z.label ? `<div class="msg ${z.cls === 'buy' ? 'ok' : z.cls === 'sell' ? 'err' : 'warn'}">${esc(z.label)}</div>` : ''}
+    ${priceChart(s, L)}
+    ${ladder({ stop: s.stop, entry: s.entry, t1: s.target1, t2: s.target2 }, L)}
+    <div class="kv" style="margin-top:22px">
+      <div>Signal entry</div><div>${inr(s.entry)}</div><div>Stop loss</div><div class="down">${inr(s.stop)} (${fmt(s.risk_pct, 2)}%)</div>
+      <div>Target 1 (1.5R)</div><div class="up">${inr(s.target1)}</div><div>Target 2 (2R)</div><div class="up">${inr(s.target2)}</div>
+      <div>RSI / ATR</div><div>${fmt(s.rsi, 0)} / ${fmt(s.atr, 2)}</div><div>${s.tf === 'intraday' ? 'EMA 9 / 21' : 'EMA 20 / 50'}</div><div>${fmt(s.ema_fast, 1)} / ${fmt(s.ema_slow, 1)}</div>
+      <div>Volume vs average</div><div>${fmt(s.vol_ratio, 2)}×</div><div>Signal time</div><div>${esc(ago(s.generated_at))}</div></div>
+    <ul class="reasons">${(s.reasons || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+    <p class="hint">Target 1 books half the position; stops and targets fill at their exact level (server-checked every minute). Intraday trades are squared off at 15:20 IST.</p>
+    <button class="btn block ${buy ? 'buy' : 'sell'}" id="sigOrderBtn" ${z.tradable && !held ? '' : 'disabled'}>${held ? 'Already holding' : (buy ? 'Buy' : 'Sell')} ${held ? '' : esc(s.symbol)}</button>`);
+  const b = $('sigOrderBtn'); if (b) b.addEventListener('click', () => openOrder(s));
+}
+
+/* ---- order ticket ---- */
+function suggestQty(s, entry, stop) {
+  const a = acctNumbers(), risk = Math.abs(entry - stop); if (!(risk > 0) || !(entry > 0)) return 0;
+  const byRisk = Math.floor((a.equity * (num(S.account.risk_pct) || 1) / 100) / risk);
+  const byCash = Math.floor(Math.max(0, a.cash) / entry);
+  return Math.max(0, Math.min(byRisk, byCash));
+}
+function openOrder(s) {
+  let L = ltpOf(s.symbol, s.entry); const buy = s.side === 'BUY';
+  const q0 = Math.max(1, suggestQty(s, L, s.stop));
+  openSheet(`<div class="hd"><div><h2>${buy ? 'Buy' : 'Sell'} ${esc(s.symbol)}</h2><div class="sub">${esc(s.tf === 'intraday' ? 'Intraday · squared off 15:20 IST' : 'Swing · carried overnight')} · paper order at market</div></div><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="srow" style="margin:10px 0 2px"><div class="muted">Market price (LTP) <span class="hint" style="margin:0">· ${esc(S.quotes[s.symbol] && S.quotes[s.symbol].updated_at ? ago(S.quotes[s.symbol].updated_at) : 'last close')}</span></div><div class="l mono" id="oLtp" style="font-size:20px;font-weight:700">${inr(L)}</div></div>
+    <label class="field"><span>Quantity</span><div class="stepper"><button type="button" id="oqMinus">−</button><input id="oq" type="number" min="1" step="1" value="${q0}" inputmode="numeric"><button type="button" id="oqPlus">+</button></div></label>
+    <div class="chips" id="qChips"><span class="chip" data-f="0.5">½ size</span><span class="chip" data-f="1">Suggested (${fmt(num(S.account.risk_pct), 1)}% risk)</span><span class="chip" data-f="max">Max cash</span></div>
+    <div class="grid3"><label class="field"><span>Stop loss</span><input id="os" type="number" step="0.05" value="${s.stop}" inputmode="decimal"></label>
+      <label class="field"><span>Target 1</span><input id="o1" type="number" step="0.05" value="${s.target1}" inputmode="decimal"></label>
+      <label class="field"><span>Target 2</span><input id="o2" type="number" step="0.05" value="${s.target2}" inputmode="decimal"></label></div>
+    <div class="kv" id="oSummary"></div><div id="oMsg"></div>
+    <button class="btn block ${buy ? 'buy' : 'sell'}" id="oPlace">${buy ? 'Buy' : 'Sell'} ${esc(s.symbol)} · paper</button>
+    <p class="hint">Paper trading only — no real order is placed with any broker. Prices refresh about every 3 minutes.</p>`);
+  const read = () => ({ qty: Math.floor(num($('oq').value) || 0), sl: num($('os').value), t1: num($('o1').value), t2: num($('o2').value) });
+  const recalc = () => {
+    const v = read(), a = acctNumbers(), entry = L, risk = v.sl !== null ? Math.abs(entry - v.sl) : 0, notional = v.qty * entry;
+    const bps = num(S.account.cost_bps) ?? 10, charges = notional * 2 * bps / 10000;
+    const maxLoss = v.qty * risk + charges, p1 = v.t1 !== null ? v.qty / 2 * Math.abs(v.t1 - entry) : 0, p2 = v.t2 !== null ? v.qty * Math.abs(v.t2 - entry) : 0;
+    $('oSummary').innerHTML = `<div>Order value</div><div>${inr(notional)}</div><div>Available cash</div><div>${inr(a.cash)}</div>
+      <div>Max loss (incl. charges)</div><div class="down">${inr(-maxLoss)} · ${fmt(a.equity ? maxLoss / a.equity * 100 : 0, 2)}% of equity</div>
+      <div>Profit at T1 (half) / T2</div><div class="up">${inr(p1, 0)} / ${inr(p2, 0)}</div><div>Estimated charges</div><div>${inr(charges)}</div>`;
+    const errs = [];
+    if (v.qty < 1) errs.push('Enter a quantity of at least 1.');
+    if (notional > a.cash + 0.005) errs.push('Order value exceeds your available cash (' + inr(a.cash, 0) + ').');
+    if (v.sl === null || v.t1 === null || v.t2 === null) errs.push('Enter a stop loss and both targets.');
+    else if (buy && !(v.sl < entry && v.t1 > entry && v.t2 >= v.t1)) errs.push('For a Buy: stop below the price, targets above it, Target 2 ≥ Target 1.');
+    else if (!buy && !(v.sl > entry && v.t1 < entry && v.t2 <= v.t1)) errs.push('For a Sell: stop above the price, targets below it, Target 2 ≤ Target 1.');
+    if (S.trades.some((t) => t.status === 'OPEN' && t.symbol === s.symbol)) errs.push('You already hold ' + s.symbol + '.');
+    const warns = [];
+    if (!marketState(nowMs()).open) warns.push('Market is closed — the order fills at the last traded price and is managed from the next session.');
+    $('oMsg').innerHTML = errs.map((e) => `<div class="msg err">${esc(e)}</div>`).join('') + warns.map((w) => `<div class="msg warn">${esc(w)}</div>`).join('');
+    $('oPlace').disabled = errs.length > 0;
+  };
+  ['oq', 'os', 'o1', 'o2'].forEach((id) => $(id).addEventListener('input', recalc));
+  $('oqMinus').addEventListener('click', () => { $('oq').value = Math.max(1, (num($('oq').value) || 1) - 1); recalc(); });
+  $('oqPlus').addEventListener('click', () => { $('oq').value = (num($('oq').value) || 0) + 1; recalc(); });
+  $('qChips').querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => {
+    const sl = num($('os').value) ?? s.stop, sug = Math.max(1, suggestQty(s, L, sl)), a = acctNumbers();
+    $('oq').value = c.dataset.f === 'max' ? Math.max(1, Math.floor(a.cash / L)) : Math.max(1, Math.floor(sug * Number(c.dataset.f)));
+    recalc();
   }));
+  $('oPlace').addEventListener('click', () => placeOrder(s, L, read(), $('oPlace')));
+  // keep the ticket on the freshest price while it is open (prices refresh about every 3 minutes)
+  S.ticketTick = () => { const n = ltpOf(s.symbol, null); if (n && n !== L && $('oLtp')) { L = n; $('oLtp').textContent = inr(L); recalc(); } };
+  recalc();
 }
-
-
-async function paperTradeAll(){
- const btn=$('paperAllBtn');if(!currentAuthSession?.user){alert('Please sign in on MarketPulse first.');return;}
- if(!latestSignals.length){alert('Run a scan and wait for trade candidates first.');return;}
- btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';let ok=0,failed=[];
- for(const s of latestSignals){try{await savePaperTrade(s);ok++;}catch(e){failed.push(s.symbol+': '+String(e.message||e));}}
- btn.textContent=old;btn.disabled=false;
- if($('paperSummary'))$('paperSummary').textContent=ok+' paper trade(s) saved'+(failed.length?' · '+failed.length+' failed':'');
- await loadPaperTrades();
- if(failed.length)alert('Saved '+ok+' trade(s). Failures: '+failed.slice(0,3).join('\n'));
-}
-function tradeCosts(t,price){
- const bps=Math.max(0,Math.min(200,Number(t.signal_snapshot?.estimated_cost_bps??paperAccountSettings.costBps)||0))/10000;
- return (Math.abs(Number(t.entry_price)*Number(t.quantity))+Math.abs(Number(price)*Number(t.quantity)))*bps;
-}
-function renderPaperAccount(rows){
- const balance=paperAccountSettings.balance;
- const open=rows.filter(t=>t.status==='OPEN');
- const realized=rows.filter(t=>t.status==='CLOSED').reduce((a,t)=>a+(Number(t.realized_pnl)||0),0);
- const unreal=open.reduce((a,t)=>{const mark=Number(t.signal_snapshot?.mark_price)||Number(t.entry_price);return a+(mark-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1)-tradeCosts(t,mark);},0);
- const used=open.filter(t=>t.direction==='BUY').reduce((a,t)=>a+Number(t.entry_price)*Number(t.quantity),0);
- if($('paperStartingBalance'))$('paperStartingBalance').textContent=money(balance);
- const available=balance-used;
- if($('paperAvailableCash')){$('paperAvailableCash').textContent=money(available);$('paperAvailableCash').className=available<0?'pnl-negative':'';$('paperAvailableCash').title=available<0?'Open BUY positions exceed the starting virtual balance. No new BUY trades will be allowed until sufficient cash is available.':'';}
- if($('paperUnrealized')){$('paperUnrealized').textContent=money(unreal);$('paperUnrealized').className=unreal>=0?'pnl-positive':'pnl-negative';}
- if($('paperRealized')){$('paperRealized').textContent=money(realized);$('paperRealized').className=realized>=0?'pnl-positive':'pnl-negative';}
-}
-async function savePaperSettings(){
- const balance=Number($('paperBalanceInput')?.value),costBps=Number($('paperCostBps')?.value);
- if(!Number.isFinite(balance)||balance<1000||!Number.isFinite(costBps)||costBps<0||costBps>200){alert('Enter a balance of at least ₹1,000 and costs between 0 and 200 basis points.');return;}
- paperAccountSettings={balance,costBps};
- try{const auth=await supabase.auth.getSession();const id=auth.data?.session?.user?.id;if(!id)throw new Error('Sign in first.');localStorage.setItem('marketpulse-paper-settings-'+id,JSON.stringify(paperAccountSettings));renderPaperAccount(paperRowsCache);if($('paperSummary'))$('paperSummary').textContent='Paper account settings saved on this device.';}catch(e){alert(String(e.message||e));}
-}
-async function markOpenTradesFromScan(options={}){
-  if(autoMarkInProgress)return;
-  autoMarkInProgress=true;
-  const automatic=options.automatic===true;
-  const button=$('markPricesBtn');
-  if(button){button.disabled=true;button.textContent=automatic?'Auto-marking…':'Fetching quotes…';}
-  try{
-   const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;
-   if(!id)throw new Error('Sign in on MarketPulse first.');
-   const result=await supabase.from('stock_paper_trades').select('*').eq('user_id',id).eq('status','OPEN').limit(200);
-   if(result.error)throw result.error;
-   const trades=result.data||[];
-   if(!trades.length){if($('paperSummary'))$('paperSummary').textContent='No open paper trades to mark.';return;}
-   let updated=0;const failed=[];
-   for(const t of trades){
-    try{
-     const quote=await getStock(t.symbol),data=quote.data;
-     const mark=num(data?.price),qt=quoteTime(data),quoteMs=qt?Date.parse(qt):NaN,ageH=(Date.now()-quoteMs)/3600000;
-     if(!(mark>0))throw new Error('Quote endpoint returned no valid price');
-     if(!Number.isFinite(quoteMs))throw new Error('Quote timestamp missing or invalid');
-     if(ageH < -(MAX_FUTURE_QUOTE_MINUTES/60) || ageH > MAX_MARK_QUOTE_AGE_HOURS)throw new Error('Quote stale or timestamp is in the future ('+Math.round(ageH)+'h old)');
-     const now=new Date().toISOString(),snap={...(t.signal_snapshot||{}),mark_price:mark,mark_time:qt,mark_checked_at:now,mark_source:'validated fresh quote from stock-data endpoint',estimated_cost_bps:paperAccountSettings.costBps};
-     const buy=t.direction==='BUY',sl=Number(t.stop_loss),t1=Number(t.target_1),t2=Number(t.target_2),qty=Number(t.quantity),entry=Number(t.entry_price);
-     const stopHit=buy?mark<=sl:mark>=sl,target2Hit=buy?mark>=t2:mark<=t2,target1Hit=buy?mark>=t1:mark<=t1;
-     let patch={signal_snapshot:snap};
-     if(stopHit||target2Hit){
-      const reason=stopHit?'STOP_LOSS':'TARGET_2',gross=(mark-entry)*qty*(buy?1:-1),cost=tradeCosts(t,mark);
-      patch={...patch,status:'CLOSED',exit_price:mark,realized_pnl:Number(t.realized_pnl||0)+gross-cost,closed_at:now,signal_snapshot:{...snap,exit_reason:reason,gross_pnl:gross,exit_cost:cost,exit_time:now,fill_model:'validated quote; simulated fill'}};
-     }else if(target1Hit&&!snap.target1_partial_filled&&qty>=2){
-      const exitQty=Math.floor(qty/2),gross=(mark-entry)*exitQty*(buy?1:-1),cost=tradeCosts({...t,quantity:exitQty},mark);
-      patch={...patch,quantity:qty-exitQty,realized_pnl:Number(t.realized_pnl||0)+gross-cost,signal_snapshot:{...snap,target1_partial_filled:true,target1_exit_price:mark,target1_exit_quantity:exitQty,target1_realized_gross:gross,target1_exit_cost:cost,target1_exit_time:now,fill_model:'validated quote; simulated partial fill'}};
-     }
-     const saved=await supabase.from('stock_paper_trades').update(patch).eq('id',t.id).eq('user_id',id);
-     if(saved.error)throw saved.error;updated++;
-    }catch(e){failed.push(t.symbol+': '+String(e.message||e));}
-   }
-   await loadPaperTrades();
-   if($('paperSummary'))$('paperSummary').textContent=updated+' trade(s) marked from fresh quotes; '+failed.length+' quote/update failure(s).'+(failed.length?' First issue: '+failed[0]:'');
-   if(failed.length&&!automatic)alert('Trades not updated because a valid quote could not be verified:\n'+failed.slice(0,5).join('\n'));
-  }catch(e){if(!automatic)alert('Could not mark paper trades: '+String(e.message||e));else console.warn('Automatic paper mark failed:',e);}
-  finally{autoMarkInProgress=false;if(button){button.disabled=false;button.textContent='Mark with latest validated quote';}}
-}
-function startAutoPaperMarking(){
- if(autoMarkTimer!==null)clearInterval(autoMarkTimer);
- const tick=()=>{if(document.visibilityState==='visible'&&!autoMarkInProgress)void markOpenTradesFromScan({automatic:true});};
- document.addEventListener('visibilitychange',tick);
- tick();
- autoMarkTimer=setInterval(tick,30000);
-}
-async function loadPaperTrades(){
- const host=$('paperTrades');if(!host)return;
- if(!supabase){host.innerHTML='<div class="empty-state"><strong>Account service unavailable</strong><span>Refresh and try again.</span></div>';return;}
- try{
-  const auth=await supabase.auth.getSession(),session=auth.data?.session;if(auth.error)throw auth.error;
-  if(!session?.user){host.innerHTML='<div class="empty-state"><strong>Sign in to view paper trades</strong><span>Use your main MarketPulse account.</span></div>';if($('paperSummary'))$('paperSummary').textContent='Not signed in';return;}
-  const settingsKey='marketpulse-paper-settings-'+session.user.id;
-  try{const saved=JSON.parse(localStorage.getItem(settingsKey)||'{}');paperAccountSettings={balance:Number(saved.balance)||100000,costBps:Math.max(0,Math.min(200,Number(saved.costBps)||0))};}catch(_){paperAccountSettings={balance:100000,costBps:10};}
-  if($('paperBalanceInput'))$('paperBalanceInput').value=paperAccountSettings.balance;
-  if($('paperCostBps'))$('paperCostBps').value=paperAccountSettings.costBps;
-  let q=supabase.from('stock_paper_trades').select('*').order('created_at',{ascending:false}).limit(200);
-  const result=await q;if(result.error)throw result.error;
-  const allRows=result.data||[];paperRowsCache=allRows;renderPaperAccount(allRows);
-  const rows=currentPaperFilter==='ALL'?allRows:allRows.filter(t=>t.status===currentPaperFilter);
-  if($('paperSummary'))$('paperSummary').textContent=rows.length+' '+currentPaperFilter.toLowerCase()+' paper trade(s)';
-  if(!rows.length){host.innerHTML='<div class="empty-state"><strong>No '+currentPaperFilter.toLowerCase()+' paper trades</strong><span>Use Paper trade on a candidate above.</span></div>';return;}
-  host.innerHTML=rows.map(t=>{
-    const hasValidatedMark=String(t.signal_snapshot?.mark_source||'').includes('validated fresh quote');
-    const mark=hasValidatedMark?Number(t.signal_snapshot?.mark_price):Number(t.entry_price);
-    const markLabel=hasValidatedMark?'Last mark':'Last mark (entry ref)';
-    const gross=(mark-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1);
-    const unreal=t.status==='OPEN'?gross-tradeCosts(t,mark):null;
-    const exitLabel=t.direction==='SELL'?'Buy to cover at market':'Sell at market';
-    return '<article class="paper-trade"><div class="paper-trade-head"><strong>'+esc(t.symbol)+' · '+esc(t.direction)+'</strong><span class="pill">'+esc(t.status)+'</span></div><div class="paper-trade-grid"><span>Entry<b>'+money(t.entry_price)+'</b></span><span>'+markLabel+'<b>'+money(mark)+'</b></span><span>Unrealized P&amp;L<b class="'+(unreal>=0?'pnl-positive':'pnl-negative')+'">'+(unreal==null?'—':money(unreal))+'</b></span><span>Stop-loss<b>'+money(t.stop_loss)+'</b></span><span>Target 1<b>'+money(t.target_1)+'</b></span><span>Target 2<b>'+money(t.target_2)+'</b></span><span>Quantity<b>'+safeNumberFormat(t.quantity)+'</b></span><span>Realized P&amp;L<b>'+(t.realized_pnl==null?'—':money(t.realized_pnl))+'</b></span></div><div class="paper-trade-foot"><small>'+esc(t.timeframe||'')+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString():'')+'</small>'+(t.status==='OPEN'?'<button type="button" class="small-button" data-edit-paper="'+esc(t.id)+'">Edit qty / TP / SL</button><button type="button" class="small-button" data-close-paper="'+esc(t.id)+'">'+exitLabel+'</button>':'<small>Exit '+money(t.exit_price)+'</small>')+'</div></article>';
-   }).join('');
-   host.querySelectorAll('[data-edit-paper]').forEach(btn=>btn.addEventListener('click',async()=>{
-    const t=rows.find(x=>String(x.id)===btn.dataset.editPaper);if(!t)return;
-    const q=prompt('Quantity (whole shares):',String(t.quantity));if(q===null)return;const qty=Number(q);if(!Number.isInteger(qty)||qty<1){alert('Enter a whole-share quantity of at least 1.');return;}
-    const slv=prompt('Stop-loss price (₹):',String(t.stop_loss));if(slv===null)return;const sl=Number(slv);if(!(sl>0)){alert('Enter a valid stop-loss price.');return;}
-    const t1v=prompt('Target 1 price (₹):',String(t.target_1));if(t1v===null)return;const t1=Number(t1v);if(!(t1>0)){alert('Enter a valid Target 1 price.');return;}
-    const t2v=prompt('Target 2 price (₹):',String(t.target_2));if(t2v===null)return;const t2=Number(t2v);if(!(t2>0)){alert('Enter a valid Target 2 price.');return;}
-    if(t.direction==='BUY'&&!(sl<t.entry_price&&t1>t.entry_price&&t2>=t1)){alert('For BUY trades, stop-loss must be below entry and targets above entry, with Target 2 at or above Target 1.');return;}
-    if(t.direction==='SELL'&&!(sl>t.entry_price&&t1<t.entry_price&&t2<=t1)){alert('For SELL/short simulations, stop-loss must be above entry and targets below entry, with Target 2 at or below Target 1.');return;}
-    btn.disabled=true;try{
-     const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;if(!id)throw new Error('Sign in first.');
-     if(t.direction==='BUY'){const r=await supabase.from('stock_paper_trades').select('id,entry_price,quantity').eq('user_id',id).eq('status','OPEN').eq('direction','BUY').limit(200);if(r.error)throw r.error;const used=(r.data||[]).reduce((sum,x)=>sum+(String(x.id)===String(t.id)?0:Math.max(0,Number(x.entry_price)||0)*Math.max(0,Number(x.quantity)||0)),0);if(Number(t.entry_price)*qty>Math.max(0,Number(paperAccountSettings.balance)-used))throw new Error('Quantity exceeds available virtual cash.');}
-     const upd=await supabase.from('stock_paper_trades').update({quantity:qty,stop_loss:sl,target_1:t1,target_2:t2}).eq('id',t.id).eq('user_id',id).eq('status','OPEN');if(upd.error)throw upd.error;await loadPaperTrades();
-    }catch(e){alert('Could not update trade: '+String(e.message||e));}finally{btn.disabled=false;}
-   }));
-   host.querySelectorAll('[data-close-paper]').forEach(btn=>btn.addEventListener('click',async()=>{
-    const t=rows.find(x=>String(x.id)===btn.dataset.closePaper);if(!t)return;btn.disabled=true;
-    try{
-     const quote=await getStock(t.symbol),data=quote.data,exit=num(data?.price),qt=quoteTime(data),ms=qt?Date.parse(qt):NaN,ageH=(Date.now()-ms)/3600000;
-     if(!(exit>0)||!Number.isFinite(ms)||ageH<-(MAX_FUTURE_QUOTE_MINUTES/60)||ageH>MAX_MARK_QUOTE_AGE_HOURS)throw new Error('A fresh validated market quote is unavailable. Trade was not closed.');
-     const action=t.direction==='SELL'?'Buy to cover':'Sell';
-     if(!confirm(action+' '+safeNumberFormat(t.quantity)+' '+t.symbol+' at current simulated market price '+money(exit)+'?\n\nThis closes only the paper trade. No broker order will be placed.'))return;
-     const auth=await supabase.auth.getSession(),id=auth.data?.session?.user?.id;if(!id)throw new Error('Sign in first.');
-     const gross=(exit-Number(t.entry_price))*Number(t.quantity)*(t.direction==='SELL'?-1:1),costs=tradeCosts(t,exit),net=gross-costs,now=new Date().toISOString();
-     const upd=await supabase.from('stock_paper_trades').update({status:'CLOSED',exit_price:exit,realized_pnl:Number(t.realized_pnl||0)+net,closed_at:now,signal_snapshot:{...(t.signal_snapshot||{}),mark_price:exit,mark_time:qt,mark_checked_at:now,mark_source:'validated fresh quote from stock-data endpoint',exit_cost:costs,exit_reason:'MANUAL_MARKET_EXIT',gross_pnl:gross,exit_time:now,fill_model:'validated quote; simulated market exit'}}).eq('id',t.id).eq('user_id',id).eq('status','OPEN');if(upd.error)throw upd.error;await loadPaperTrades();
-    }catch(e){alert('Could not close trade: '+String(e.message||e));}finally{btn.disabled=false;}
-   }));
-   }catch(e){host.innerHTML='<div class="empty-state"><strong>Could not load paper trades</strong><span>'+esc(String(e.message||e))+'</span></div>';if($('paperSummary'))$('paperSummary').textContent='Paper-trade loading error';}
-}
-
-async function savePaperTrade(s){
-  if(!supabase)throw new Error('Account service unavailable');
-  const result=await supabase.auth.getSession();const session=result.data?.session;if(result.error)throw result.error;if(!session?.user)throw new Error('Please sign in on the main MarketPulse page first.');
-  let qty=Math.max(1,Math.floor(Number(s.qty)||1));
-  if(s.side==='BUY'){
-    const openResult=await supabase.from('stock_paper_trades').select('entry_price,quantity').eq('user_id',session.user.id).eq('status','OPEN').eq('direction','BUY').limit(200);
-    if(openResult.error)throw openResult.error;
-    const used=(openResult.data||[]).reduce((sum,t)=>sum+Math.max(0,Number(t.entry_price)||0)*Math.max(0,Number(t.quantity)||0),0);
-    const available=Math.max(0,Number(paperAccountSettings.balance)-used);
-    qty=Math.min(qty,Math.floor(available/Number(s.entry)));
-    if(qty<1)throw new Error('Insufficient available virtual cash. Close/reduce an open BUY trade or increase the starting virtual balance.');
+async function placeOrder(s, L, v, btn) {
+  btn.disabled = true;
+  try {
+    const now = new Date().toISOString(), risk = Math.abs(L - v.sl) * v.qty;
+    const row = {
+      user_id: S.user.id, symbol: s.symbol, timeframe: s.tf, direction: s.side, setup: s.setup, score: s.score,
+      entry_price: L, stop_loss: v.sl, target_1: v.t1, target_2: v.t2, quantity: v.qty, risk_budget: Math.round(risk * 100) / 100,
+      signal_time: s.generated_at || now, source: 'stock-signals-v2', status: 'OPEN', opened_at: now,
+      signal_snapshot: { reasons: s.reasons, signal_entry: s.entry, signal_stop: s.stop, rsi: s.rsi, atr: s.atr, vol_ratio: s.vol_ratio, estimated_cost_bps: num(S.account.cost_bps) ?? 10, original_quantity: v.qty, replay_until: Date.now(), mark_price: L, mark_source: 'order fill at LTP', fill_model: 'market order at last price' },
+    };
+    const { data, error } = await sb.from('stock_paper_trades').insert(row).select().single();
+    if (error) throw error;
+    S.trades.unshift(data);
+    closeSheet(); toast((s.side === 'BUY' ? 'Bought ' : 'Sold ') + v.qty + ' ' + s.symbol + ' @ ' + fmt(L));
+    setTab('positions'); renderAll();
+  } catch (e) {
+    const dup = e && (e.code === '23505' || /duplicate|unique/i.test(String(e.message)));
+    toast(dup ? 'You already hold ' + s.symbol + '.' : 'Order failed: ' + String((e && e.message) || e), true);
+    btn.disabled = false;
   }
-  const row={user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:qty,risk_budget:Number(s.riskBudget)||0,signal_time:s.quoteTime||new Date().toISOString(),source:s.source||'MarketPulse',signal_snapshot:{reasons:s.reasons||[],rsi:s.rsi,atr:s.atr,rr1:s.rr1,rr2:s.rr2,mark_price:Number(s.entry),mark_time:s.quoteTime||new Date().toISOString(),mark_source:'entry reference — auto-mark fetches quotes every 30 seconds while page is visible',estimated_cost_bps:paperAccountSettings.costBps},status:'OPEN'};
-  const saved=await supabase.from('stock_paper_trades').upsert(row,{onConflict:'user_id,symbol,timeframe,direction,signal_time',ignoreDuplicates:true});if(saved.error)throw saved.error;
-  const summary=document.getElementById('paperSummary');if(summary)summary.textContent='Paper trade saved: '+s.symbol+' · '+s.side+(qty<Number(s.qty)?' · quantity capped by available cash':'');
 }
 
-async function persistSignals(signals) {
-  setCheck('storageCheck','Optional signal-history table is not configured; individual paper trades save separately','warn'); return;
-  /*
-  if(!supabase) {setCheck('storageCheck','Supabase client unavailable','bad');return;}
-  try {
-    const {data:{session},error:authError}=await supabase.auth.getSession();
-    if(authError||!session?.user){setCheck('storageCheck','Sign in to save signals','warn');return;}
-    const rows=signals.map(s=>({user_id:session.user.id,symbol:s.symbol,timeframe:s.tf,direction:s.side,setup:s.setup,score:s.score,entry_price:s.entry,stop_loss:s.stop,target_1:s.target1,target_2:s.target2,quantity:s.qty,risk_budget:s.riskBudget,rr_target_1:s.rr1,rr_target_2:s.rr2,quote_time:s.quoteTime,candle_time:s.barDate,source:s.source,indicators:{rsi:s.rsi,atr:s.atr,ema20:s.ema20,ema50:s.ema50,volume_ratio:s.volRatio},status:'ACTIVE',strategy_version:'swing-v1'}));
-    if(!rows.length){setCheck('storageCheck','No qualified signals to save','warn');return;}
-    const {error}=await supabase.from('stock_trade_signals').upsert(rows,{onConflict:'user_id,symbol,timeframe,direction,candle_time,strategy_version'});
-    if(error) throw error;
-    setCheck('storageCheck',rows.length+' signal(s) saved','ok');
-  } catch(e) {setCheck('storageCheck','Not saved: '+String(e.message||e).slice(0,100),'bad');}
+/* ===================== POSITIONS tab ===================== */
+function renderPositions() {
+  const a = acctNumbers();
+  $('posBadge').hidden = !a.open.length; $('posBadge').textContent = a.open.length;
+  $('posSummary').innerHTML = `<div class="stat big"><b>Unrealised P&amp;L</b><div class="v ${cls(a.unreal)}">${sinr(a.unreal)}</div></div>
+    <div class="stat"><b>Invested</b><div class="v">${inr(a.invested, 0)}</div></div><div class="stat"><b>Current value</b><div class="v">${inr(a.value, 0)}</div></div>
+    <div class="stat"><b>Booked (T1 exits)</b><div class="v ${cls(a.booked)}">${sinr(a.booked)}</div></div><div class="stat"><b>Open risk</b><div class="v">${inr(a.openRisk, 0)}</div></div>`;
+  const host = $('posList');
+  if (!a.open.length) { host.innerHTML = '<div class="empty"><b>No open positions</b><br>Place a paper order from a signal to see it here with live P&amp;L.</div>'; return; }
+  host.innerHTML = a.open.map((t) => {
+    const m = posMetrics(t), buy = t.direction === 'BUY', c = chgOf(t.symbol), snap = t.signal_snapshot || {};
+    return `<article class="scard" data-pos="${esc(t.id)}">
+      <div class="srow"><div><div class="sym">${esc(t.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></div>
+        <div class="nm">${fmt(m.qty, 0)} @ ${fmt(m.entry)} · ${t.timeframe === 'intraday' ? 'Intraday' : 'Swing'}${snap.target1_partial_filled ? ' · T1 booked' : ''}</div></div>
+        <div class="px"><div class="l ${cls(m.net)}">${sinr(m.net)}</div><div class="c ${cls(m.net)}">${pct(m.netPct)}</div></div></div>
+      ${ladder({ stop: num(t.stop_loss), entry: m.entry, t1: num(t.target_1), t2: num(t.target_2) }, m.px)}
+      <div class="srow2"><div class="metrics"><span>LTP <b>${fmt(m.px)}</b></span><span class="${cls(c)}">${pct(c)}</span><span>Opened <b>${esc(ago(t.opened_at))}</b></span></div>
+        <button class="btn small outline-red" data-exit="${esc(t.id)}">Exit</button></div></article>`;
+  }).join('');
 }
-  */
+function openManage(t) {
+  const m = posMetrics(t), buy = t.direction === 'BUY';
+  openSheet(`<div class="hd"><div><h2>${esc(t.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></h2><div class="sub">${fmt(m.qty, 0)} shares @ ${inr(m.entry)} · opened ${esc(ago(t.opened_at))}</div></div><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="srow" style="margin:10px 0"><div><div class="l mono" style="font-size:22px;font-weight:700">${inr(m.px)}</div><div class="${cls(m.net)} mono" style="font-weight:700">${sinr(m.net)} (${pct(m.netPct)})</div></div></div>
+    ${ladder({ stop: num(t.stop_loss), entry: m.entry, t1: num(t.target_1), t2: num(t.target_2) }, m.px)}
+    <div class="grid3" style="margin-top:24px"><label class="field"><span>Stop loss</span><input id="ms" type="number" step="0.05" value="${t.stop_loss}"></label>
+      <label class="field"><span>Target 1</span><input id="m1" type="number" step="0.05" value="${t.target_1}"></label>
+      <label class="field"><span>Target 2</span><input id="m2" type="number" step="0.05" value="${t.target_2}"></label></div>
+    <div id="mMsg"></div>
+    <button class="btn primary block" id="mSave">Update stop &amp; targets</button>
+    <button class="btn outline-red block" id="mExit">Exit at market (${inr(m.px)})</button>
+    <p class="hint">Updated levels apply from now on. Open since ${esc(new Date(t.opened_at).toLocaleString('en-IN'))}.</p>`);
+  $('mSave').addEventListener('click', async () => {
+    const sl = num($('ms').value), t1 = num($('m1').value), t2 = num($('m2').value);
+    const entry = m.entry, ok = buy ? (sl < m.px && t1 > m.px && t2 >= t1) : (sl > m.px && t1 < m.px && t2 <= t1);
+    if (sl === null || t1 === null || t2 === null || !ok) { $('mMsg').innerHTML = `<div class="msg err">${buy ? 'Stop must be below the current price and targets above it (T2 ≥ T1).' : 'Stop must be above the current price and targets below it (T2 ≤ T1).'}</div>`; return; }
+    const { error } = await sb.from('stock_paper_trades').update({ stop_loss: sl, target_1: t1, target_2: t2 }).eq('id', t.id).eq('status', 'OPEN');
+    if (error) { $('mMsg').innerHTML = `<div class="msg err">${esc(error.message)}</div>`; return; }
+    Object.assign(t, { stop_loss: sl, target_1: t1, target_2: t2 }); closeSheet(); toast('Levels updated'); renderAll();
+  });
+  $('mExit').addEventListener('click', () => exitTrade(t));
 }
-async function scan() {
-  const btn=$('scanBtn');btn.disabled=true;btn.textContent='Validating…';
-  $('scanSummary').textContent='Checking feeds and validating symbols…';
-  $('candleCount').textContent='—';$('candleWindow').textContent='Waiting for valid daily bars';
-  $('feedState').textContent='CHECKING';setMarketStatus('Checking data feed');
-  const signals=[],blocked=[];let quoteOk=0,candleOk=0;
-  try {
-    const timeframe=$('timeframe').value;
-    const universe=await getUniverse();
-    if(timeframe==='intraday') {
-      setCheck('quoteCheck','Using latest 5-minute candle as entry reference','warn');
-      setCheck('dailyCheck','Daily history not used in intraday mode','warn');
-      setCheck('intradayCheck','Validating 5-minute candles','warn');
-      await mapWithConcurrency(universe,4,async stock=>{
-        try {
-          const data=await getIntraday(stock.symbol);
-          quoteOk++;
-          const sig=analyseIntraday(stock.symbol,stock.name,data);
-          if(sig)signals.push(sig);else blocked.push({symbol:stock.symbol,reason:'No setup or risk gate failed'});
-          if(Array.isArray(data.history)&&data.history.length>=60)candleOk++;
-        } catch(e) {blocked.push({symbol:stock.symbol,reason:String(e.message||e)});}
-      });
-      signals.sort((a,b)=>b.score-a.score);
-      $('candleCount').textContent=String(candleOk);
-      $('candleWindow').textContent='of '+universe.length+' symbols passed 5-minute candle gates';
-      $('feedState').textContent=candleOk?'PARTIAL':'BLOCKED';$('feedChecked').textContent=safeNow();
-      setCheck('quoteCheck',quoteOk+' / '+universe.length+' intraday responses received',quoteOk?'ok':'bad');
-      setCheck('dailyCheck','Not required for intraday','warn');
-      setCheck('intradayCheck',candleOk+' / '+universe.length+' returned at least 60 five-minute candles',candleOk?'ok':'bad');
-      setMarketStatus(candleOk?'Intraday data validated; verify broker price':'Intraday data unavailable',candleOk?'warn':'bad');
-      $('dataNotice').className='notice warning';
-      $('dataNotice').innerHTML='<strong>Intraday data is Yahoo-derived and may be delayed.</strong><span>Only use signals when the latest candle is fresh. Confirm entry and stop with your broker; no orders are placed.</span>';
-      $('scanSummary').textContent=signals.length+' intraday setup(s) · '+blocked.length+' blocked/no setup · '+universe.length+' scanned';
-      renderSignals(signals,blocked);await persistSignals(signals);return;
-    }
-    setCheck('quoteCheck','Testing '+Math.min(universe.length,5)+' quote responses','warn');
-    await mapWithConcurrency(universe,4,async stock=>{
-      try {
-        const {data,history}=await getStock(stock.symbol);
-        const bars=normalizeBars(history);
-        const validation=validateQuote(data,bars);
-        if(num(data.price)>0&&quoteTime(data)) quoteOk++;
-        if(validation.ok)candleOk++;
-        const signal=analyse(stock.symbol,stock.name,data,history,$('timeframe').value);
-        if(signal) signals.push(signal); else if(!validation.ok) blocked.push({symbol:stock.symbol,reason:validation.reason});
-      } catch(e) {blocked.push({symbol:stock.symbol,reason:String(e.message||e)});}
-    });
-    signals.sort((a,b)=>b.score-a.score);
-    $('candleCount').textContent=candleOk.toString();
-    $('candleWindow').textContent='of '+universe.length+' symbols passed quote + daily OHLCV gates';
-    $('feedState').textContent=quoteOk>0&&candleOk>0?'PARTIAL':'BLOCKED';
-    $('feedChecked').textContent=new Date().toLocaleString('en-IN');
-    setCheck('quoteCheck',quoteOk+' / '+universe.length+' had valid price + timestamp',quoteOk?'ok':'bad');
-    setCheck('dailyCheck',candleOk+' / '+universe.length+' passed OHLCV/date checks',candleOk?'ok':'bad');
-    setCheck('intradayCheck','Unavailable — daily candles only','bad');
-    setMarketStatus(candleOk?'Daily data partly validated':'Data not validated',candleOk?'warn':'bad');
-    $('dataNotice').className=candleOk?'notice warning':'notice bad';
-    $('dataNotice').innerHTML=candleOk?'<strong>Daily data passed basic checks for '+candleOk+' symbol(s).</strong><span>This is not proof of exchange-grade real-time accuracy. Check source timestamps and verify prices with your broker before acting.</span>':'<strong>No reliable daily candle set passed validation.</strong><span>No recommendations are available. Fix the feed/schema before using this page for trading.</span>';
-    $('scanSummary').textContent=signals.length+' qualified setup(s) · '+blocked.length+' blocked/unavailable · '+universe.length+' scanned';
-    renderSignals(signals,blocked);
-    await persistSignals(signals);
-  } catch(e) {
-    $('feedState').textContent='BLOCKED';$('feedChecked').textContent=new Date().toLocaleString('en-IN');
-    setMarketStatus('Feed error','bad');setCheck('universeCheck',String((e&&e.message)||e)+' · '+String((e&&e.stack)||'').slice(0,180),'bad');
-    setCheck('quoteCheck','Not validated','bad');setCheck('dailyCheck','Not validated','bad');
-    $('dataNotice').className='notice bad';$('dataNotice').innerHTML='<strong>Scanner stopped safely.</strong><span>'+esc(String(e.message||e))+'</span>';
-    $('scanSummary').textContent='No signals generated.';renderSignals([],[]);
-  } finally {btn.disabled=false;btn.textContent='Validate feed & scan';}
+async function exitTrade(t) {
+  const m = posMetrics(t);
+  const q = S.quotes[t.symbol];
+  if (!(m.px > 0)) { toast('No price available to exit.', true); return; }
+  const now = new Date().toISOString();
+  const costs = (m.entry * m.qty + m.px * m.qty) * costBpsOf(t) / 10000;
+  const net = m.gross - costs;
+  const snap = Object.assign({}, t.signal_snapshot || {}, { exit_reason: 'MANUAL_EXIT', exit_cost: Math.round(costs * 100) / 100, gross_pnl: Math.round(((num((t.signal_snapshot || {}).gross_pnl) || 0) + m.gross) * 100) / 100, mark_price: m.px, mark_time: q && q.updated_at || now, exit_time: now, fill_model: 'manual exit at last price' });
+  const patch = { status: 'CLOSED', exit_price: m.px, closed_at: now, realized_pnl: Math.round(((num(t.realized_pnl) || 0) + net) * 100) / 100, signal_snapshot: snap };
+  const { data, error } = await sb.from('stock_paper_trades').update(patch).eq('id', t.id).eq('status', 'OPEN').select();
+  if (error) { toast('Could not exit: ' + error.message, true); return; }
+  if (!data || !data.length) { toast('This position was already closed.', true); await loadTrades(); renderAll(); closeSheet(); return; }
+  Object.assign(t, data[0]); closeSheet(); toast('Exited ' + t.symbol + ' @ ' + fmt(m.px) + ' · ' + sinr(net)); renderAll();
+}
+
+/* ===================== HISTORY tab ===================== */
+const REASONS = { STOP_LOSS: 'Stop loss', TARGET_1: 'Target 1', TARGET_2: 'Target 2', SQUARE_OFF: 'Square-off', MANUAL_EXIT: 'Manual exit', MANUAL_MARKET_EXIT: 'Manual exit', EOD: 'End of day' };
+function renderHistory() {
+  const a = acctNumbers();
+  const closed = a.closed.slice().sort((x, y) => new Date(y.closed_at || y.opened_at) - new Date(x.closed_at || x.opened_at));
+  const pnl = (t) => num(t.realized_pnl) || 0;
+  const wins = closed.filter((t) => pnl(t) > 0), losses = closed.filter((t) => pnl(t) < 0);
+  const gw = wins.reduce((s, t) => s + pnl(t), 0), gl = Math.abs(losses.reduce((s, t) => s + pnl(t), 0));
+  const net = closed.reduce((s, t) => s + pnl(t), 0);
+  $('histSummary').innerHTML = `<div class="stat big"><b>Net realised P&amp;L</b><div class="v ${cls(net)}">${sinr(net)}</div></div>
+    <div class="stat"><b>Trades</b><div class="v">${closed.length}</div></div><div class="stat"><b>Win rate</b><div class="v">${closed.length ? Math.round(wins.length / closed.length * 100) : 0}%</div></div>
+    <div class="stat"><b>Avg win / loss</b><div class="v"><span class="up">${wins.length ? sinr(gw / wins.length) : '—'}</span> <span class="muted">/</span> <span class="down">${losses.length ? sinr(-gl / losses.length) : '—'}</span></div></div>
+    <div class="stat"><b>Profit factor</b><div class="v">${gl ? fmt(gw / gl, 2) : (gw ? '∞' : '—')}</div></div>`;
+  // equity curve
+  const ordered = closed.slice().reverse(); let run = 0; const pts = [0].concat(ordered.map((t) => (run += pnl(t))));
+  if (pts.length >= 3) {
+    const lo = Math.min(...pts), hi = Math.max(...pts), W = 320, H = 70, rng = hi - lo || 1;
+    $('equityCard').innerHTML = `<h3 style="margin-bottom:4px">Equity curve <span class="muted" style="font-weight:500;font-size:11px">· closed trades</span></h3><svg class="chart" viewBox="0 0 ${W} ${H}"><path d="${sparkPath(pts, W, H - 6, lo, hi)}" transform="translate(0,3)" fill="none" stroke="${run >= 0 ? 'var(--green)' : 'var(--red)'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+    $('equityCard').hidden = false;
+  } else $('equityCard').hidden = true;
+  let list = closed;
+  if (S.f.hist === 'win') list = wins; else if (S.f.hist === 'loss') list = losses;
+  const host = $('histList');
+  if (!list.length) { host.innerHTML = '<div class="empty"><b>No closed trades yet</b><br>Exited and stopped-out trades appear here.</div>'; return; }
+  host.innerHTML = list.map((t) => {
+    const p = pnl(t), snap = t.signal_snapshot || {}, buy = t.direction === 'BUY';
+    const why = REASONS[snap.exit_reason] || snap.exit_reason || 'Closed';
+    const qtyShow = num(snap.original_quantity) || num(t.quantity);
+    return `<article class="scard" style="cursor:default"><div class="srow"><div><div class="sym">${esc(t.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></div>
+      <div class="nm">${fmt(qtyShow, 0)} · ${fmt(t.entry_price)} → ${fmt(t.exit_price)}</div></div><div class="px"><div class="l ${cls(p)}">${sinr(p)}</div><div class="c muted">${esc(why)}</div></div></div>
+      <div class="tags"><span class="tag">${t.timeframe === 'intraday' ? 'Intraday' : 'Swing'}</span>${snap.target1_partial_filled ? '<span class="tag buy">T1 booked</span>' : ''}<span class="tag">${esc(new Date(t.closed_at || t.opened_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }))}</span></div></article>`;
+  }).join('');
+}
+
+/* ===================== ACCOUNT tab ===================== */
+function dotCls(job, maxAgeSec) {
+  if (!job || !job.last_run_at) return 'warn';
+  const age = (nowMs() - new Date(job.last_run_at).getTime()) / 1000;
+  if (job.ok === false) return 'bad';
+  return age <= maxAgeSec ? 'ok' : (age <= maxAgeSec * 4 ? 'warn' : 'bad');
+}
+function renderAccount() {
+  const a = acctNumbers();
+  $('acctSummary').innerHTML = `<div class="stat big"><b>Equity</b><div class="v ${cls(a.equity - a.start)}">${inr(a.equity, 0)}</div></div>
+    <div class="stat"><b>Available cash</b><div class="v">${inr(a.cash, 0)}</div></div><div class="stat"><b>Invested</b><div class="v">${inr(a.invested, 0)}</div></div>
+    <div class="stat"><b>Realised P&amp;L</b><div class="v ${cls(a.realized)}">${sinr(a.realized)}</div></div><div class="stat"><b>Unrealised P&amp;L</b><div class="v ${cls(a.unreal)}">${sinr(a.unreal)}</div></div>`;
+  if (document.activeElement !== $('setBalance')) $('setBalance').value = S.account.starting_balance;
+  if (document.activeElement !== $('setRisk')) $('setRisk').value = S.account.risk_pct;
+  if (document.activeElement !== $('setBps')) $('setBps').value = S.account.cost_bps;
+  const jobs = {}; ((S.status && S.status.jobs) || []).forEach((j) => { jobs[j.job] = j; });
+  const row = (label, job, maxAge, extra) => `<div class="hrow"><span><i class="d ${dotCls(job, maxAge)}"></i>${label}</span><span class="muted">${job && job.last_run_at ? esc(ago(job.last_run_at)) : 'no heartbeat'}${extra ? ' · ' + esc(extra) : ''}</span></div>`;
+  const sg = jobs['stock-signals'] && jobs['stock-signals'].summary || {};
+  const open = marketState(nowMs()).open;
+  $('healthCard').innerHTML = `<h3>Server status</h3><div class="health">
+    ${row('Signal scanner', jobs['stock-signals'], open ? 600 : 5400, sg.swing !== undefined ? sg.swing + ' swing · ' + (sg.intraday || 0) + ' intraday' : '')}
+    ${row('Paper-trade monitor', jobs['stock-paper'], open ? 180 : 5400, ((jobs['stock-paper'] || {}).summary || {}).open !== undefined ? ((jobs['stock-paper'].summary.open) + ' open trade(s) watched') : '')}
+    ${row('Price refresh (all stocks)', jobs.sector, open ? 600 : 5400, '')}</div>
+    <p class="hint">These jobs run on Supabase, so your stops, targets and signals keep working even when this page is closed.</p>`;
+}
+async function saveSettings() {
+  const bal = num($('setBalance').value), risk = num($('setRisk').value), bps = num($('setBps').value);
+  if (!(bal >= 1000) || !(risk > 0 && risk <= 5) || bps === null || bps < 0 || bps > 100) { toast('Check the values: balance ≥ 1,000, risk 0.1–5%, charges 0–100 bps.', true); return; }
+  const { error } = await sb.from('stock_paper_accounts').upsert({ user_id: S.user.id, starting_balance: bal, cost_bps: bps, risk_pct: risk, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (error) { toast('Could not save: ' + error.message, true); return; }
+  S.account = { starting_balance: bal, cost_bps: bps, risk_pct: risk }; toast('Settings saved'); renderAll();
+}
+function confirmReset() {
+  openSheet(`<div class="hd"><h2>Reset paper account?</h2><button class="x" data-close aria-label="Close">×</button></div>
+    <p class="sub" style="margin:10px 0">All ${S.trades.length} paper trades will be permanently deleted and your balance returns to ${inr(S.account.starting_balance, 0)}.</p>
+    <button class="btn outline-red block" id="resetYes">Yes, delete everything</button><button class="btn block" data-close>Cancel</button>`);
+  $('resetYes').addEventListener('click', async () => {
+    const { error } = await sb.from('stock_paper_trades').delete().eq('user_id', S.user.id);
+    if (error) { toast('Could not reset: ' + error.message, true); return; }
+    S.trades = []; closeSheet(); toast('Paper account reset'); renderAll();
+  });
+}
+
+/* ===================== shell ===================== */
+function renderIndexStrip() {
+  $('indexStrip').innerHTML = S.indices.map((x) => { const c = num(x.change_percent); return `<div class="ix"><b>${esc(x.display_name || x.name)}</b><div class="v">${fmt(x.price)}</div><div class="c ${cls(c)}">${pct(c)}</div></div>`; }).join('');
+}
+function renderMarket() { const m = marketState(nowMs()); $('marketText').textContent = m.text; $('marketChip').classList.toggle('open', m.open); }
+function renderAll() {
+  renderMarket(); renderIndexStrip();
+  renderSignals(); renderPositions(); renderHistory(); renderAccount();
+}
+function setTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.tab').forEach((el) => el.classList.toggle('active', el.id === 'tab-' + tab));
+  document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  window.scrollTo({ top: 0 });
+}
+function seg(id, key, after) {
+  $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.f[key] = b.dataset.v; $(id).querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); after(); });
+}
+function wire() {
+  document.querySelectorAll('#tabbar button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  seg('tfSeg', 'tf', renderSignals); seg('sideSeg', 'side', renderSignals); seg('histSeg', 'hist', renderHistory);
+  $('sortSel').addEventListener('change', (e) => { S.f.sort = e.target.value; renderSignals(); });
+  $('searchBox').addEventListener('input', (e) => { S.f.q = e.target.value; renderSignals(); });
+  $('backdrop').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+  $('signalList').addEventListener('click', (e) => {
+    const ob = e.target.closest('[data-order]'); if (ob) { e.stopPropagation(); const s = sigByKey(ob.dataset.order); if (s) openOrder(s); return; }
+    const card = e.target.closest('[data-sig]'); if (card) { const s = sigByKey(card.dataset.sig); if (s) openSignal(s); }
+  });
+  $('posList').addEventListener('click', (e) => {
+    const ex = e.target.closest('[data-exit]'); const id = (ex || e.target.closest('[data-pos]') || {}).dataset;
+    const key = ex ? ex.dataset.exit : (id && id.pos); if (!key) return;
+    const t = S.trades.find((x) => String(x.id) === String(key)); if (!t) return;
+    if (ex) { e.stopPropagation(); confirmExit(t); } else openManage(t);
+  });
+  $('saveSettings').addEventListener('click', saveSettings);
+  $('resetBtn').addEventListener('click', confirmReset);
+  $('themeBtn').addEventListener('click', () => { const light = document.documentElement.getAttribute('data-theme') !== 'light'; applyTheme(light ? 'light' : 'dark'); try { localStorage.setItem('marketpulse-theme', light ? 'light' : 'dark'); } catch (e) { /* ignore */ } });
+}
+function confirmExit(t) {
+  const m = posMetrics(t);
+  openSheet(`<div class="hd"><h2>Exit ${esc(t.symbol)}?</h2><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="kv"><div>${t.direction === 'BUY' ? 'Sell' : 'Buy to cover'}</div><div>${fmt(m.qty, 0)} @ ${inr(m.px)}</div><div>Estimated P&amp;L</div><div class="${cls(m.net)}">${sinr(m.net)} (${pct(m.netPct)})</div></div>
+    <p class="hint">Exit fills at the last available price (updates about every 3 minutes${S.quotes[t.symbol] && S.quotes[t.symbol].updated_at ? ', last ' + esc(ago(S.quotes[t.symbol].updated_at)) : ''}).</p>
+    <button class="btn outline-red block" id="exitYes">Exit position</button><button class="btn block" data-close>Cancel</button>`);
+  $('exitYes').addEventListener('click', () => exitTrade(t));
+}
+function applyTheme(t) { if (t === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); }
+
+async function init() {
+  try { applyTheme(localStorage.getItem('marketpulse-theme') === 'light' ? 'light' : 'dark'); } catch (e) { applyTheme('dark'); }
+  wire();
+  const { data } = await sb.auth.getSession();
+  S.user = data && data.session && data.session.user;
+  if (!S.user) { $('gate').hidden = false; document.querySelectorAll('.tab,#tabbar').forEach((el) => { el.hidden = true; }); await Promise.all([loadIndices()]); renderMarket(); renderIndexStrip(); return; }
+  await refresh(true);
+  // live refresh: server prices update every ~3 min; the clocks tick every second
+  setInterval(() => { if (!document.hidden) refresh(false); }, 20000);
+  setInterval(() => { renderMarket(); if (S.tab === 'signals') $('signalNote') && renderSignals(); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - S.loaded.feed > 10000) refresh(false); });
+  sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') location.reload(); });
 }
 init();
 })();
