@@ -1,5 +1,28 @@
 [
   {
+    "slug": "nifty-50-daily-wrap-28-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 28 Oct 2026: Drops 0.02%",
+    "excerpt": "Markets closed flat with a cautious undertone, as NIFTY 50 ended barely changed at 22,749.75 (-0.02%). The equal split in breadth (25 up, 25 down) shows investors are waiting for fresh triggers. Tata Consumer was the star, surging 6.78% to hit ₹1,000 after strong earnings momentum in FMCG.",
+    "category": "daily-wrap",
+    "date": "2026-10-28T15:35:22+05:30",
+    "readTime": "4 min read",
+    "tags": [
+      "Nifty 50",
+      "Bank Nifty",
+      "mildly bearish",
+      "market wrap"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "price-feed",
+      "index-feed",
+      "heatmap-data",
+      "market-breadth",
+      "fii-dii-data"
+    ]
+  },
+  {
     "slug": "fii-selling-resumes-as-dii-buying-extends-to-fifth-straight-session",
     "title": "FII Selling Resumes as DII Buying Extends to Fifth Straight Session",
     "excerpt": "FIIs turned net sellers with ₹1,462.49 Cr outflow after one day of buying, while DIIs continued their five-session buying streak with ₹2,609.57 Cr inflow. The Nifty 50 edged dow...",
