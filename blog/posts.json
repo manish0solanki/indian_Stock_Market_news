@@ -1,5 +1,26 @@
 [
   {
+    "slug": "fii-return-to-buying-with-4240-cr-net-inflow-as-nifty-edges-lower",
+    "title": "FII Return to Buying with ₹4,240 Cr Net Inflow as Nifty Edges Lower",
+    "excerpt": "FII/FPI turned net buyers with ₹4,240.39 Cr after selling ₹1,462.49 Cr in the previous session, while DIIs recorded net selling of ₹1,250.03 Cr, reversing their recent pattern....",
+    "category": "fiidii-flows",
+    "date": "2026-10-27",
+    "readTime": "5 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Nifty 50",
+      "Institutional Buying",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-data",
+      "nifty-50-index-data"
+    ]
+  },
+  {
     "slug": "lt-stock-spotlight",
     "title": "L&T Surges 3.7% on 3x Volume, Reclaims 20-Day Average as Buying Intensifies",
     "excerpt": "PRICE ACTION: L&T posted its strongest single-day gain in recent sessions with volume more than tripling the average, indicating genuine institutional accumulation rather than t...",
