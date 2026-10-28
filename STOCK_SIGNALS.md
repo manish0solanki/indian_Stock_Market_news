@@ -39,3 +39,29 @@ For valid performance results, add a historical replay job that uses point-in-ti
 
 ## Manual deployment
 Merge the feature branch only after testing. The static page will then be available at `/stock-signals.html` on the Vercel domain. If adding a homepage nav link later, keep it limited to the single stock-signals link; do not change crypto UI or logic.
+
+
+# Stock Signals (paper trading)
+
+Broker-style app at `/stock-signals.html`: **Signals · Positions · History · Account**.
+Everything runs on Supabase + Yahoo Finance — no n8n, no Cloudflare worker, and nothing is scanned in the browser.
+
+## How it works
+| Piece | Where | What it does |
+|---|---|---|
+| `stock-signals-refresh` | Supabase Edge Function, cron every 5 min | Caches ~130 completed daily bars for the 213 F&O stocks (once per session), then re-evaluates them against the live quotes. Intraday (5-minute) signals for the 60 most liquid names during market hours. Writes `stock_signals`. |
+| `stock-paper-monitor` | Supabase Edge Function, cron every minute | Replays completed 5-minute candles for every OPEN paper trade. **Stops/targets fill at their exact level**, stop is checked before targets inside one candle, Target 1 books half, intraday trades are squared off at 15:20 IST. |
+| `sector-refresh` | Supabase Edge Function, cron every 3 min | Keeps live prices for every stock in `stock_quotes` (used for LTP everywhere). |
+| RPCs | `stock_signals_feed`, `stock_quotes_for`, `stock_signals_status`, `market_snapshot` | Read-only data for the page. |
+| Tables | `stock_signals`, `stock_swing_cache`, `stock_paper_trades`, `stock_paper_accounts` | Account settings (balance, risk %, charges) live in `stock_paper_accounts`, so every device sees the same account. |
+
+## Strategy (unchanged rules)
+* **Swing (daily):** 20-day breakout/breakdown with volume ≥ 1.15× average, or a pullback to the 20-EMA in a 20/50-EMA trend; RSI + MACD must agree; score ≥ 75.
+* **Intraday (5-minute):** EMA 9/21 trend with breakout or pullback, RSI + MACD confirmation; only 09:30–15:00 IST.
+* Stop = recent swing low/high or 1.5×ATR (1.2×ATR intraday); Target 1 = 1.5R (books half), Target 2 = 2R.
+* Improvement over the old scanner: indicators use **completed** sessions only; today's forming bar is built from the live quote with **projected full-day volume**, so breakouts are detected during the session instead of appearing after the close.
+
+## Paper account rules
+* Available cash = starting balance + realised P&L − invested (realised P&L now counts).
+* One open position per stock. Suggested size = risk % of equity ÷ stop distance, capped by cash.
+* Orders fill at the last available price (refreshes about every 3 minutes). No real order is ever placed.
