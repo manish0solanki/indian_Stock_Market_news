@@ -3392,12 +3392,39 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
+<link rel="stylesheet" href="/home-overview.css?v=1">
 </head>
 <body>
 
   <div class="topbar">
     <div class="topbar-inner">
       <button class="topbar-brand" id="marketPulseHome" type="button" title="Go to Home"><span class="diamond"></span>MarketPulse</button>
+      <button class="mp-menu-btn" id="mpMenuBtn" type="button" aria-label="Open menu" aria-controls="mpSidebar" aria-expanded="false"><span></span><span></span><span></span></button>
+  <nav class="page-nav" id="pageNav" aria-label="MarketPulse pages">
+    <button class="page-nav-link active" data-page="home" type="button"><span class="mp-ico">⌂</span>Home</button>
+    <button class="page-nav-link" data-page="sectors" type="button"><span class="mp-ico">▥</span>Sectors</button>
+    <button class="page-nav-link" data-page="crude" type="button"><span class="mp-ico">◆</span>Crude Impact</button>
+    <button class="page-nav-link" data-page="global" type="button"><span class="mp-ico">◍</span>Global Market</button>
+    <button class="page-nav-link" data-page="crypto" type="button"><span class="mp-ico">₿</span>Crypto Bot</button>
+  </nav>
+
+  <div class="controls-bar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search company, symbol, or keyword…" autocomplete="off">
+      <button class="search-clear" id="searchClear" title="Clear search">×</button>
+      <button class="voice-btn" id="voiceBtn" title="Voice search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+        </svg>
+      </button>
+      <div class="voice-hint" id="voiceHint"></div>
+      <div class="search-dropdown" id="searchDropdown"></div>
+    </div>
+    <button class="search-btn" id="searchBtn">Search</button>
+  </div>
+
   <div class="topbar-right">
     <a class="blog-nav nav-pill" href="/blog/" target="_self" title="MarketPulse Blog">
       <img src="/blogger_Yellow.png" alt="" class="blog-icon"><span class="nav-pill-text">Blog</span>
@@ -3439,33 +3466,122 @@ input,select,textarea{min-width:0;}
     <div class="ticker-track" id="tickerTrack"><span class="ticker-loading">Loading market data…</span></div>
   </div>
 
-  <!-- Search -->
-  <div class="controls-bar">
-    <div class="search-wrap">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-      <input type="text" id="searchInput" class="search-input" placeholder="Search company, symbol, or keyword…" autocomplete="off">
-      <button class="search-clear" id="searchClear" title="Clear search">×</button>
-      <button class="voice-btn" id="voiceBtn" title="Voice search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-        </svg>
-      </button>
-      <div class="voice-hint" id="voiceHint"></div>
-      <div class="search-dropdown" id="searchDropdown"></div>
-    </div>
-    <button class="search-btn" id="searchBtn">Search</button>
-  </div>
+  <div class="mp-shell">
+  <aside class="mp-sidebar" id="mpSidebar" aria-label="Market navigation">
+    <nav class="mp-side-card mp-side-nav" aria-label="Sections">
+      <button type="button" class="mp-side-link active" data-mp-go="home" data-mp-scroll="top"><span class="mp-side-ico">⌂</span>Market Overview</button>
+      <button type="button" class="mp-side-link" data-mp-go="home" data-mp-scroll="marketNews"><span class="mp-side-ico">≣</span>Market News</button>
+      <button type="button" class="mp-side-link" data-mp-go="sectors"><span class="mp-side-ico">▥</span>Sector Analysis</button>
+      <button type="button" class="mp-side-link" data-mp-go="global"><span class="mp-side-ico">◍</span>Global Market</button>
+      <a class="mp-side-link" href="/stock-analysis.html"><span class="mp-side-ico">⌕</span>Stock Analysis &amp; Screener</a>
+      <a class="mp-side-link" href="/stock-signals.html"><span class="mp-side-ico">↗</span>Stock Signals</a>
+      <button type="button" class="mp-side-link" data-mp-go="home" data-mp-scroll="mpFlows"><span class="mp-side-ico">⇄</span>FII / DII Data</button>
+      <button type="button" class="mp-side-link" data-mp-go="home" data-mp-scroll="mpHeatmap"><span class="mp-side-ico">▦</span>Market Heatmap</button>
+      <button type="button" class="mp-side-link" data-mp-go="crude"><span class="mp-side-ico">◆</span>Crude &amp; Commodities</button>
+      <button type="button" class="mp-side-link" data-mp-go="crypto"><span class="mp-side-ico">₿</span>Crypto Bot</button>
+      <a class="mp-side-link" href="/portfolio.html"><span class="mp-side-ico">◔</span>My Portfolio</a>
+      <a class="mp-side-link" href="/blog/"><span class="mp-side-ico">✎</span>Market Blog</a>
+    </nav>
 
-  <!-- Main page navigation -->
-  <nav class="page-nav" id="pageNav" aria-label="MarketPulse pages">
-    <button class="page-nav-link active" data-page="home" type="button">🇮🇳 NSE Pulse</button>
-    <button class="page-nav-link" data-page="sectors" type="button">📊 Sectors &amp; Breadth</button>
-    <button class="page-nav-link" data-page="crude" type="button">🛢 Crude Scanner</button>
-    <button class="page-nav-link" data-page="global" type="button">🌐 Global Context</button>
-    <button class="page-nav-link" data-page="crypto" type="button">⚡ Crypto Bot</button>
-  </nav>
+      <!-- Unified 3-in-1 Indices Widget (Benchmarks | Sectors | Global) -->
+      <div class="widget-card" id="marketSnapshotSection">
+        <div class="widget-header">
+          <span class="widget-title">Index View</span>
+          <span class="widget-badge positive" id="snapshotBadge"><span class="pulse-dot" style="width:5px;height:5px;display:inline-block;vertical-align:middle;margin-right:4px;"></span>Live · <span id="liveTimer">0s</span></span>
+        </div>
 
+        <div class="idx-subtabs" role="tablist" aria-label="Index Categories">
+          <button type="button" class="idx-subtab active" data-idx-pane="pane-nse">Indices</button>
+          <button type="button" class="idx-subtab" data-idx-pane="pane-sec">Sectors</button>
+          <button type="button" class="idx-subtab" data-idx-pane="pane-glb">Global <span id="globalIndicesBadge" style="margin-left:3px;font-family:var(--font-mono);"></span></button>
+        </div>
+
+        <!-- Pane 1: Benchmarks -->
+        <div class="idx-pane active" id="pane-nse">
+          <table class="compact-table" id="snapshotTable">
+            <thead>
+              <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Chg</th><th style="text-align:right">%</th></tr>
+            </thead>
+            <tbody id="snapshotBody">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pane 2: Sector Indices -->
+        <div class="idx-pane" id="pane-sec">
+          <div id="sectorIndicesSection">
+            <table class="compact-table" id="sectorIndicesTable">
+              <thead>
+                <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Chg</th><th style="text-align:right">%</th></tr>
+              </thead>
+              <tbody id="sectorIndicesBody">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pane 3: Global Indices -->
+        <div class="idx-pane" id="pane-glb">
+          <div id="globalIndicesSection">
+            <table class="compact-table" id="globalIndicesTable">
+              <thead>
+                <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Chg</th><th style="text-align:right">%</th></tr>
+              </thead>
+              <tbody id="globalIndicesBody">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Portfolio Snapshot -->
+      <div class="widget-card portfolio-dashboard" id="portfolioDashboard">
+        <div class="portfolio-dash-head">
+          <div>
+            <div class="portfolio-dash-title">📊 Portfolio Snapshot</div>
+            <div class="portfolio-dash-status" id="portfolioDashStatus">Checking account…</div>
+          </div>
+          <a class="portfolio-dash-link" href="/portfolio.html" target="_self">Open Portfolio →</a>
+        </div>
+        <div class="portfolio-snapshot-metrics"><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashCurrent">—</div><div class="l">Current Value</div></div><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashDay">—</div><div class="l">Day Change</div></div></div><div id="portfolioSnapshotBody" style="margin-top:7px;"></div>
+        <div class="portfolio-dash-note">Live portfolio value and today's change based on your holdings.</div>
+      </div>
+
+    <details class="mp-side-card mp-reference" open>
+      <summary><span class="mp-side-ico">❏</span>Market Reference</summary>
+      <details><summary>Key Terms Glossary</summary>
+        <dl>
+          <dt>LTP</dt><dd>Last traded price: the most recent price a share changed hands at.</dd>
+          <dt>FII / DII</dt><dd>Foreign and domestic institutional investors. Their net buying or selling often drives index direction.</dd>
+          <dt>Market breadth</dt><dd>Advancing vs declining stocks. Broad gains are healthier than an index lifted by a few heavyweights.</dd>
+          <dt>F&amp;O</dt><dd>Stocks with futures and options contracts on NSE. They're usually the most liquid names.</dd>
+          <dt>52-week range</dt><dd>The lowest and highest price of the past year, a quick gauge of where a stock is trading.</dd>
+        </dl>
+      </details>
+      <details><summary>How Indices Are Calculated</summary>
+        <p>NIFTY 50 and SENSEX are free-float market-cap weighted: each company counts in proportion to the value of its shares available for public trading. A 1% move in a heavyweight like RELIANCE or HDFCBANK moves the index far more than a 1% move in a smaller constituent.</p>
+      </details>
+      <details><summary>Market Timings (NSE)</summary>
+        <dl class="mp-times">
+          <dt>Pre-open</dt><dd>9:00 – 9:15 AM</dd>
+          <dt>Normal market</dt><dd>9:15 AM – 3:30 PM</dd>
+          <dt>Closing session</dt><dd>3:40 – 4:00 PM</dd>
+          <dt>Days</dt><dd>Monday to Friday, except exchange holidays</dd>
+        </dl>
+      </details>
+      <details><summary>Data Sources &amp; Updates</summary>
+        <p>Index and stock quotes are refreshed by scheduled jobs from public market data (Yahoo Finance, NSE). Intraday charts update every minute during market hours. FII/DII figures are NSE provisional cash-market data, published after the close. Prices may be delayed.</p>
+      </details>
+      <details><summary>Risk Disclaimer</summary>
+        <p>MarketPulse is for information and education only and is not investment advice. Markets carry risk: check figures with your broker and consult a SEBI-registered adviser before investing.</p>
+      </details>
+    </details>
+  </aside>
+
+  <div class="mp-main" id="mpMain">
   <!-- Stock Detail Card -->
   <div class="stock-detail-card" id="stockDetailCard">
     <div class="stock-detail-inner">
@@ -3816,6 +3932,49 @@ input,select,textarea{min-width:0;}
     </div>
   </section>
 
+  <!-- ═══ Home overview (rendered by /home-overview.js) ═══ -->
+  <section class="mp-index-cards" id="mpIndexCards" data-home-only="true" aria-label="Key indices">
+    <div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div>
+  </section>
+
+  <section class="mp-row mp-row-heat" data-home-only="true">
+    <div class="mp-card" id="mpHeatmap">
+      <div class="mp-card-head">
+        <h2 class="mp-h2"><span class="mp-h-ico mp-heat-ico"></span>Market Heatmap <span class="mp-muted">(NSE)</span></h2>
+        <div class="mp-seg" id="mpHeatSeg" role="tablist" aria-label="Heatmap universe">
+          <button type="button" class="on" data-universe="nifty50" role="tab" aria-selected="true">Nifty 50</button>
+          <button type="button" data-universe="top100" role="tab" title="100 largest NSE stocks by market cap">Top 100</button>
+          <button type="button" data-universe="top500" role="tab" title="500 largest NSE stocks by market cap">Top 500</button>
+        </div>
+      </div>
+      <div class="mp-treemap" id="mpTreemap"><div class="mp-loading">Loading heatmap…</div></div>
+      <div class="mp-heat-legend"><span>Tile size = market cap · Click a tile for full analysis</span><span class="mp-heat-scale"><i>−3%</i><b></b><i>+3%</i></span></div>
+    </div>
+
+    <div class="mp-card" id="mpFlows">
+      <div class="mp-card-head">
+        <h2 class="mp-h2"><span class="mp-h-ico">⇄</span>FII / DII <span class="mp-muted">(Cash Market)</span></h2>
+        <span class="mp-muted" id="mpFlowsDate">—</span>
+      </div>
+      <div class="mp-flows" id="mpFlowsBody"><div class="mp-loading">Loading flows…</div></div>
+    </div>
+  </section>
+
+  <section class="mp-row mp-row-3" data-home-only="true">
+    <div class="mp-card" id="mpGainers">
+      <div class="mp-card-head"><h2 class="mp-h2"><span class="mp-h-ico mpx-up">↗</span>Top Gainers <span class="mp-muted">(Nifty 50)</span></h2><button type="button" class="mp-link" data-mp-more="mpGainers">View all →</button></div>
+      <div class="mpx-table-wrap" id="mpGainersBody"><div class="mp-loading">Loading…</div></div>
+    </div>
+    <div class="mp-card" id="mpLosers">
+      <div class="mp-card-head"><h2 class="mp-h2"><span class="mp-h-ico mpx-down">↘</span>Top Losers <span class="mp-muted">(Nifty 50)</span></h2><button type="button" class="mp-link" data-mp-more="mpLosers">View all →</button></div>
+      <div class="mpx-table-wrap" id="mpLosersBody"><div class="mp-loading">Loading…</div></div>
+    </div>
+    <div class="mp-card" id="mpGlobal">
+      <div class="mp-card-head"><h2 class="mp-h2"><span class="mp-h-ico">◍</span>Global Indices</h2><button type="button" class="mp-link" data-mp-go="global">View all →</button></div>
+      <div class="mpx-table-wrap" id="mpGlobalBody"><div class="mp-loading">Loading…</div></div>
+    </div>
+  </section>
+
   <!-- CRYPTO WORKSPACE PAGE -->
   <section class="mp-page hidden" id="page-crypto" data-page-view="crypto">
     <div class="mp-page-header">
@@ -3857,73 +4016,6 @@ input,select,textarea{min-width:0;}
 
     <!-- LEFT COLUMN: Focused Indian Equities Widgets (30%) -->
     <div class="left-col">
-
-      <!-- Portfolio Snapshot -->
-      <div class="widget-card portfolio-dashboard" id="portfolioDashboard">
-        <div class="portfolio-dash-head">
-          <div>
-            <div class="portfolio-dash-title">📊 Portfolio Snapshot</div>
-            <div class="portfolio-dash-status" id="portfolioDashStatus">Checking account…</div>
-          </div>
-          <a class="portfolio-dash-link" href="/portfolio.html" target="_self">Open Portfolio →</a>
-        </div>
-        <div class="portfolio-snapshot-metrics"><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashCurrent">—</div><div class="l">Current Value</div></div><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashDay">—</div><div class="l">Day Change</div></div></div><div id="portfolioSnapshotBody" style="margin-top:7px;"></div>
-        <div class="portfolio-dash-note">Live portfolio value and today's change based on your holdings.</div>
-      </div>
-
-      <!-- Unified 3-in-1 Indices Widget (Benchmarks | Sectors | Global) -->
-      <div class="widget-card" id="marketSnapshotSection">
-        <div class="widget-header">
-          <span class="widget-title">📈 Indices Watch</span>
-          <span class="widget-badge positive" id="snapshotBadge"><span class="pulse-dot" style="width:5px;height:5px;display:inline-block;vertical-align:middle;margin-right:4px;"></span>Live · <span id="liveTimer">0s</span></span>
-        </div>
-
-        <div class="idx-subtabs" role="tablist" aria-label="Index Categories">
-          <button type="button" class="idx-subtab active" data-idx-pane="pane-nse">🇮🇳 Benchmarks</button>
-          <button type="button" class="idx-subtab" data-idx-pane="pane-sec">📊 Sectors</button>
-          <button type="button" class="idx-subtab" data-idx-pane="pane-glb">🌐 Global <span id="globalIndicesBadge" style="margin-left:3px;font-family:var(--font-mono);"></span></button>
-        </div>
-
-        <!-- Pane 1: Benchmarks -->
-        <div class="idx-pane active" id="pane-nse">
-          <table class="compact-table" id="snapshotTable">
-            <thead>
-              <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Chg</th><th style="text-align:right">%</th></tr>
-            </thead>
-            <tbody id="snapshotBody">
-              <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pane 2: Sector Indices -->
-        <div class="idx-pane" id="pane-sec">
-          <div id="sectorIndicesSection">
-            <table class="compact-table" id="sectorIndicesTable">
-              <thead>
-                <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Chg</th><th style="text-align:right">%</th></tr>
-              </thead>
-              <tbody id="sectorIndicesBody">
-                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Pane 3: Global Indices -->
-        <div class="idx-pane" id="pane-glb">
-          <div id="globalIndicesSection">
-            <table class="compact-table" id="globalIndicesTable">
-              <thead>
-                <tr><th>Index</th><th style="text-align:right">Price</th><th style="text-align:right">Chg</th><th style="text-align:right">%</th></tr>
-              </thead>
-              <tbody id="globalIndicesBody">
-                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:12px;">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
 
       <!-- 4. Sector Heatmap -->
       <div class="widget-card" id="heatmapSection">
@@ -3967,7 +4059,7 @@ input,select,textarea{min-width:0;}
       </div>
 
       <!-- 6. FII / DII -->
-      <div class="widget-card" id="fiidiiSection">
+      <div class="widget-card" id="fiidiiSection" hidden style="display:none">
         <div class="widget-header">
           <span class="widget-title">🏦 FII / DII</span>
           <span class="widget-badge neutral" id="fiidiiBadge">--</span>
@@ -4040,6 +4132,7 @@ input,select,textarea{min-width:0;}
     <!-- RIGHT COLUMN: News Feed (70%) -->
     <div class="right-col">
 
+      <div class="mp-section-head" id="marketNews"><h2 class="mp-h2"><span class="mp-h-ico">≣</span>Market News</h2><span class="mp-sub">AI-tagged Indian market news · refreshes every 2 minutes</span></div>
       <!-- Sentiment Filters -->
       <div class="news-filter-bar">
         <div class="filter-chip positive" data-filter="positive" role="button" tabindex="0" title="Filter bullish news">
@@ -4098,6 +4191,9 @@ input,select,textarea{min-width:0;}
   </section>
 
   <footer class="site-footer" id="homeFooter" data-home-only="true"><span>MarketPulse — automated news, human judgment still required.</span></footer>
+  </div><!-- /.mp-main -->
+  </div><!-- /.mp-shell -->
+  <div class="mp-scrim" id="mpScrim" hidden></div>
 
   <!-- Authentication Modal -->
   <div class="modal-overlay" id="authModal" aria-hidden="true">
@@ -8320,7 +8416,7 @@ function showVoiceHint(msg, isError) {
 })();
 
 /* ─── Crude Opportunities Page Data ─── */
-let crudeOpportunitiesLoaded = false;
+var crudeOpportunitiesLoaded = false; // var: the page router can call the loader before this line runs (direct #crude links)
 
 async function loadCrudeImpactPage(force = false) {
   return loadCrudeOpportunities(force);
@@ -9542,5 +9638,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
+<script src="/home-overview.js?v=1"></script>
 </body>
 </html>   
