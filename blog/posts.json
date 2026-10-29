@@ -1,5 +1,25 @@
 [
   {
+    "slug": "adaniports-stock-spotlight",
+    "title": "Adani Ports Surges 6.3% on 2.6x Volume, Within 1% of 52-Week High",
+    "excerpt": "PRICE ACTION: Adani Ports delivered its strongest single-day advance in recent sessions, with volume surging to 2.6 times the daily average indicating genuine institutional part...",
+    "category": "stock-spotlight",
+    "date": "2026-10-29",
+    "readTime": "1 min read",
+    "tags": [
+      "Stock Spotlight",
+      "ADANIPORTS",
+      "ADANI PORT & SEZ LTD"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "stock-market-data",
+      "nse-announcements",
+      "google-news-rss"
+    ]
+  },
+  {
     "slug": "nifty-realty-gains-1-83-percent-as-large-cap-developers-lead-advance",
     "title": "Nifty Realty Gains 1.83% as Large-Cap Developers Lead Advance",
     "excerpt": "Nifty Realty rose 1.83% (14.75 points) to 819.8, with 44 of 78 tracked stocks advancing against 31 declining. Large-cap strength drove the move: the top 10 companies by market capitalization averaged 1.58% versus 0.55% for smaller stocks, while the market-cap-weighted change reached 2.55%. DLF gained 4.21%, Lodha 3.84%, and Phoenix Mills 3.72%.",
@@ -1432,26 +1452,6 @@
     "dataSources": [
       "nse-fii-dii-data",
       "nifty-50-index-data"
-    ]
-  },
-  {
-    "slug": "adaniports-stock-spotlight",
-    "title": "Adani Ports Surges 4.5% on Double Average Volume, Nears 52-Week High",
-    "excerpt": "PRICE ACTION: Adani Ports closed at ₹1822, up 4.49% with volume at twice the daily average, indicating genuine buying interest rather than thin-market drift. The stock now sits...",
-    "category": "stock-spotlight",
-    "date": "2026-09-29",
-    "readTime": "1 min read",
-    "tags": [
-      "Stock Spotlight",
-      "ADANIPORTS",
-      "ADANI PORT & SEZ LTD"
-    ],
-    "author": "MarketPulse AI",
-    "featured": false,
-    "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
     ]
   },
   {
