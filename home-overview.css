@@ -90,39 +90,26 @@ body { background: var(--bg); padding-top: 0 !important; }
 /* "My stocks" row inside the ticker bar (my-ticker.js): portfolio holdings + stocks added in My Profile. */
 .myt { display: flex; align-items: center; gap: 0; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--mp-line); }
 .myt[hidden] { display: none; }
-.myt-label { flex: 0 0 auto; margin: 0 4px 0 12px; padding: 2px 9px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--mp-accent) 40%, transparent);
+.myt-label { flex: 0 0 auto; text-decoration: none; margin: 0 4px 0 12px; padding: 2px 9px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--mp-accent) 40%, transparent);
   background: color-mix(in srgb, var(--mp-accent) 14%, transparent); color: var(--mp-accent-2); font: 700 11px/1.5 var(--font-body); letter-spacing: .02em; cursor: pointer; white-space: nowrap; }
 .myt-label:hover { background: color-mix(in srgb, var(--mp-accent) 24%, transparent); }
 .myt-view { flex: 1 1 auto; min-width: 0; overflow: hidden; }
-.myt-track { animation: none !important; }
-.myt-track.myt-scroll { animation: scroll-ticker linear infinite !important; }
+/* Longhands only: a shorthand with !important would also pin animation-duration (set inline by my-ticker.js) to 0s. */
+.myt-track { animation-name: none !important; }
+.myt-track.myt-scroll { animation-name: scroll-ticker !important; animation-timing-function: linear !important; animation-iteration-count: infinite !important; }
 .ticker-wrap .myt a.ticker-item { text-decoration: none; }
 .ticker-wrap .myt a.ticker-item:hover .ticker-symbol { color: var(--mp-accent-2); }
 .myt-dot { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--mp-accent-2); vertical-align: middle; position: relative; top: -1px; }
-.myt-empty { border: 0; background: none; padding: 0 14px; color: var(--text-muted); font: 12px var(--font-body); cursor: pointer; }
+.myt-empty { padding: 0 14px; color: var(--text-muted); font: 12px var(--font-body); text-decoration: none; }
 .myt-empty:hover { color: var(--mp-accent-2); }
-@media (prefers-reduced-motion: reduce) { .myt-track.myt-scroll { animation: none !important; } .myt-view { overflow-x: auto; } }
 
-/* My Profile → My stocks ticker */
-.myt-field { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
-.modal-field label.myt-check { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; }
-.modal-field .myt-check input { width: 16px; height: 16px; padding: 0; margin: 0; accent-color: var(--mp-accent); }
-.myt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.myt-chip { display: inline-flex; align-items: center; gap: 2px; padding: 3px 4px 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); font: 600 12px var(--font-mono); color: var(--text); }
-.myt-chip button { width: 20px; height: 20px; border: 0; border-radius: 50%; background: none; color: var(--text-muted); font-size: 15px; line-height: 1; cursor: pointer; }
-.myt-chip button:hover { background: var(--surface-hover); color: var(--negative); }
-.myt-none { font-size: 12px; color: var(--text-muted); padding: 2px 0; }
-.myt-add { position: relative; }
-.myt-add input { width: 100%; box-sizing: border-box; }
-.myt-results { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 5; max-height: 240px; overflow-y: auto; padding: 4px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 12px 28px rgba(0,0,0,.28); }
-.myt-results[hidden] { display: none; }
-.myt-results button { display: flex; width: 100%; align-items: baseline; gap: 8px; padding: 8px 10px; border: 0; border-radius: 6px; background: none; color: var(--text); text-align: left; cursor: pointer; font: 13px var(--font-body); }
-.myt-results button b { font-family: var(--font-mono); flex: 0 0 auto; }
-.myt-results button small { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.myt-results button:hover, .myt-results button.on { background: var(--surface-hover); }
-.myt-status.success { color: var(--positive); }
-.myt-status.error { color: var(--negative); }
+/* My Profile → link to /my-ticker.html */
+.myt-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 13px; margin-top: 2px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); text-decoration: none; }
+.myt-link b { display: block; font-size: 13px; }
+.myt-link small { display: block; font-size: 11.5px; color: var(--text-muted); }
+.myt-link > span:last-child { flex: 0 0 auto; font-size: 12.5px; font-weight: 700; color: var(--mp-accent-2); }
+.myt-link:hover { border-color: var(--mp-accent); }
 
 /* ───────── Shell ───────── */
 .mp-shell { display: grid; grid-template-columns: var(--mp-sidebar-w) minmax(0, 1fr); gap: 18px; padding: 16px 20px 0; max-width: 1760px; margin: 0 auto; align-items: start; }

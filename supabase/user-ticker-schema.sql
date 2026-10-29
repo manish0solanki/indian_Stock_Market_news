@@ -1,10 +1,11 @@
--- "My stocks" ticker on Home: extra stocks each user adds from their Profile, plus whether the
--- ticker also shows the stocks they hold in Portfolio. One row per user, readable and writable
+-- "My stocks" ticker on Home, edited on /my-ticker.html: extra stocks each user adds (in order),
+-- whether the ticker also shows the stocks they hold in Portfolio, and portfolio stocks they hid. One row per user, readable and writable
 -- only by that user.
 create table if not exists public.user_ticker (
   user_id uuid primary key references auth.users (id) on delete cascade,
   symbols text[] not null default '{}' check (cardinality(symbols) <= 50),
   show_portfolio boolean not null default true,
+  hidden text[] not null default '{}' check (cardinality(hidden) <= 200),
   updated_at timestamptz not null default now()
 );
 
@@ -21,3 +22,8 @@ create policy "user_ticker own delete" on public.user_ticker for delete to authe
 
 revoke all on public.user_ticker from anon;
 grant select, insert, update, delete on public.user_ticker to authenticated;
+
+-- Users may edit only their own name and picture in profiles; role is not writable from the client.
+revoke update on public.profiles from authenticated, anon;
+grant update (full_name, avatar_url) on public.profiles to authenticated;
+revoke insert, delete, truncate, references, trigger on public.profiles from anon, authenticated;

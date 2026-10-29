@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>My Ticker — MarketPulse</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--greenbg:rgba(47,210,127,.12);--redbg:rgba(255,93,108,.12);--radius:14px;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--greenbg:#e7f7ec;--redbg:#fcebeb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+button{font:inherit}
+.page{max-width:1100px;margin:0 auto;padding:22px clamp(12px,2.4vw,28px) 48px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.sub{font-size:13px;color:var(--muted)}
+.save-state{font-size:12.5px;color:var(--muted);min-height:20px}
+.save-state.ok{color:var(--green)}.save-state.err{color:var(--red)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;min-width:0}
+.panel h2{margin:0;font-size:15px;letter-spacing:-.2px}
+.panel .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.panel .ph p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.stat .l{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+.stat .v{font-size:22px;font-weight:800;margin-top:2px;letter-spacing:-.4px}
+.stat .s{font-size:12px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.cols .panel{margin-bottom:0}
+
+/* Live preview: same look as the row on Home */
+.preview{display:flex;align-items:center;border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:8px 0;overflow:hidden}
+.myt-label{flex:0 0 auto;margin:0 4px 0 10px;padding:2px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent2);font-size:11px;font-weight:700;white-space:nowrap}
+.myt-view{flex:1 1 auto;min-width:0;overflow:hidden}
+.ticker-track{display:inline-flex;white-space:nowrap;will-change:transform}
+.ticker-track.myt-scroll{animation:scroll-ticker linear infinite}
+.preview:hover .ticker-track{animation-play-state:paused}
+@keyframes scroll-ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:baseline;gap:6px;padding:0 16px;font:12px var(--mono);color:var(--text);text-decoration:none;border-right:1px solid var(--border)}
+.ticker-symbol{font-weight:700}.ticker-price{color:var(--muted)}
+.ticker-change.up{color:var(--green)}.ticker-change.down{color:var(--red)}
+.myt-dot{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--accent2);vertical-align:middle;position:relative;top:-1px}
+.preview-empty{padding:0 14px;color:var(--dim);font-size:12.5px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--muted)}
+
+/* Switch */
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;user-select:none}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch i{width:38px;height:22px;border-radius:999px;background:var(--border);position:relative;transition:background .15s;flex:0 0 auto}
+.switch i::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.switch input:checked+i{background:var(--accent)}
+.switch input:checked+i::after{transform:translateX(16px)}
+.switch input:focus-visible+i{outline:2px solid var(--accent2);outline-offset:2px}
+
+/* Stock rows */
+.list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid var(--border);background:var(--surface)}
+.srow:first-child{border-top:0}
+.srow.off{opacity:.55}
+.srow .nm{min-width:0}
+.srow .nm b{font:700 13px var(--mono)}
+.srow .nm a{text-decoration:none;color:var(--text)}
+.srow .nm small{display:block;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .px{text-align:right;font:12.5px var(--mono);white-space:nowrap}
+.srow .px small{display:block;font-size:11.5px}
+.up{color:var(--green)}.down{color:var(--red)}
+.acts{display:flex;gap:4px}
+.ib{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}
+.ib:hover:not(:disabled){color:var(--text);border-color:var(--accent)}
+.ib:disabled{opacity:.35;cursor:default}
+.ib.del:hover{color:var(--red);border-color:var(--red)}
+.pillbtn{border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.pillbtn.on{background:var(--greenbg);color:var(--green);border-color:transparent}
+.pillbtn:hover{border-color:var(--accent)}
+.empty{padding:18px 14px;text-align:center;color:var(--dim);font-size:13px;border:1px dashed var(--border);border-radius:10px}
+
+/* Add stock */
+.add{position:relative;margin-bottom:12px}
+.add input{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:14px Inter,system-ui,sans-serif}
+.add input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;max-height:280px;overflow-y:auto;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 14px 32px rgba(0,0,0,.3)}
+.results button{display:flex;width:100%;align-items:baseline;gap:10px;padding:9px 10px;border:0;border-radius:7px;background:none;color:var(--text);text-align:left;cursor:pointer}
+.results button b{font-family:var(--mono);flex:0 0 auto}
+.results button small{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.results button em{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--dim);flex:0 0 auto}
+.results button:hover,.results button.on{background:var(--hover)}
+.results .none{padding:10px;color:var(--dim);font-size:13px}
+.quick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px;font-size:12px;color:var(--dim)}
+.quick button{border:1px dashed var(--border);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:600 12px var(--mono);cursor:pointer}
+.quick button:hover{border-color:var(--accent);color:var(--accent2)}
+
+.gate{max-width:460px;margin:60px auto;text-align:center}
+.gate .panel{padding:28px}
+.btn{display:inline-block;padding:10px 18px;border-radius:10px;background:var(--accent);color:#fff;text-decoration:none;font-weight:700}
+@media(max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.panel{padding:13px}.srow{gap:8px;padding:9px 10px}.ib{width:28px;height:28px}}
+@media(max-width:350px){.srow{grid-template-columns:minmax(0,1fr) auto}.srow .acts{grid-column:1/-1;justify-content:flex-end}}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <div class="head">
+  <div><h1>My Ticker</h1><div class="sub">Choose the stocks in the “My stocks” row of the ticker on Home.</div></div>
+  <div class="save-state" id="saveState" aria-live="polite"></div>
+ </div>
+
+ <div id="gate" class="gate" hidden><div class="panel"><h2>Log in to set up your ticker</h2><p class="sub">Your ticker is saved to your account, so it follows you on every device.</p><a class="btn" href="/?login=1">Log in</a></div></div>
+
+ <div id="app" hidden>
+  <section class="panel">
+   <div class="ph"><div><h2>Live preview</h2><p>This is how the row looks on Home. Hover to pause; tap a stock to open it.</p></div><a href="/" class="pillbtn">Open Home →</a></div>
+   <div class="preview"><span class="myt-label">My stocks ✎</span><div class="myt-view" id="pView"><div class="ticker-track" id="pTrack"></div></div></div>
+   <div class="legend"><span><i class="myt-dot"></i>In your portfolio</span><span>No dot: added by you</span></div>
+  </section>
+
+  <section class="stats" id="stats"></section>
+
+  <div class="cols">
+   <section class="panel">
+    <div class="ph"><div><h2>Added stocks</h2><p>Shown after your portfolio stocks, in this order. Up to 50.</p></div></div>
+    <div class="add">
+     <input id="q" type="search" autocomplete="off" placeholder="Search a stock to add, e.g. TCS or Infosys" aria-label="Search a stock to add">
+     <div class="results" id="results" hidden></div>
+    </div>
+    <div id="added"></div>
+    <div class="quick" id="quick"></div>
+   </section>
+
+   <section class="panel">
+    <div class="ph">
+     <div><h2>From your portfolio</h2><p>Stocks you hold now. Hide any you don’t want scrolling.</p></div>
+     <label class="switch"><input type="checkbox" id="showPf"><i></i>Show</label>
+    </div>
+    <div id="held"></div>
+    <p class="sub" style="margin:10px 0 0">Holdings come from <a href="/portfolio.html">Portfolio</a>; buy or sell there and this list follows.</p>
+   </section>
+  </div>
+ </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/stock-search.js?v=1"></script>
+<script src="/portfolio-core.js?v=2"></script>
+<script src="/my-ticker.js?v=2"></script>
+<script>
+const sb=window.supabase.createClient('https://fzazdrzlemmkqngvpzxj.supabase.co','sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq');
+const SEARCH_URL='https://marketpulse-cache.manish0solanki20078.workers.dev/stock-search';
+const T=window.mpMyTicker,esc=T.esc,$=id=>document.getElementById(id);
+const QUICK=['RELIANCE','HDFCBANK','ICICIBANK','INFY','TCS','SBIN','BHARTIARTL','ITC','LT','KOTAKBANK','AXISBANK','TATAMOTORS','MARUTI','SUNPHARMA','ADANIENT'];
+let user=null,prefs={symbols:[],show_portfolio:true,hidden:[]},data={held:[],quotes:{},items:[]},busy=false,names={};
+
+const fmt=v=>Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function pxHtml(q){
+ const p=Number(q?.price),c=Number(q?.change_percent);
+ if(!(p>0))return '<div class="px">—</div>';
+ return '<div class="px">₹'+fmt(p)+'<small class="'+(c<0?'down':'up')+'">'+(c<0?'▼ ':'▲ ')+Math.abs(c||0).toFixed(2)+'%</small></div>';
+}
+function nameOf(s){return data.quotes[s]?.name||names[s]||''}
+function state(msg,kind){const el=$('saveState');el.textContent=msg||'';el.className='save-state'+(kind?' '+kind:'')}
+
+function render(){
+ T.draw($('pTrack'),$('pView'),data.items,'<span class="preview-empty">Nothing to show yet: add a stock or turn on your portfolio stocks.</span>');
+ const shownHeld=data.items.filter(x=>x.held).length,hiddenN=prefs.show_portfolio?data.held.filter(s=>prefs.hidden.includes(s)).length:data.held.length;
+ const up=data.items.filter(x=>Number(x.quote?.change_percent)>0).length,dn=data.items.filter(x=>Number(x.quote?.change_percent)<0).length;
+ $('stats').innerHTML=
+  '<div class="stat"><div class="l">In your ticker</div><div class="v">'+data.items.length+'</div><div class="s">'+(data.items.length?up+' up · '+dn+' down today':'Empty')+'</div></div>'+
+  '<div class="stat"><div class="l">From portfolio</div><div class="v">'+shownHeld+'</div><div class="s">'+(hiddenN?hiddenN+' hidden':'of '+data.held.length+' held')+'</div></div>'+
+  '<div class="stat"><div class="l">Added by you</div><div class="v">'+prefs.symbols.length+'</div><div class="s">'+(T.MAX-prefs.symbols.length)+' slots left</div></div>'+
+  '<div class="stat"><div class="l">Refresh</div><div class="v" style="font-size:16px;margin-top:8px">Every minute</div><div class="s">Prices from NSE quotes</div></div>';
+
+ $('added').innerHTML=prefs.symbols.length?'<div class="list">'+prefs.symbols.map((s,i)=>
+  '<div class="srow"><div class="nm"><a href="/stock-analysis.html?symbol='+encodeURIComponent(s)+'"><b>'+esc(s)+'</b></a>'+(data.held.includes(s)?' <small style="display:inline;color:var(--accent2)">· also in portfolio</small>':'')+'<small>'+esc(nameOf(s))+'</small></div>'+pxHtml(data.quotes[s])+
+  '<div class="acts"><button class="ib" data-up="'+i+'" '+(i===0?'disabled':'')+' aria-label="Move '+esc(s)+' up">↑</button><button class="ib" data-down="'+i+'" '+(i===prefs.symbols.length-1?'disabled':'')+' aria-label="Move '+esc(s)+' down">↓</button><button class="ib del" data-del="'+esc(s)+'" aria-label="Remove '+esc(s)+'">×</button></div></div>').join('')+'</div>'
+  :'<div class="empty">No stocks added yet. Search above or pick one below.</div>';
+
+ const q=QUICK.filter(s=>!prefs.symbols.includes(s)&&!data.held.includes(s)).slice(0,10);
+ $('quick').innerHTML=q.length&&prefs.symbols.length<T.MAX?'<span>Quick add:</span>'+q.map(s=>'<button data-quick="'+s+'">+ '+s+'</button>').join(''):'';
+
+ $('showPf').checked=prefs.show_portfolio;
+ $('held').innerHTML=!data.held.length?'<div class="empty">No stocks in your portfolio yet.</div>':
+  '<div class="list">'+data.held.map(s=>{const on=prefs.show_portfolio&&!prefs.hidden.includes(s);
+   return '<div class="srow'+(on?'':' off')+'"><div class="nm"><a href="/stock-analysis.html?symbol='+encodeURIComponent(s)+'"><b>'+esc(s)+'</b></a><small>'+esc(nameOf(s))+'</small></div>'+pxHtml(data.quotes[s])+
+   '<div class="acts"><button class="pillbtn'+(on?' on':'')+'" data-hide="'+esc(s)+'" '+(prefs.show_portfolio?'':'disabled')+' aria-pressed="'+on+'">'+(on?'Shown':'Hidden')+'</button></div></div>'}).join('')+'</div>';
+}
+
+async function rebuild(){data=await T.build(sb,user,prefs);render()}
+
+async function change(fn,okMsg){
+ if(!user||busy)return;
+ const before=JSON.parse(JSON.stringify(prefs));
+ fn();busy=true;state('Saving…');
+ try{await T.save(sb,user,prefs);state('✓ '+okMsg,'ok');await rebuild()}
+ catch(e){prefs=before;render();state(e.message||'Could not save.','err')}
+ finally{busy=false}
+}
+
+function add(sym,name){
+ sym=T.clean(sym);closeResults();$('q').value='';
+ if(!T.validSymbol(sym))return state('That doesn’t look like an NSE symbol.','err');
+ if(prefs.symbols.includes(sym))return state(sym+' is already in your ticker.');
+ if(prefs.symbols.length>=T.MAX)return state('You can add up to '+T.MAX+' stocks.','err');
+ if(name)names[sym]=name;
+ change(()=>{prefs.symbols=prefs.symbols.concat(sym)},sym+' added');
+}
+
+// Search
+let found=[],idx=-1,timer=null;
+function closeResults(){$('results').hidden=true;$('results').innerHTML='';found=[];idx=-1}
+function drawResults(){
+ $('results').innerHTML=found.length?found.map((s,i)=>{const have=prefs.symbols.includes(T.clean(s.symbol));return '<button type="button" data-add="'+esc(s.symbol)+'" data-name="'+esc(s.company_name||s.name||'')+'"'+(i===idx?' class="on"':'')+'><b>'+esc(s.symbol)+'</b><small>'+esc(s.company_name||s.name||'')+'</small>'+(have?'<em>added</em>':'')+'</button>'}).join(''):'<div class="none">No matching stocks</div>';
+ $('results').hidden=false;
+}
+$('q').addEventListener('input',()=>{
+ clearTimeout(timer);const q=$('q').value.trim();
+ if(q.length<2){closeResults();return}
+ timer=setTimeout(async()=>{
+  try{const list=await mpSearchStocks(q,{url:SEARCH_URL,client:sb,limit:8});if($('q').value.trim()!==q)return;found=(list||[]).filter(s=>s&&s.symbol).slice(0,8);idx=-1;drawResults()}
+  catch(e){found=[];drawResults()}
+ },220);
+});
+$('q').addEventListener('keydown',e=>{
+ if(e.key==='ArrowDown'&&found.length){e.preventDefault();idx=(idx+1)%found.length;drawResults()}
+ else if(e.key==='ArrowUp'&&found.length){e.preventDefault();idx=(idx-1+found.length)%found.length;drawResults()}
+ else if(e.key==='Enter'){e.preventDefault();const p=found[idx]||found[0];if(p)add(p.symbol,p.company_name||p.name);else if($('q').value.trim())add($('q').value)}
+ else if(e.key==='Escape')closeResults();
+});
+$('results').addEventListener('mousedown',e=>e.preventDefault());
+$('results').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)add(b.dataset.add,b.dataset.name)});
+document.addEventListener('click',e=>{if(!e.target.closest('.add'))closeResults()});
+
+// Row actions
+$('app').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b||b.disabled)return;
+ if(b.dataset.quick)return add(b.dataset.quick);
+ if(b.dataset.del){const s=b.dataset.del;return change(()=>{prefs.symbols=prefs.symbols.filter(x=>x!==s)},s+' removed')}
+ const mv=(i,d)=>change(()=>{const a=prefs.symbols.slice();[a[i],a[i+d]]=[a[i+d],a[i]];prefs.symbols=a},'Order saved');
+ if(b.dataset.up!=null)return mv(+b.dataset.up,-1);
+ if(b.dataset.down!=null)return mv(+b.dataset.down,1);
+ if(b.dataset.hide){const s=b.dataset.hide,hide=!prefs.hidden.includes(s);return change(()=>{prefs.hidden=hide?prefs.hidden.concat(s):prefs.hidden.filter(x=>x!==s)},s+(hide?' hidden':' shown'))}
+});
+$('showPf').addEventListener('change',e=>{const on=e.target.checked;change(()=>{prefs.show_portfolio=on},on?'Portfolio stocks shown':'Portfolio stocks hidden')});
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>T.draw($('pTrack'),$('pView'),data.items,$('pTrack').innerHTML),200)});
+
+async function start(){
+ const {data:{session}}=await sb.auth.getSession();
+ user=session?.user||null;
+ $('gate').hidden=!!user;$('app').hidden=!user;
+ if(!user)return;
+ try{prefs=await T.load(sb,user);await rebuild()}
+ catch(e){state('Could not load your ticker: '+(e.message||e),'err')}
+ setInterval(()=>{if(!document.hidden&&!busy)rebuild().catch(()=>{})},60000);
+}
+start();
+</script>
+</body>
+</html>
