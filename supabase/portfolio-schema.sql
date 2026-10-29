@@ -130,3 +130,29 @@ from auth.users
 where not exists (
   select 1 from public.portfolios p where p.user_id = auth.users.id
 );
+
+-- Mutual fund transactions (purchases/redemptions). NAVs come from mfapi.in via the mf-data function.
+create table if not exists public.portfolio_mf_transactions (
+  id uuid primary key default gen_random_uuid(),
+  portfolio_id uuid not null references public.portfolios(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  scheme_code text not null check (scheme_code ~ '^[0-9]{3,8}$'),
+  scheme_name text not null,
+  transaction_type text not null check (transaction_type in ('BUY', 'SELL')),
+  units numeric not null check (units > 0),
+  nav numeric not null check (nav > 0),
+  amount numeric not null check (amount >= 0),
+  trade_date date not null default current_date,
+  notes text,
+  source text not null default 'MANUAL',
+  created_at timestamptz not null default now()
+);
+create index if not exists portfolio_mf_transactions_portfolio_idx on public.portfolio_mf_transactions (portfolio_id, trade_date desc);
+create index if not exists portfolio_mf_transactions_user_idx on public.portfolio_mf_transactions (user_id);
+alter table public.portfolio_mf_transactions enable row level security;
+create policy "Users can read own mf transactions" on public.portfolio_mf_transactions for select to authenticated using ((select auth.uid()) = user_id);
+create policy "Users can create own mf transactions" on public.portfolio_mf_transactions for insert to authenticated
+  with check ((select auth.uid()) = user_id and exists (select 1 from public.portfolios p where p.id = portfolio_id and p.user_id = (select auth.uid())));
+create policy "Users can update own mf transactions" on public.portfolio_mf_transactions for update to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "Users can delete own mf transactions" on public.portfolio_mf_transactions for delete to authenticated using ((select auth.uid()) = user_id);

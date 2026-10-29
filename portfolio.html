@@ -50,6 +50,9 @@ body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-width:0}
 .panelhead{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .paneltitle{font-size:15px;font-weight:700}
+.fundname{white-space:normal;min-width:220px;max-width:340px}
+.fundname b{display:block;font-size:13.5px;line-height:1.3}
+.plan{display:inline-block;margin-top:3px;padding:1px 6px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:10.5px;font-weight:700}
 .tablewrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 th{padding:10px 14px;text-align:left;background:var(--surface2);color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
@@ -181,11 +184,14 @@ td small{display:block;color:var(--dim);font-size:11.5px}
  <div class="card"><div class="label">Holdings</div><div class="value" id="holdTotal">0</div><div class="sub" id="holdCount">0 holdings</div></div>
 </section>
 <div class="grid">
- <section class="panel"><div class="panelhead"><span class="paneltitle">Holdings</span><span class="muted" id="holdBest"></span></div>
+ <section class="panel"><div class="panelhead"><span class="paneltitle">Stocks</span><span class="muted" id="holdBest"></span></div>
   <div class="tablewrap"><table><thead><tr><th>Stock</th><th class="r">Qty</th><th class="r">Avg buy</th><th class="r">LTP</th><th class="r">Invested</th><th class="r">Current</th><th class="r">Today</th><th class="r">P&amp;L</th><th class="r"></th></tr></thead><tbody id="holdings"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div>
   <div class="hcards" id="holdingsCards"></div></section>
  <aside class="panel"><div class="panelhead"><span class="paneltitle">Allocation</span></div><div class="allocation" id="allocation"><div class="empty">No holdings</div></div></aside>
 </div>
+<section class="panel" id="mfPanel" style="margin-top:16px"><div class="panelhead"><div><span class="paneltitle">Mutual funds</span><div class="muted" id="mfSummary" style="font-size:12px"></div></div><button class="btn sm primary" id="addMfBtn" type="button">＋ Add fund</button></div>
+ <div class="tablewrap"><table><thead><tr><th>Fund</th><th class="r">Units</th><th class="r">Avg NAV</th><th class="r">NAV</th><th class="r">Invested</th><th class="r">Current</th><th class="r">Day</th><th class="r">P&amp;L</th><th class="r"></th></tr></thead><tbody id="mfHoldings"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div>
+ <div class="hcards" id="mfCards"></div></section>
 <section class="panel" style="margin-top:16px"><div class="panelhead"><span class="paneltitle">Recent transactions</span></div>
  <div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Symbol</th><th>Exchange</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Charges</th><th>Source</th></tr></thead><tbody id="transactions"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody></table></div>
  <div class="tcards" id="transactionsCards"></div></section>
@@ -203,6 +209,16 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 </div><div class="hint">Use transactions rather than typing a final average price. MarketPulse will calculate the live position from your BUY/SELL history.</div></div><div class="foot"><button class="btn" type="button" data-close="txModal">Cancel</button><button class="btn primary" id="saveTx">Save transaction</button></div></form></div></div>
 
 <div class="modalbg" id="manageModal"><div class="modal"><div class="modalhead"><h2 id="manageTitle">Manage Holding</h2><button class="close" data-close="manageModal">×</button></div><div class="form"><div class="hint" id="manageHint"></div><div class="preview" id="manageTransactions"></div></div><div class="foot"><button class="btn" type="button" data-close="manageModal">Close</button></div></div></div>
+
+<div class="modalbg" id="mfModal"><div class="modal"><div class="modalhead"><h2 id="mfModalTitle">Add mutual fund</h2><button class="close" data-close="mfModal">×</button></div><form id="mfForm"><div class="form"><div class="fields">
+<div class="field full"><label>Fund</label><div class="symbol-wrap"><input id="mfFund" required placeholder="Search fund, e.g. Parag Parikh Flexi Cap" autocomplete="off"><div class="symbol-suggestions" id="mfSuggestions"></div></div><div class="symbol-company-hint" id="mfFundHint"></div></div>
+<div class="field"><label>Type</label><select id="mfType"><option value="BUY">Purchase / SIP instalment</option><option value="SELL">Redemption</option></select></div>
+<div class="field"><label>Date</label><input id="mfDate" type="date" required></div>
+<div class="field"><label>Amount (₹)</label><input id="mfAmount" type="number" min="0" step="any" required></div>
+<div class="field"><label>NAV</label><input id="mfNav" type="number" min="0.0001" step="any" required></div>
+<div class="field"><label>Units</label><input id="mfUnits" type="number" min="0.0001" step="any" required></div>
+<div class="field"><label>Notes</label><input id="mfNotes"></div>
+</div><div class="hint">Pick the fund and date and the NAV for that day fills in by itself. Enter the amount to calculate units, or type the exact units from your statement. Add each SIP instalment as a purchase.</div></div><div class="foot"><button class="btn" type="button" data-close="mfModal">Cancel</button><button class="btn primary" id="saveMf">Save</button></div></form></div></div>
 
 <div class="modalbg" id="importModal"><div class="modal"><div class="modalhead"><h2>Import Portfolio</h2><button class="close" data-close="importModal">×</button></div><div class="form">
 <div class="drop"><input id="file" type="file" accept=".csv,.xlsx,.xls"></div>
@@ -227,6 +243,8 @@ const num=n=>Number(n||0);
 const clean=s=>String(s||'').trim().toUpperCase();
 function status(msg,type='ok'){const e=$('status');e.textContent=msg;e.className='status show '+type;clearTimeout(status.t);status.t=setTimeout(()=>e.className='status',5000)}
 function open(id){$(id).classList.add('open')} function close(id){$(id).classList.remove('open')}
+// Inline onclick handlers see document.open/close first, so they must use this name.
+function closeModal(id){close(id)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function syncViewport(){
  const vv=window.visualViewport;
@@ -254,7 +272,7 @@ async function boot(){
 }
 async function refresh(){
  const {data,error}=await sb.from('portfolio_transactions').select('*').eq('portfolio_id',portfolio.id).order('trade_date',{ascending:false}).order('created_at',{ascending:false});
- if(error)throw error;transactions=data||[];await loadPrices();render();
+ if(error)throw error;transactions=data||[];await Promise.all([loadPrices(),loadFunds()]);render();
 }
 
 let priceRefreshTimer=null;
@@ -351,8 +369,12 @@ const pctTxt=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
 const tone=n=>n>=0?'green':'red';
 function render(){
  const h=buildHoldings().sort((a,b)=>(b.current||b.cost)-(a.current||a.cost));
- let inv=h.reduce((a,x)=>a+x.cost,0),cur=h.reduce((a,x)=>a+x.current,0),pnl=cur-inv,pct=inv?pnl/inv*100:0;
- const dayChange=h.reduce((a,x)=>a+(Number.isFinite(x.dayChange)?x.dayChange:0),0);
+ const f=buildFunds().sort((a,b)=>(b.current||b.cost)-(a.current||a.cost));
+ // Summary covers stocks and mutual funds together.
+ const all=[...h,...f];
+ let inv=all.reduce((a,x)=>a+x.cost,0),cur=all.reduce((a,x)=>a+(x.current||0),0);
+ const pricedCost=all.reduce((a,x)=>a+(x.current?x.cost:0),0),pnl=cur-pricedCost,pct=pricedCost?pnl/pricedCost*100:0;
+ const dayChange=all.reduce((a,x)=>a+(Number.isFinite(x.dayChange)?x.dayChange:0),0);
  const prevValue=cur-dayChange,dayPct=prevValue>0?dayChange/prevValue*100:0;
  $('invested').textContent=money(inv);
  $('current').textContent=money(cur);
@@ -360,27 +382,199 @@ function render(){
  $('dayChange').className='value '+tone(dayChange);
  $('pnl').textContent=signed(pnl);$('pnl').className='value '+tone(pnl);
  $('pnlPct').textContent=pctTxt(pct);$('pnlPct').className='value '+tone(pct);
- $('holdTotal').textContent=h.length;
- $('holdCount').textContent=transactions.length+' transaction'+(transactions.length===1?'':'s');
+ $('holdTotal').textContent=all.length;
+ $('holdCount').textContent=h.length+' stock'+(h.length===1?'':'s')+' · '+f.length+' fund'+(f.length===1?'':'s');
  const priced=h.filter(x=>x.ltp);
  const best=priced.length?priced.reduce((a,x)=>x.pct>a.pct?x:a):null;
  $('holdBest').innerHTML=best?'Top performer: <b class="'+tone(best.pct)+'">'+esc(best.symbol)+' '+pctTxt(best.pct)+'</b>':'';
 
  const acts=x=>'<div class="rowacts"><button class="btn sm" onclick="manageHolding(\''+esc(x.symbol)+'\')">Edit</button><button class="btn sm danger" onclick="deleteHolding(\''+esc(x.symbol)+'\')">Delete</button></div>';
  const dayCell=x=>Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span><small class="'+tone(x.dayChange)+'">'+(Number.isFinite(x.dayPct)?pctTxt(x.dayPct):'')+'</small>':'<span class="muted">—</span>';
- const pnlCell=x=>x.ltp?'<span class="'+tone(x.pnl)+'">'+signed(x.pnl)+'</span><small><span class="chg '+tone(x.pct)+'">'+pctTxt(x.pct)+'</span></small>':'<span class="muted">—</span>';
+ const pnlCell=x=>x.current?'<span class="'+tone(x.pnl)+'">'+signed(x.pnl)+'</span><small><span class="chg '+tone(x.pct)+'">'+pctTxt(x.pct)+'</span></small>':'<span class="muted">—</span>';
  const emptyMsg='<b>No holdings yet</b>Add a transaction or import a CSV / Excel file from your broker.';
  $('holdings').innerHTML=h.length?h.map(x=>'<tr><td class="sym"><b>'+esc(x.symbol)+'</b><small>'+esc(x.exchange)+'</small></td><td class="r">'+x.qty.toLocaleString('en-IN')+'</td><td class="r">'+money(x.avg)+'</td><td class="r">'+(x.ltp?money(x.ltp):'—')+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.ltp?money(x.current):'—')+'</b></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+emptyMsg+'</td></tr>';
  $('holdingsCards').innerHTML=h.length?h.map(x=>'<div class="hcard"><div class="row"><span class="sym">'+esc(x.symbol)+'</span><span class="big">'+(x.ltp?money(x.current):money(x.cost))+'</span></div><div class="row"><span class="meta">'+x.qty.toLocaleString('en-IN')+' × avg '+money(x.avg)+'</span><span class="meta">'+(x.ltp?'<span class="chg '+tone(x.pct)+'">'+signed(x.pnl)+' · '+pctTxt(x.pct)+'</span>':'—')+'</span></div><div class="row"><span class="meta">LTP '+(x.ltp?money(x.ltp):'—')+'</span><span class="meta">Today '+(Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span>':'—')+'</span></div>'+acts(x)+'</div>').join(''):'<div class="empty">'+emptyMsg+'</div>';
 
- const base=h.reduce((a,x)=>a+(x.current||x.cost),0)||1;
- let acc=0;
- const parts=h.map((x,i)=>{const share=(x.current||x.cost)/base*100,col=PALETTE[i%PALETTE.length],seg=col+' '+acc.toFixed(3)+'% '+(acc+share).toFixed(3)+'%';acc+=share;return {x,share,col,seg}});
- $('allocation').innerHTML=h.length?'<div class="donut" style="background:conic-gradient('+parts.map(p=>p.seg).join(',')+')"><span>Total<b>'+money(cur||inv).replace(/\.\d+$/,'')+'</b>'+h.length+' stock'+(h.length===1?'':'s')+'</span></div><div class="legend">'+parts.map(p=>'<div class="allocrow"><i style="background:'+p.col+'"></i><span>'+esc(p.x.symbol)+'</span><em>'+money(p.x.current||p.x.cost).replace(/\.\d+$/,'')+'</em><b>'+p.share.toFixed(1)+'%</b></div>').join('')+'</div>':'<div class="empty">No holdings to chart yet.</div>';
+ renderFunds(f,dayCell,pnlCell);
 
- const tx=transactions.slice(0,100);
- $('transactions').innerHTML=tx.length?tx.map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td><span class="chg '+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</span></td><td><b>'+esc(t.symbol)+'</b></td><td>'+esc(t.exchange)+'</td><td class="r">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="r">'+money(t.price)+'</td><td class="r">'+money(t.charges)+'</td><td class="muted">'+esc(t.source)+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">No transactions yet.</td></tr>';
- $('transactionsCards').innerHTML=tx.length?tx.map(t=>'<div class="tcard"><span class="type '+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</span><b>'+esc(t.symbol)+'</b><span>'+num(t.quantity).toLocaleString('en-IN')+' × '+money(t.price)+'</span><small>'+esc(t.trade_date)+' · '+esc(t.exchange)+(num(t.charges)?' · charges '+money(t.charges):'')+' · '+esc(t.source)+'</small></div>').join(''):'<div class="empty">No transactions yet.</div>';
+ const items=[...h.map(x=>({label:x.symbol,value:x.current||x.cost})),...f.map(x=>({label:fundShort(x.name),value:x.current||x.cost}))].sort((a,b)=>b.value-a.value);
+ const base=items.reduce((a,x)=>a+x.value,0)||1;
+ let acc=0;
+ const parts=items.map((x,i)=>{const share=x.value/base*100,col=PALETTE[i%PALETTE.length],seg=col+' '+acc.toFixed(3)+'% '+(acc+share).toFixed(3)+'%';acc+=share;return {x,share,col,seg}});
+ const countTxt=[h.length?h.length+' stock'+(h.length===1?'':'s'):'',f.length?f.length+' fund'+(f.length===1?'':'s'):''].filter(Boolean).join(' · ');
+ $('allocation').innerHTML=items.length?'<div class="donut" style="background:conic-gradient('+parts.map(p=>p.seg).join(',')+')"><span>Total<b>'+money(cur||inv).replace(/\.\d+$/,'')+'</b>'+countTxt+'</span></div><div class="legend">'+parts.map(p=>'<div class="allocrow"><i style="background:'+p.col+'"></i><span title="'+esc(p.x.label)+'" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.x.label)+'</span><em>'+money(p.x.value).replace(/\.\d+$/,'')+'</em><b>'+p.share.toFixed(1)+'%</b></div>').join('')+'</div>':'<div class="empty">No holdings to chart yet.</div>';
+
+ // Stock and fund transactions in one list, newest first.
+ const tx=[...transactions.map(t=>({date:t.trade_date,type:t.transaction_type,name:t.symbol,ex:t.exchange,qty:num(t.quantity),price:num(t.price),charges:num(t.charges),source:t.source,at:t.created_at})),
+  ...mfTx.map(t=>({date:t.trade_date,type:t.transaction_type,name:fundShort(t.scheme_name),ex:'MF',qty:num(t.units),price:num(t.nav),charges:0,source:t.source,at:t.created_at}))]
+  .sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.at).localeCompare(String(a.at))).slice(0,100);
+ const qtyTxt=t=>t.ex==='MF'?t.qty.toLocaleString('en-IN',{maximumFractionDigits:3})+' units':t.qty.toLocaleString('en-IN');
+ $('transactions').innerHTML=tx.length?tx.map(t=>'<tr><td>'+esc(t.date)+'</td><td><span class="chg '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span></td><td><b>'+esc(t.name)+'</b></td><td>'+esc(t.ex)+'</td><td class="r">'+qtyTxt(t)+'</td><td class="r">'+money(t.price)+'</td><td class="r">'+money(t.charges)+'</td><td class="muted">'+esc(t.source)+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">No transactions yet.</td></tr>';
+ $('transactionsCards').innerHTML=tx.length?tx.map(t=>'<div class="tcard"><span class="type '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span><b>'+esc(t.name)+'</b><span>'+qtyTxt(t)+' × '+money(t.price)+'</span><small>'+esc(t.date)+' · '+esc(t.ex)+(t.charges?' · charges '+money(t.charges):'')+' · '+esc(t.source)+'</small></div>').join(''):'<div class="empty">No transactions yet.</div>';
+}
+
+/* ───────── Mutual funds ─────────
+   Transactions live in portfolio_mf_transactions; NAVs come from the mf-data function (mfapi.in / AMFI). */
+const MF_URL=SUPABASE_URL+'/functions/v1/mf-data';
+let mfTx=[],mfNav={},mfError='';
+// "Parag Parikh Flexi Cap Fund - Direct Plan - Growth" -> "Parag Parikh Flexi Cap Fund"
+const fundShort=n=>String(n||'').split(/\s+-\s+/)[0].trim()||String(n||'');
+const fundPlan=n=>[/direct/i.test(n)?'Direct':/regular/i.test(n)?'Regular':'',/idcw|dividend/i.test(n)?'IDCW':/growth/i.test(n)?'Growth':''].filter(Boolean).join(' · ');
+const units=n=>num(n).toLocaleString('en-IN',{maximumFractionDigits:3});
+const navTxt=n=>'₹'+num(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:4});
+const fmtDate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'';
+
+async function loadFunds(){
+ mfError='';
+ try{
+  const {data,error}=await sb.from('portfolio_mf_transactions').select('*').eq('portfolio_id',portfolio.id).order('trade_date',{ascending:false}).order('created_at',{ascending:false});
+  if(error)throw error;
+  mfTx=data||[];
+  const codes=[...new Set(mfTx.map(t=>t.scheme_code))].filter(c=>!mfNav[c]||Date.now()-mfNav[c].at>15*60e3);
+  for(let i=0;i<codes.length;i+=40){
+   const r=await fetch(MF_URL+'?codes='+codes.slice(i,i+40).join(','),{cache:'no-store'});
+   const d=await r.json();
+   (d.funds||[]).forEach(x=>{mfNav[x.code]={...x,at:Date.now()}});
+  }
+ }catch(e){console.warn('[Mutual funds]',e);mfError=e.message||'Could not load mutual funds'}
+}
+
+// Average-cost method, like stocks: redemptions reduce cost at the running average NAV.
+function buildFunds(){
+ const map={};
+ for(const t of [...mfTx].sort((a,b)=>String(a.trade_date).localeCompare(String(b.trade_date))||String(a.created_at).localeCompare(String(b.created_at)))){
+  const c=t.scheme_code;if(!map[c])map[c]={code:c,name:t.scheme_name,units:0,cost:0,count:0};
+  const m=map[c],u=num(t.units);m.count++;
+  if(t.transaction_type==='BUY'){m.units+=u;m.cost+=num(t.amount)||u*num(t.nav)}
+  else if(m.units>0){const avg=m.cost/m.units;m.cost-=Math.min(u,m.units)*avg;m.units=Math.max(0,m.units-u)}
+ }
+ return Object.values(map).filter(x=>x.units>0.0001).map(x=>{
+  const q=mfNav[x.code]||{};
+  x.name=q.name||x.name;x.category=q.category||'';
+  x.avg=x.cost/x.units;x.nav=num(q.nav);x.navDate=q.nav_date||'';
+  x.current=x.nav?x.units*x.nav:0;
+  x.pnl=x.nav?x.current-x.cost:0;x.pct=x.cost&&x.nav?x.pnl/x.cost*100:0;
+  const prev=num(q.prev_nav);
+  x.dayChange=x.nav&&prev?x.units*(x.nav-prev):NaN;x.dayPct=x.nav&&prev?(x.nav-prev)/prev*100:NaN;
+  return x;
+ });
+}
+
+function renderFunds(f,dayCell,pnlCell){
+ const inv=f.reduce((a,x)=>a+x.cost,0),cur=f.reduce((a,x)=>a+x.current,0);
+ $('mfSummary').innerHTML=f.length?'Value '+money(cur).replace(/\.\d+$/,'')+' · P&amp;L <span class="'+tone(cur-inv)+'">'+(cur>=inv?'+':'−')+money(Math.abs(cur-inv)).replace(/\.\d+$/,'')+'</span>':'';
+ const acts=x=>'<div class="rowacts"><button class="btn sm" onclick="manageFund(\''+esc(x.code)+'\')">Edit</button><button class="btn sm danger" onclick="deleteFund(\''+esc(x.code)+'\')">Delete</button></div>';
+ const empty=mfError?'<b>Mutual funds could not load</b>'+esc(mfError):'<b>No mutual funds yet</b>Tap “Add fund” to record a purchase or SIP instalment. NAVs update daily from AMFI.';
+ const navCell=x=>x.nav?navTxt(x.nav)+'<small>'+esc(fmtDate(x.navDate))+'</small>':'—';
+ $('mfHoldings').innerHTML=f.length?f.map(x=>'<tr><td class="fundname"><b>'+esc(fundShort(x.name))+'</b>'+(fundPlan(x.name)?'<span class="plan">'+esc(fundPlan(x.name))+'</span>':'')+'</td><td class="r">'+units(x.units)+'</td><td class="r">'+navTxt(x.avg)+'</td><td class="r">'+navCell(x)+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.current?money(x.current):'—')+'</b></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+empty+'</td></tr>';
+ $('mfCards').innerHTML=f.length?f.map(x=>'<div class="hcard"><div class="row"><span class="sym" style="font-size:14px">'+esc(fundShort(x.name))+'</span><span class="big">'+(x.current?money(x.current):money(x.cost))+'</span></div><div class="row"><span class="meta">'+units(x.units)+' units × avg '+navTxt(x.avg)+'</span><span class="meta">'+(x.current?'<span class="chg '+tone(x.pct)+'">'+signed(x.pnl)+' · '+pctTxt(x.pct)+'</span>':'—')+'</span></div><div class="row"><span class="meta">NAV '+(x.nav?navTxt(x.nav)+' · '+esc(fmtDate(x.navDate)):'—')+'</span><span class="meta">Day '+(Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span>':'—')+'</span></div>'+acts(x)+'</div>').join(''):'<div class="empty">'+empty+'</div>';
+}
+
+let mfPick=null,mfEditId=null,mfLast='amount',mfSearchT=null,mfSearchId=0,mfNavId=0;
+function resetMfModal(){
+ mfPick=null;mfEditId=null;mfLast='amount';
+ $('mfForm').reset();$('mfFundHint').textContent='';
+ $('mfDate').value=todayLocal();
+ $('mfModalTitle').textContent='Add mutual fund';$('saveMf').textContent='Save';
+ $('mfSuggestions').classList.remove('open');
+}
+function openAddFund(code){
+ resetMfModal();
+ const f=code&&buildFunds().find(x=>x.code===code);
+ if(f){mfPick={code:f.code,name:f.name};$('mfFund').value=f.name;$('mfFundHint').textContent='Scheme code '+f.code;fillMfNav()}
+ open('mfModal');
+ if(!f)setTimeout(()=>$('mfFund').focus(),50);
+}
+async function searchFunds(q){
+ const id=++mfSearchId,box=$('mfSuggestions');
+ box.innerHTML='<div class="symbol-suggestion-empty">Searching…</div>';box.classList.add('open');
+ try{
+  const r=await fetch(MF_URL+'?q='+encodeURIComponent(q));const d=await r.json();
+  if(id!==mfSearchId)return;
+  const list=d.results||[];
+  box.innerHTML=list.length?list.map(x=>'<div class="symbol-suggestion" data-code="'+esc(x.code)+'" data-name="'+esc(x.name)+'"><span class="ss-name" style="white-space:normal">'+esc(x.name)+'</span></div>').join(''):'<div class="symbol-suggestion-empty">No funds found. Try fewer words, e.g. “parag flexi”.</div>';
+ }catch(e){if(id===mfSearchId)box.innerHTML='<div class="symbol-suggestion-empty">Search failed. Check your connection.</div>'}
+}
+$('mfFund').addEventListener('input',()=>{
+ mfPick=null;$('mfFundHint').textContent='';
+ const q=$('mfFund').value.trim();clearTimeout(mfSearchT);
+ if(q.length<3){$('mfSuggestions').classList.remove('open');return}
+ mfSearchT=setTimeout(()=>searchFunds(q),300);
+});
+$('mfSuggestions').addEventListener('mousedown',e=>{
+ const o=e.target.closest('.symbol-suggestion');if(!o)return;e.preventDefault();
+ mfPick={code:o.dataset.code,name:o.dataset.name};
+ $('mfFund').value=mfPick.name;$('mfFundHint').textContent='Scheme code '+mfPick.code;
+ $('mfSuggestions').classList.remove('open');fillMfNav();
+});
+$('mfFund').addEventListener('blur',()=>setTimeout(()=>$('mfSuggestions').classList.remove('open'),150));
+const round=(n,d)=>Math.round(n*10**d)/10**d;
+function syncMf(){
+ const a=num($('mfAmount').value),n=num($('mfNav').value),u=num($('mfUnits').value);
+ if(!n)return;
+ if(mfLast==='units'&&u)$('mfAmount').value=round(u*n,2);
+ else if(a)$('mfUnits').value=round(a/n,4);
+}
+$('mfAmount').addEventListener('input',()=>{mfLast='amount';syncMf()});
+$('mfUnits').addEventListener('input',()=>{mfLast='units';syncMf()});
+$('mfNav').addEventListener('input',syncMf);
+$('mfDate').addEventListener('change',fillMfNav);
+async function fillMfNav(){
+ if(!mfPick||!$('mfDate').value)return;
+ const id=++mfNavId;$('mfFundHint').textContent='Scheme code '+mfPick.code+' · looking up NAV…';
+ try{
+  const r=await fetch(MF_URL+'?code='+mfPick.code+'&date='+$('mfDate').value);const d=await r.json();
+  if(id!==mfNavId)return;
+  if(d.nav){$('mfNav').value=d.nav;$('mfFundHint').textContent='Scheme code '+mfPick.code+' · NAV '+navTxt(d.nav)+' on '+fmtDate(d.nav_date);syncMf()}
+  else $('mfFundHint').textContent='Scheme code '+mfPick.code+' · no NAV found for that date, enter it from your statement';
+ }catch(e){if(id===mfNavId)$('mfFundHint').textContent='Scheme code '+mfPick.code+' · NAV lookup failed, enter it manually'}
+}
+$('addMfBtn').onclick=()=>openAddFund();
+$('mfForm').onsubmit=async e=>{
+ e.preventDefault();const b=$('saveMf');b.disabled=true;
+ try{
+  if(!mfPick)throw Error('Pick a fund from the search list');
+  const row={portfolio_id:portfolio.id,user_id:user.id,scheme_code:mfPick.code,scheme_name:mfPick.name,transaction_type:$('mfType').value,
+   units:round(num($('mfUnits').value),4),nav:num($('mfNav').value),amount:round(num($('mfAmount').value),2),trade_date:$('mfDate').value,notes:$('mfNotes').value||null};
+  if(row.units<=0||row.nav<=0)throw Error('Enter the amount and NAV, or the units');
+  if(!row.amount)row.amount=round(row.units*row.nav,2);
+  if(row.transaction_type==='SELL'&&!mfEditId){const held=buildFunds().find(x=>x.code===row.scheme_code);if(!held||row.units>held.units+0.001)throw Error('You hold '+units(held?held.units:0)+' units of this fund')}
+  const wasEdit=!!mfEditId;
+  const {error}=mfEditId?await sb.from('portfolio_mf_transactions').update(row).eq('id',mfEditId).eq('user_id',user.id):await sb.from('portfolio_mf_transactions').insert({...row,source:'MANUAL'});
+  if(error)throw error;
+  close('mfModal');resetMfModal();await loadFunds();render();
+  status(wasEdit?'Fund transaction updated.':'Fund transaction added.');
+ }catch(x){status(x.message,'err')}finally{b.disabled=false}
+};
+function manageFund(code){
+ const rows=mfTx.filter(t=>t.scheme_code===code);if(!rows.length)return;
+ $('manageTitle').textContent=fundShort(rows[0].scheme_name);
+ $('manageHint').innerHTML=rows.length+' transaction'+(rows.length===1?'':'s')+' make up this fund. <button class="btn sm primary" onclick="closeModal(\'manageModal\');openAddFund(\''+esc(code)+'\')">＋ Add purchase / redemption</button>';
+ $('manageTransactions').innerHTML='<table><thead><tr><th>Date</th><th>Type</th><th class="r">Units</th><th class="r">NAV</th><th class="r">Amount</th><th></th></tr></thead><tbody>'+
+  rows.map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+(t.transaction_type==='BUY'?'Purchase':'Redemption')+'</td><td class="r">'+units(t.units)+'</td><td class="r">'+navTxt(t.nav)+'</td><td class="r">'+money(t.amount)+'</td><td class="r"><div class="rowacts"><button class="btn sm" onclick="editFundTx(\''+esc(t.id)+'\')">Edit</button><button class="btn sm danger" onclick="deleteFundTx(\''+esc(t.id)+'\')">Delete</button></div></td></tr>').join('')+'</tbody></table>';
+ open('manageModal');
+}
+function editFundTx(id){
+ const t=mfTx.find(x=>x.id===id);if(!t)return;
+ close('manageModal');resetMfModal();
+ mfEditId=id;mfPick={code:t.scheme_code,name:t.scheme_name};mfLast='units';
+ $('mfModalTitle').textContent='Edit fund transaction';$('saveMf').textContent='Save changes';
+ $('mfFund').value=t.scheme_name;$('mfFundHint').textContent='Scheme code '+t.scheme_code;
+ $('mfType').value=t.transaction_type;$('mfDate').value=t.trade_date;$('mfAmount').value=t.amount;$('mfNav').value=t.nav;$('mfUnits').value=t.units;$('mfNotes').value=t.notes||'';
+ open('mfModal');
+}
+async function deleteFundTx(id){
+ if(!confirm('Delete this fund transaction?'))return;
+ const {error}=await sb.from('portfolio_mf_transactions').delete().eq('id',id).eq('user_id',user.id);
+ if(error)return status(error.message,'err');
+ close('manageModal');await loadFunds();render();status('Fund transaction deleted.');
+}
+async function deleteFund(code){
+ const rows=mfTx.filter(t=>t.scheme_code===code);if(!rows.length)return;
+ if(!confirm('Delete '+fundShort(rows[0].scheme_name)+'? This removes all '+rows.length+' of its transactions and cannot be undone.'))return;
+ const {error}=await sb.from('portfolio_mf_transactions').delete().eq('portfolio_id',portfolio.id).eq('user_id',user.id).eq('scheme_code',code);
+ if(error)return status(error.message,'err');
+ await loadFunds();render();status('Fund removed.');
 }
 // "⋯" menu: Sign out / Delete portfolio
 $('moreBtn').onclick=e=>{e.stopPropagation();const m=$('moreMenu');m.hidden=!m.hidden;$('moreBtn').setAttribute('aria-expanded',String(!m.hidden))};
@@ -577,7 +771,7 @@ async function deletePortfolio(){
   if(txError)throw txError;
   const {error:pError}=await sb.from('portfolios').delete().eq('id',portfolio.id).eq('user_id',user.id);
   if(pError)throw pError;
-  portfolio=null;transactions=[];prices={};
+  portfolio=null;transactions=[];prices={};mfTx=[];
   await boot();
   status('Portfolio deleted. A fresh portfolio was created.','ok');
  }catch(e){
@@ -687,7 +881,7 @@ function manageHolding(symbol){
   $('manageTitle').textContent='Manage '+s;
   $('manageHint').textContent=rows.length+' transaction'+(rows.length===1?'':'s')+' make up this holding. Edit or delete individual transactions below.';
   $('manageTransactions').innerHTML='<table style="min-width:760px"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Charges</th><th>Notes</th><th>Actions</th></tr></thead><tbody>'+
-    rows.map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.notes||'')+'</td><td><button class="btn" onclick="editTx(\''+esc(t.id)+'\');close(\'manageModal\')">Edit</button> <button class="btn" onclick="deleteTx(\''+esc(t.id)+'\');close(\'manageModal\')">Delete</button></td></tr>').join('')+
+    rows.map(t=>'<tr><td>'+esc(t.trade_date)+'</td><td class="'+(t.transaction_type==='BUY'?'green':'red')+'">'+esc(t.transaction_type)+'</td><td class="mono">'+num(t.quantity).toLocaleString('en-IN')+'</td><td class="mono">'+money(t.price)+'</td><td class="mono">'+money(t.charges)+'</td><td>'+esc(t.notes||'')+'</td><td><button class="btn" onclick="editTx(\''+esc(t.id)+'\');closeModal(\'manageModal\')">Edit</button> <button class="btn" onclick="deleteTx(\''+esc(t.id)+'\');closeModal(\'manageModal\')">Delete</button></td></tr>').join('')+
     '</tbody></table>';
   open('manageModal');
 }
@@ -785,7 +979,7 @@ $('importConfirm').onclick=async()=>{const b=$('importConfirm');b.disabled=true;
 async function deleteTx(id){if(!confirm('Delete this transaction? This changes your portfolio calculations.'))return;const {error}=await sb.from('portfolio_transactions').delete().eq('id',id).eq('user_id',user.id);if(error)return status(error.message,'err');await refresh();status('Transaction deleted.')}
 function viewStock(s){location.href='/?symbol='+encodeURIComponent(s)}
 $('logout').onclick=async()=>{await sb.auth.signOut();location.href='/'};
-document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{close(b.dataset.close);if(b.dataset.close==='txModal')resetTxModal();});
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{close(b.dataset.close);if(b.dataset.close==='txModal')resetTxModal();if(b.dataset.close==='mfModal')resetMfModal();});
 document.querySelectorAll('.modalbg').forEach(m=>m.onclick=e=>{if(e.target===m)close(m.id)});
 boot().catch(e=>{console.error(e);status(e.message||'Portfolio could not load','err');$('holdings').innerHTML='<tr><td colspan="9" class="empty">Could not load portfolio. Check the Supabase portfolio schema and login.</td></tr>'});
 </script>
