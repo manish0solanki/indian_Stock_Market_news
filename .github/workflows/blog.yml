@@ -7,9 +7,13 @@ name: Blog autopublish
 
 on:
   schedule:
+    # GitHub runs schedules on a best-effort basis and sometimes drops them, so each post type has
+    # backup times. Every run skips what is already published, so the extra runs are harmless.
     - cron: "7 10 * * 1-5"   # 3:37 PM IST: daily wrap, sector analysis, stock spotlight
+    - cron: "37 11 * * 1-5"  # 5:07 PM IST: backup for the above
     - cron: "47 13 * * 1-5"  # 7:17 PM IST: FII/DII flows
-    - cron: "17 15 * * 1-5"  # 8:47 PM IST: FII/DII retry if NSE published late (skips if already done)
+    - cron: "17 15 * * 1-5"  # 8:47 PM IST: FII/DII retry if NSE published late
+    - cron: "43 16 * * 1-5"  # 10:13 PM IST: FII/DII backup
   workflow_dispatch:
     inputs:
       posts:
@@ -43,7 +47,7 @@ jobs:
         env:
           MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
           FORCE: ${{ inputs.force }}
-          POSTS: ${{ inputs.posts || (github.event.schedule == '7 10 * * 1-5' && 'wrap,sector,spotlight' || 'fiidii') }}
+          POSTS: ${{ inputs.posts || ((github.event.schedule == '7 10 * * 1-5' || github.event.schedule == '37 11 * * 1-5') && 'wrap,sector,spotlight' || 'fiidii') }}
         run: node scripts/blog/generate.mjs
 
       - name: Commit and push

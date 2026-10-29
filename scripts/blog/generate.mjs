@@ -119,7 +119,8 @@ async function main() {
       } else if (kind === "fiidii") {
         const last = data.fii.map((r) => r.trade_date).sort().pop();
         if (last !== today && !force) { log(`  skip: latest FII/DII data is for ${last}, not ${today} (NSE publishes in the evening)`); continue; }
-        if (posts.some((x) => x.category === "fiidii-flows" && String(x.date).slice(0, 10) === last) && !force) { log("  skip: already published for " + last); continue; }
+        // Only this job's own posts count: the old n8n workflow's same-day post (a session behind) gets replaced.
+        if (posts.some((x) => isBot(x) && x.category === "fiidii-flows" && String(x.date).slice(0, 10) === last) && !force) { log("  skip: already published for " + last); continue; }
         await publish(buildFiiDii(data, now));
       } else log("  unknown post type");
     } catch (e) {
