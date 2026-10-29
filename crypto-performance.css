@@ -1,13 +1,50 @@
-/* Crypto bot performance: edge strip above the tabs + the Performance tab (crypto-performance.js). */
-.edge-strip{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;margin:0 20px 12px;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--border)}
-.edge-strip.paused{border-color:color-mix(in srgb,var(--red) 55%,var(--border));background:color-mix(in srgb,var(--red) 7%,var(--card))}
-.edge-strip.live{border-color:color-mix(in srgb,var(--green) 45%,var(--border))}
-.es-state{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px}
-.es-state i{font-style:normal}
-.es-kv{display:flex;flex-direction:column;line-height:1.25}
-.es-kv small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
-.es-kv b{font-size:13px;font-variant-numeric:tabular-nums}
-.es-more{margin-left:auto;padding:6px 12px;font-size:12px;font-weight:700}
+/* Crypto page layout (simplified 30 Oct 2026) + bot status line + Performance tab (crypto-performance.js).
+   Selectors are deliberately more specific than the page's older header/.controls rules. */
+body > header.cx-head{position:relative!important;top:auto!important;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:18px 20px 14px;background:transparent;border-bottom:0}
+header.cx-head h1{font-size:24px;letter-spacing:-.4px}
+header.cx-head .sub{font-size:12.5px;margin-top:3px}
+header.cx-head > .cx-title{margin:0}
+.cx-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cx-actions button{min-height:38px;font-weight:600}
+#cxSettingsBtn.on{border-color:var(--blue);color:var(--blue)}
+.cx-settings{margin:0 20px 14px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.cx-settings[hidden]{display:none!important}
+.cx-group{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cx-group h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cx-group > button{width:100%;text-align:left}
+.cx-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600}
+.cx-field select{width:100%}
+.cx-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cx-row button{width:100%}
+.cx-hint{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:-4px}
+.cx-settings .check-selector{min-width:0;max-width:none;width:100%}
+.cx-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 20px 12px}
+.cx-stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cx-stat span{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cx-stat b{font-size:24px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cx-stat small{font-size:12px;color:var(--muted)}
+/* The price panel becomes one compact scrolling row. */
+#marketTickerPanel{margin:0 20px 12px;padding:10px 12px}
+#marketTickerPanel .market-ticker-head{margin-bottom:8px}
+#marketTickerPanel .market-ticker-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#marketTickerPanel .market-ticker-grid{display:flex;overflow-x:auto;gap:8px;padding-bottom:2px;scrollbar-width:thin}
+#marketTickerPanel .market-ticker-card{flex:0 0 150px;padding:8px 10px}
+#marketTickerPanel .market-ticker-trend{display:none}
+body .statusbar{display:flex!important;grid-template-columns:none!important;gap:14px!important;font-size:11.5px;opacity:.85;flex-wrap:nowrap!important;overflow-x:auto;white-space:nowrap;scrollbar-width:none;margin:0 0 6px}
+body .statusbar::-webkit-scrollbar{display:none}
+body .statusbar > span{flex:0 0 auto;margin-left:0!important}
+.tabs .tab{font-weight:600}
+#connectionLog.collapsed .connection-log-body{display:none}
+#connectionLog .connection-log-head{cursor:pointer}
+
+.edge-strip{display:flex;align-items:center;gap:10px;margin:0 20px 12px;padding:9px 12px;border-radius:12px;background:var(--card);border:1px solid var(--border);font-size:13px;line-height:1.45}
+.edge-strip .es-dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.edge-strip.live .es-dot{background:var(--green)}
+.edge-strip.paused{border-color:color-mix(in srgb,var(--red) 45%,var(--border))}
+.edge-strip.paused .es-dot{background:var(--red)}
+.es-text{flex:1;min-width:0}
+.es-warn{color:var(--yellow);font-weight:600}
+.es-more{flex:0 0 auto;padding:6px 12px;font-size:12px;font-weight:700}
 .pos{color:var(--green)}.neg{color:var(--red)}
 
 .perf-panel{padding:0 20px 28px;display:flex;flex-direction:column;gap:14px}
@@ -17,8 +54,7 @@
 .pf-empty{padding:24px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:12px}
 .pf-verdict{border-left:4px solid var(--muted)}
 .pf-verdict.bad{border-left-color:var(--red)}.pf-verdict.good{border-left-color:var(--green)}
-.pf-verdict-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
-.pf-verdict h2{font-size:18px;letter-spacing:-.2px}
+.pf-verdict h2{font-size:19px;letter-spacing:-.3px;margin-bottom:4px}
 .pf-verdict p{font-size:13px;line-height:1.6;color:var(--text);margin-top:6px}
 .pf-badge{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:999px;background:var(--card2);border:1px solid var(--border);color:var(--muted)}
 .pf-verdict.bad .pf-badge{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent)}
@@ -63,9 +99,20 @@
 .pf-findings ul{margin:8px 0 0 18px;font-size:12.5px;line-height:1.6;color:var(--text)}
 .pf-findings li{margin-bottom:6px}
 .pf-findings p{font-size:12.5px;color:var(--muted)}
-@media(max-width:900px){.pf-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.pf-cols{grid-template-columns:minmax(0,1fr)}}
+.pf-more{border-top:1px solid var(--border);padding-top:6px}
+.pf-more > summary{cursor:pointer;font-weight:700;font-size:13px;padding:10px 2px;color:var(--muted);list-style:none}
+.pf-more > summary::before{content:"▸ ";}
+.pf-more[open] > summary::before{content:"▾ ";}
+.pf-more[open]{display:flex;flex-direction:column;gap:14px}
+@media(max-width:900px){.pf-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.pf-cols{grid-template-columns:minmax(0,1fr)}.cx-settings{grid-template-columns:minmax(0,1fr)}.cx-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){
-  .edge-strip{margin:0 12px 10px;gap:8px 14px}.hide-sm{display:none}.es-more{margin-left:0;width:100%}
+  body > header.cx-head{padding:14px 12px 10px}
+  header.cx-head h1{font-size:21px}
+  .cx-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .cx-actions button{min-height:42px;font-size:12.5px}
+  .cx-settings,.cx-stats,#marketTickerPanel{margin-left:12px;margin-right:12px}
+  .cx-stats{gap:8px}.cx-stat{padding:11px 12px}.cx-stat b{font-size:20px}
+  .edge-strip{margin:0 12px 10px;flex-wrap:wrap}.es-more{width:100%}
   .perf-panel{padding:0 12px 24px}
   .pf-tile b{font-size:19px}
   .pf-wl{grid-template-columns:92px minmax(0,1fr) 70px}

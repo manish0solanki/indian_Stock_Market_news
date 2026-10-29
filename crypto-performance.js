@@ -83,57 +83,54 @@
       : 'A SHORT signal was skipped because auto SHORT trades are off in your guards.';
   }
 
-  /* ───────── Edge strip (always visible above the tabs) ───────── */
+  /* ───────── Bot status line (above the price row) ───────── */
   function renderStrip() {
     const el = $('edgeStrip');
     if (!el) return;
     if (!data) { el.hidden = true; return; }
     const s = stats(data.trades), b = breakerOf(data);
-    if (!s.n && !b.known) { el.hidden = true; return; }
-    const state = !b.serverOn ? ['off', '⏸', 'Server bot off']
-      : b.active ? ['paused', '🛑', 'Paused by circuit breaker'] : ['live', '✅', 'Trading'];
-    el.className = 'edge-strip ' + state[0];
-    el.innerHTML =
-      '<span class="es-state"><i aria-hidden="true">' + state[1] + '</i>' + state[2] + '</span>' +
-      '<span class="es-kv"><small>Last 30 trades</small><b class="' + cls(b.known ? b.expR : s.last30R) + '">' + rFmt(b.known ? b.expR : s.last30R) + '/trade</b></span>' +
-      '<span class="es-kv"><small>Net P&amp;L</small><b class="' + cls(s.net) + '">' + inr(s.net, true) + '</b></span>' +
-      '<span class="es-kv"><small>Avg win / loss</small><b><span class="pos">' + inr(s.avgWin, true) + '</span> / <span class="neg">' + inr(s.avgLoss) + '</span></b></span>' +
-      '<span class="es-kv hide-sm"><small>Win rate</small><b>' + Math.round(s.winRate) + '%</b></span>' +
+    let tone, text;
+    if (!b.serverOn) { tone = 'off'; text = '<b>Bot is off.</b> Turn on Auto Trades (Server) to let it trade.'; }
+    else if (b.active) { tone = 'paused'; text = '<b>Bot paused.</b> Its last ' + b.n + ' trades average ' + rFmt(b.expR) + ', so it is only paper-tracking signals until that is back above +' + num(b.resumeAtR).toFixed(2) + 'R.'; }
+    else if (s.n < 20) { tone = 'live'; text = '<b>Bot trading.</b> ' + (s.n ? s.n + ' trade' + (s.n === 1 ? '' : 's') + ' closed so far' : 'No trades closed yet') + '; it pauses itself if the last 30 trades average below 0R (from 20 trades).'; }
+    else { tone = 'live'; text = '<b>Bot trading.</b> Last 30 trades average ' + rFmt(b.known ? b.expR : s.last30R) + ' each.'; }
+    const warn = settingsBlock(data);
+    el.className = 'edge-strip ' + tone;
+    el.innerHTML = '<span class="es-dot" aria-hidden="true"></span><span class="es-text">' + text + (warn ? ' <span class="es-warn">⚠️ Settings block every signal; see Performance.</span>' : '') + '</span>' +
       '<button type="button" class="es-more" data-perf-open>Performance →</button>';
     el.hidden = false;
   }
 
   /* ───────── Performance tab ───────── */
   function verdict(s, b, d) {
-    const shadowClosed = d.shadow.filter((x) => x.closed_at), shadowR = shadowClosed.length ? shadowClosed.reduce((a, x) => a + num(x.r_multiple), 0) / shadowClosed.length : null;
     let head, body, tone;
-    if (s.n < 20) { tone = 'neutral'; head = 'Not enough trades to judge yet'; body = 'There are ' + s.n + ' closed trades. Expectancy needs at least 20–30 trades before it means much.'; }
-    else if (s.expR < 0) { tone = 'bad'; head = 'The strategy is losing money'; body = 'Over ' + s.n + ' closed trades each trade loses <b>' + rFmt(s.expR) + '</b> (' + inr(s.expInr) + ') on average after fees. Wins average ' + inr(s.avgWin, true) + ', losses ' + inr(s.avgLoss) + '.'; }
-    else { tone = 'good'; head = 'The strategy is making money'; body = 'Over ' + s.n + ' closed trades each trade makes <b>' + rFmt(s.expR) + '</b> (' + inr(s.expInr, true) + ') on average after fees.'; }
+    if (!s.n) { tone = 'neutral'; head = 'Fresh start'; body = 'No closed trades yet. Results appear here as trades close; give it 20–30 trades before judging the strategy.'; }
+    else if (s.n < 20) { tone = 'neutral'; head = 'Too early to judge'; body = s.n + ' closed trade' + (s.n === 1 ? '' : 's') + ' so far (' + inr(s.net, true) + '). A strategy needs 20–30 trades before the average means much.'; }
+    else if (s.expR < 0) { tone = 'bad'; head = 'Losing ' + rFmt(s.expR).replace('−', '') + ' per trade'; body = 'Each trade loses ' + inr(s.expInr) + ' on average after fees: wins average ' + inr(s.avgWin, true) + ', losses ' + inr(s.avgLoss) + '.'; }
+    else { tone = 'good'; head = 'Making ' + rFmt(s.expR) + ' per trade'; body = 'Each trade makes ' + inr(s.expInr, true) + ' on average after fees.'; }
     let breaker = '';
-    if (b.known) {
-      breaker = b.active
-        ? '<p><b>🛑 Circuit breaker ON</b>' + (b.since ? ' since ' + esc(new Date(b.since).toLocaleString()) : '') + '. The last ' + b.n + ' trades average <b class="neg">' + rFmt(b.expR) + '</b>, so the bot opens no real trades. Signals it would have taken are tracked as shadow trades' +
-          (shadowR !== null ? ' (' + shadowClosed.length + ' closed so far, averaging <b class="' + cls(shadowR) + '">' + rFmt(shadowR) + '</b>)' : ' (none closed yet)') +
-          '. Real trading resumes automatically once the last 30 trades average above <b>+' + num(b.resumeAtR).toFixed(2) + 'R</b>.</p>'
-        : '<p><b>✅ Circuit breaker off</b>: the last ' + b.n + ' trades average <b class="' + cls(b.expR) + '">' + rFmt(b.expR) + '</b>. It switches real trading off if that average drops below 0R (needs at least 20 trades).</p>';
-    }
+    if (b.known && b.active) breaker = '<p>🛑 <b>Paused by the circuit breaker</b>: the last ' + b.n + ' trades average ' + rFmt(b.expR) + '. Signals are paper-tracked (see Shadow trades below) and real trading resumes on its own above +' + num(b.resumeAtR).toFixed(2) + 'R.</p>';
     const warn = settingsBlock(d);
-    return '<section class="pf-card pf-verdict ' + tone + '"><div class="pf-verdict-head"><span class="pf-badge">' + (tone === 'bad' ? 'Losing' : tone === 'good' ? 'Profitable' : 'Early') + '</span><h2>' + head + '</h2></div><p>' + body + '</p>' + breaker +
+    return '<section class="pf-card pf-verdict ' + tone + '"><h2>' + head + '</h2><p>' + body + '</p>' + breaker +
       (warn ? '<p class="pf-warn">⚠️ ' + warn + '</p>' : '') + '</section>';
   }
 
   function tiles(s) {
     const t = (label, value, sub, c) => '<div class="pf-tile"><span>' + label + '</span><b class="' + (c || '') + '">' + value + '</b><small>' + sub + '</small></div>';
-    const ratio = s.avgLoss ? Math.abs(s.avgWin / s.avgLoss) : 0;
     return '<section class="pf-tiles">' +
-      t('Net P&amp;L', inr(s.net, true), s.n + ' closed trades', cls(s.net)) +
+      t('Net P&amp;L', inr(s.net, true), s.n + ' closed trade' + (s.n === 1 ? '' : 's') + ' · fees ' + inr(s.fees), cls(s.net)) +
+      t('Win rate', s.n ? Math.round(s.winRate) + '%' : '—', s.wins + ' won · ' + s.losses + ' lost') +
+      t('Average win', s.wins ? inr(s.avgWin, true) : '—', 'Per winning trade', s.wins ? 'pos' : '') +
+      t('Average loss', s.losses ? inr(s.avgLoss) : '—', 'Per losing trade', s.losses ? 'neg' : '') +
+    '</section>';
+  }
+
+  function moreTiles(s) {
+    const t = (label, value, sub, c) => '<div class="pf-tile"><span>' + label + '</span><b class="' + (c || '') + '">' + value + '</b><small>' + sub + '</small></div>';
+    return '<section class="pf-tiles">' +
       t('Per trade', rFmt(s.expR), inr(s.expInr, true) + ' on average', cls(s.expR)) +
-      t('Win rate', Math.round(s.winRate) + '%', s.wins + ' won · ' + s.losses + ' lost') +
-      t('Avg win vs avg loss', ratio ? ratio.toFixed(2) + '×' : '—', inr(s.avgWin, true) + ' vs ' + inr(s.avgLoss), ratio && ratio < 1 ? 'neg' : '') +
-      t('Profit factor', s.pf === null ? '—' : s.pf.toFixed(2), 'Gross wins ÷ gross losses; above 1 makes money', s.pf !== null ? (s.pf >= 1 ? 'pos' : 'neg') : '') +
-      t('Fees paid', inr(s.fees), (s.n ? inr(s.fees / s.n) : '₹0') + ' per trade (estimated)') +
-      t('Worst drawdown', inr(s.maxDD), 'Largest fall from a P&amp;L peak', s.maxDD < 0 ? 'neg' : '') +
+      t('Profit factor', s.pf === null ? '—' : s.pf.toFixed(2), 'Above 1 makes money', s.pf !== null ? (s.pf >= 1 ? 'pos' : 'neg') : '') +
+      t('Worst drawdown', inr(s.maxDD), 'Largest fall from a peak', s.maxDD < 0 ? 'neg' : '') +
       t('Last 30 trades', rFmt(s.last30R), 'Average per trade', cls(s.last30R)) +
     '</section>';
   }
@@ -141,7 +138,7 @@
   function winLossBars(s) {
     const max = Math.max(Math.abs(s.avgWin), Math.abs(s.avgLoss), 1);
     const bar = (label, v, c) => '<div class="pf-wl"><span>' + label + '</span><i><u class="' + c + '" style="width:' + (Math.abs(v) / max * 100).toFixed(1) + '%"></u></i><b>' + inr(v, c === 'pos') + '</b></div>';
-    return '<section class="pf-card"><h3>Average win vs average loss</h3><p class="pf-note">This is the gap you noticed: a typical loss is ' + (s.avgWin ? (Math.abs(s.avgLoss / s.avgWin)).toFixed(1) : '—') + '× a typical win, so even ' + Math.round(s.winRate) + '% winners can’t cover it.</p>' +
+    return '<section class="pf-card"><h3>Average win vs average loss</h3><p class="pf-note">A typical loss is ' + (s.avgWin ? (Math.abs(s.avgLoss / s.avgWin)).toFixed(1) : '—') + '× a typical win. With ' + Math.round(s.winRate) + '% winners, wins need to be at least ' + (s.winRate > 0 && s.winRate < 100 ? ((100 - s.winRate) / s.winRate).toFixed(2) : '—') + '× the size of losses to break even.</p>' +
       bar('Average win', s.avgWin, 'pos') + bar('Average loss', s.avgLoss, 'neg') + '</section>';
   }
 
@@ -259,13 +256,30 @@
     // Chart width = its card's inner width: two columns from 900px, one below.
     const cs = getComputedStyle(root), inner = root.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const two = inner >= 860, W = Math.max(260, Math.round((two ? (inner - 14) / 2 : inner) - 34));
+    const open = (() => { try { return localStorage.getItem('cs_perf_more') === '1'; } catch (e) { return false; } })();
     root.innerHTML = verdict(s, b, data) + tiles(s) +
-      '<div class="pf-cols">' + winLossBars(s) + exitTable(data.trades) + '</div>' +
-      '<div class="pf-cols">' + equityChart(s, data.trades, W) + histogram(data.trades, W) + '</div>' +
-      '<div class="pf-cols">' + shadowTable(data) + findings() + '</div>';
+      (s.n >= 2 ? '<div class="pf-cols">' + equityChart(s, data.trades, W) + exitTable(data.trades) + '</div>' : '') +
+      '<details class="pf-more" id="pfMore"' + (open ? ' open' : '') + '><summary>More detail</summary>' +
+        (s.n ? moreTiles(s) + '<div class="pf-cols">' + winLossBars(s) + histogram(data.trades, W) + '</div>' : '') +
+        '<div class="pf-cols">' + shadowTable(data) + findings() + '</div>' +
+      '</details>';
+    $('pfMore')?.addEventListener('toggle', (e) => { try { localStorage.setItem('cs_perf_more', e.target.open ? '1' : '0'); } catch (x) {} });
     wireCharts(root, data.trades, s);
     renderStrip();
   }
+
+  // Technical connection log: collapsed to its title bar unless opened (remembered on this device).
+  const log = $('connectionLog'), logHead = log?.querySelector('.connection-log-head');
+  const showLog = (on) => { if (!log) return; log.classList.toggle('collapsed', !on); logHead.setAttribute('aria-expanded', String(on)); const c = log.querySelector('.cl-chev'); if (c) c.textContent = on ? '▾' : '▸'; try { localStorage.setItem('cs_log_open', on ? '1' : '0'); } catch (e) {} };
+  logHead?.addEventListener('click', (e) => { if (!e.target.closest('button')) showLog(log.classList.contains('collapsed')); });
+  logHead?.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) { e.preventDefault(); showLog(log.classList.contains('collapsed')); } });
+  try { if (localStorage.getItem('cs_log_open') === '1') showLog(true); } catch (e) {}
+
+  // "Bot settings" button: shows the settings panel (open state remembered on this device).
+  const setBtn = $('cxSettingsBtn'), setPanel = $('cxSettings');
+  const showSettings = (on) => { if (!setPanel || !setBtn) return; setPanel.hidden = !on; setBtn.setAttribute('aria-expanded', String(on)); setBtn.classList.toggle('on', on); try { localStorage.setItem('cs_settings_open', on ? '1' : '0'); } catch (e) {} };
+  setBtn?.addEventListener('click', () => showSettings(setPanel.hidden));
+  try { if (localStorage.getItem('cs_settings_open') === '1') showSettings(true); } catch (e) {}
 
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-perf-open]') && typeof selectAppTab === 'function') { selectAppTab('performance'); $('perfPane')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }

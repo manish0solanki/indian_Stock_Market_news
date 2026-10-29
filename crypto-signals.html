@@ -797,7 +797,7 @@ img,svg,canvas{max-width:100%}
 <base target="_blank">
 <base target="_blank">
 <link rel="stylesheet" href="/site-header.css">
-<link rel="stylesheet" href="/crypto-performance.css?v=1">
+<link rel="stylesheet" href="/crypto-performance.css?v=5">
 <script src="/site-header.js"></script>
 <style>
 /* Shared header sits above; this page's own header becomes the page title and scrolls normally. */
@@ -814,23 +814,36 @@ body > header{position:relative!important;top:auto!important}
 <body>
 <div id="mpHeader"></div>
 
-<header>
-<div>
-  <h1>⚡ CryptoSignal <span>Tracker</span> <small style="font-size:.55em;color:var(--green)">V5</small></h1>
-  <div class="sub">V5 · LONG + SHORT · EMA20 pullback/reclaim · RSI/volume confirmation · 0.8%–4% stop · selectable R:R · Paper/Test mode</div>
-</div>
-<div class="controls">
-  <select id="tfSelect">
+<header class="cx-head">
+  <div class="cx-title">
+    <h1>Crypto Bot</h1>
+    <div class="sub">Paper trading · signals scanned every few minutes · trades managed 24/7 on the server</div>
+  </div>
+  <div class="cx-actions">
+    <button id="scanBtn" type="button">🔍 Scan now</button>
+    <button id="autoTradeBtn" type="button">🤖 Auto Trades: OFF</button>
+    <button id="killSwitchBtn" class="kill-switch" type="button">🛑 Kill Switch: OFF</button>
+    <button id="cxSettingsBtn" type="button" aria-expanded="false" aria-controls="cxSettings">⚙️ Bot settings</button>
+  </div>
+  <!-- Kept for the page logic; Live Trades and the site header cover these. -->
+  <button id="jrnlBtn" type="button" hidden>📓 Journal</button>
+  <button id="homeBtn" class="home-btn" type="button" hidden>🏠 MarketPulse Home</button>
+</header>
+
+<section class="cx-settings" id="cxSettings" hidden aria-label="Bot settings">
+  <div class="cx-group">
+    <h3>Markets</h3>
+    <label class="cx-field"><span>Timeframe</span><select id="tfSelect">
     <option value="15m">15m</option>
     <option value="1h" selected>1H</option>
     <option value="4h">4H</option>
-  </select>
-  <select id="quoteSelect" hidden>
+  </select></label>
+    <select id="quoteSelect" hidden>
     <option value="USDT" selected>USDT pairs</option>
     <option value="BTC">BTC pairs</option>
     <option value="INR">INR (converted)</option>
   </select>
-  <div id="quoteSelectorPanel" class="check-selector quote-selector">
+    <div id="quoteSelectorPanel" class="check-selector quote-selector">
     <div class="check-selector-head"><b>Quote Markets</b><span>
       <button type="button" class="small" id="selectAllQuotes">Select All</button>
       <button type="button" class="small" id="clearAllQuotes">Clear</button>
@@ -841,49 +854,72 @@ body > header{position:relative!important;top:auto!important}
       <label class="check-item"><input type="checkbox" value="INR"><span>INR (converted)</span></label>
     </div>
   </div>
-  <select id="scanModeSelect" title="Choose what the scanner should scan">
+    <label class="cx-field"><span>Coins to scan</span><select id="scanModeSelect" title="Choose what the scanner should scan">
     <option value="all" selected>All tracked pairs</option>
     <option value="pairs">Select pairs</option>
     <option value="currencies">Select currencies</option>
-  </select>
-  <div id="pairSelectorPanel" class="check-selector" hidden>
+  </select></label>
+    <div id="pairSelectorPanel" class="check-selector" hidden>
     <div class="check-selector-head"><b>Select Pairs</b><span>
       <button type="button" class="small" id="selectAllPairs">Select All</button>
       <button type="button" class="small" id="clearAllPairs">Clear</button>
     </span></div>
     <div id="pairSelect" class="check-grid"></div>
   </div>
-  <div id="currencySelectorPanel" class="check-selector" hidden>
+    <div id="currencySelectorPanel" class="check-selector" hidden>
     <div class="check-selector-head"><b>Select Cryptocurrencies</b><span>
       <button type="button" class="small" id="selectAllCurrencies">Select All</button>
       <button type="button" class="small" id="clearAllCurrencies">Clear</button>
     </span></div>
     <div id="currencySelect" class="check-grid"></div>
   </div>
-  <select id="riskSelect" title="Risk portion of risk:reward">
+  </div>
+  <div class="cx-group">
+    <h3>Trade rules</h3>
+    <div class="cx-row">
+      <label class="cx-field"><span>Risk</span><select id="riskSelect" title="Risk portion of risk:reward">
     <option value="1" selected>Risk 1</option><option value="2">Risk 2</option>
     <option value="3">Risk 3</option><option value="4">Risk 4</option>
     <option value="5">Risk 5</option><option value="6">Risk 6</option>
     <option value="7">Risk 7</option><option value="8">Risk 8</option>
     <option value="9">Risk 9</option><option value="10">Risk 10</option>
-  </select>
-  <select id="rewardSelect" title="Reward portion of risk:reward">
+  </select></label>
+      <label class="cx-field"><span>Reward</span><select id="rewardSelect" title="Reward portion of risk:reward">
     <option value="1">Reward 1</option><option value="2" selected>Reward 2</option>
     <option value="3">Reward 3</option><option value="4">Reward 4</option>
     <option value="5">Reward 5</option><option value="6">Reward 6</option>
     <option value="7">Reward 7</option><option value="8">Reward 8</option>
     <option value="9">Reward 9</option><option value="10">Reward 10</option>
-  </select>
-  <select id="directionSelect" title="Signal direction"><option value="BOTH" selected>↕ Both</option><option value="LONG">📈 Longs</option><option value="SHORT">📉 Shorts</option></select>
-  <button id="autoBtn" class="primary">⏸ Auto: ON</button>
-  <button id="autoTradeBtn">🤖 Auto Trades: OFF</button><button id="limitTradesBtn" title="Turn V6 trade limits on or off">🛡 Limits: ON</button><button id="killSwitchBtn" class="kill-switch">🛑 Kill Switch: OFF</button>
-  <button id="takeAllBtn" class="primary">⚡ Take All Qualified</button>
-  <button id="scanBtn">🔍 Scan Now</button>
-  <button id="notifyBtn">🔔 Alerts</button><button id="notificationPanelBtn" title="View scanner notifications">🔔 Notifications <span id="notificationCount" class="notification-count">0</span></button>
-  <button id="jrnlBtn">📓 Journal</button>
-  <button id="homeBtn" class="home-btn">🏠 MarketPulse Home</button>
+  </select></label>
+    </div>
+    <label class="cx-field"><span>Direction</span><select id="directionSelect" title="Signal direction"><option value="BOTH" selected>↕ Both</option><option value="LONG">📈 Longs</option><option value="SHORT">📉 Shorts</option></select></label>
+    <button id="limitTradesBtn" type="button" title="Turn V6 trade limits on or off">🛡 Limits: ON</button>
+    <p class="cx-hint">Limits: max 3 open trades, stop for the day after a 2% loss, pause 4 hours after 3 losses in a row.</p>
+  </div>
+  <div class="cx-group">
+    <h3>Automation &amp; alerts</h3>
+    <button id="autoBtn" class="primary" type="button">⏸ Auto: ON</button>
+    <p class="cx-hint">Auto: rescans for signals on a timer while this page is open.</p>
+    <button id="takeAllBtn" type="button">⚡ Take all qualified signals now</button>
+    <div class="cx-row">
+      <button id="notifyBtn" type="button">🔔 Alerts</button>
+      <button id="notificationPanelBtn" type="button" title="View scanner notifications">🔔 Notifications <span id="notificationCount" class="notification-count">0</span></button>
+    </div>
+  </div>
+</section>
+
+<div class="cx-stats" id="statsBar"></div>
+<div class="edge-strip" id="edgeStrip" hidden></div>
+
+
+
+<div class="market-ticker-panel" id="marketTickerPanel">
+  <div class="market-ticker-head">
+    <div class="market-ticker-title">📈 Top Crypto Market</div>
+    <div class="market-ticker-status" id="marketTickerStatus">Connecting to Binance…</div>
+  </div>
+  <div class="market-ticker-grid" id="marketTickerGrid"><div class="market-ticker-empty">Loading live prices…</div></div>
 </div>
-</header>
 
 <div class="statusbar">
   <span><span class="dot on" id="connDot"></span><span id="connTxt">Starting...</span></span>
@@ -895,14 +931,6 @@ body > header{position:relative!important;top:auto!important}
   <span id="lastSignal" style="margin-left:auto"></span>
 </div>
 
-<div class="market-ticker-panel" id="marketTickerPanel">
-  <div class="market-ticker-head">
-    <div class="market-ticker-title">📈 Top Crypto Market</div>
-    <div class="market-ticker-status" id="marketTickerStatus">Connecting to Binance…</div>
-  </div>
-  <div class="market-ticker-grid" id="marketTickerGrid"><div class="market-ticker-empty">Loading live prices…</div></div>
-</div>
-<div class="stats" id="statsBar"></div>
 <div class="notification-panel" id="notificationPanel" hidden>
   <div class="notification-panel-head">
     <div><b>🔔 Scan Notifications</b><span id="notificationPanelStatus">All scanner activity</span></div>
@@ -913,17 +941,17 @@ body > header{position:relative!important;top:auto!important}
   </div>
 </div>
 
-<div class="edge-strip" id="edgeStrip" hidden></div>
+
 
 <div class="tabs">
-  <div class="tab active" data-tab="signals">📶 Signals</div>
-  <div class="tab" data-tab="performance">📈 Performance</div>
-  <div class="tab" data-tab="live">🟢 Live Trades <span id="liveTabCount"></span></div>
-  <div class="tab" data-tab="archive">🗄️ Archive <span id="archiveTabCount"></span></div>
-  <div class="tab" data-tab="wallet">💰 Wallet <span id="walletBalanceTab"></span></div>
-  <div class="tab" data-tab="reports">📊 Reports</div>
-  <div class="tab" data-tab="backtest">🧪 Backtest</div>
-  <div class="tab" data-tab="settings">⚙️ Settings</div>
+  <div class="tab active" data-tab="signals">Signals</div>
+  <div class="tab" data-tab="live">Open trades <span id="liveTabCount"></span></div>
+  <div class="tab" data-tab="archive">History <span id="archiveTabCount"></span></div>
+  <div class="tab" data-tab="performance">Performance</div>
+  <div class="tab" data-tab="wallet">Wallet <span id="walletBalanceTab"></span></div>
+  <div class="tab" data-tab="reports">Reports</div>
+  <div class="tab" data-tab="backtest">Backtest</div>
+  <div class="tab" data-tab="settings">Settings</div>
 </div>
 
 <div class="trade-tools" id="tradeTools" style="display:none">
@@ -1175,8 +1203,8 @@ body > header{position:relative!important;top:auto!important}
 
 <div class="toast" id="toast"></div>
 
-<div class="connection-log" id="connectionLog">
-  <div class="connection-log-head"><b>🔌 Connection Log</b><div><span id="connectionLogStatus">Waiting for scanner…</span> <button class="connection-log-clear" id="clearConnectionLog">Clear</button></div></div>
+<div class="connection-log collapsed" id="connectionLog">
+  <div class="connection-log-head" role="button" tabindex="0" aria-expanded="false" title="Show or hide the technical log"><b>🔌 Connection log <span class="cl-chev" aria-hidden="true">▸</span></b><div><span id="connectionLogStatus">Waiting for scanner…</span> <button class="connection-log-clear" id="clearConnectionLog">Clear</button></div></div>
   <div class="connection-log-body" id="connectionLogBody"><div class="connection-log-empty">No connection attempts yet.</div></div>
 </div>
 <script src="crypto-manager/manager.js"></script>
@@ -4355,17 +4383,15 @@ function renderStats(){
   const wr=total?Math.round(wins/total*100):0;
   const heat=state.signals.length,heatClass=heat>MAX_HEAT?"heat-warn":"heat-ok";
   $("heatStat").innerHTML=`🌡 Heat: <b class="${heatClass}">${heat}/${MAX_HEAT}</b>`;
-  $("statsBar").innerHTML=`
-    <div class="stat"><div class="v" style="color:var(--blue)">${state.signals.length}</div><div class="l">Active Signals</div></div>
-    <div class="stat"><div class="v" style="color:var(--yellow)">${state.journal.length}</div><div class="l">Total Trades</div></div>
-    <div class="stat"><div class="v" style="color:var(--green)">${state.journal.filter(t=>!t.closed).length}</div><div class="l">Live Trades</div></div>
-    <div class="stat"><div class="v" style="color:${wr>=50?'var(--green)':'var(--red)'}">${wr}%</div><div class="l">Win Rate</div></div>
-    <div class="stat"><div class="v" style="color:${runningPnl>=0?'var(--green)':'var(--red)'}">${runningPnl>=0?"+":""}${fmtINR(runningPnl)}</div><div class="l">Running P&L</div></div>
-    <div class="stat"><div class="v" style="color:${todayPnl>=0?'var(--green)':'var(--red)'}">${todayPnl>=0?"+":""}${fmtINR(todayPnl)}</div><div class="l">Today's P&L</div></div>
-    <div class="stat"><div class="v" style="color:${gross>=0?'var(--green)':'var(--red)'}">${gross>=0?"+":""}${fmtINR(gross)}</div><div class="l">Gross P&L Since Deposit</div></div>
-    <div class="stat"><div class="v" style="color:var(--red)">-${fmtINR(fees)}</div><div class="l">Binance Fees</div></div>
-    <div class="stat"><div class="v" style="color:${totalProfit>=0?'var(--green)':'var(--red)'}">${totalProfit>=0?"+":""}${fmtINR(totalProfit)}</div><div class="l">Total P&L Since Deposit</div></div>
-    <div class="stat"><div class="v" style="font-size:14px;color:var(--muted)">${state.scanTime?state.scanTime.toLocaleTimeString():"—"}</div><div class="l">Last Scan</div></div>`;
+  const openTrades=state.journal.filter(t=>!t.closed).length;
+  const full=v=>(v<0?"−":"")+"₹"+Math.abs(Math.round(Number(v)||0)).toLocaleString("en-IN");
+  const sg=v=>(v>0?"+":"")+full(v), col=v=>v>0?"pos":v<0?"neg":"";
+  const tile=(label,value,sub,c)=>'<div class="cx-stat"><span>'+label+'</span><b class="'+(c||"")+'">'+value+'</b><small>'+sub+'</small></div>';
+  $("statsBar").innerHTML=
+    tile("Account value",full(s.paperEquity),full(s.availableCash)+" free to trade")+
+    tile("Open trades",String(openTrades),openTrades?sg(runningPnl)+" running":"None right now",openTrades?col(runningPnl):"")+
+    tile("Today",sg(todayPnl),closed.filter(t=>{const d=t.closedAt?new Date(t.closedAt):null;return d&&d.toLocaleDateString("en-CA")===todayKey;}).length+" closed today",col(todayPnl))+
+    tile("Total P&amp;L",sg(totalProfit),total?wr+"% of "+total+" trades won":"No closed trades yet",col(totalProfit));
 }
 
 function getTradeView(panel){
@@ -4983,7 +5009,7 @@ async function clearAllTrades(){
     return;
   }
   const count=state.journal.length;
-  if(!count){
+  if(!count&&!dbEnabled()){
     toast("ℹ️ No trades to clear.");
     return;
   }
@@ -4996,19 +5022,10 @@ async function clearAllTrades(){
   $("clearAllTradesBtn")?.setAttribute("disabled","disabled");
   try{
     if(dbEnabled()){
-      for(const t of [...state.journal]){
-        if(!t.id) continue;
-        let result=await dbDeleteTrade(t);
-        if(result?.error){
-          const ledger=await dbDeleteTradeWalletTransactions(t);
-          if(!ledger.ok) throw ledger.error||new Error("Could not clear wallet rows for "+t.sym);
-          result=await dbDeleteTrade(t);
-          if(result?.error) throw result.error;
-        }else{
-          const ledger=await dbDeleteTradeWalletTransactions(t);
-          if(!ledger.ok) throw ledger.error||new Error("Could not clear wallet rows for "+t.sym);
-        }
-      }
+      // One server-side reset: trades, shadow trades and their wallet reservations/credits (the
+      // server bot's wallet rows carry no trade_id, so deleting them per trade missed them).
+      const r=await dbRequest("rpc/crypto_reset_trading",{method:"POST",body:"{}"});
+      if(r.error) throw r.error;
       await loadWallet();
     }else{
       state.journal=[];
@@ -6310,6 +6327,6 @@ liveTimer=setInterval(updateLivePrices,LIVE_UPDATE_MS);
 </script>
 
 
-<script src="/crypto-performance.js?v=1"></script>
+<script src="/crypto-performance.js?v=3"></script>
 </body>
 </html>
