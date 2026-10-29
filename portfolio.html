@@ -41,6 +41,9 @@ body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-
 #current{font-size:clamp(26px,3vw,34px)}
 .heroline{display:flex;align-items:baseline;gap:6px;margin-top:6px;font-size:13px;color:var(--muted)}
 .heroline .value{font-size:15px;margin:0}
+.split{display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--accent) 25%,var(--border));font-size:12.5px;color:var(--muted)}
+.split b{color:var(--text);font-variant-numeric:tabular-nums}
+.split i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .card #pnlPct{font-size:14px;margin-top:2px}
 .green{color:var(--green)}.red{color:var(--red)}.neutral{color:var(--text)}
 .muted{color:var(--muted)}.mono{font-variant-numeric:tabular-nums}
@@ -207,7 +210,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 </div>
 <div id="status" class="status"></div>
 <section class="summary">
- <div class="card hero"><div class="label">Current value</div><div class="value" id="current">₹0</div><div class="heroline"><span class="value" id="dayChange">₹0</span><span>today</span></div></div>
+ <div class="card hero"><div class="label">Current value</div><div class="value" id="current">₹0</div><div class="heroline"><span class="value" id="dayChange">₹0</span><span>today</span></div><div class="split" id="splitLine"></div></div>
  <div class="card"><div class="label">Invested</div><div class="value" id="invested">₹0</div></div>
  <div class="card"><div class="label">Total P&amp;L</div><div class="value" id="pnl">₹0</div><div class="value" id="pnlPct">0.00%</div></div>
  <div class="card"><div class="label">Holdings</div><div class="value" id="holdTotal">0</div><div class="sub" id="holdCount">0 holdings</div></div>
@@ -432,11 +435,18 @@ function render(){
  const f=buildFunds().sort((a,b)=>(b.current||b.cost)-(a.current||a.cost));
  // Summary covers stocks and mutual funds together.
  const all=[...h,...f];
- let inv=all.reduce((a,x)=>a+x.cost,0),cur=all.reduce((a,x)=>a+(x.current||0),0);
- const pricedCost=all.reduce((a,x)=>a+(x.current?x.cost:0),0),pnl=cur-pricedCost,pct=pricedCost?pnl/pricedCost*100:0;
+ // A holding without a live price is counted at cost in the current value (and left out of P&L).
+ const valueOf=x=>x.current||x.cost;
+ let inv=all.reduce((a,x)=>a+x.cost,0),cur=all.reduce((a,x)=>a+valueOf(x),0);
+ const pricedCur=all.reduce((a,x)=>a+(x.current||0),0);
+ const pricedCost=all.reduce((a,x)=>a+(x.current?x.cost:0),0),pnl=pricedCur-pricedCost,pct=pricedCost?pnl/pricedCost*100:0;
  const dayChange=all.reduce((a,x)=>a+(Number.isFinite(x.dayChange)?x.dayChange:0),0);
- const prevValue=cur-dayChange,dayPct=prevValue>0?dayChange/prevValue*100:0;
+ const prevValue=pricedCur-dayChange,dayPct=prevValue>0?dayChange/prevValue*100:0;
  $('invested').textContent=money(inv);
+ const sv=h.reduce((a,x)=>a+valueOf(x),0),fv=f.reduce((a,x)=>a+valueOf(x),0);
+ const part=(col,label,v,list)=>{const c=list.reduce((a,x)=>a+x.cost,0),pv=list.reduce((a,x)=>a+(x.current||0),0),pc=list.reduce((a,x)=>a+(x.current?x.cost:0),0);
+  return '<span><i style="background:'+col+'"></i>'+label+' <b>'+money(v).replace(/\.\d+$/,'')+'</b>'+(pc?' <span class="'+tone(pv-pc)+'">'+pctTxt((pv-pc)/pc*100)+'</span>':'')+'</span>'};
+ $('splitLine').innerHTML=all.length?part('#6366f1','Stocks',sv,h)+part('#22c55e','Mutual funds',fv,f):'';
  $('current').textContent=money(cur);
  $('dayChange').textContent=signed(dayChange)+' ('+pctTxt(dayPct)+')';
  $('dayChange').className='value '+tone(dayChange);
@@ -494,8 +504,10 @@ async function loadFunds(){
   for(let i=0;i<codes.length;i+=40){
    const r=await fetch(MF_URL+'?codes='+codes.slice(i,i+40).join(','),{cache:'no-store'});
    const d=await r.json();
-   (d.funds||[]).forEach(x=>{mfNav[x.code]={...x,at:Date.now()}});
+   (d.funds||[]).forEach(x=>{if(x.nav)mfNav[x.code]={...x,at:Date.now()}});
   }
+  // A fund whose NAV didn't load is retried once a few seconds later (the NAV service can be briefly busy).
+  if(mfTx.some(t=>!mfNav[t.scheme_code])&&!loadFunds.retry){loadFunds.retry=setTimeout(async()=>{await loadFunds();render();loadFunds.retry=null},5000)}
  }catch(e){console.warn('[Mutual funds]',e);mfError=e.message||'Could not load mutual funds'}
 }
 
@@ -521,8 +533,8 @@ function buildFunds(){
 }
 
 function renderFunds(f,dayCell,pnlCell){
- const inv=f.reduce((a,x)=>a+x.cost,0),cur=f.reduce((a,x)=>a+x.current,0);
- $('mfSummary').innerHTML=f.length?'Value '+money(cur).replace(/\.\d+$/,'')+' · P&amp;L <span class="'+tone(cur-inv)+'">'+(cur>=inv?'+':'−')+money(Math.abs(cur-inv)).replace(/\.\d+$/,'')+'</span>':'';
+ const val=f.reduce((a,x)=>a+(x.current||x.cost),0),pv=f.reduce((a,x)=>a+(x.current||0),0),pc=f.reduce((a,x)=>a+(x.current?x.cost:0),0),waiting=f.some(x=>!x.nav);
+ $('mfSummary').innerHTML=f.length?'Value '+money(val).replace(/\.\d+$/,'')+(pc?' · P&amp;L <span class="'+tone(pv-pc)+'">'+(pv>=pc?'+':'−')+money(Math.abs(pv-pc)).replace(/\.\d+$/,'')+'</span>':'')+(waiting?' · <span class="muted">loading NAVs…</span>':''):'';
  const acts=x=>'<div class="rowacts"><button class="btn sm" onclick="manageFund(\''+esc(x.code)+'\')">Edit</button><button class="btn sm danger" onclick="deleteFund(\''+esc(x.code)+'\')">Delete</button></div>';
  const empty=mfError?'<b>Mutual funds could not load</b>'+esc(mfError):'<b>No mutual funds yet</b>Tap “Add fund” to record a purchase or SIP instalment. NAVs update daily from AMFI.';
  const navCell=x=>x.nav?navTxt(x.nav)+'<small>'+esc(fmtDate(x.navDate))+'</small>':'—';

@@ -5,6 +5,7 @@
 //   ?code=122639&date=2026-10-15 -> NAV on that date, or the last NAV before it
 //   ?isins=INF879O01027,...  -> scheme code and name per ISIN (max 100), from AMFI's daily NAV file;
 //                               used when importing a CAS statement, which lists funds by ISIN
+// If mfapi.in can't give a scheme's NAV, AMFI's file supplies the latest NAV (without the previous day's).
 // Responses are cached in memory for 15 minutes (NAVs change once a day).
 
 const corsHeaders = {
@@ -61,20 +62,44 @@ async function latest(code: string) {
 }
 
 // AMFI NAVAll.txt: "Scheme Code;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Scheme Name;NAV;Date"
-let isinMap: { at: number; map: Map<string, { code: string; name: string }> } | null = null;
-async function getIsinMap() {
-  if (isinMap && Date.now() - isinMap.at < 12 * 3600e3) return isinMap.map;
+// One file with every scheme's latest NAV: maps ISINs to scheme codes, and backs up mfapi.in.
+type AmfiRow = { code: string; name: string; nav: number | null; date: string | null };
+let amfi: { at: number; byIsin: Map<string, AmfiRow>; byCode: Map<string, AmfiRow> } | null = null;
+async function getAmfi() {
+  if (amfi && Date.now() - amfi.at < 6 * 3600e3) return amfi;
   const res = await fetch("https://www.amfiindia.com/spages/NAVAll.txt");
   if (!res.ok) throw new Error("AMFI HTTP " + res.status);
-  const map = new Map<string, { code: string; name: string }>();
+  const byIsin = new Map<string, AmfiRow>(), byCode = new Map<string, AmfiRow>();
+  const MON: Record<string, string> = { jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06", jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12" };
   for (const line of (await res.text()).split(/\r?\n/)) {
     const f = line.split(";");
     if (f.length < 6 || !/^\d+$/.test(f[0].trim())) continue;
-    const v = { code: f[0].trim(), name: f[3].trim() };
-    for (const isin of [f[1], f[2]]) if (/^IN[A-Z0-9]{10}$/.test(isin.trim())) map.set(isin.trim(), v);
+    const d = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/.exec(f[5].trim());
+    const nav = Number(f[4]);
+    const v = { code: f[0].trim(), name: f[3].trim(), nav: nav > 0 ? nav : null, date: d ? `${d[3]}-${MON[d[2].toLowerCase()]}-${d[1]}` : null };
+    byCode.set(v.code, v);
+    for (const isin of [f[1], f[2]]) if (/^IN[A-Z0-9]{10}$/.test(isin.trim())) byIsin.set(isin.trim(), v);
   }
-  if (map.size) isinMap = { at: Date.now(), map };
-  return map;
+  if (byCode.size) amfi = { at: Date.now(), byIsin, byCode };
+  return { byIsin, byCode };
+}
+
+// mfapi.in is called a few schemes at a time, with one retry, so a burst doesn't get throttled.
+async function latestAll(codes: string[]) {
+  const out: Record<string, unknown>[] = [];
+  for (let i = 0; i < codes.length; i += 4) {
+    out.push(...await Promise.all(codes.slice(i, i + 4).map((c) =>
+      latest(c).catch(() => latest(c)).catch(() => ({ code: c, nav: null } as Record<string, unknown>)))));
+  }
+  const missing = out.filter((f) => !f.nav);
+  if (missing.length) {
+    const { byCode } = await getAmfi().catch(() => ({ byCode: new Map<string, AmfiRow>() }));
+    for (const f of missing) {
+      const a = byCode.get(String(f.code));
+      if (a?.nav) Object.assign(f, { name: f.name || a.name, nav: a.nav, nav_date: a.date, prev_nav: null, prev_date: null, source: "amfi" });
+    }
+  }
+  return out;
 }
 
 Deno.serve(async (req) => {
@@ -95,15 +120,15 @@ Deno.serve(async (req) => {
     const codes = (p.get("codes") || "").split(",").map((s) => s.trim()).filter(Boolean);
     if (codes.length) {
       if (codes.length > 40 || codes.some((c) => !/^\d{3,8}$/.test(c))) return json({ error: "codes must be up to 40 numeric scheme codes" }, 400);
-      const funds = await Promise.all([...new Set(codes)].map((c) => latest(c).catch(() => ({ code: c, nav: null }))));
+      const funds = await latestAll([...new Set(codes)]);
       return json({ success: true, funds });
     }
 
     const isins = (p.get("isins") || "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
     if (isins.length) {
       if (isins.length > 100 || isins.some((i) => !/^IN[A-Z0-9]{10}$/.test(i))) return json({ error: "isins must be up to 100 valid ISINs" }, 400);
-      const map = await getIsinMap();
-      return json({ success: true, schemes: Object.fromEntries(isins.map((i) => [i, map.get(i) || null])) });
+      const { byIsin } = await getAmfi();
+      return json({ success: true, schemes: Object.fromEntries(isins.map((i) => { const v = byIsin.get(i); return [i, v ? { code: v.code, name: v.name } : null]; })) });
     }
 
     const code = p.get("code") || "", date = p.get("date") || "";
