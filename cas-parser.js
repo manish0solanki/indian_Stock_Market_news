@@ -45,12 +45,13 @@
       const fm = /Folio\s*No\s*[:.]?\s*([A-Za-z0-9/ ]+?)(?=\s{1,}(?:PAN|KYC|Nominee)|$)/i.exec(line);
       if (fm) folio = fm[1].trim();
 
-      const im = /ISIN\s*:?\s*(IN[A-Z0-9]{10})/i.exec(line);
+      const im = /ISIN\s*:?\s*(IN[A-Z0-9]{10})/i.exec(line) || /I\s*S\s*I\s*N\s*:?\s*((?:[A-Z0-9]\s*){12})/.exec(line);
       if (im) {
         let name = line.slice(0, im.index).replace(/[-\s]+$/, '').trim();
         if (!name && i > 0) name = lines[i - 1].trim();
         name = name.replace(/^[A-Z0-9]{2,15}-(?=\S)/, '').replace(/\s*-\s*$/, '').trim();
-        const isin = im[1].toUpperCase();
+        const isin = im[1].replace(/\s+/g, '').toUpperCase();
+        if (!/^IN[A-Z0-9]{10}$/.test(isin)) continue;
         if (!funds.has(isin)) funds.set(isin, { isin, name, amc: amc.name, folios: [], txs: [], opening: 0, closing: null, cost: null, nav: null, navDate: null, value: null });
         cur = funds.get(isin);
         cur.part = { folio, opening: 0, closing: null, cost: null };
@@ -105,18 +106,40 @@
   }
 
   // Rebuild text lines from pdf.js text items (grouped by baseline, ordered left to right).
+  // PDFs often split words into fragments (even single letters), so a space is only inserted
+  // where there is a visible gap between one fragment's end and the next one's start.
   async function pageLines(page) {
     const tc = await page.getTextContent();
     const rows = [];
     for (const it of tc.items) {
-      if (!it.str || !it.str.trim()) continue;
+      if (!it.str) continue;
       const x = it.transform[4], y = it.transform[5];
-      let row = rows.find((r) => Math.abs(r.y - y) < 3);
+      const size = Math.hypot(it.transform[2], it.transform[3]) || it.height || 8;
+      let row = rows.find((r) => Math.abs(r.y - y) < Math.max(2, size * 0.35));
       if (!row) { row = { y, items: [] }; rows.push(row); }
-      row.items.push({ x, s: it.str });
+      row.items.push({ x, w: it.width || 0, size, s: it.str });
     }
     rows.sort((a, b) => b.y - a.y);
-    return rows.map((r) => r.items.sort((a, b) => a.x - b.x).map((i) => i.s.trim()).join(' '));
+    return rows.map((r) => {
+      let out = '', end = null;
+      for (const i of r.items.sort((a, b) => a.x - b.x)) {
+        if (end !== null && i.x - end > i.size * 0.18 && !/\s$/.test(out) && !/^\s/.test(i.s)) out += ' ';
+        out += i.s;
+        end = i.x + i.w;
+      }
+      return out.replace(/\s+/g, ' ').trim();
+    }).filter(Boolean);
+  }
+
+  // A shareable outline of what was read, for when a statement isn't recognised:
+  // the investor block at the top, PAN, email, phone and folio numbers are masked.
+  function redact(lines) {
+    const start = lines.findIndex((l) => /Mutual Fund|ISIN|Folio/i.test(l));
+    return lines.map((l, i) => (start > 0 && i < start) ? '[header line hidden]' : l
+      .replace(/[A-Z]{5}[0-9]{4}[A-Z]/g, 'XXXXX0000X')
+      .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, 'x@x.x')
+      .replace(/\b\d{10}\b/g, '0000000000')
+      .replace(/(Folio\s*No\s*[:.]?\s*)[A-Za-z0-9/ ]+?(?=\s+(?:PAN|KYC|Nominee)|$)/i, '$1000000')).join('\n');
   }
 
   function loadPdfJs() {
@@ -147,6 +170,7 @@
     }
     const lines = [];
     for (let p = 1; p <= doc.numPages; p++) lines.push(...await pageLines(await doc.getPage(p)));
+    lastLines = lines;
     const funds = parseLines(lines);
     if (!funds.length) {
       const err = new Error('No mutual fund schemes were found. Make sure this is a CAS from CAMS, KFintech or MF Central.');
@@ -156,5 +180,6 @@
     return funds;
   }
 
-  window.mpCas = { readPdf, parseLines, parseNumber, isoDate };
+  let lastLines = [];
+  window.mpCas = { readPdf, parseLines, parseNumber, isoDate, outline: () => redact(lastLines), pages: () => lastLines.length };
 })();
