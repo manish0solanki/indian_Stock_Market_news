@@ -22,8 +22,22 @@ const today = istIso(now);
 
 const POSTS_FILE = path.join(ROOT, "blog/posts.json");
 const posts = JSON.parse(fs.readFileSync(POSTS_FILE, "utf8"));
-const postedToday = (category) => posts.some((p) => p.category === category && String(p.date).slice(0, 10) === today);
+// Posts written by this script carry bot: true. Anything else for the same day and category came from
+// the old n8n workflow, whose market data lagged a session; those posts are replaced, not kept.
+const isBot = (p) => p.bot === true;
+const postedToday = (category) => posts.some((p) => isBot(p) && p.category === category && String(p.date).slice(0, 10) === today);
 const fileFor = (post) => path.join(ROOT, postPath(post), "index.html");
+
+function replaceLegacy(post) {
+  const stale = posts.filter((p) => !isBot(p) && (p.slug === post.slug || (p.category === post.category && String(p.date).slice(0, 10) === today)));
+  for (const old of stale) {
+    log(`  replacing earlier post: ${postPath(old)}`);
+    if (dry) continue;
+    // Unlisted rather than deleted when the address differs, so existing links keep working.
+    posts.splice(posts.indexOf(old), 1);
+  }
+  if (!dry && fs.existsSync(fileFor(post)) && stale.some((p) => p.slug === post.slug)) fs.rmSync(fileFor(post));
+}
 
 function istStamp(d) {
   const t = new Date(d.getTime() + 330 * 60e3).toISOString().slice(0, 19);
@@ -34,14 +48,15 @@ const log = (...a) => console.log(...a);
 const published = [];
 
 async function publish(post) {
-  if (fs.existsSync(fileFor(post))) { log(`  skip: ${postPath(post)} already exists`); return; }
+  replaceLegacy(post);
+  if (fs.existsSync(fileFor(post)) && !dry) { log(`  skip: ${postPath(post)} already exists`); return; }
   const { paragraphs, source } = await writeNarrative(post);
   log(`  text: ${source}`);
   const stamp = istStamp(now);
   const html = renderPost(post, paragraphs, stamp, source);
   const entry = {
     slug: post.slug, title: post.title, excerpt: (paragraphs[0] || post.summary).slice(0, 280), category: post.category, date: stamp,
-    readTime: readTime(post, paragraphs), tags: post.tags, author: "MarketPulse AI", featured: false, dataSources: post.dataSources,
+    readTime: readTime(post, paragraphs), tags: post.tags, author: "MarketPulse AI", featured: false, dataSources: post.dataSources, bot: true,
   };
   if (dry) { log(`  dry run: would write ${postPath(post)} (${html.length} bytes)`); published.push({ ...entry, html }); return; }
   fs.mkdirSync(path.dirname(fileFor(post)), { recursive: true });
