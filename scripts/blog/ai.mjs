@@ -1,0 +1,108 @@
+// Writes the commentary paragraphs with Moonshot (Kimi), using only the supplied facts.
+// Needs MOONSHOT_API_KEY; the model is MOONSHOT_MODEL (default kimi-k2.6, comma-separate to add fallbacks).
+// Every number in the AI's text must match a number in the facts; otherwise the post falls
+// back to the plain-language paragraphs built from the data, so nothing invented gets published.
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const RETRY_WAITS = [0, 8000, 20000]; // busy / rate-limited models usually recover within seconds
+const TIMEOUT_MS = 60000;            // never let one hung request stall the daily job
+
+async function callMoonshot(key, model, prompt) {
+  const res = await fetch("https://api.moonshot.ai/v1/chat/completions", {
+    method: "POST", signal: AbortSignal.timeout(TIMEOUT_MS),
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: "You are a careful Indian stock-market journalist. Use only the facts you are given." },
+        { role: "user", content: prompt },
+      ],
+      // kimi-k2.x models only accept temperature 1; extra tokens leave room for their reasoning.
+      temperature: Number(process.env.MOONSHOT_TEMPERATURE || 1),
+      max_tokens: 3000,
+    }),
+  });
+  const d = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, error: d?.error?.message, text: d?.choices?.[0]?.message?.content || "" };
+}
+
+function providers() {
+  const list = [];
+  if (process.env.MOONSHOT_API_KEY) {
+    for (const m of (process.env.MOONSHOT_MODEL || "kimi-k2.6").split(",")) list.push({ name: "moonshot:" + m.trim(), call: (p) => callMoonshot(process.env.MOONSHOT_API_KEY, m.trim(), p) });
+  }
+  return list;
+}
+
+async function generate(prompt) {
+  let lastErr;
+  for (const prov of providers()) {
+    for (const wait of RETRY_WAITS) {
+      if (wait) await sleep(wait);
+      const r = await prov.call(prompt).catch((e) => ({ ok: false, status: 0, error: e.message }));
+      if (r.ok && r.text.trim()) return { model: prov.name, text: r.text };
+      lastErr = new Error(`${prov.name}: ${r.error || (r.ok ? "empty response" : "HTTP " + r.status)}`);
+      if (r.ok || ![0, 429, 500, 502, 503].includes(r.status)) break; // not temporary: try the next model
+    }
+  }
+  throw lastErr;
+}
+
+function factNumbers(facts) {
+  const set = [];
+  const walk = (v) => {
+    if (typeof v === "number" && Number.isFinite(v)) set.push(v, Math.abs(v));
+    else if (typeof v === "string") for (const m of v.matchAll(/-?\d[\d,]*\.?\d*/g)) { const x = Number(m[0].replace(/,/g, "")); if (Number.isFinite(x)) set.push(x, Math.abs(x)); }
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === "object") Object.values(v).forEach(walk);
+  };
+  walk(facts);
+  return set;
+}
+
+// Numbers in the text that don't correspond (after rounding) to any fact.
+export function unverifiedNumbers(text, facts) {
+  const known = factNumbers(facts);
+  const bad = [];
+  for (const m of text.matchAll(/(?<![A-Za-z])(\d[\d,]*\.?\d*)(\s*(%|x|×|crore|cr|lakh|points?|sessions?|days?))?/gi)) {
+    const raw = m[1].replace(/,/g, "").replace(/\.$/, "");
+    const x = Number(raw);
+    if (!Number.isFinite(x)) continue;
+    const before = text.slice(Math.max(0, m.index - 2), m.index);
+    if (/(Q|FY|H)$/i.test(before)) continue;            // Q2, FY27, H1
+    if (x >= 2000 && x <= 2100 && !raw.includes(".")) continue; // years
+    if (Number.isInteger(x) && x <= 10 && !m[2]) continue;      // "two sectors", list positions
+    const ok = known.some((k) => Math.abs(k - x) <= Math.max(0.011, Math.abs(k) * 0.005) || Math.abs(Math.round(k) - x) < 0.001 || Math.abs(Number(k.toFixed(1)) - x) < 0.001);
+    if (!ok) bad.push(m[1]);
+  }
+  return bad;
+}
+
+function clean(text) {
+  return text.replace(/\*\*?|__|^#+\s*/gm, "").replace(/^\s*[-•]\s+/gm, "").split(/\n\s*\n|\n/).map((p) => p.trim()).filter((p) => p.length > 30);
+}
+
+export async function writeNarrative(post) {
+  if (!providers().length) return { paragraphs: post.fallback, source: "template (no MOONSHOT_API_KEY)" };
+  const prompt = [
+    "You are a careful Indian stock-market journalist writing for retail investors.",
+    post.aiTask,
+    "Rules:",
+    "- Use ONLY the facts in the JSON below. Do not add news, causes, forecasts, price targets or numbers that are not in it.",
+    "- Every number you write must appear in the JSON (you may round to 1 or 2 decimals). Write rupee amounts as ₹ with Cr for crore.",
+    "- 3 short paragraphs, 170-230 words in total, plain text, no headings, no bullet points, no markdown.",
+    "- Neutral, factual tone. No investment advice and no words like 'buy', 'sell' or 'should' directed at the reader.",
+    "",
+    "FACTS:",
+    JSON.stringify(post.facts),
+  ].join("\n");
+  try {
+    const { model, text } = await generate(prompt);
+    const paragraphs = clean(text);
+    if (paragraphs.length < 2) throw new Error("empty or too short response");
+    const bad = unverifiedNumbers(paragraphs.join(" "), post.facts);
+    if (bad.length) throw new Error("numbers not in the data: " + bad.slice(0, 5).join(", "));
+    return { paragraphs: paragraphs.slice(0, 5), source: model };
+  } catch (e) {
+    return { paragraphs: post.fallback, source: "template (AI rejected: " + e.message + ")" };
+  }
+}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tradesutra-chi.vercel.app/blog/sitemap.xml
