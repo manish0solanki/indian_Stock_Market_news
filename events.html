@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>Events Calendar: Results, Dividends &amp; Corporate Actions — MarketPulse</title>
+<meta name="description" content="Upcoming and recent NSE company events: quarterly results with the numbers and the share-price reaction, dividends, bonus issues, splits and buybacks, with the scanner's trade signals.">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--violet:#c084fc;--blue:#60a5fa;--greenbg:rgba(47,210,127,.12);--redbg:rgba(255,93,108,.12);--amberbg:rgba(243,201,105,.14);--radius:14px}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207;--violet:#7c3aed;--blue:#2563eb;--greenbg:#e7f7ec;--redbg:#fcebeb;--amberbg:#fdf4dc}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+button{font:inherit;color:inherit}
+.page{max-width:1320px;margin:0 auto;padding:22px clamp(12px,2.4vw,28px) 40px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.sub{font-size:13px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;min-width:0}
+.stat .l{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+.stat .v{font-size:22px;font-weight:800;margin-top:3px;letter-spacing:-.4px}
+.stat .s{font-size:12px;color:var(--muted)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px}
+.bar .grp{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--surface)}
+.seg button{border:0;background:none;color:var(--muted);font-weight:700;font-size:13px;padding:7px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--accent);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chip.on{color:var(--text);border-color:var(--accent2)}
+.search{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:13.5px Inter,system-ui,sans-serif;min-width:200px}
+.search:focus{outline:none;border-color:var(--accent2)}
+.k-results{background:var(--blue)}.k-dividend{background:var(--green)}.k-corp{background:var(--violet)}.k-buyback{background:var(--amber)}.k-other{background:var(--dim)}
+
+/* Month grid */
+.cal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.calhead{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border)}
+.calhead h2{margin:0;font-size:16px}
+.calhead .nav{display:flex;gap:6px}
+.navbtn{border:1px solid var(--border);background:var(--surface2);border-radius:9px;padding:6px 11px;cursor:pointer;font-weight:700}
+.navbtn:disabled{opacity:.4;cursor:default}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.dow div{padding:7px 8px;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+.day{min-height:118px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.day:nth-child(7n){border-right:0}
+.day.out{background:var(--surface2);opacity:.55}
+.day.today{box-shadow:inset 0 0 0 2px var(--accent2)}
+.day .dn{font-size:12px;font-weight:700;color:var(--muted);display:flex;justify-content:space-between}
+.day .dn em{font-style:normal;font-size:10.5px;color:var(--dim);font-weight:600}
+.ev{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 6px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;width:100%}
+.ev:hover{border-color:var(--accent2)}
+.ev i{flex:0 0 auto;width:7px;height:7px;border-radius:50%}
+.ev b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.ev .vd{margin-left:auto;font-size:10px;font-weight:800}
+.ev .vd.pos{color:var(--green)}.ev .vd.neg{color:var(--red)}.ev .vd.mix{color:var(--amber)}
+.more{font-size:11px;color:var(--accent2);background:none;border:0;padding:1px 4px;cursor:pointer;text-align:left;font-weight:700}
+
+/* List */
+.list{display:flex;flex-direction:column;gap:12px}
+.dayblock{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.dayblock h3{margin:0;padding:9px 14px;font-size:13px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:8px}
+.dayblock h3 span{color:var(--dim);font-weight:600}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 14px;border-top:1px solid var(--border);cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left}
+.row:first-of-type{border-top:0}
+.row:hover{background:var(--hover)}
+.row .dot{width:10px;height:10px;border-radius:50%}
+.row .nm b{font-size:14px}
+.row .nm small{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.pill.pos{background:var(--greenbg);color:var(--green);border-color:transparent}
+.pill.neg{background:var(--redbg);color:var(--red);border-color:transparent}
+.pill.mix{background:var(--amberbg);color:var(--amber);border-color:transparent}
+.pill.mine{color:var(--accent2);border-color:color-mix(in srgb,var(--accent2) 40%,transparent)}
+.pill.sig{color:var(--text)}
+.empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:var(--radius)}
+.note{font-size:12px;color:var(--dim);margin-top:16px;line-height:1.6}
+
+/* Detail */
+.modalbg{position:fixed;inset:0;background:rgba(4,8,18,.66);display:none;align-items:flex-start;justify-content:center;padding:4vh 14px;z-index:250;overflow:auto}
+.modalbg.open{display:flex}
+.modal{width:min(760px,100%);background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 30px 70px rgba(0,0,0,.4)}
+.mhead{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.mhead h2{font-size:19px;margin:0;letter-spacing:-.3px}
+.mhead .co{font-size:13px;color:var(--muted)}
+.x{border:1px solid var(--border);background:var(--surface2);border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:18px;line-height:1;flex:0 0 auto}
+.mbody{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 8px}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kv div{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;min-width:0}
+.kv span{display:block;font-size:10.5px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+.kv b{display:block;font-size:15px;margin-top:2px;font-variant-numeric:tabular-nums}
+.verdict{border-radius:12px;padding:12px 14px;border:1px solid var(--border);background:var(--surface2)}
+.verdict.positive{border-color:color-mix(in srgb,var(--green) 45%,var(--border));background:color-mix(in srgb,var(--green) 8%,var(--surface2))}
+.verdict.negative{border-color:color-mix(in srgb,var(--red) 45%,var(--border));background:color-mix(in srgb,var(--red) 8%,var(--surface2))}
+.verdict.mixed{border-color:color-mix(in srgb,var(--amber) 45%,var(--border));background:color-mix(in srgb,var(--amber) 8%,var(--surface2))}
+.verdict h4{margin:0 0 4px;font-size:16px}
+.verdict p{margin:0 0 6px;font-size:13.5px}
+.verdict ul{margin:6px 0 0 18px;padding:0;font-size:13px;line-height:1.6}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.tbl th,.tbl td{padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
+.tblwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+.tbl tr:last-child td{border-bottom:0}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.signal{border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.signal.buy{border-color:color-mix(in srgb,var(--green) 45%,var(--border))}
+.signal.sell{border-color:color-mix(in srgb,var(--red) 45%,var(--border))}
+.signal .lv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.signal .lv div{background:var(--surface2);border-radius:9px;padding:7px 9px}
+.signal .lv span{display:block;font-size:10.5px;color:var(--dim);font-weight:700;text-transform:uppercase}
+.signal .lv b{font-variant-numeric:tabular-nums}
+.advice{padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.55}
+.advice.ok{background:var(--greenbg)}.advice.warn{background:var(--amberbg)}.advice.info{background:var(--surface2)}
+.links{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;font-weight:600}
+.muted{color:var(--muted)}
+.disc{font-size:11.5px;color:var(--dim);line-height:1.5}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){
+ .day{min-height:74px;padding:4px}
+ .ev{font-size:10.5px;padding:2px 4px}
+ .ev .vd{display:none}
+ .kv{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .signal .lv{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .search{min-width:0;flex:1 1 100%}
+ .row{grid-template-columns:auto minmax(0,1fr)}
+ .row .tags{grid-column:2;justify-content:flex-start}
+}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <div class="head">
+  <div><h1>Events calendar</h1><div class="sub" id="asOf">Results, dividends, bonus issues, splits and buybacks on NSE. Click any event for the details.</div></div>
+ </div>
+ <section class="stats" id="stats"></section>
+
+ <div class="bar">
+  <div class="grp">
+   <div class="seg" id="scope" role="group" aria-label="Which companies">
+    <button data-scope="tracked" class="on">Tracked stocks</button><button data-scope="mine">My portfolio</button><button data-scope="all">All companies</button>
+   </div>
+   <input class="search" id="q" type="search" placeholder="Search a company or symbol" aria-label="Search events">
+  </div>
+  <div class="grp">
+   <div class="seg" id="view" role="group" aria-label="View"><button data-view="calendar">Calendar</button><button data-view="list">List</button></div>
+  </div>
+ </div>
+ <div class="bar">
+  <div class="chips" id="kinds">
+   <button class="chip on" data-kind="results"><i class="k-results"></i>Results</button>
+   <button class="chip on" data-kind="dividend"><i class="k-dividend"></i>Dividends</button>
+   <button class="chip on" data-kind="corp"><i class="k-corp"></i>Bonus &amp; splits</button>
+   <button class="chip on" data-kind="buyback"><i class="k-buyback"></i>Buybacks</button>
+   <button class="chip on" data-kind="other"><i class="k-other"></i>Other</button>
+  </div>
+  <div class="seg" id="when" role="group" aria-label="Upcoming or results out" hidden><button data-when="upcoming" class="on">Upcoming</button><button data-when="out">Results out</button></div>
+ </div>
+
+ <section id="calendar"></section>
+ <section id="listview" hidden></section>
+
+ <p class="note">Events come from NSE's event calendar and corporate actions, refreshed hourly. For tracked stocks (the scanner's 219 stocks) and stocks in portfolios, results are read from the company's NSE filing once it is out, compared with the previous quarter and the same quarter last year, and checked against how the shares moved. The verdict is a rule-based summary of those facts, not a forecast, and trade signals come from the Stock Signals scanner. Nothing here is investment advice.</p>
+</main>
+
+<div class="modalbg" id="modalbg" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" id="modal"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/portfolio-core.js?v=2"></script>
+<script>
+const sb=window.supabase.createClient('https://fzazdrzlemmkqngvpzxj.supabase.co','sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq');
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
+const istToday=()=>new Date(Date.now()+330*60e3).toISOString().slice(0,10);
+const addDays=(iso,n)=>new Date(Date.parse(iso+'T00:00:00Z')+n*864e5).toISOString().slice(0,10);
+const fmtDay=(iso,o)=>new Date(iso+'T00:00:00Z').toLocaleDateString('en-IN',Object.assign({timeZone:'UTC'},o||{weekday:'short',day:'numeric',month:'short'}));
+const inr=(v,d=2)=>v==null?'—':'₹'+Number(v).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const crore=v=>v==null?'—':'₹'+Number(v).toLocaleString('en-IN',{maximumFractionDigits:Math.abs(v)<100?2:0})+' cr';
+const pct=(v,d=1)=>v==null?'—':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(d)+'%';
+const cls=v=>v>0?'pos':v<0?'neg':'';
+// Event type groups for colour and filters.
+const GROUP={results:'results',dividend:'dividend',bonus:'corp',split:'corp',rights:'corp',buyback:'buyback'};
+const groupOf=e=>GROUP[e.kind]||'other';
+const KIND_LABEL={results:'Results',dividend:'Dividend',bonus:'Bonus',split:'Split',rights:'Rights',buyback:'Buyback',fundraise:'Fund raising',agm:'AGM',board:'Board meeting',action:'Corporate action'};
+const VERDICT={positive:['Positive','pos','▲'],negative:['Negative','neg','▼'],mixed:['Mixed','mix','◆']};
+
+let events=[],signals={},held=new Set(),user=null;
+let scope=localStorage.getItem('ev-scope')||'tracked',view=localStorage.getItem('ev-view')||(innerWidth<700?'list':'calendar'),when='upcoming';
+let kinds=new Set(['results','dividend','corp','buyback','other']),query='';
+let month=istToday().slice(0,7);
+
+function visible(e){
+ if(!kinds.has(groupOf(e)))return false;
+ if(scope==='tracked'&&!e.tracked&&!held.has(e.symbol))return false;
+ if(scope==='mine'&&!held.has(e.symbol))return false;
+ if(query){const q=query.toLowerCase();if(!e.symbol.toLowerCase().includes(q)&&!String(e.company||'').toLowerCase().includes(q))return false}
+ return true;
+}
+const vd=e=>e.kind==='results'&&e.outcome&&e.outcome.verdict?e.outcome.verdict:null;
+
+/* ───────── Summary cards ───────── */
+function renderStats(){
+ const t=istToday(),wk=addDays(t,7),inScope=events.filter(e=>scope==='all'||e.tracked||held.has(e.symbol));
+ const thisWeek=inScope.filter(e=>e.kind==='results'&&e.event_date>=t&&e.event_date<=wk);
+ const out=inScope.filter(e=>vd(e));
+ const c=k=>out.filter(e=>vd(e).label===k).length;
+ const divs=inScope.filter(e=>e.kind==='dividend'&&e.event_date>=t&&e.event_date<=wk&&e.id.endsWith('-ex'));
+ const mine=events.filter(e=>held.has(e.symbol)&&e.event_date>=t&&e.event_date<=addDays(t,30));
+ $('stats').innerHTML=
+  '<div class="stat"><div class="l">Results this week</div><div class="v">'+thisWeek.length+'</div><div class="s">'+(thisWeek.length?thisWeek.slice(0,3).map(e=>esc(e.symbol)).join(', ')+(thisWeek.length>3?'…':''):'None scheduled')+'</div></div>'+
+  '<div class="stat"><div class="l">Results out (3 weeks)</div><div class="v">'+out.length+'</div><div class="s"><span class="pos">'+c('positive')+' positive</span> · <span class="neg">'+c('negative')+' negative</span> · '+c('mixed')+' mixed</div></div>'+
+  '<div class="stat"><div class="l">Dividends going ex this week</div><div class="v">'+divs.length+'</div><div class="s">'+(divs.length?divs.slice(0,3).map(e=>esc(e.symbol)).join(', '):'None')+'</div></div>'+
+  '<div class="stat"><div class="l">Your portfolio, next 30 days</div><div class="v">'+(user?mine.length:'—')+'</div><div class="s">'+(user?(mine.length?mine.slice(0,3).map(e=>esc(e.symbol)+' '+fmtDay(e.event_date,{day:'numeric',month:'short'})).join(', '):'No events for your stocks'):'<a href="/?login=1">Log in</a> to see yours')+'</div></div>';
+}
+
+/* ───────── Calendar ───────── */
+function chip(e){
+ const v=vd(e),vv=v&&VERDICT[v.label];
+ return '<button class="ev" data-id="'+esc(e.id)+'" title="'+esc(e.symbol+' · '+(KIND_LABEL[e.kind]||e.kind)+(v?' · '+vv[0]:''))+'"><i class="k-'+groupOf(e)+'"></i><b>'+esc(e.symbol)+'</b>'+(vv?'<span class="vd '+vv[1]+'">'+vv[2]+'</span>':'')+'</button>';
+}
+function renderCalendar(){
+ const [y,m]=month.split('-').map(Number),first=new Date(Date.UTC(y,m-1,1)),startDow=(first.getUTCDay()+6)%7;
+ const gridStart=new Date(first.getTime()-startDow*864e5),t=istToday();
+ const byDay={};for(const e of events.filter(visible))(byDay[e.event_date]||(byDay[e.event_date]=[])).push(e);
+ const minM=events.length?events[0].event_date.slice(0,7):month,maxM=events.length?events[events.length-1].event_date.slice(0,7):month;
+ let cells='';
+ for(let i=0;i<42;i++){
+  const d=new Date(gridStart.getTime()+i*864e5).toISOString().slice(0,10);
+  if(i>=35&&d.slice(0,7)!==month)break;
+  const list=(byDay[d]||[]).sort((a,b)=>(b.tracked-a.tracked)||(groupOf(a)==='results'?-1:1)||a.symbol.localeCompare(b.symbol));
+  const cap=innerWidth<700?2:4;
+  cells+='<div class="day'+(d.slice(0,7)!==month?' out':'')+(d===t?' today':'')+'"><div class="dn">'+Number(d.slice(8))+(list.length?'<em>'+list.length+'</em>':'')+'</div>'+
+   list.slice(0,cap).map(chip).join('')+(list.length>cap?'<button class="more" data-day="'+d+'">+'+(list.length-cap)+' more</button>':'')+'</div>';
+ }
+ $('calendar').innerHTML='<div class="cal"><div class="calhead"><h2>'+first.toLocaleDateString('en-IN',{month:'long',year:'numeric',timeZone:'UTC'})+'</h2><div class="nav">'+
+  '<button class="navbtn" data-month="-1"'+(month<=minM?' disabled':'')+' aria-label="Previous month">‹</button><button class="navbtn" data-month="0">Today</button><button class="navbtn" data-month="1"'+(month>=maxM?' disabled':'')+' aria-label="Next month">›</button></div></div>'+
+  '<div class="dow">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>'<div>'+d+'</div>').join('')+'</div><div class="grid">'+cells+'</div></div>';
+}
+
+/* ───────── List ───────── */
+function rowHtml(e){
+ const v=vd(e),vv=v&&VERDICT[v.label],s=signals[e.symbol];
+ const r=e.outcome&&e.outcome.reaction;
+ const tags=[];
+ if(vv)tags.push('<span class="pill '+vv[1]+'">'+vv[2]+' '+vv[0]+(r?' · '+pct(r.pct):'')+'</span>');
+ else if(e.kind==='results'&&e.outcome&&e.outcome.status==='awaiting')tags.push('<span class="pill">Awaiting filing</span>');
+ if(e.kind==='dividend'&&e.amount)tags.push('<span class="pill">'+inr(e.amount)+'/share</span>');
+ if(held.has(e.symbol))tags.push('<span class="pill mine">In portfolio</span>');
+ if(s)tags.push('<span class="pill sig '+(s.side==='BUY'?'pos':'neg')+'">'+(s.side==='BUY'?'Buy':'Sell')+' signal</span>');
+ return '<button class="row" data-id="'+esc(e.id)+'"><span class="dot k-'+groupOf(e)+'"></span><span class="nm"><b>'+esc(e.symbol)+'</b> <span class="muted">· '+esc(KIND_LABEL[e.kind]||e.kind)+'</span><small>'+esc(e.company||'')+' — '+esc(e.title)+'</small></span><span class="tags">'+tags.join('')+'</span></button>';
+}
+function renderList(){
+ const t=istToday(),vis=events.filter(visible);
+ let groups;
+ if(when==='out'){
+  const out=vis.filter(e=>e.kind==='results'&&e.event_date<=t&&e.outcome&&e.outcome.verdict).sort((a,b)=>b.event_date.localeCompare(a.event_date));
+  groups=[['Results out, newest first',out]];
+  if(!out.length){$('listview').innerHTML='<div class="empty">No results with numbers yet for these companies. Try “All companies” or check back after the next results.</div>';return}
+ }else{
+  const up=vis.filter(e=>e.event_date>=t),by={};
+  for(const e of up)(by[e.event_date]||(by[e.event_date]=[])).push(e);
+  groups=Object.keys(by).sort().slice(0,30).map(d=>[(d===t?'Today':d===addDays(t,1)?'Tomorrow':fmtDay(d,{weekday:'long',day:'numeric',month:'long'})),by[d].sort((a,b)=>(b.tracked-a.tracked)||a.symbol.localeCompare(b.symbol)),d]);
+  if(!groups.length){$('listview').innerHTML='<div class="empty">No upcoming events match these filters.</div>';return}
+ }
+ $('listview').innerHTML='<div class="list">'+groups.map(([h,list])=>'<div class="dayblock"><h3>'+esc(h)+'<span>'+list.length+' event'+(list.length===1?'':'s')+'</span></h3>'+list.slice(0,80).map(rowHtml).join('')+(list.length>80?'<div class="muted" style="padding:8px 14px">'+(list.length-80)+' more: narrow the filters or search.</div>':'')+'</div>').join('')+'</div>';
+}
+
+function render(){
+ document.querySelectorAll('#scope button').forEach(b=>b.classList.toggle('on',b.dataset.scope===scope));
+ document.querySelectorAll('#view button').forEach(b=>b.classList.toggle('on',b.dataset.view===view));
+ document.querySelectorAll('#when button').forEach(b=>b.classList.toggle('on',b.dataset.when===when));
+ document.querySelectorAll('#kinds .chip').forEach(b=>b.classList.toggle('on',kinds.has(b.dataset.kind)));
+ $('when').hidden=view!=='list';
+ $('calendar').hidden=view!=='calendar';$('listview').hidden=view!=='list';
+ renderStats();
+ if(view==='calendar')renderCalendar();else renderList();
+}
+
+/* ───────── Detail ───────── */
+function figuresTable(o){
+ const c=o.cur||{},p=o.prev||{},y=o.yoy||{},ch=o.changes||{};
+ const q=iso=>iso?fmtDay(iso,{month:'short',year:'numeric'}):'—';
+ const margin=f=>f&&f.profit!=null&&f.revenue?f.profit/f.revenue*100:null;
+ const rows=[[o.revLabel||(o.bank?'Interest earned':'Revenue'),'revenue',crore,ch.revQoQ,ch.revYoY],['Net profit','profit',crore,ch.profitQoQ,ch.profitYoY],['Profit before tax','pbt',crore,null,null],['EPS (basic)','eps',v=>v==null?'—':'₹'+v.toFixed(2),null,ch.epsYoY]];
+ return '<div class="tblwrap"><table class="tbl"><thead><tr><th></th><th>'+q(o.filing&&o.filing.quarterEnd)+'</th><th>'+q(o.prev&&o.prev.quarterEnd)+'</th><th>'+q(o.yoy&&o.yoy.quarterEnd)+'</th><th>vs prev qtr</th><th>vs year ago</th></tr></thead><tbody>'+
+  rows.map(([l,k,f,qoq,yoy])=>'<tr><td>'+l+'</td><td><b>'+f(c[k])+'</b></td><td>'+f(p[k])+'</td><td>'+f(y[k])+'</td><td class="'+cls(qoq)+'">'+pct(qoq)+'</td><td class="'+cls(yoy)+'">'+pct(yoy)+'</td></tr>').join('')+
+  '<tr><td>Net margin</td><td><b>'+(margin(c)==null?'—':margin(c).toFixed(1)+'%')+'</b></td><td>'+(margin(p)==null?'—':margin(p).toFixed(1)+'%')+'</td><td>'+(margin(y)==null?'—':margin(y).toFixed(1)+'%')+'</td><td></td><td></td></tr>'+
+  '</tbody></table></div>';
+}
+function signalBlock(e){
+ const s=signals[e.symbol],t=istToday(),v=vd(e),upcoming=e.event_date>=t;
+ const days=Math.round((Date.parse(e.event_date)-Date.parse(t))/864e5);
+ let html='<div class="sec"><h3>Trade signal</h3>';
+ if(s){
+  const buy=s.side==='BUY';
+  html+='<div class="signal '+(buy?'buy':'sell')+'"><b class="'+(buy?'pos':'neg')+'">'+(buy?'▲ BUY':'▼ SELL')+'</b> · '+esc(s.setup||'Swing setup')+' <span class="muted">· score '+esc(s.score)+' · '+esc(s.bar_date||'')+'</span>'+
+   '<div class="lv"><div><span>Entry</span><b>'+inr(s.entry)+'</b></div><div><span>Stop</span><b class="neg">'+inr(s.stop)+'</b></div><div><span>Target 1</span><b class="pos">'+inr(s.target1)+'</b></div><div><span>Target 2</span><b class="pos">'+inr(s.target2)+'</b></div></div>'+
+   (Array.isArray(s.reasons)&&s.reasons.length?'<div class="muted" style="font-size:12.5px">'+s.reasons.map(esc).join(' · ')+'</div>':'')+'</div>';
+  let adv;
+  if(e.kind==='results'&&upcoming&&days<=5)adv=['warn','⚠️ Results are due '+(days===0?'today':days===1?'tomorrow':'in '+days+' days')+'. Prices often gap on results, which can jump straight past the stop. Many traders wait until the numbers are out, or trade a smaller size.'];
+  else if(v&&!v.early){
+   const agree=(buy&&v.label==='positive')||(!buy&&v.label==='negative');
+   const against=(buy&&v.label==='negative')||(!buy&&v.label==='positive');
+   adv=agree?['ok','✅ The signal and the results point the same way ('+v.label+'), which is the stronger case for taking it.']:against?['warn','⚠️ The signal points '+(buy?'up':'down')+' but the results read '+v.label+'. When they disagree, skipping or waiting for the next signal is the cautious choice.']:['info','The results were mixed, so they neither confirm nor contradict the signal. Judge it on the setup and its stop.'];
+  }else adv=['info','The signal comes from the price trend and momentum; '+(e.kind==='results'?'results are '+(upcoming?'still to come':'out but the market has not reacted yet')+'.':'this event does not usually change it.')];
+  html+='<div class="advice '+adv[0]+'">'+adv[1]+'</div>';
+ }else{
+  html+='<div class="advice info">No active signal from the scanner for '+esc(e.symbol)+' right now.'+(e.tracked?' It checks this stock every 5 minutes in market hours.':' This stock is outside the scanner’s 219 stocks.')+'</div>';
+  const r=e.outcome&&e.outcome.reaction;
+  if(v&&r&&Math.abs(r.pct)>=3&&r.volRatio>=1.5){
+   const up=r.pct>0;
+   html+='<div class="advice '+(up?'ok':'warn')+'" style="margin-top:8px"><b>Idea, not a signal:</b> the shares moved '+pct(r.pct)+' on '+r.volRatio.toFixed(1)+'× normal volume after results. Big results-day moves sometimes continue for a few days. A common approach is to wait for a '+(up?'close above the results-day high ('+inr(r.high)+')':'close below the results-day low ('+inr(r.low)+')')+' and keep the stop beyond the other end of that day ('+inr(up?r.low:r.high)+'). This rule has not been backtested here.</div>';
+  }
+ }
+ return html+'</div>';
+}
+function detail(e){
+ const t=istToday(),o=e.outcome,v=vd(e),pre=e.pre,upcoming=e.event_date>=t;
+ let body='<div class="kv"><div><span>Date</span><b>'+fmtDay(e.event_date,{weekday:'short',day:'numeric',month:'short',year:'numeric'})+'</b></div><div><span>Type</span><b>'+esc(KIND_LABEL[e.kind]||e.kind)+'</b></div>'+
+  (e.kind==='dividend'&&e.amount?'<div><span>Dividend</span><b>'+inr(e.amount)+' / share</b></div>':'')+
+  (e.record_date?'<div><span>Record date</span><b>'+fmtDay(e.record_date,{day:'numeric',month:'short'})+'</b></div>':'')+
+  (pre&&pre.lastClose?'<div><span>Last close</span><b>'+inr(pre.lastClose)+'</b></div>':'')+
+  (pre&&pre.avgMovePct!=null?'<div><span>Typical daily move</span><b>±'+pre.avgMovePct.toFixed(1)+'%</b></div>':'')+'</div>';
+ body+='<div class="sec"><h3>What the company announced</h3><div>'+esc(e.title)+(e.detail&&e.detail!==e.title?'<div class="muted" style="font-size:13px;margin-top:4px">'+esc(e.detail)+'</div>':'')+'</div></div>';
+ if(e.kind==='dividend'){
+  const px=pre&&pre.lastClose;
+  body+='<div class="sec"><h3>How it affects the price</h3><div class="advice info">On the ex-date the share price usually opens lower by about the dividend'+(e.amount?' ('+inr(e.amount)+(px?', about '+(e.amount/px*100).toFixed(2)+'% of the last close':'')+')':'')+', because buyers from that day do not get it. You need to hold the shares before the ex-date to receive it. A dividend this size rarely changes the trend on its own.</div></div>';
+ }else if(e.kind==='bonus'||e.kind==='split'){
+  body+='<div class="sec"><h3>How it affects the price</h3><div class="advice info">A '+(e.kind==='bonus'?'bonus issue':'stock split')+' adds shares and lowers the price in the same proportion, so your holding’s value does not change. Lower prices can draw more small investors, and these announcements are usually read as a sign of management confidence.</div></div>';
+ }else if(e.kind==='buyback'){
+  body+='<div class="sec"><h3>How it affects the price</h3><div class="advice info">A buyback means the company buys its own shares, usually at a premium, which supports the price and raises earnings per share. It is generally read as positive.</div></div>';
+ }
+ if(e.kind==='results'){
+  if(upcoming){
+   body+='<div class="sec"><h3>What to expect</h3><div class="advice info">The board meets on '+fmtDay(e.event_date,{weekday:'long',day:'numeric',month:'long'})+' to approve the quarter’s results; they usually reach NSE the same evening.'+(pre&&pre.avgMovePct!=null?' '+esc(e.symbol)+' normally moves about ±'+pre.avgMovePct.toFixed(1)+'% a day (average range '+pre.atrPct.toFixed(1)+'%); results days usually move more than that, in either direction.':'')+' The numbers, the comparison with last year and the market’s reaction appear here once they are out.</div></div>';
+  }else if(!o){
+   body+='<div class="sec"><h3>Results</h3><div class="advice info">'+(e.tracked?'Waiting to read the filing; we check every hour.':'Detailed numbers are read for tracked stocks (the scanner’s 219 stocks) and stocks held in portfolios. Use the NSE link below for this company.')+'</div></div>';
+  }else if(o.status==='awaiting'||o.status==='not_found'||o.status==='error'){
+   body+='<div class="sec"><h3>Results</h3><div class="advice info">'+(o.status==='awaiting'?'The results have not reached NSE yet. Checked '+new Date(o.checkedAt).toLocaleString('en-IN',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})+'; we check every hour.':o.status==='not_found'?'No results filing was found near this date; the meeting may have been postponed.':'The filing could not be read automatically. Use the NSE link below.')+'</div></div>';
+  }else{
+   const vv=VERDICT[v.label];
+   body+='<div class="verdict '+v.label+'"><h4 class="'+vv[1]+'">'+vv[2]+' '+vv[0]+(v.early?' (early read)':'')+'</h4><p>'+esc(v.summary)+'</p><ul>'+v.reasons.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></div>';
+   body+='<div class="sec"><h3>The numbers ('+esc(o.filing.consolidated||'')+', '+esc(String(o.filing.audited||'').toLowerCase())+')</h3>'+figuresTable(o)+'</div>';
+   const r=o.reaction;
+   body+='<div class="sec"><h3>Share price reaction</h3>'+(r?'<div class="kv"><div><span>Before results</span><b>'+inr(r.prevClose)+'</b></div><div><span>'+fmtDay(r.day,{day:'numeric',month:'short'})+' close</span><b class="'+cls(r.pct)+'">'+inr(r.close)+' ('+pct(r.pct)+')</b></div><div><span>Opening gap</span><b class="'+cls(r.gapPct)+'">'+pct(r.gapPct)+'</b></div><div><span>Volume</span><b>'+(r.volRatio?r.volRatio.toFixed(1)+'× normal':'—')+'</b></div><div><span>Since results</span><b class="'+cls(r.sincePct)+'">'+pct(r.sincePct)+'</b></div><div><span>Latest close</span><b>'+inr(r.lastClose)+'</b></div></div>':'<div class="advice info">Filed '+esc(o.filing.filedAt)+'. The first trading session after that has not closed yet.</div>')+'</div>';
+  }
+ }
+ body+=signalBlock(e);
+ const links=['<a href="/stock-analysis.html?symbol='+encodeURIComponent(e.symbol)+'">Stock analysis →</a>'];
+ if(o&&o.filing&&o.filing.view)links.push('<a href="'+esc(o.filing.view)+'" target="_blank" rel="noopener">Read the filing on NSE ↗</a>');
+ links.push('<a href="https://www.nseindia.com/companies-listing/corporate-filings-event-calendar" target="_blank" rel="noopener">NSE event calendar ↗</a>');
+ body+='<div class="links">'+links.join('')+'</div><div class="disc">Facts from NSE filings and daily prices; the verdict and ideas are rule-based summaries, not advice.</div>';
+ $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle">'+esc(e.symbol)+' · '+esc(KIND_LABEL[e.kind]||e.kind)+'</h2><div class="co">'+esc(e.company||'')+(held.has(e.symbol)?' · <span class="pill mine">In your portfolio</span>':'')+'</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody">'+body+'</div>';
+ $('modalbg').classList.add('open');$('modalbg').setAttribute('aria-hidden','false');
+ $('mClose').focus();
+}
+function dayList(d){
+ const list=events.filter(e=>e.event_date===d&&visible(e));
+ $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle">'+fmtDay(d,{weekday:'long',day:'numeric',month:'long'})+'</h2><div class="co">'+list.length+' events</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody" style="padding:0">'+list.map(rowHtml).join('')+'</div>';
+ $('modalbg').classList.add('open');$('modalbg').setAttribute('aria-hidden','false');
+}
+function closeModal(){$('modalbg').classList.remove('open');$('modalbg').setAttribute('aria-hidden','true')}
+
+/* ───────── Wiring ───────── */
+document.addEventListener('click',e=>{
+ const ev=e.target.closest('[data-id]');if(ev){const x=events.find(z=>z.id===ev.dataset.id);if(x)detail(x);return}
+ const more=e.target.closest('[data-day]');if(more){dayList(more.dataset.day);return}
+ if(e.target.id==='mClose'||e.target.id==='modalbg'){closeModal();return}
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.scope){scope=b.dataset.scope;localStorage.setItem('ev-scope',scope);render()}
+ else if(b.dataset.view){view=b.dataset.view;localStorage.setItem('ev-view',view);render()}
+ else if(b.dataset.when){when=b.dataset.when;render()}
+ else if(b.dataset.kind){kinds.has(b.dataset.kind)?kinds.delete(b.dataset.kind):kinds.add(b.dataset.kind);if(!kinds.size)kinds.add(b.dataset.kind);render()}
+ else if(b.dataset.month!=null){const d=+b.dataset.month;if(!d)month=istToday().slice(0,7);else{const [y,m]=month.split('-').map(Number);const n=new Date(Date.UTC(y,m-1+d,1));month=n.toISOString().slice(0,7)}renderCalendar()}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+let qt;$('q').addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(()=>{query=$('q').value.trim();render()},150)});
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(view==='calendar')renderCalendar()},200)});
+
+async function load(){
+ const all=[];
+ for(let from=0;from<6000;from+=1000){
+  const {data,error}=await sb.from('market_events').select('id,symbol,company,event_date,kind,title,detail,record_date,amount,tracked,pre,outcome,outcome_at').order('event_date').order('symbol').range(from,from+999);
+  if(error){$('calendar').innerHTML='<div class="empty">Events could not load. Please try again shortly.</div>';return}
+  all.push(...(data||[]));if(!data||data.length<1000)break;
+ }
+ events=[...new Map(all.map(e=>[e.id,e])).values()]; // one row per event, whatever the paging returned
+ const latest=all.map(e=>e.outcome_at).filter(Boolean).sort().pop();
+ $('asOf').textContent='NSE results, dividends, bonus issues, splits and buybacks · '+all.length.toLocaleString('en-IN')+' events'+(latest?' · numbers updated '+new Date(latest).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'')+'. Click any event for the details.';
+ render();
+ const feed=await sb.rpc('stock_signals_feed').then(r=>r.data).catch(()=>null);
+ for(const s of (feed&&feed.signals)||[])signals[String(s.symbol).toUpperCase()]=s;
+ try{const {data:{session}}=await sb.auth.getSession();user=session?.user||null;if(user&&window.mpPortfolio)held=new Set(await window.mpPortfolio.heldSymbols(sb,user))}catch(e){}
+ if(scope==='mine'&&!user)scope='tracked';
+ render();
+}
+load();
+</script>
+</body>
+</html>
