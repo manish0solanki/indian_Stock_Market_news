@@ -71,14 +71,13 @@ body { background: var(--bg); padding-top: 0 !important; }
 .mp-menu-btn { display: none; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--mp-line); background: var(--surface); cursor: pointer; flex-direction: column; justify-content: center; align-items: center; gap: 4px; flex: 0 0 auto; }
 .mp-menu-btn span { display: block; width: 16px; height: 2px; border-radius: 2px; background: var(--text); }
 
-/* Scrolling stock ticker, in the page flow just under the top bar (overrides the legacy fixed ticker). */
+/* Scrolling stock ticker, pinned just under the sticky top bar (overrides the legacy fixed ticker).
+   --mp-bar-h is the top bar's height, set by home-overview.js. */
 .ticker-wrap {
-  display: block !important; position: relative !important; top: auto !important; left: auto !important; right: auto !important;
+  display: block !important; position: sticky !important; top: var(--mp-bar-h, 60px) !important; left: auto !important; right: auto !important;
   width: auto !important; max-width: none !important; height: auto !important; margin: 0 !important; padding: 7px 0 !important;
-  overflow: hidden !important; white-space: nowrap; z-index: 1 !important;
+  overflow: hidden !important; white-space: nowrap; z-index: 115 !important;
   background: var(--mp-card) !important; border-bottom: 1px solid var(--mp-line) !important; border-top: 0 !important;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
-          mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
 }
 .ticker-wrap .ticker-item { color: var(--text) !important; font-size: 12px !important; padding: 0 18px !important; border-right: 1px solid var(--mp-line) !important; }
 .ticker-wrap .ticker-symbol { font-weight: 700; }

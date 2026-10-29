@@ -327,9 +327,15 @@
   });
 
   // Keep the sticky offsets in sync with the real top-bar height (it wraps on phones).
-  const topbar = document.querySelector('.topbar');
-  const syncTop = () => topbar && document.documentElement.style.setProperty('--mp-top-h', topbar.offsetHeight + 'px');
-  if (window.ResizeObserver && topbar) new ResizeObserver(syncTop).observe(topbar);
+  // The ticker sticks just under the top bar, so --mp-top-h covers both.
+  const topbar = document.querySelector('.topbar'), ticker = $('tickerWrap');
+  const syncTop = () => {
+    if (!topbar) return;
+    const bar = topbar.offsetHeight, root = document.documentElement.style;
+    root.setProperty('--mp-bar-h', bar + 'px');
+    root.setProperty('--mp-top-h', bar + (ticker ? ticker.offsetHeight : 0) + 'px');
+  };
+  if (window.ResizeObserver && topbar) { const ro = new ResizeObserver(syncTop); ro.observe(topbar); if (ticker) ro.observe(ticker); }
   syncTop();
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderTreemap, 150); });
 
