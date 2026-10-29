@@ -3,6 +3,8 @@
 //   ?q=parag flexi        -> up to 25 matching schemes [{code, name}]
 //   ?codes=122639,120503  -> latest NAV, previous NAV and fund details per scheme (max 40)
 //   ?code=122639&date=2026-10-15 -> NAV on that date, or the last NAV before it
+//   ?isins=INF879O01027,...  -> scheme code and name per ISIN (max 100), from AMFI's daily NAV file;
+//                               used when importing a CAS statement, which lists funds by ISIN
 // Responses are cached in memory for 15 minutes (NAVs change once a day).
 
 const corsHeaders = {
@@ -58,6 +60,23 @@ async function latest(code: string) {
   };
 }
 
+// AMFI NAVAll.txt: "Scheme Code;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Scheme Name;NAV;Date"
+let isinMap: { at: number; map: Map<string, { code: string; name: string }> } | null = null;
+async function getIsinMap() {
+  if (isinMap && Date.now() - isinMap.at < 12 * 3600e3) return isinMap.map;
+  const res = await fetch("https://www.amfiindia.com/spages/NAVAll.txt");
+  if (!res.ok) throw new Error("AMFI HTTP " + res.status);
+  const map = new Map<string, { code: string; name: string }>();
+  for (const line of (await res.text()).split(/\r?\n/)) {
+    const f = line.split(";");
+    if (f.length < 6 || !/^\d+$/.test(f[0].trim())) continue;
+    const v = { code: f[0].trim(), name: f[3].trim() };
+    for (const isin of [f[1], f[2]]) if (/^IN[A-Z0-9]{10}$/.test(isin.trim())) map.set(isin.trim(), v);
+  }
+  if (map.size) isinMap = { at: Date.now(), map };
+  return map;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const p = new URL(req.url).searchParams;
@@ -80,13 +99,20 @@ Deno.serve(async (req) => {
       return json({ success: true, funds });
     }
 
+    const isins = (p.get("isins") || "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+    if (isins.length) {
+      if (isins.length > 100 || isins.some((i) => !/^IN[A-Z0-9]{10}$/.test(i))) return json({ error: "isins must be up to 100 valid ISINs" }, 400);
+      const map = await getIsinMap();
+      return json({ success: true, schemes: Object.fromEntries(isins.map((i) => [i, map.get(i) || null])) });
+    }
+
     const code = p.get("code") || "", date = p.get("date") || "";
     if (/^\d{3,8}$/.test(code) && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
       const d = await getJson(`${API}/${code}?startDate=${shift(date, -14)}&endDate=${date}`) as { data?: { date: string; nav: string }[] };
       const hit = navs(d).filter((x) => x.date <= date).sort((a, b) => b.date.localeCompare(a.date))[0];
       return json({ success: true, code, nav: hit?.nav ?? null, nav_date: hit?.date ?? null });
     }
-    return json({ error: "use ?q=, ?codes= or ?code=&date=" }, 400);
+    return json({ error: "use ?q=, ?codes=, ?isins= or ?code=&date=" }, 400);
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 502);
   }
