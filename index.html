@@ -4184,6 +4184,7 @@ input,select,textarea{min-width:0;}
         <input type="text" id="cf-name" placeholder="Name" required>
         <input type="email" id="cf-email" placeholder="Email" required>
         <textarea id="cf-message" placeholder="Message" rows="3" required></textarea>
+        <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
         <button type="submit" id="cf-submit">Send message</button>
         <p class="contact-status" id="cf-status"></p>
       </form>
@@ -5825,7 +5826,8 @@ async function initConfig() {
 const PRICES_URL   = () => API_BASE + "/price-feed";
 const INDICES_URL  = () => API_BASE + "/index-feed";
 const GLOBAL_URL   = () => API_BASE + "/global-news";
-const CONTACT_URL  = () => API_BASE + "/contact-message";
+// Contact form goes to a Supabase edge function (stores the message, optional Telegram alert).
+const CONTACT_URL  = () => SUPABASE_URL + "/functions/v1/contact-message";
 const STOCK_SEARCH_URL = () => API_BASE + "/stock-search";
 const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 
@@ -8968,14 +8970,15 @@ contactForm.addEventListener('submit', async (e) => {
     const res = await fetch(CONTACT_URL(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, message, sent_at: new Date().toISOString() })
+      body: JSON.stringify({ name, email, message, page: location.pathname + location.hash, website: document.getElementById('cf-website').value })
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || out.ok === false) throw new Error(out.error || 'HTTP ' + res.status);
     cfStatus.textContent = 'Message sent — thanks!';
     cfStatus.className = 'contact-status success';
     contactForm.reset();
   } catch (e) {
-    cfStatus.textContent = 'Could not send. Try again.';
+    cfStatus.textContent = /^HTTP|fetch/i.test(e.message) ? 'Could not send. Try again.' : e.message;
     cfStatus.className = 'contact-status error';
     console.error('[Contact]', e);
   } finally {
