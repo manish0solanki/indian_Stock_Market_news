@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>IPOs: Open, Upcoming &amp; Subscription — MarketPulse</title>
+<meta name="description" content="Open and upcoming IPOs on NSE (mainboard and SME): price band, lot size, dates, live category-wise subscription, issue details and recent listing performance.">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#6366f1;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--greenbg:rgba(47,210,127,.12);--redbg:rgba(255,93,108,.12);--amberbg:rgba(243,201,105,.14);--radius:14px}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207;--greenbg:#e7f7ec;--redbg:#fcebeb;--amberbg:#fdf4dc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+.page{max-width:1320px;margin:0 auto;padding:22px clamp(12px,2.4vw,28px) 40px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.sub{font-size:13px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.stat .l{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+.stat .v{font-size:24px;font-weight:800;margin-top:4px;letter-spacing:-.4px}
+.stat .s{font-size:12px;color:var(--muted)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
+.seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.seg button{border:0;background:none;color:var(--muted);font:700 13px Inter,system-ui,sans-serif;padding:8px 14px;border-radius:9px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.seg button em{font-style:normal;opacity:.75;font-weight:600;margin-left:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card.open{border-color:color-mix(in srgb,var(--green) 45%,var(--border))}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.name{font-size:16px;font-weight:800;letter-spacing:-.2px;line-height:1.3}
+.sym{font-size:12px;color:var(--dim);margin-top:2px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.pill.open{background:var(--greenbg);color:var(--green);border-color:transparent}
+.pill.soon{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent2);border-color:transparent}
+.pill.closed{background:var(--amberbg);color:var(--amber);border-color:transparent}
+.pill.sme{color:var(--amber)}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kv div{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;min-width:0}
+.kv span{display:block;font-size:10.5px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+.kv b{display:block;font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dates{font-size:12.5px;color:var(--muted)}
+.dates b{color:var(--text)}
+.subs{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center}
+.subs .total{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.subs .total b{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.subs .total small{font-size:12px;color:var(--muted)}
+.subs .cat{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.meter{display:flex;align-items:center;gap:8px}
+.meter i{flex:1;height:7px;border-radius:5px;background:var(--surface2);position:relative;overflow:hidden;border:1px solid var(--border)}
+.meter i u{position:absolute;inset:0 auto 0 0;background:var(--accent2);border-radius:5px}
+.meter i u.hot{background:var(--green)}
+.meter em{font-style:normal;font-size:12.5px;font-weight:700;min-width:58px;text-align:right;font-variant-numeric:tabular-nums}
+.gmp{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--surface2);border:1px dashed var(--border);font-size:13px}
+.gmp a{font-weight:700;text-decoration:none;white-space:nowrap}
+details.more{border-top:1px solid var(--border);padding-top:10px}
+details.more summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent2);list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more[open] summary{margin-bottom:10px}
+.info{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:6px 12px;font-size:12.5px}
+.info dt{color:var(--dim);font-weight:600}
+.info dd{margin:0;overflow-wrap:anywhere}
+.docs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.docs a{font-size:12px;font-weight:600;padding:5px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);text-decoration:none;color:var(--text)}
+.cattable{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:10px}
+.cattable td{padding:6px 4px;border-top:1px solid var(--border)}
+.cattable td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.tablewrap{overflow-x:auto}
+table.list{width:100%;border-collapse:collapse}
+table.list th{padding:10px 14px;text-align:left;background:var(--surface2);color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+table.list td{padding:11px 14px;border-top:1px solid var(--border);font-size:13.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.list tr:hover td{background:var(--hover)}
+.r{text-align:right}
+.green{color:var(--green)}.red{color:var(--red)}.muted{color:var(--muted)}
+.chg{display:inline-block;padding:2px 8px;border-radius:7px;font-weight:700;font-size:12.5px}
+.chg.green{background:var(--greenbg)}.chg.red{background:var(--redbg)}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+.note{margin-top:18px;font-size:12px;color:var(--dim);line-height:1.6}
+.lcards{display:none}
+@media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){
+ .page{padding:14px 12px 30px}
+ .grid{grid-template-columns:1fr}
+ .stat .v{font-size:20px}
+ .bar{flex-direction:column;align-items:stretch}
+ .seg{display:flex}.seg button{flex:1;padding:8px 6px}
+ .tablewrap{display:none}
+ .lcards{display:block}
+ .lcard{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:12px 14px;border-top:1px solid var(--border);font-size:13px}
+ .lcard:first-child{border-top:0}
+ .lcard small{color:var(--dim);font-size:11.5px}
+ .lcard .r b{font-size:14px}
+}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <div class="head">
+  <div><h1>IPOs</h1><div class="sub" id="asOf">Open and upcoming IPOs on NSE, with live subscription.</div></div>
+ </div>
+ <section class="stats" id="stats"></section>
+ <div class="bar">
+  <div class="seg" id="tabs" role="tablist"><button class="on" data-tab="current">Open &amp; upcoming <em id="nCur"></em></button><button data-tab="listed">Recently listed <em id="nList"></em></button></div>
+  <div class="seg" id="segs"><button class="on" data-seg="all">All</button><button data-seg="Mainboard">Mainboard</button><button data-seg="SME">SME</button></div>
+ </div>
+ <section id="current"><div class="grid" id="cards"><div class="empty">Loading IPOs…</div></div></section>
+ <section id="listed" hidden>
+  <div class="panel">
+   <div class="tablewrap"><table class="list"><thead><tr><th>Company</th><th>Type</th><th>Listed on</th><th class="r">Issue price</th><th class="r">Current price</th><th class="r">Gain / loss</th></tr></thead><tbody id="listedRows"></tbody></table></div>
+   <div class="lcards" id="listedCards"></div>
+  </div>
+ </section>
+ <p class="note">Data from NSE's public IPO pages, refreshed every 10 minutes during the day. Subscription figures are times subscribed for each investor category. Grey market premium (GMP) is unofficial, comes from market sources, and is shown by sites such as InvestorGain; it does not predict listing price. This page is for information only and is not investment advice. Read the Red Herring Prospectus before applying.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb=window.supabase.createClient('https://fzazdrzlemmkqngvpzxj.supabase.co','sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq');
+const GMP_URL='https://www.investorgain.com/report/ipo-gmp-live/331/';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
+const inr=(v,d=0)=>v==null?'—':'₹'+Number(v).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const crore=v=>v==null?'—':v>=1e9?'₹'+(v/1e7).toLocaleString('en-IN',{maximumFractionDigits:0})+' Cr':'₹'+(v/1e7).toLocaleString('en-IN',{maximumFractionDigits:1})+' Cr';
+const pct=v=>v==null?'—':(v>=0?'+':'')+v.toFixed(2)+'%';
+const times=v=>v==null?'—':(v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toFixed(2))+'×';
+const todayIst=()=>new Date(Date.now()+330*60e3).toISOString().slice(0,10);
+const fmtDate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—';
+const days=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
+let all=[],quotes={},tab='current',seg='all';
+
+// Open / upcoming / closed, worked out from the issue dates (IST).
+function stage(x){
+ const t=todayIst();
+ if(x.status_nse==='Listed'||x.listing_date)return{key:'listed',label:'Listed',cls:''};
+ if(x.open_date&&t<x.open_date){const d=days(t,x.open_date);return{key:'upcoming',label:d===1?'Opens tomorrow':'Opens '+fmtDate(x.open_date),cls:'soon'}}
+ // Bidding ends at 5 PM IST on the closing day.
+ const after5=new Date(Date.now()+330*60e3).getUTCHours()>=17;
+ if(x.close_date&&(t<x.close_date||(t===x.close_date&&!after5))){const d=days(t,x.close_date);return{key:'open',label:d===0?'Open · closes 5 PM today':'Open · '+d+' day'+(d===1?'':'s')+' left',cls:'open'}}
+ return{key:'closed',label:'Closed · listing soon',cls:'closed'};
+}
+const detail=(x,re)=>(x.details||[]).find(d=>re.test(d.title))?.value;
+// Total issue size from NSE's description ("Fresh Issue ... Rs. 1,830.57 million and Offer for Sale ... 34,00,000 Equity Shares
+// (including Anchor ...)"): rupee amounts plus share counts at the upper price; the bracketed anchor/market-maker note is a
+// part of the same shares, so it is ignored. Falls back to NSE's share count (which excludes the anchor portion).
+function issueSize(x){
+ const hi=num(x.price_high),txt=String(detail(x,/^Issue Size/i)||'').replace(/\([^)]*\)/g,' ');
+ let rs=0,sh=0;
+ for(const m of txt.matchAll(/(?:Rs\.?|₹|INR)\s*([\d,]+(?:\.\d+)?)\s*(million|mn|crore|cr|lakh)?/gi)){const v=Number(m[1].replace(/,/g,''));const u=(m[2]||'').toLowerCase();rs+=u.startsWith('m')?v*1e6:u.startsWith('c')?v*1e7:u==='lakh'?v*1e5:v}
+ for(const m of txt.matchAll(/([\d,]{5,})\s*Equity\s*Shares/gi))sh+=Number(m[1].replace(/,/g,''));
+ const total=rs+(hi?sh*hi:0);
+ if(total>1e6)return{v:total,exact:true};
+ return num(x.shares_offered)&&hi?{v:num(x.shares_offered)*hi,exact:false}:null;
+}
+// Only plain document links from NSE / SEBI are shown; NSE's own HTML in values is never rendered.
+function linkOf(v){const m=String(v||'').match(/https?:\/\/[^\s"'<>]+/);if(!m)return null;try{const u=new URL(m[0]);return /(^|\.)(nseindia\.com|sebi\.gov\.in)$/.test(u.hostname)?u.href:null}catch(e){return null}}
+
+function card(x){
+ const st=stage(x),sub=x.subscription||{},lot=num(x.lot_size),hi=num(x.price_high),lo=num(x.price_low);
+ const minInv=lot&&hi?lot*hi:null,isz=issueSize(x),size=isz?isz.v:null;
+ const sizeTxt=detail(x,/^Issue Size/i);
+ const cats=[['QIB','qib'],['NII','nii'],['Retail','retail'],['Employee','employee'],['Shareholder','shareholder']].filter(([,k])=>sub[k]!=null);
+ const maxT=Math.max(1,...cats.map(([,k])=>sub[k]));
+ const meter=v=>'<div class="meter"><i><u class="'+(v>=1?'hot':'')+'" style="width:'+Math.max(2,Math.min(100,Math.log10(1+v)/Math.log10(1+maxT)*100)).toFixed(1)+'%"></u></i><em>'+times(v)+'</em></div>';
+ const subHtml=st.key==='upcoming'?'<div class="dates">Bidding opens <b>'+fmtDate(x.open_date)+'</b>. Subscription figures appear once it opens.</div>':
+  (sub.total!=null?'<div class="subs"><div class="total"><span class="muted" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Subscribed</span><span><b class="'+(sub.total>=1?'green':'')+'">'+times(sub.total)+'</b>'+(sub.applications?' <small>'+Number(sub.applications).toLocaleString('en-IN')+' applications</small>':'')+'</span></div>'+cats.map(([l,k])=>'<span class="cat">'+l+'</span>'+meter(sub[k])).join('')+'</div>':'<div class="dates">Subscription data not published yet.</div>');
+ const catRows=[['QIB','qib'],['NII (total)','nii'],['  Big NII (above ₹10 lakh)','bnii'],['  Small NII (₹2–10 lakh)','snii'],['Retail','retail'],['Employee','employee'],['Shareholder','shareholder'],['Total','total']].filter(([,k])=>sub[k]!=null);
+ const keep=[/^Issue Type/i,/^Issue Size/i,/^Face Value/i,/^(Bid Lot|Lot Size)/i,/^Maximum Subscription Amount for Retail/i,/^Discount/i,/^Book Running Lead Managers/i,/^Name of the Registrar/i,/^Contact person/i,/^Sponsor Bank/i,/^Market Maker/i,/^IPO Market Timings/i];
+ const info=(x.details||[]).filter(d=>keep.some(re=>re.test(d.title))&&!/^NA$/i.test(d.value));
+ const docs=(x.details||[]).map(d=>({t:d.title,u:linkOf(d.value)})).filter(d=>d.u&&/Prospectus|Ratios|Anchor|Basis|Addendum|Abridged/i.test(d.t));
+ return '<article class="card '+st.cls+'">'+
+  '<div class="top"><div><div class="name">'+esc(x.company)+'</div><div class="sym">'+esc(x.symbol)+'</div></div><div class="pills"><span class="pill '+st.cls+'">'+esc(st.label)+'</span><span class="pill '+(x.segment==='SME'?'sme':'')+'">'+esc(x.segment)+'</span></div></div>'+
+  '<div class="kv"><div><span>Price band</span><b>'+(lo&&hi&&lo!==hi?inr(lo)+'–'+hi:inr(hi))+'</b></div><div><span>Lot size</span><b>'+(lot?lot.toLocaleString('en-IN')+' sh':'—')+'</b></div><div><span>Min. investment</span><b>'+inr(minInv)+'</b></div><div><span>Issue size</span><b title="'+esc(sizeTxt||'')+'">'+(isz&&!isz.exact?'~':'')+crore(size)+'</b></div></div>'+
+  '<div class="dates">Bidding <b>'+fmtDate(x.open_date)+'</b> – <b>'+fmtDate(x.close_date)+'</b></div>'+
+  subHtml+
+  '<div class="gmp"><span>Grey market premium (GMP)</span><a href="'+GMP_URL+'" target="_blank" rel="noopener">Check on InvestorGain ↗</a></div>'+
+  '<details class="more"><summary>Issue details ▾</summary>'+
+   (catRows.length?'<table class="cattable">'+catRows.map(([l,k])=>'<tr><td>'+esc(l.trim())+'</td><td>'+times(sub[k])+'</td></tr>').join('')+'</table>':'')+
+   (info.length?'<dl class="info">'+info.map(d=>'<dt>'+esc(d.title)+'</dt><dd>'+esc(d.value.replace(/<[^>]+>/g,''))+'</dd>').join('')+'</dl>':'<div class="muted">Issue details not published yet.</div>')+
+   '<div class="docs">'+docs.map(d=>'<a href="'+esc(d.u)+'" target="_blank" rel="noopener">'+esc(d.t)+' ↗</a>').join('')+'<a href="https://www.nseindia.com/market-data/all-upcoming-issues-ipo" target="_blank" rel="noopener">NSE IPO page ↗</a></div>'+
+  '</details></article>';
+}
+
+function render(){
+ const bySeg=x=>seg==='all'||x.segment===seg;
+ const cur=all.filter(x=>stage(x).key!=='listed');
+ const order={open:0,upcoming:1,closed:2};
+ const curF=cur.filter(bySeg).sort((a,b)=>order[stage(a).key]-order[stage(b).key]||String(a.close_date).localeCompare(String(b.close_date)));
+ const listed=all.filter(x=>stage(x).key==='listed').sort((a,b)=>String(b.listing_date).localeCompare(String(a.listing_date)));
+ const listedF=listed.filter(bySeg);
+ $('nCur').textContent=cur.length;$('nList').textContent=listed.length;
+ const open=cur.filter(x=>stage(x).key==='open'),up=cur.filter(x=>stage(x).key==='upcoming'),closed=cur.filter(x=>stage(x).key==='closed');
+ const gains=listed.map(x=>{const q=quotes[x.symbol];return q&&x.issue_price?(q-x.issue_price)/x.issue_price*100:null}).filter(v=>v!=null);
+ const pos=gains.filter(v=>v>0).length,avg=gains.length?gains.reduce((a,v)=>a+v,0)/gains.length:null;
+ $('stats').innerHTML=
+  '<div class="stat"><div class="l">Open now</div><div class="v">'+open.length+'</div><div class="s">'+open.filter(x=>x.segment==='Mainboard').length+' mainboard · '+open.filter(x=>x.segment==='SME').length+' SME</div></div>'+
+  '<div class="stat"><div class="l">Upcoming</div><div class="v">'+up.length+'</div><div class="s">'+(up.length?'Next: '+esc(fmtDate(up.map(x=>x.open_date).sort()[0])):'None announced')+'</div></div>'+
+  '<div class="stat"><div class="l">Closed, listing soon</div><div class="v">'+closed.length+'</div><div class="s">Allotment and listing pending</div></div>'+
+  '<div class="stat"><div class="l">Listed (120 days)</div><div class="v">'+listed.length+'</div><div class="s">'+(gains.length?pos+' of '+gains.length+' above issue price · avg '+pct(avg):'Prices loading…')+'</div></div>';
+ $('cards').innerHTML=curF.length?curF.map(card).join(''):'<div class="empty">No '+(seg==='all'?'':seg+' ')+'IPOs open or announced right now.</div>';
+ const row=x=>{const q=quotes[x.symbol],g=q&&x.issue_price?(q-x.issue_price)/x.issue_price*100:null;return{q,g}};
+ $('listedRows').innerHTML=listedF.length?listedF.map(x=>{const {q,g}=row(x);return '<tr><td><b>'+esc(x.company)+'</b><div class="muted" style="font-size:12px">'+esc(x.symbol)+'</div></td><td>'+esc(x.segment)+'</td><td>'+esc(fmtDate(x.listing_date))+'</td><td class="r">'+inr(x.issue_price,2)+'</td><td class="r">'+(q?'<a href="/stock-analysis.html?symbol='+encodeURIComponent(x.symbol)+'">'+inr(q,2)+'</a>':'—')+'</td><td class="r">'+(g==null?'<span class="muted">—</span>':'<span class="chg '+(g>=0?'green':'red')+'">'+pct(g)+'</span>')+'</td></tr>'}).join(''):'<tr><td colspan="6" class="empty">No listings in the last 120 days.</td></tr>';
+ $('listedCards').innerHTML=listedF.length?listedF.map(x=>{const {q,g}=row(x);return '<div class="lcard"><div><b>'+esc(x.company)+'</b><br><small>'+esc(x.segment)+' · listed '+esc(fmtDate(x.listing_date))+' · issue '+inr(x.issue_price,2)+'</small></div><div class="r"><b>'+(q?inr(q,2):'—')+'</b><br>'+(g==null?'':'<span class="chg '+(g>=0?'green':'red')+'">'+pct(g)+'</span>')+'</div></div>'}).join(''):'<div class="empty">No listings in the last 120 days.</div>';
+}
+
+async function load(){
+ const {data,error}=await sb.from('ipos').select('*').order('close_date',{ascending:false});
+ if(error){$('cards').innerHTML='<div class="empty">IPO data could not load. Please try again shortly.</div>';return}
+ all=data||[];
+ const latest=all.map(x=>x.updated_at).sort().pop();
+ if(latest)$('asOf').textContent='Live from NSE · updated '+new Date(latest).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+ render();
+ const syms=all.filter(x=>stage(x).key==='listed').map(x=>x.symbol);
+ if(syms.length){const {data:q}=await sb.rpc('stock_quotes_for',{p_symbols:syms});(q||[]).forEach(r=>{if(num(r.price))quotes[String(r.symbol).toUpperCase()]=num(r.price)});render()}
+}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab;$('tabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));$('current').hidden=tab!=='current';$('listed').hidden=tab!=='listed'};
+$('segs').onclick=e=>{const b=e.target.closest('[data-seg]');if(!b)return;seg=b.dataset.seg;$('segs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));render()};
+load();
+setInterval(()=>{if(!document.hidden)load()},5*60e3);
+</script>
+</body>
+</html>

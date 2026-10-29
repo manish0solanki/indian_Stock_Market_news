@@ -27,6 +27,7 @@
     ['Analysis', '/stock-analysis.html', function (p) { return p.indexOf('/stock-analysis') === 0; }],
     ['Signals', '/stock-signals.html', function (p) { return p.indexOf('/stock-signals') === 0; }],
     ['Portfolio', '/portfolio.html', function (p) { return p.indexOf('/portfolio') === 0; }],
+    ['IPO', '/ipo.html', function (p) { return p.indexOf('/ipo') === 0; }],
     ['Crypto', '/crypto-signals.html', function (p) { return p.indexOf('/crypto-signals') === 0; }],
     ['Blog', '/blog/', function (p) { return p.indexOf('/blog') === 0; }],
   ];
