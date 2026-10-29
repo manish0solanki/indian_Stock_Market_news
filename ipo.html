@@ -59,6 +59,12 @@ a{color:var(--accent2)}
 .meter em{font-style:normal;font-size:12.5px;font-weight:700;min-width:58px;text-align:right;font-variant-numeric:tabular-nums}
 .gmp{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--surface2);border:1px dashed var(--border);font-size:13px}
 .gmp a{font-weight:700;text-decoration:none;white-space:nowrap}
+.gmp{flex-wrap:wrap}
+.gmp .gv{display:flex;flex-direction:column;gap:2px}
+.gmp .gv b{font-size:16px}
+.gmp .gv small,.gmp .src{font-size:11.5px;color:var(--muted)}
+.gmp .src{width:100%;display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:6px}
+.gmp .fire{letter-spacing:-2px}
 details.more{border-top:1px solid var(--border);padding-top:10px}
 details.more summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent2);list-style:none}
 details.more summary::-webkit-details-marker{display:none}
@@ -120,7 +126,7 @@ table.list tr:hover td{background:var(--hover)}
    <div class="lcards" id="listedCards"></div>
   </div>
  </section>
- <p class="note">Data from NSE's public IPO pages, refreshed every 10 minutes during the day. Subscription figures are times subscribed for each investor category. Grey market premium (GMP) is unofficial, comes from market sources, and is shown by sites such as InvestorGain; it does not predict listing price. This page is for information only and is not investment advice. Read the Red Herring Prospectus before applying.</p>
+ <p class="note">Data from NSE's public IPO pages, refreshed every 10 minutes during the day. Subscription figures are times subscribed for each investor category. Grey market premium (GMP) figures are taken from <a href="https://www.investorgain.com/report/ipo-gmp-live/331/" target="_blank" rel="noopener">InvestorGain</a> and credited to them; GMP is unofficial and does not predict the listing price. Est. listing = upper price band + GMP. This page is for information only and is not investment advice. Read the Red Herring Prospectus before applying.</p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -165,6 +171,19 @@ function issueSize(x){
 // Only plain document links from NSE / SEBI are shown; NSE's own HTML in values is never rendered.
 function linkOf(v){const m=String(v||'').match(/https?:\/\/[^\s"'<>]+/);if(!m)return null;try{const u=new URL(m[0]);return /(^|\.)(nseindia\.com|sebi\.gov\.in)$/.test(u.hostname)?u.href:null}catch(e){return null}}
 
+// Grey market premium scraped from InvestorGain by ipo-refresh (unofficial; credited and linked).
+function igLink(u){try{const x=new URL(u);return x.protocol==='https:'&&x.hostname==='www.investorgain.com'?x.href:GMP_URL}catch(e){return GMP_URL}}
+function gmpRow(x){
+ const g=x.gmp,head='<span class="gv"><span class="muted" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">GMP (grey market)</span>';
+ if(!g)return '<div class="gmp">'+head+'<small>Not tracked yet</small></span><a href="'+GMP_URL+'" target="_blank" rel="noopener">InvestorGain ↗</a></div>';
+ const v=g.gmp==null?null:num(g.gmp),p=v==null?null:num(g.pct),url=igLink(g.url),r=v==null?0:Math.max(0,Math.min(5,num(g.rating)||0));
+ const main=v==null?'<b class="muted">No GMP yet</b>':'<b class="'+(v>0?'green':v<0?'red':'')+'">'+(v>0?'+':'')+inr(v)+(p!=null?' <small>('+pct(p)+')</small>':'')+'</b>';
+ const range=v!=null&&num(g.low)!=null&&num(g.high)!=null&&(g.low||g.high)?'<small>Range '+inr(g.low)+' – '+inr(g.high)+'</small>':'';
+ const est=num(g.est_listing)?'<span class="gv" style="text-align:right"><span class="muted" style="font-size:12px">Est. listing</span><b>'+inr(g.est_listing)+'</b></span>':'';
+ return '<div class="gmp">'+head+main+range+'</span>'+est+
+  '<div class="src"><span>Source: <a href="'+esc(url)+'" target="_blank" rel="noopener">InvestorGain ↗</a>'+(r?' · <span class="fire" title="InvestorGain rating">'+'🔥'.repeat(r)+'</span>':'')+'</span><span>'+(g.updated?'Updated '+esc(g.updated):'')+'</span></div></div>';
+}
+
 function card(x){
  const st=stage(x),sub=x.subscription||{},lot=num(x.lot_size),hi=num(x.price_high),lo=num(x.price_low);
  const minInv=lot&&hi?lot*hi:null,isz=issueSize(x),size=isz?isz.v:null;
@@ -183,7 +202,7 @@ function card(x){
   '<div class="kv"><div><span>Price band</span><b>'+(lo&&hi&&lo!==hi?inr(lo)+'–'+hi:inr(hi))+'</b></div><div><span>Lot size</span><b>'+(lot?lot.toLocaleString('en-IN')+' sh':'—')+'</b></div><div><span>Min. investment</span><b>'+inr(minInv)+'</b></div><div><span>Issue size</span><b title="'+esc(sizeTxt||'')+'">'+(isz&&!isz.exact?'~':'')+crore(size)+'</b></div></div>'+
   '<div class="dates">Bidding <b>'+fmtDate(x.open_date)+'</b> – <b>'+fmtDate(x.close_date)+'</b></div>'+
   subHtml+
-  '<div class="gmp"><span>Grey market premium (GMP)</span><a href="'+GMP_URL+'" target="_blank" rel="noopener">Check on InvestorGain ↗</a></div>'+
+  gmpRow(x)+
   '<details class="more"><summary>Issue details ▾</summary>'+
    (catRows.length?'<table class="cattable">'+catRows.map(([l,k])=>'<tr><td>'+esc(l.trim())+'</td><td>'+times(sub[k])+'</td></tr>').join('')+'</table>':'')+
    (info.length?'<dl class="info">'+info.map(d=>'<dt>'+esc(d.title)+'</dt><dd>'+esc(d.value.replace(/<[^>]+>/g,''))+'</dd>').join('')+'</dl>':'<div class="muted">Issue details not published yet.</div>')+

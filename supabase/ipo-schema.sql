@@ -14,6 +14,7 @@ create table if not exists public.ipos (
   shares_offered numeric,
   subscription jsonb,                              -- {total, qib, nii, bnii, snii, retail, employee, ...} in times
   details jsonb,                                   -- [{title, value}] from NSE issue information
+  gmp jsonb,                                       -- grey market premium from InvestorGain (unofficial)
   updated_at timestamptz not null default now()
 );
 create index if not exists ipos_dates_idx on public.ipos (close_date desc);

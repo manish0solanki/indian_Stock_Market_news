@@ -5,6 +5,8 @@
 //   ipo-detail      -> issue information (lead managers, registrar, face value...) and SME bids
 //   active-category -> category-wise subscription (QIB / NII / retail...) for open mainboard IPOs
 //   past issues     -> listing date and final issue price (last 120 days kept)
+// Grey market premium (GMP) is not published by NSE; it is read from InvestorGain's live GMP page
+// (one fetch per run) and shown on the site credited to InvestorGain with a link back.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const supabase = createClient(
@@ -61,6 +63,49 @@ function details(info: { dataList?: { title?: string | null; value?: string }[] 
     .map((d) => ({ title: String(d.title).trim(), value: String(d.value).replace(/^"+|"+$/g, "").replace(/\s+/g, " ").trim().slice(0, 700) }));
 }
 
+/* ───────── GMP from InvestorGain ─────────
+   Their page embeds its table as JSON rows inside Next.js stream chunks (self.__next_f.push([1,"..."])). */
+type Gmp = { name: string; gmp: number | null; pct: number | null; low: number | null; high: number | null; price: number | null; rating: number; updated: string | null; url: string | null; sme: boolean };
+const IG = "https://www.investorgain.com";
+const strip = (h: unknown) => String(h ?? "").replace(/<[^>]+>/g, " ").replace(/&#8377;/g, "₹").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+const normName = (s: unknown) => String(s || "").toLowerCase().replace(/\b(limited|ltd|ipo)\b\.?/g, "").replace(/[^a-z0-9]/g, "");
+
+async function investorGainGmp(): Promise<Gmp[]> {
+  const html = await (await fetch(IG + "/report/ipo-gmp-live/331/", { headers: { "User-Agent": UA, Accept: "text/html" } })).text();
+  let text = "";
+  for (const m of html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g)) { try { text += JSON.parse(m[1]); } catch (_) { /* skip */ } }
+  const start = text.indexOf('[{"~orderby1"');
+  if (start < 0) return [];
+  // Walk to the matching closing bracket (string-aware) and parse the array.
+  let depth = 0, inStr = false, end = -1;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) { if (c === "\\") i++; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true; else if (c === "[" || c === "{") depth++; else if (c === "]" || c === "}") { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end < 0) return [];
+  const rows = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>[];
+  return rows.filter((r) => r["~ipo_name"]).map((r) => {
+    const g = strip(r.GMP);                                   // "₹58 (38.67%) 18 ↓ / 58 ↑"  or  "₹-- (0.00%)"
+    const gm = /₹\s*(-?[\d.]+)/.exec(g), range = /(-?[\d.]+)\s*↓\s*\/\s*(-?[\d.]+)\s*↑/.exec(g);
+    const ratingKey = Object.keys(r).find((k) => /Rating/i.test(k));
+    const folder = String(r["~urlrewrite_folder_name"] || "");
+    return {
+      name: String(r["~ipo_name"]), gmp: gm ? Number(gm[1]) : null, pct: num(r["~gmp_percent_calc"]),
+      low: range ? Number(range[1]) : null, high: range ? Number(range[2]) : null, price: num(r["Price (₹)"]),
+      rating: ratingKey ? (String(r[ratingKey]).match(/&#128293;|🔥/g) || []).length : 0,
+      updated: strip(r["Updated-On"]) || null, url: /^\/[\w\/-]+$/.test(folder) ? IG + folder : null,
+      sme: /SME/i.test(String(r["~IPO_Category"] || "")),
+    };
+  });
+}
+function matchGmp(company: unknown, list: Gmp[]) {
+  const n = normName(company);
+  if (!n) return null;
+  return list.find((g) => normName(g.name) === n) ||
+    list.find((g) => { const k = normName(g.name); return k.length >= 6 && (n.startsWith(k) || k.startsWith(n)); }) || null;
+}
+
 Deno.serve(async (req) => {
   try {
     const secret = req.headers.get("x-cron-secret") || "";
@@ -110,6 +155,17 @@ Deno.serve(async (req) => {
       }));
     }
 
+    // GMP for open, upcoming and just-closed issues (kept from the last run when InvestorGain doesn't answer).
+    const gmpList = await investorGainGmp().catch((e) => { console.warn("InvestorGain unavailable:", String(e)); return [] as Gmp[]; });
+    let gmpMatched = 0;
+    if (gmpList.length) for (const r of rows.values()) {
+      const g = matchGmp(r.company, gmpList);
+      if (!g) continue;
+      gmpMatched++;
+      const price = (r.price_high as number) || g.price;
+      r.gmp = { gmp: g.gmp, pct: g.pct, low: g.low, high: g.high, est_listing: g.gmp !== null && price ? price + g.gmp : null, rating: g.rating, updated: g.updated, url: g.url, source: "InvestorGain" };
+    }
+
     // Listed in the last 120 days: listing date and final price (other columns are left as they were).
     const cutoff = new Date(Date.now() - 120 * 864e5).toISOString().slice(0, 10);
     const listedBy = new Map<string, Record<string, unknown>>(); // NSE repeats some symbols
@@ -138,7 +194,7 @@ Deno.serve(async (req) => {
       const { error } = await supabase.from("ipos").upsert(batch, { onConflict: "symbol" });
       if (error) throw new Error("upsert: " + error.message);
     }
-    const summary = { open_or_upcoming: open.length, listed: listed.length, sources: { current: (current || []).length, upcoming: (upcoming || []).length, past: (past || []).length } };
+    const summary = { open_or_upcoming: open.length, listed: listed.length, gmp: { rows: gmpList.length, matched: gmpMatched }, sources: { current: (current || []).length, upcoming: (upcoming || []).length, past: (past || []).length } };
     console.log("IPO_REFRESH", JSON.stringify(summary));
     return json(summary);
   } catch (e) {
