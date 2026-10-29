@@ -59,7 +59,7 @@
     var acct = user
       ? '<div class="mph-rel"><button class="mph-acct" id="mphAcct" type="button" aria-haspopup="true" aria-expanded="false"><b>' + esc((user.email || 'U').charAt(0).toUpperCase()) + '</b><span>Account</span></button>' +
         '<div class="mph-pop" id="mphAcctMenu" hidden><div class="mph-email">' + esc(user.email || '') + '</div>' +
-        '<a href="/portfolio.html" target="_self">📊 My Portfolio</a><a href="/stock-signals.html" target="_self">📈 Stock Signals</a><a href="/" target="_self">🏠 Dashboard</a>' +
+        '<a href="/?profile=1" target="_self">👤 My Profile &amp; ticker</a><a href="/portfolio.html" target="_self">📊 My Portfolio</a><a href="/stock-signals.html" target="_self">📈 Stock Signals</a><a href="/" target="_self">🏠 Dashboard</a>' +
         '<button type="button" id="mphLogout">↩ Log out</button></div></div>'
       : '<a class="mph-login" href="/?login=1" target="_self">Login</a>';
     // Plain <div>s with roles: some pages style the header/nav tags globally.

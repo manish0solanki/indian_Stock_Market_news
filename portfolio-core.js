@@ -2,6 +2,7 @@
    batch through the stock_quotes_for RPC) plus mutual funds (portfolio_mf_transactions, NAVs from
    the mf-data function). Holdings use the average-cost method, like portfolio.html.
    window.mpPortfolio.summary(sb, user) -> { stocks, funds, totals, at } or null when no portfolio.
+   window.mpPortfolio.heldSymbols(sb, user) -> symbols of the stocks currently held.
    The last summary is kept in localStorage per user so the card can show it instantly. */
 (function () {
   const MF_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/mf-data';
@@ -75,9 +76,18 @@
     return out;
   }
 
+  // Symbols of the stocks currently held (net quantity above zero), for the "My stocks" ticker.
+  async function heldSymbols(sb, user) {
+    const { data: p } = await sb.from('portfolios').select('id').eq('user_id', user.id).order('created_at').limit(1).maybeSingle();
+    if (!p) return [];
+    const { data, error } = await sb.from('portfolio_transactions').select('symbol,transaction_type,quantity,trade_date,created_at').eq('portfolio_id', p.id);
+    if (error) throw error;
+    return positions(data || [], (t) => clean(t.symbol), 'quantity', () => 0).map((s) => s.key);
+  }
+
   function cached(user) {
     try { return JSON.parse(localStorage.getItem('mp-portfolio-snapshot:' + user.id) || 'null'); } catch (_) { return null; }
   }
 
-  window.mpPortfolio = { summary, cached };
+  window.mpPortfolio = { summary, cached, heldSymbols };
 })();

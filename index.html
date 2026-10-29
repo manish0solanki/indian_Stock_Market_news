@@ -3381,7 +3381,7 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
-<link rel="stylesheet" href="/home-overview.css?v=8">
+<link rel="stylesheet" href="/home-overview.css?v=9">
 </head>
 <body>
 
@@ -3449,6 +3449,11 @@ input,select,textarea{min-width:0;}
 
   <div class="ticker-wrap" id="tickerWrap">
     <div class="ticker-track" id="tickerTrack"><span class="ticker-loading">Loading market data…</span></div>
+    <!-- My stocks: portfolio holdings + stocks added in My Profile (rendered by /my-ticker.js) -->
+    <div class="myt" id="myTicker" hidden>
+      <button type="button" class="myt-label" data-myt-edit title="Edit in My Profile">My stocks <span aria-hidden="true">✎</span></button>
+      <div class="myt-view"><div class="ticker-track myt-track" id="myTickerTrack"></div></div>
+    </div>
   </div>
 
   <div class="mp-shell">
@@ -4241,6 +4246,16 @@ input,select,textarea{min-width:0;}
           <label for="profileAvatarUrl">Or use an image URL</label>
           <input id="profileAvatarUrl" type="url" maxlength="500" placeholder="https://example.com/photo.jpg">
           <span class="hint">Use a direct image link. Google Search result links usually won't work.</span>
+        </div>
+        <div class="modal-field myt-field">
+          <label for="mytSearch">My stocks ticker</label>
+          <label class="myt-check"><input type="checkbox" id="mytPortfolio" checked> Show the stocks in my portfolio</label>
+          <div class="myt-chips" id="mytChips"></div>
+          <div class="myt-add">
+            <input id="mytSearch" type="search" autocomplete="off" placeholder="Add a stock, e.g. TCS or Infosys" aria-label="Add a stock to your ticker">
+            <div class="myt-results" id="mytResults" hidden></div>
+          </div>
+          <span class="hint myt-status" id="mytStatus" aria-live="polite">Shown in the “My stocks” row of the ticker on Home. Changes save straight away.</span>
         </div>
         <div class="profile-account-card">
           <div class="profile-info">
@@ -9404,7 +9419,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
-<script src="/portfolio-core.js?v=1"></script>
+<script src="/portfolio-core.js?v=2"></script>
+<script src="/my-ticker.js?v=1"></script>
 <script src="/home-overview.js?v=7"></script>
 </body>
 </html>   
