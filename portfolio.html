@@ -31,6 +31,30 @@ body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-
 .moremenu button{display:block;width:100%;padding:10px 12px;border:0;border-radius:8px;background:none;color:var(--text);font:500 14px Inter,system-ui,sans-serif;text-align:left;cursor:pointer}
 .moremenu button:hover{background:var(--hover)}
 .moremenu .danger{color:var(--red)}
+.insights{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.insights[hidden]{display:none}
+.ins{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;min-width:0;display:flex;flex-direction:column;gap:7px}
+.ins h3{margin:0;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+.ins .big{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.ins .line{display:flex;justify-content:space-between;gap:10px;font-size:13px;align-items:baseline}
+.ins .line span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ins .line b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ins .note{font-size:12px;color:var(--muted);line-height:1.45}
+.mixbar{display:flex;height:9px;border-radius:6px;overflow:hidden;background:var(--surface2)}
+.mixbar i{display:block;height:100%}
+.mixleg{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12.5px}
+.mixleg span{display:flex;align-items:center;gap:6px;min-width:0}
+.mixleg i{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+.mixleg b{margin-left:auto;font-variant-numeric:tabular-nums}
+.warn{color:var(--amber)}
+td .wt{display:block;color:var(--dim);font-size:11px;font-weight:500}
+@media(max-width:1100px){.insights{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.insights{grid-template-columns:1fr;gap:8px}.ins{padding:12px 14px}}
+.addmenu{min-width:300px;max-width:min(360px,calc(100vw - 24px));padding:6px}
+.addmenu .menuhead{padding:8px 10px 4px;font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--dim)}
+.addmenu button{display:flex;flex-direction:column;gap:2px;padding:9px 10px}
+.addmenu button b{font-size:13.5px}
+.addmenu button span{font-size:12px;color:var(--muted);line-height:1.35}
 
 /* Summary */
 .summary{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
@@ -78,7 +102,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-
 .casrow b{font-size:13.5px}
 .casrow small{display:block;color:var(--dim);font-size:12px;margin-top:2px}
 .casrow .tag{flex:0 0 auto;white-space:nowrap}
-@media(max-width:760px){#mfPanel .panelhead{flex-wrap:wrap}#mfPanel .mfbtns{flex:1 1 100%}#mfPanel .mfbtns .btn{flex:1}#casModal .foot{flex-wrap:wrap}#casModal .foot .footnote{flex-basis:100%}#casModal .foot [data-close]{display:none}#casModal .foot .btn{flex:1}}
+@media(max-width:760px){.panelhead:has(.mfbtns){flex-wrap:wrap}.panelhead .mfbtns{flex:1 1 100%}.panelhead .mfbtns .btn{flex:1}#casModal .foot{flex-wrap:wrap}#casModal .foot .footnote{flex-basis:100%}#casModal .foot [data-close]{display:none}#casModal .foot .btn{flex:1}}
 .tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
 .tag.good{background:var(--greenbg);color:var(--green);border-color:transparent}
 .tag.bad{background:var(--redbg);color:var(--red);border-color:transparent}
@@ -158,6 +182,8 @@ td small{display:block;color:var(--dim);font-size:11.5px}
  .actions{width:100%;flex-wrap:nowrap}
  .actions>.btn{flex:1 1 0;min-width:0;padding:8px 10px;font-size:12.5px}
  .actions .more{flex:0 0 auto}
+ .actions .addwrap{flex:1 1 auto}
+ .actions .addwrap>.btn{width:100%}
  .summary .card:last-child{grid-column:1/-1;display:flex;align-items:baseline;gap:10px}
  .summary .card:last-child .value{margin:0}
  .summary{gap:8px}
@@ -202,8 +228,15 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 <div class="head">
  <div><h1>My Portfolio</h1><div class="sub" id="userText">Loading account…</div></div>
  <div class="actions">
-  <button class="btn" id="importBtn" type="button">⇪ Import CSV / Excel</button>
-  <button class="btn primary" id="addBtn" type="button">＋ Add transaction</button>
+  <div class="more addwrap"><button class="btn primary" id="addMenuBtn" type="button" aria-haspopup="true" aria-expanded="false">＋ Add or import ▾</button>
+   <div class="moremenu addmenu" id="addMenu" hidden>
+    <div class="menuhead">Stocks</div>
+    <button type="button" data-act="addStock"><b>＋ Add a stock</b><span>Enter a buy or sell by hand</span></button>
+    <button type="button" data-act="importStocks"><b>⇪ Import stocks from broker file</b><span>CSV or Excel holdings/tradebook from Zerodha, Groww, Upstox and others</span></button>
+    <div class="menuhead">Mutual funds</div>
+    <button type="button" data-act="addFund"><b>＋ Add a mutual fund</b><span>Purchase, SIP instalment or redemption</span></button>
+    <button type="button" data-act="importCas"><b>⇪ Import mutual funds from CAS</b><span>Statement PDF from CAMS, KFintech or MF Central</span></button>
+   </div></div>
   <div class="more"><button class="btn" id="moreBtn" type="button" aria-label="More actions" aria-haspopup="true" aria-expanded="false">⋯</button>
    <div class="moremenu" id="moreMenu" hidden><button type="button" id="logout">Sign out</button><button type="button" class="danger" id="deletePortfolioBtn">Delete portfolio…</button></div></div>
  </div>
@@ -215,13 +248,14 @@ td small{display:block;color:var(--dim);font-size:11.5px}
  <div class="card"><div class="label">Total P&amp;L</div><div class="value" id="pnl">₹0</div><div class="value" id="pnlPct">0.00%</div></div>
  <div class="card"><div class="label">Holdings</div><div class="value" id="holdTotal">0</div><div class="sub" id="holdCount">0 holdings</div></div>
 </section>
+<section class="insights" id="insights" hidden></section>
 <div class="grid">
- <section class="panel"><div class="panelhead"><span class="paneltitle">Stocks</span><span class="muted" id="holdBest"></span></div>
+ <section class="panel"><div class="panelhead"><div><span class="paneltitle">Stocks</span><div class="muted" id="holdBest" style="font-size:12px"></div></div><span class="mfbtns"><button class="btn sm" id="importBtn" type="button">⇪ Import broker file</button><button class="btn sm primary" id="addBtn" type="button">＋ Add stock</button></span></div>
   <div class="tablewrap"><table><thead><tr><th>Stock</th><th class="r">Qty</th><th class="r">Avg buy</th><th class="r">LTP</th><th class="r">Invested</th><th class="r">Current</th><th class="r">Today</th><th class="r">P&amp;L</th><th class="r"></th></tr></thead><tbody id="holdings"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div>
   <div class="hcards" id="holdingsCards"></div></section>
  <aside class="panel"><div class="panelhead"><span class="paneltitle">Allocation</span></div><div class="allocation" id="allocation"><div class="empty">No holdings</div></div></aside>
 </div>
-<section class="panel" id="mfPanel" style="margin-top:16px"><div class="panelhead"><div><span class="paneltitle">Mutual funds</span><div class="muted" id="mfSummary" style="font-size:12px"></div></div><span class="mfbtns"><button class="btn sm" id="casBtn" type="button">⇪ Import CAS</button><button class="btn sm primary" id="addMfBtn" type="button">＋ Add fund</button></span></div>
+<section class="panel" id="mfPanel" style="margin-top:16px"><div class="panelhead"><div><span class="paneltitle">Mutual funds</span><div class="muted" id="mfSummary" style="font-size:12px"></div></div><span class="mfbtns"><button class="btn sm" id="casBtn" type="button">⇪ Import CAS (PDF)</button><button class="btn sm primary" id="addMfBtn" type="button">＋ Add fund</button></span></div>
  <div class="casnote" id="casNote" hidden></div>
  <div class="tablewrap"><table><thead><tr><th>Fund</th><th class="r">Units</th><th class="r">Avg NAV</th><th class="r">NAV</th><th class="r">Invested</th><th class="r">Current</th><th class="r">Day</th><th class="r">P&amp;L</th><th class="r"></th></tr></thead><tbody id="mfHoldings"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody></table></div>
  <div class="hcards" id="mfCards"></div></section>
@@ -230,7 +264,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
  <div class="tcards" id="transactionsCards"></div></section>
 </main>
 
-<div class="modalbg" id="txModal"><div class="modal"><div class="modalhead"><h2 id="txModalTitle">Add Transaction</h2><button class="close" data-close="txModal">×</button></div><form id="txForm"><div class="form"><div class="fields">
+<div class="modalbg" id="txModal"><div class="modal"><div class="modalhead"><h2 id="txModalTitle">Add stock transaction</h2><button class="close" data-close="txModal">×</button></div><form id="txForm"><div class="form"><div class="fields">
 <div class="field"><label>Symbol</label><div class="symbol-wrap"><input id="symbol" required placeholder="Search company or symbol…" autocomplete="off"><div class="symbol-suggestions" id="symbolSuggestions"></div></div><div class="symbol-company-hint" id="symbolCompanyHint"></div></div>
 <div class="field"><label>Exchange</label><select id="exchange"><option>NSE</option><option>BSE</option></select></div>
 <div class="field"><label>Type</label><select id="type"><option>BUY</option><option>SELL</option></select></div>
@@ -282,7 +316,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 </div>
 </div><div class="foot"><span class="footnote" id="casFoot"></span><button class="btn" type="button" data-close="casModal">Close</button><button class="btn" type="button" id="casRequested">I've requested it</button><button class="btn primary" type="button" id="casRead" hidden>Read statement</button><button class="btn primary" type="button" id="casImport" hidden disabled>Import</button></div></div></div>
 
-<div class="modalbg" id="importModal"><div class="modal"><div class="modalhead"><h2>Import Portfolio</h2><button class="close" data-close="importModal">×</button></div><div class="form">
+<div class="modalbg" id="importModal"><div class="modal"><div class="modalhead"><h2>Import stocks from a broker file</h2><button class="close" data-close="importModal">×</button></div><div class="form">
 <div class="drop"><input id="file" type="file" accept=".csv,.xlsx,.xls"></div>
 <div class="hint">Supports both <b>transaction files</b> and <b>holdings snapshots</b>. For holdings reports, MarketPulse reads <b>Script Name</b>, <b>Quantity</b>, <b>Avg Unit Cost</b>, and <b>Status</b>, resolves the NSE symbol, and creates an initial BUY position. Current Price / Current Value / Unrealized P&amp;L are recalculated from the live price feed. Because a holdings snapshot has no original trade date, imported rows use today's date and are marked as CSV snapshot imports. Existing transactions are not deleted.</div>
 <div class="preview" id="preview"></div>
@@ -430,6 +464,7 @@ const PALETTE=['#6366f1','#22c55e','#f59e0b','#ec4899','#06b6d4','#a855f7','#ef4
 const signed=n=>(n>=0?'+':'−')+money(Math.abs(n));
 const pctTxt=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
 const tone=n=>n>=0?'green':'red';
+const wtTxt=(v,total)=>!total?'':(v/total*100<0.1?'<0.1':(v/total*100).toFixed(1))+'% of portfolio';
 function render(){
  const h=buildHoldings().sort((a,b)=>(b.current||b.cost)-(a.current||a.cost));
  const f=buildFunds().sort((a,b)=>(b.current||b.cost)-(a.current||a.cost));
@@ -447,6 +482,7 @@ function render(){
  const part=(col,label,v,list)=>{const c=list.reduce((a,x)=>a+x.cost,0),pv=list.reduce((a,x)=>a+(x.current||0),0),pc=list.reduce((a,x)=>a+(x.current?x.cost:0),0);
   return '<span><i style="background:'+col+'"></i>'+label+' <b>'+money(v).replace(/\.\d+$/,'')+'</b>'+(pc?' <span class="'+tone(pv-pc)+'">'+pctTxt((pv-pc)/pc*100)+'</span>':'')+'</span>'};
  $('splitLine').innerHTML=all.length?part('#6366f1','Stocks',sv,h)+part('#22c55e','Mutual funds',fv,f):'';
+ renderInsights(h,f,cur,valueOf);
  $('current').textContent=money(cur);
  $('dayChange').textContent=signed(dayChange)+' ('+pctTxt(dayPct)+')';
  $('dayChange').className='value '+tone(dayChange);
@@ -462,10 +498,10 @@ function render(){
  const dayCell=x=>Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span><small class="'+tone(x.dayChange)+'">'+(Number.isFinite(x.dayPct)?pctTxt(x.dayPct):'')+'</small>':'<span class="muted">—</span>';
  const pnlCell=x=>x.current?'<span class="'+tone(x.pnl)+'">'+signed(x.pnl)+'</span><small><span class="chg '+tone(x.pct)+'">'+pctTxt(x.pct)+'</span></small>':'<span class="muted">—</span>';
  const emptyMsg='<b>No holdings yet</b>Add a transaction or import a CSV / Excel file from your broker.';
- $('holdings').innerHTML=h.length?h.map(x=>'<tr><td class="sym"><b>'+esc(x.symbol)+'</b><small>'+esc(x.exchange)+'</small></td><td class="r">'+x.qty.toLocaleString('en-IN')+'</td><td class="r">'+money(x.avg)+'</td><td class="r">'+(x.ltp?money(x.ltp):'—')+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.ltp?money(x.current):'—')+'</b></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+emptyMsg+'</td></tr>';
+ $('holdings').innerHTML=h.length?h.map(x=>'<tr><td class="sym"><b>'+esc(x.symbol)+'</b><small>'+esc(x.exchange)+'</small></td><td class="r">'+x.qty.toLocaleString('en-IN')+'</td><td class="r">'+money(x.avg)+'</td><td class="r">'+(x.ltp?money(x.ltp):'—')+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.ltp?money(x.current):'—')+'</b><span class="wt">'+wtTxt(valueOf(x),cur)+'</span></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+emptyMsg+'</td></tr>';
  $('holdingsCards').innerHTML=h.length?h.map(x=>'<div class="hcard"><div class="row"><span class="sym">'+esc(x.symbol)+'</span><span class="big">'+(x.ltp?money(x.current):money(x.cost))+'</span></div><div class="row"><span class="meta">'+x.qty.toLocaleString('en-IN')+' × avg '+money(x.avg)+'</span><span class="meta">'+(x.ltp?'<span class="chg '+tone(x.pct)+'">'+signed(x.pnl)+' · '+pctTxt(x.pct)+'</span>':'—')+'</span></div><div class="row"><span class="meta">LTP '+(x.ltp?money(x.ltp):'—')+'</span><span class="meta">Today '+(Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span>':'—')+'</span></div>'+acts(x)+'</div>').join(''):'<div class="empty">'+emptyMsg+'</div>';
 
- renderFunds(f,dayCell,pnlCell);
+ renderFunds(f,dayCell,pnlCell,x=>wtTxt(valueOf(x),cur));
 
  const items=[...h.map(x=>({label:x.symbol,value:x.current||x.cost})),...f.map(x=>({label:fundShort(x.name),value:x.current||x.cost}))].sort((a,b)=>b.value-a.value);
  const base=items.reduce((a,x)=>a+x.value,0)||1;
@@ -481,6 +517,45 @@ function render(){
  const qtyTxt=t=>t.ex==='MF'?t.qty.toLocaleString('en-IN',{maximumFractionDigits:3})+' units':t.qty.toLocaleString('en-IN');
  $('transactions').innerHTML=tx.length?tx.map(t=>'<tr><td>'+esc(t.date)+'</td><td><span class="chg '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span></td><td><b>'+esc(t.name)+'</b></td><td>'+esc(t.ex)+'</td><td class="r">'+qtyTxt(t)+'</td><td class="r">'+money(t.price)+'</td><td class="r">'+money(t.charges)+'</td><td class="muted">'+esc(t.source)+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">No transactions yet.</td></tr>';
  $('transactionsCards').innerHTML=tx.length?tx.map(t=>'<div class="tcard"><span class="type '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span><b>'+esc(t.name)+'</b><span>'+qtyTxt(t)+' × '+money(t.price)+'</span><small>'+esc(t.date)+' · '+esc(t.ex)+(t.charges?' · charges '+money(t.charges):'')+' · '+esc(t.source)+'</small></div>').join(''):'<div class="empty">No transactions yet.</div>';
+}
+
+/* ───────── Insights ───────── */
+// Fund categories come from AMFI ("Equity Scheme - Flexi Cap Fund", "Debt Scheme - Money Market Fund", ...).
+function assetClass(x){
+ if(!x.code)return 'Stocks';
+ const c=String(x.category||x.name||'');
+ return /debt|money market|liquid|overnight|gilt|bond|credit|duration|floater|banking and psu/i.test(c)?'Debt funds':/hybrid|arbitrage|balanced|multi asset|equity savings/i.test(c)?'Hybrid & other funds':/equity|elss|index|etf|cap|sector|thematic|flexi|focused|value|dividend yield/i.test(c)?'Equity funds':'Hybrid & other funds';
+}
+function renderInsights(h,f,total,valueOf){
+ const el=$('insights'),all=[...h.map(x=>({...x,label:x.symbol})),...f.map(x=>({...x,label:fundShort(x.name)}))];
+ if(!all.length||!total){el.hidden=true;return}
+ el.hidden=false;
+ const COL={'Stocks':'#6366f1','Equity funds':'#22c55e','Debt funds':'#f59e0b','Hybrid & other funds':'#06b6d4'};
+ const mix={};all.forEach(x=>{const k=assetClass(x);mix[k]=(mix[k]||0)+valueOf(x)});
+ const mixKeys=Object.keys(COL).filter(k=>mix[k]);
+ const equity=((mix['Stocks']||0)+(mix['Equity funds']||0))/total*100;
+ const priced=all.filter(x=>x.current&&x.cost);
+ const byRet=[...priced].sort((a,b)=>b.pct-a.pct);
+ const best=byRet[0],worst=byRet[byRet.length-1];
+ const moved=all.filter(x=>Number.isFinite(x.dayChange)&&x.dayChange!==0);
+ const up=moved.filter(x=>x.dayChange>0).length,down=moved.filter(x=>x.dayChange<0).length;
+ const mover=[...moved].sort((a,b)=>Math.abs(b.dayChange)-Math.abs(a.dayChange))[0];
+ const byVal=[...all].sort((a,b)=>valueOf(b)-valueOf(a));
+ const topShare=valueOf(byVal[0])/total*100,top3=byVal.slice(0,3).reduce((a,x)=>a+valueOf(x),0)/total*100;
+ const short=n=>money(n).replace(/\.\d+$/,'');
+ el.innerHTML=
+  '<div class="ins"><h3>Asset mix</h3><div class="mixbar">'+mixKeys.map(k=>'<i style="width:'+(mix[k]/total*100).toFixed(2)+'%;background:'+COL[k]+'"></i>').join('')+'</div>'+
+   '<div class="mixleg">'+mixKeys.map(k=>'<span><i style="background:'+COL[k]+'"></i>'+k+'<b>'+(mix[k]/total*100).toFixed(1)+'%</b></span>').join('')+'</div>'+
+   '<div class="note">'+equity.toFixed(0)+'% of your money is in equity (stocks and equity funds); '+(100-equity).toFixed(0)+'% is in debt, hybrid and other funds.</div></div>'+
+  '<div class="ins"><h3>Best and worst</h3>'+(best?
+   '<div class="line"><span>▲ '+esc(best.label)+'</span><b class="'+tone(best.pct)+'">'+pctTxt(best.pct)+'</b></div><div class="note">'+signed(best.pnl)+' on '+short(best.cost)+' invested</div>'+
+   (worst&&worst!==best?'<div class="line"><span>▼ '+esc(worst.label)+'</span><b class="'+tone(worst.pct)+'">'+pctTxt(worst.pct)+'</b></div><div class="note">'+signed(worst.pnl)+' on '+short(worst.cost)+' invested</div>':''):'<div class="note">Returns appear once prices load.</div>')+'</div>'+
+  '<div class="ins"><h3>Today</h3><div class="big"><span class="green">'+up+' up</span> · <span class="red">'+down+' down</span></div>'+
+   (mover?'<div class="line"><span>Biggest move: '+esc(mover.label)+'</span><b class="'+tone(mover.dayChange)+'">'+signed(mover.dayChange)+'</b></div>':'')+
+   '<div class="note">Stocks move with live prices; funds with their latest NAV, published each evening.</div></div>'+
+  '<div class="ins"><h3>Concentration</h3><div class="line"><span>Largest: '+esc(byVal[0].label)+'</span><b'+(topShare>25?' class="warn"':'')+'>'+topShare.toFixed(1)+'%</b></div>'+
+   '<div class="line"><span>Top 3 holdings</span><b>'+top3.toFixed(1)+'%</b></div>'+
+   '<div class="note">'+(topShare>25?'More than a quarter of your portfolio is in one holding. That may be intended (e.g. a money market fund as cash), but check it suits you.':'No single holding is more than a quarter of your portfolio.')+'</div></div>';
 }
 
 /* ───────── Mutual funds ─────────
@@ -532,13 +607,13 @@ function buildFunds(){
  });
 }
 
-function renderFunds(f,dayCell,pnlCell){
+function renderFunds(f,dayCell,pnlCell,weight){
  const val=f.reduce((a,x)=>a+(x.current||x.cost),0),pv=f.reduce((a,x)=>a+(x.current||0),0),pc=f.reduce((a,x)=>a+(x.current?x.cost:0),0),waiting=f.some(x=>!x.nav);
  $('mfSummary').innerHTML=f.length?'Value '+money(val).replace(/\.\d+$/,'')+(pc?' · P&amp;L <span class="'+tone(pv-pc)+'">'+(pv>=pc?'+':'−')+money(Math.abs(pv-pc)).replace(/\.\d+$/,'')+'</span>':'')+(waiting?' · <span class="muted">loading NAVs…</span>':''):'';
  const acts=x=>'<div class="rowacts"><button class="btn sm" onclick="manageFund(\''+esc(x.code)+'\')">Edit</button><button class="btn sm danger" onclick="deleteFund(\''+esc(x.code)+'\')">Delete</button></div>';
  const empty=mfError?'<b>Mutual funds could not load</b>'+esc(mfError):'<b>No mutual funds yet</b>Tap “Add fund” to record a purchase or SIP instalment. NAVs update daily from AMFI.';
  const navCell=x=>x.nav?navTxt(x.nav)+'<small>'+esc(fmtDate(x.navDate))+'</small>':'—';
- $('mfHoldings').innerHTML=f.length?f.map(x=>'<tr><td class="fundname"><b>'+esc(fundShort(x.name))+'</b>'+(fundPlan(x.name)?'<span class="plan">'+esc(fundPlan(x.name))+'</span>':'')+'</td><td class="r">'+units(x.units)+'</td><td class="r">'+navTxt(x.avg)+'</td><td class="r">'+navCell(x)+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.current?money(x.current):'—')+'</b></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+empty+'</td></tr>';
+ $('mfHoldings').innerHTML=f.length?f.map(x=>'<tr><td class="fundname"><b>'+esc(fundShort(x.name))+'</b>'+(fundPlan(x.name)?'<span class="plan">'+esc(fundPlan(x.name))+'</span>':'')+'</td><td class="r">'+units(x.units)+'</td><td class="r">'+navTxt(x.avg)+'</td><td class="r">'+navCell(x)+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.current?money(x.current):'—')+'</b><span class="wt">'+weight(x)+'</span></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+empty+'</td></tr>';
  $('mfCards').innerHTML=f.length?f.map(x=>'<div class="hcard"><div class="row"><span class="sym" style="font-size:14px">'+esc(fundShort(x.name))+'</span><span class="big">'+(x.current?money(x.current):money(x.cost))+'</span></div><div class="row"><span class="meta">'+units(x.units)+' units × avg '+navTxt(x.avg)+'</span><span class="meta">'+(x.current?'<span class="chg '+tone(x.pct)+'">'+signed(x.pnl)+' · '+pctTxt(x.pct)+'</span>':'—')+'</span></div><div class="row"><span class="meta">NAV '+(x.nav?navTxt(x.nav)+' · '+esc(fmtDate(x.navDate)):'—')+'</span><span class="meta">Day '+(Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span>':'—')+'</span></div>'+acts(x)+'</div>').join(''):'<div class="empty">'+empty+'</div>';
 }
 
@@ -738,6 +813,11 @@ $('casImport').onclick=async()=>{
  }catch(e){casError(e.message||'Import failed.')}finally{b.disabled=false}
 };
 renderCasNote();
+// "Add or import" menu: one clearly labelled entry point for each way of adding holdings.
+$('addMenuBtn').onclick=e=>{e.stopPropagation();const m=$('addMenu');m.hidden=!m.hidden;$('addMenuBtn').setAttribute('aria-expanded',String(!m.hidden));$('moreMenu').hidden=true};
+$('addMenu').onclick=e=>{const b=e.target.closest('[data-act]');if(!b)return;$('addMenu').hidden=true;
+ ({addStock:()=>$('addBtn').click(),importStocks:()=>$('importBtn').click(),addFund:()=>openAddFund(),importCas:()=>openCas()})[b.dataset.act]()};
+document.addEventListener('click',e=>{if(!e.target.closest('.addwrap'))$('addMenu').hidden=true});
 // "⋯" menu: Sign out / Delete portfolio
 $('moreBtn').onclick=e=>{e.stopPropagation();const m=$('moreMenu');m.hidden=!m.hidden;$('moreBtn').setAttribute('aria-expanded',String(!m.hidden))};
 document.addEventListener('click',e=>{if(!e.target.closest('.more')){$('moreMenu').hidden=true;$('moreBtn').setAttribute('aria-expanded','false')}});
@@ -951,7 +1031,7 @@ let symbolSearchRequestId=0;
 
 function resetTxModal(){
   editingTxId=null;
-  $('txModalTitle').textContent='Add Transaction';
+  $('txModalTitle').textContent='Add stock transaction';
   $('saveTx').textContent='Save transaction';
   $('txForm').reset();
   $('charges').value='0';

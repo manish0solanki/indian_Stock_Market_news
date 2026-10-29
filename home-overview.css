@@ -181,6 +181,51 @@ body { background: var(--bg); padding-top: 0 !important; }
 .mp-main .latest-blog-footer { margin-top: auto !important; }
 .mp-main .latest-blog-read { color: var(--mp-accent-2) !important; font-weight: 600 !important; }
 
+/* ───────── Your portfolio card ───────── */
+.mp-pf[hidden] { display: none !important; }
+.mp-pf-ico { color: var(--mp-accent-2); margin-right: 8px; vertical-align: -3px; }
+.mp-pf-open { text-decoration: none !important; white-space: nowrap; }
+.mp-pf .mp-card-head { flex-wrap: nowrap; }
+.mp-pf-grid { display: grid; grid-template-columns: 1.1fr .9fr 1.2fr 1.3fr; gap: 14px; align-items: stretch; }
+.mp-pf-grid > div { min-width: 0; padding: 12px 14px; border: 1px solid var(--mp-line); border-radius: 12px; background: var(--mp-card-2); display: flex; flex-direction: column; gap: 6px; }
+.mp-pf-label { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); }
+.mp-pf-total { background: linear-gradient(135deg, color-mix(in srgb, var(--mp-accent) 20%, var(--mp-card)), var(--mp-card-2)) !important; border-color: color-mix(in srgb, var(--mp-accent) 40%, var(--mp-line)) !important; }
+.mp-pf-value { font: 800 28px/1.15 var(--font-body); letter-spacing: -.6px; font-variant-numeric: tabular-nums; }
+.mp-pf-total .mpx-pill { align-self: flex-start; font-size: 12.5px; }
+.mp-pf-stats { justify-content: space-around; }
+.mp-pf-stats b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.mp-pf-stats small { font-size: 12px; font-weight: 700; }
+.mp-pf-bar { display: flex; height: 8px; border-radius: 6px; overflow: hidden; background: var(--mp-line); margin: 2px 0 4px; }
+.mp-pf-bar i { display: block; height: 100%; }
+.mp-pf-bar .s, .mp-pf-part i.s { background: #6366f1; }
+.mp-pf-bar .f, .mp-pf-part i.f { background: #22c55e; }
+.mp-pf-part { display: grid; grid-template-columns: 10px 1fr auto; gap: 0 8px; align-items: center; font-size: 13px; }
+.mp-pf-part i { width: 10px; height: 10px; border-radius: 3px; }
+.mp-pf-part em { font-style: normal; color: var(--text-muted); font-size: 11.5px; }
+.mp-pf-part b { font-variant-numeric: tabular-nums; }
+.mp-pf-part small { grid-column: 2 / 4; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mp-pf-row { display: grid; grid-template-columns: 1fr auto 62px; gap: 8px; align-items: baseline; font-size: 13px; }
+.mp-pf-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-pf-row b { font-variant-numeric: tabular-nums; }
+.mp-pf-row small { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mp-pf-empty { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.mp-pf-empty b { display: block; font-size: 15px; }
+.mp-pf-empty span { color: var(--text-secondary); font-size: 13px; }
+.mp-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--mp-accent); color: #fff !important; font: 700 13px var(--font-body); text-decoration: none !important; cursor: pointer; white-space: nowrap; }
+@media (max-width: 1360px) { .mp-pf-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) {
+  .mp-pf { order: -2; }
+  .mp-pf-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mp-pf-total, .mp-pf-split, .mp-pf-top { grid-column: 1 / -1; }
+  .mp-pf-grid > div { padding: 11px 12px; }
+  .mp-pf-value { font-size: 24px; }
+  .mp-pf-stats { grid-column: 1 / -1; flex-direction: row !important; }
+  .mp-pf-stats > div { flex: 1; }
+  .mp-pf-stats b { font-size: 16px; }
+  .mp-pf-top .mp-pf-row:nth-of-type(n+5) { display: none; }
+  .mp-pf-when { display: none; }
+}
+
 /* ───────── Index cards ───────── */
 .mp-index-cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
 /* GIFT Nifty strip: first row of the index section */

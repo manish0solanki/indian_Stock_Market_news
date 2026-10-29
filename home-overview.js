@@ -339,6 +339,72 @@
   syncTop();
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderTreemap, 150); });
 
+  /* ───────── Your portfolio (stocks + mutual funds) ───────── */
+  const pfHost = $('mpPortfolio');
+  const inr0 = v => '₹' + Math.round(num(v) || 0).toLocaleString('en-IN');
+  const pctTxt = v => { if (!Number.isFinite(v)) return ''; const r = Math.round(v * 100) / 100 || 0; return (r >= 0 ? '+' : '') + r.toFixed(2) + '%'; };
+  const signedInr = v => (v >= 0 ? '+' : '−') + inr0(Math.abs(v));
+  let pfAt = 0, pfBusy = false;
+  function renderPortfolio(s, signedIn) {
+    if (!pfHost) return;
+    pfHost.hidden = false;
+    const head = (sub) => `<div class="mp-card-head"><h2 class="mp-h2"><svg class="mp-pf-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg>Your portfolio${sub ? ` <span class="mp-muted mp-pf-when">${sub}</span>` : ''}</h2><a class="mp-link mp-pf-open" href="/portfolio.html">Open portfolio →</a></div>`;
+    if (!signedIn) {
+      pfHost.innerHTML = head('') + `<div class="mp-pf-empty"><div><b>Track your stocks and mutual funds in one place</b><span>Live value, today's change and P&amp;L. Import a broker file or your mutual fund CAS in a minute.</span></div><button type="button" class="mp-btn" id="mpPfLogin">Sign in</button></div>`;
+      $('mpPfLogin').onclick = () => $('authButton')?.click();
+      return;
+    }
+    if (!s || !s.totals.count) {
+      pfHost.innerHTML = head('') + `<div class="mp-pf-empty"><div><b>Your portfolio is empty</b><span>Add stocks or mutual funds, or import a broker file or CAS statement.</span></div><a class="mp-btn" href="/portfolio.html">Add holdings</a></div>`;
+      return;
+    }
+    const t = s.totals, when = new Date(s.at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    const share = t.value ? t.stocks.value / t.value * 100 : 0;
+    const top = [...s.stocks, ...s.funds].sort((a, b) => (b.current || b.cost) - (a.current || a.cost)).slice(0, 4);
+    const part = (cls, label, p) => `<div class="mp-pf-part"><i class="${cls}"></i><span>${label} <em>${p.count}</em></span><b>${inr0(p.value)}</b><small class="${tone(p.pnl)}">${p.pct === null ? '—' : signedInr(p.pnl) + ' · ' + pctTxt(p.pct)}</small></div>`;
+    pfHost.innerHTML = head('· as of ' + when) + `
+      <div class="mp-pf-grid">
+        <div class="mp-pf-total">
+          <span class="mp-pf-label">Total value</span>
+          <div class="mp-pf-value">${inr0(t.value)}</div>
+          <span class="mpx-pill ${tone(t.day)}">${signedInr(t.day)} (${pctTxt(t.dayPct)}) today</span>
+        </div>
+        <div class="mp-pf-stats">
+          <div><span class="mp-pf-label">Invested</span><b>${inr0(t.invested)}</b></div>
+          <div><span class="mp-pf-label">Total P&amp;L</span><b class="${tone(t.pnl)}">${signedInr(t.pnl)}</b><small class="${tone(t.pnl)}">${pctTxt(t.pct)}</small></div>
+        </div>
+        <div class="mp-pf-split">
+          <span class="mp-pf-label">Stocks vs mutual funds</span>
+          <div class="mp-pf-bar"><i class="s" style="width:${share.toFixed(1)}%"></i><i class="f" style="width:${(100 - share).toFixed(1)}%"></i></div>
+          ${part('s', 'Stocks', t.stocks)}${part('f', 'Mutual funds', t.funds)}
+        </div>
+        <div class="mp-pf-top">
+          <span class="mp-pf-label">Largest holdings</span>
+          ${top.map(x => `<div class="mp-pf-row"><span title="${esc(x.longName)}">${esc(x.name)}</span><b>${inr0(x.current || x.cost)}</b><small class="${tone(Math.round((x.dayPct ?? 0) * 100) / 100 || 0)}">${x.dayPct === null ? '—' : pctTxt(x.dayPct)}</small></div>`).join('')}
+        </div>
+      </div>`;
+  }
+  async function loadPortfolio(force) {
+    if (!pfHost || pfBusy || !window.mpPortfolio || typeof supabaseClient === 'undefined') return;
+    if (!force && (!homeVisible() || Date.now() - pfAt < (marketOpen() ? 120e3 : 15 * 60e3))) return;
+    pfBusy = true;
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      const user = data?.session?.user;
+      if (!user) { renderPortfolio(null, false); return; }
+      const cached = window.mpPortfolio.cached(user);
+      if (cached && !pfAt) renderPortfolio(cached, true);
+      renderPortfolio(await window.mpPortfolio.summary(supabaseClient, user), true);
+      pfAt = Date.now();
+    } catch (e) {
+      console.warn('[Home portfolio]', e);
+    } finally { pfBusy = false; }
+  }
+  loadPortfolio(true);
+  setInterval(() => loadPortfolio(false), 60e3);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadPortfolio(false); });
+  if (typeof supabaseClient !== 'undefined') supabaseClient.auth.onAuthStateChange(() => { pfAt = 0; setTimeout(() => loadPortfolio(true), 300); });
+
   /* ───────── Links from other pages ───────── */
   // /?login=1 opens the login form (the shared header on other pages links here);
   // /#mpHeatmap, /#marketNews etc. scroll to that section once the page has laid out.

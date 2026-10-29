@@ -3148,18 +3148,7 @@ body {
 
 /* Crypto Trade Dashboard */
 /* Portfolio Snapshot Dashboard */
-.portfolio-dashboard{margin-bottom:14px}
-.portfolio-dash-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
-.portfolio-dash-title{font-size:13px;font-weight:700;color:var(--text)}
-.portfolio-dash-link{font-size:10px;color:var(--indigo-light);text-decoration:none;font-weight:600}
-[data-theme="light"] .portfolio-dash-link{color:var(--indigo)}
-.portfolio-dash-status{font-size:9px;color:var(--text-muted);font-family:var(--font-mono)}
-.portfolio-snapshot-table{width:100%;border-collapse:collapse}.portfolio-snapshot-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.portfolio-snapshot-metric{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;min-width:0}.portfolio-snapshot-metric .v{font:700 12px var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.portfolio-snapshot-metric .l{font-size:9px;color:var(--text-muted);margin-top:3px;text-transform:uppercase}
-.portfolio-snapshot-table th{padding:7px 8px;text-align:left;font-size:9px;color:var(--text-muted);text-transform:uppercase;background:var(--bg)}
-.portfolio-snapshot-table td{padding:9px 8px;border-top:1px solid var(--border);font-size:11px}
-.portfolio-snapshot-table td:last-child{text-align:right;font-family:var(--font-mono);font-weight:700}
-.portfolio-dash-note{margin-top:7px;color:var(--text-muted);font-size:9px;line-height:1.4}
-@media(max-width:640px){.portfolio-snapshot-table th,.portfolio-snapshot-table td{padding:8px 6px}}
+
 
 /* Latest Blog Snapshots */
 .latest-blog-snapshots{
@@ -3392,7 +3381,7 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
-<link rel="stylesheet" href="/home-overview.css?v=7">
+<link rel="stylesheet" href="/home-overview.css?v=8">
 </head>
 <body>
 
@@ -3530,19 +3519,6 @@ input,select,textarea{min-width:0;}
             </table>
           </div>
         </div>
-      </div>
-
-      <!-- Portfolio Snapshot -->
-      <div class="widget-card portfolio-dashboard" id="portfolioDashboard">
-        <div class="portfolio-dash-head">
-          <div>
-            <div class="portfolio-dash-title">📊 Portfolio Snapshot</div>
-            <div class="portfolio-dash-status" id="portfolioDashStatus">Checking account…</div>
-          </div>
-          <a class="portfolio-dash-link" href="/portfolio.html" target="_self">Open Portfolio →</a>
-        </div>
-        <div class="portfolio-snapshot-metrics"><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashCurrent">—</div><div class="l">Current Value</div></div><div class="portfolio-snapshot-metric"><div class="v" id="portfolioDashDay">—</div><div class="l">Day Change</div></div></div><div id="portfolioSnapshotBody" style="margin-top:7px;"></div>
-        <div class="portfolio-dash-note">Live portfolio value and today's change based on your holdings.</div>
       </div>
 
     <details class="mp-side-card mp-reference" open>
@@ -3931,6 +3907,9 @@ input,select,textarea{min-width:0;}
   <section class="mp-index-cards" id="mpIndexCards" data-home-only="true" aria-label="Key indices">
     <div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div>
   </section>
+
+  <!-- Your portfolio (stocks + mutual funds), rendered by /home-overview.js -->
+  <section class="mp-card mp-pf" id="mpPortfolio" data-home-only="true" aria-label="Your portfolio" hidden></section>
 
   <section class="mp-row mp-row-heat" data-home-only="true">
     <div class="mp-card" id="mpHeatmap">
@@ -9368,216 +9347,6 @@ function initLatestBlogSnapshots(){
   latestBlogTimer=setInterval(loadLatestBlogSnapshots,300000);
 }
 
-/* ─── Portfolio Snapshot ─── */
-let portfolioDashTimer=null;
-
-function portfolioMoney(n){
-  return '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-function portfolioNum(n){
-  const v=Number(n);
-  return Number.isFinite(v)?v:0;
-}
-function portfolioClean(s){
-  return String(s||'').trim().toUpperCase();
-}
-
-async function loadPortfolioSnapshot(){
-  const status=document.getElementById('portfolioDashStatus');
-  const body=document.getElementById('portfolioSnapshotBody');
-  const currentEl=document.getElementById('portfolioDashCurrent');
-  const dayEl=document.getElementById('portfolioDashDay');
-  if(!status||!body)return;
-
-  const {data:{session}}=await supabaseClient.auth.getSession();
-  if(!session?.user){
-    status.textContent='Sign in to view your portfolio';
-    if(currentEl)currentEl.textContent='—';
-    if(dayEl)dayEl.textContent='—';
-    body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Sign in to see your portfolio snapshot.</div>';
-    return;
-  }
-
-  try{
-    status.textContent='Live';
-
-    const {data:portfolio,error:portfolioError}=await supabaseClient
-      .from('portfolios')
-      .select('id,name')
-      .eq('user_id',session.user.id)
-      .order('created_at')
-      .limit(1)
-      .maybeSingle();
-
-    if(portfolioError)throw portfolioError;
-
-    if(!portfolio){
-      status.textContent='No portfolio yet';
-      if(currentEl)currentEl.textContent='—';
-      if(dayEl)dayEl.textContent='—';
-      body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Open Portfolio to create one.</div>';
-      return;
-    }
-
-    const {data:tx,error:txError}=await supabaseClient
-      .from('portfolio_transactions')
-      .select('symbol,exchange,transaction_type,quantity,price,charges')
-      .eq('portfolio_id',portfolio.id)
-      .eq('user_id',session.user.id);
-
-    if(txError)throw txError;
-
-    const transactions=Array.isArray(tx)?tx:[];
-    const holdings={};
-
-    for(const t of transactions){
-      const symbol=portfolioClean(t.symbol);
-      if(!symbol)continue;
-
-      if(!holdings[symbol]){
-        holdings[symbol]={qty:0,cost:0,exchange:portfolioClean(t.exchange||'NSE')};
-      }
-
-      const q=portfolioNum(t.quantity);
-      const p=portfolioNum(t.price);
-      const charges=portfolioNum(t.charges);
-
-      if(String(t.transaction_type).toUpperCase()==='BUY'){
-        holdings[symbol].qty+=q;
-        holdings[symbol].cost+=q*p+charges;
-      }else{
-        const old=holdings[symbol].qty;
-        if(old>0){
-          const avg=holdings[symbol].cost/old;
-          holdings[symbol].cost-=q*avg+charges;
-          holdings[symbol].qty-=q;
-        }
-      }
-    }
-
-    const symbols=Object.keys(holdings).filter(
-      s=>holdings[s].qty>0.0000001
-    );
-
-    if(!symbols.length){
-      status.textContent='No holdings';
-      if(currentEl)currentEl.textContent='—';
-      if(dayEl)dayEl.textContent='—';
-      body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">No active holdings yet.</div>';
-      return;
-    }
-
-    // Same on-demand Yahoo Finance source used by portfolio.html.
-    const results=await Promise.all(symbols.map(async symbol=>{
-      try{
-        if(holdings[symbol].exchange!=='NSE'){
-          return {symbol,data:null};
-        }
-
-        const r=await fetch(
-          STOCK_DATA_FUNCTION_URL+'?symbol='+encodeURIComponent(symbol),
-          {
-            cache:'no-store',
-            headers:{'Accept':'application/json'}
-          }
-        );
-
-        if(!r.ok)throw Error('HTTP '+r.status);
-
-        const d=await r.json();
-        const price=Number(d?.price);
-
-        if(!d?.success||!Number.isFinite(price)||price<=0){
-          throw Error(d?.error||'Invalid stock price');
-        }
-
-        return {symbol,data:d};
-      }catch(e){
-        console.warn('Portfolio snapshot price unavailable for '+symbol,e);
-        return {symbol,data:null};
-      }
-    }));
-
-    const priceMap={};
-    results.forEach(x=>{
-      if(x.data)priceMap[x.symbol]=x.data;
-    });
-
-    let current=0;
-    let dayChange=0;
-    let pricedHoldings=0;
-
-    symbols.forEach(symbol=>{
-      const h=holdings[symbol];
-      const feed=priceMap[symbol];
-
-      if(!feed)return;
-
-      const price=portfolioNum(feed.price);
-      current+=h.qty*price;
-      pricedHoldings++;
-
-      const change=Number.isFinite(Number(feed.change))
-        ? Number(feed.change)
-        : 0;
-
-      dayChange+=h.qty*change;
-    });
-
-    if(!pricedHoldings){
-      throw Error('No live portfolio prices available');
-    }
-
-    const dayStartValue=current-dayChange;
-    const dayPct=dayStartValue!==0
-      ? dayChange/dayStartValue*100
-      : 0;
-
-    const cls=dayChange>=0
-      ? 'var(--positive)'
-      : 'var(--negative)';
-
-    const priceStatus=pricedHoldings===symbols.length
-      ? 'Live'
-      : pricedHoldings+' of '+symbols.length+' priced';
-
-    status.textContent=symbols.length+
-      ' holding'+(symbols.length===1?'':'s')+
-      ' · '+priceStatus;
-
-    if(currentEl)currentEl.textContent=portfolioMoney(current);
-
-    if(dayEl){
-      dayEl.textContent=(dayChange>=0?'+':'')+portfolioMoney(dayChange);
-      dayEl.style.color=cls;
-    }
-
-    body.innerHTML=
-      '<div style="text-align:right;color:'+cls+';font:600 9px var(--font-mono);">'+
-      'Day '+(dayChange>=0?'+':'')+dayPct.toFixed(2)+'%'+
-      '</div>';
-
-  }catch(e){
-    console.error('[Portfolio Dashboard]',e);
-    status.textContent='Unavailable';
-    if(currentEl)currentEl.textContent='—';
-    if(dayEl)dayEl.textContent='—';
-    body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:10px;padding:4px 0;">Portfolio snapshot unavailable.</div>';
-  }
-}
-
-function initPortfolioDashboard(){
-  loadPortfolioSnapshot();
-
-  if(portfolioDashTimer)clearInterval(portfolioDashTimer);
-
-  portfolioDashTimer=setInterval(loadPortfolioSnapshot,30000);
-
-  supabaseClient.auth.onAuthStateChange(
-    ()=>setTimeout(loadPortfolioSnapshot,250)
-  );
-}
-
 /* ─── Live Timer ─── */
 setInterval(() => {
   const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
@@ -9591,7 +9360,6 @@ setInterval(() => {
 async function init() {
   await initConfig();
   initCryptoTradeDashboard();
-  initPortfolioDashboard();
   initLatestBlogSnapshots();
   initVoiceSearch();
   await Promise.all([
@@ -9634,6 +9402,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
-<script src="/home-overview.js?v=6"></script>
+<script src="/portfolio-core.js?v=1"></script>
+<script src="/home-overview.js?v=7"></script>
 </body>
 </html>   
