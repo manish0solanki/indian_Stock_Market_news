@@ -206,11 +206,41 @@ details.settings summary{cursor:pointer;color:var(--muted)}
  .vlabel{font-size:25px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
-</style></head><body>
-<header class="top">
- <div class="brand"><b>◆</b> MarketPulse <small>STOCK ANALYSIS</small></div>
- <nav aria-label="Main"><a href="/">Dashboard</a><a href="/stock-analysis.html" aria-current="page">Stock Analysis</a><a href="/stock-signals.html">Stock Signals</a><a href="/portfolio.html">Portfolio</a><a href="/blog/">Blog</a><a href="/crypto-signals.html">Crypto</a></nav>
-</header>
+
+/* Light theme (toggled from the shared header) */
+[data-theme="light"]{color-scheme:light;--bg:#f3f4f8;--panel:#fff;--panel2:#f7f8fb;--line:#e2e4ee;--line2:#eceef5;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--green:#0f8a3e;--red:#c72b2b;--blue:#4f46e5;--gold:#8a6200}
+[data-theme="light"] body{background:var(--bg)}
+[data-theme="light"] .search{background:#fff;border-color:var(--line)}
+[data-theme="light"] .search input,[data-theme="light"] .keyrow input{background:#f7f8fb;border-color:var(--line);color:var(--text)}
+[data-theme="light"] .suggest{background:#fff;border-color:var(--line);box-shadow:0 16px 40px rgba(20,20,50,.12)}
+[data-theme="light"] .suggest button:hover,[data-theme="light"] .suggest button.active{background:#eef0ff}
+[data-theme="light"] .btn.ghost,[data-theme="light"] .chip,[data-theme="light"] .seg button{background:#fff;border-color:var(--line);color:var(--text)}
+[data-theme="light"] .chip:hover{background:#eef0ff;border-color:#6366f1}
+[data-theme="light"] .seg button.on{background:#4f46e5;color:#fff}
+[data-theme="light"] #status{background:#fff;color:var(--muted)}
+[data-theme="light"] .panel{background:#fff;border-color:var(--line);box-shadow:0 1px 2px rgba(20,20,50,.04)}
+[data-theme="light"] .quote{background:linear-gradient(120deg,#eef0ff,#fff)}
+[data-theme="light"] .metric,[data-theme="light"] .perf div,[data-theme="light"] .ladder div,[data-theme="light"] .news article,[data-theme="light"] .learn details{background:#f7f8fb;border-color:var(--line2)}
+[data-theme="light"] .metric small,[data-theme="light"] .perf small{color:var(--dim)}
+[data-theme="light"] .ladder div.now{background:#eef0ff;border-color:#6366f1}
+[data-theme="light"] .tablewrap{border-color:var(--line)}
+[data-theme="light"] .table th{background:#f3f4f8;color:var(--muted)}
+[data-theme="light"] .table th,[data-theme="light"] .table td{border-bottom-color:var(--line2)}
+[data-theme="light"] .table tbody tr:hover{background:#f7f8fb}
+[data-theme="light"] .tag{background:#eef0f5;color:var(--muted)}
+[data-theme="light"] .tag.up{background:#e7f7ec}[data-theme="light"] .tag.down{background:#fcebeb}[data-theme="light"] .tag.flat{background:#fbf3df}
+[data-theme="light"] .pill{background:#eef0f5;border-color:var(--line);color:var(--muted)}
+[data-theme="light"] .news p,[data-theme="light"] .learn p{color:#374151}
+[data-theme="light"] .ai{background:#f7f8fb;border-color:var(--line);color:#1f2937}
+[data-theme="light"] .skel{background:#e9ebf3}
+[data-theme="light"] .linkbtn{color:var(--text)}
+[data-theme="light"] .checks li{border-top-color:var(--line2)}
+[data-theme="light"] .chart svg line[stroke="#1d2a40"]{stroke:#e2e4ee}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+</head><body>
+<div id="mpHeader"></div>
 
 <main class="wrap">
  <div class="hero">

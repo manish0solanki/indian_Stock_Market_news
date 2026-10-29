@@ -41,6 +41,7 @@ body { background: var(--bg); padding-top: 0 !important; }
   min-height: 38px; box-shadow: none !important;
 }
 .topbar .page-nav-link:hover { color: var(--text) !important; background: var(--surface-hover) !important; }
+.topbar a.page-nav-link { text-decoration: none !important; }
 .topbar .page-nav-link.active { background: var(--mp-accent) !important; border-color: var(--mp-accent) !important; color: #fff !important; }
 .mp-ico { font-size: 14px; line-height: 1; opacity: .9; }
 

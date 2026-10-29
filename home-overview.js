@@ -315,6 +315,19 @@
   syncTop();
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderTreemap, 150); });
 
+  /* ───────── Links from other pages ───────── */
+  // /?login=1 opens the login form (the shared header on other pages links here);
+  // /#mpHeatmap, /#marketNews etc. scroll to that section once the page has laid out.
+  const params = new URLSearchParams(location.search);
+  if (params.get('login') === '1' && !document.getElementById('accountWrap')?.classList.contains('visible')) {
+    setTimeout(() => document.getElementById('authButton')?.click(), 300);
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
+  const jump = (location.hash || '').slice(1);
+  if (jump && !['home', 'sectors', 'crude', 'global', 'crypto'].includes(jump) && $(jump)) {
+    setTimeout(() => { const el = $(jump); if (el) scrollTo({ top: el.getBoundingClientRect().top + scrollY - (document.querySelector('.topbar')?.offsetHeight || 60) - 10 }); }, 700);
+  }
+
   /* ───────── Boot ───────── */
   bindTreemapTips();
   loadMarket(true);

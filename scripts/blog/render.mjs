@@ -72,11 +72,12 @@ export function renderPost(post, narrative, publishedIso, aiSource) {
 <meta name="generator" content="MarketPulse blog bot (${esc(aiSource)})">
 <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
 <link rel="stylesheet" href="/blog/assets/post.css">
-<script>try{var t=localStorage.getItem('marketpulse-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
 </head>
 <body>
-<header class="top"><a class="brand" href="/"><i></i>MarketPulse</a><nav><a href="/">Dashboard</a><a href="/blog/">Blog</a><a href="/stock-analysis.html">Analysis</a></nav></header>
+<div id="mpHeader"></div>
 <main class="post">
 <nav class="crumbs"><a href="/">Home</a> / <a href="/blog/">Blog</a> / <span>${esc(post.categoryLabel)}</span></nav>
 <div class="cat">${post.emoji} ${esc(post.categoryLabel)}</div>

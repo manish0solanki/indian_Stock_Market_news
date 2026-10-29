@@ -796,8 +796,22 @@ img,svg,canvas{max-width:100%}
 
 <base target="_blank">
 <base target="_blank">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<style>
+/* Shared header sits above; this page's own header becomes the page title and scrolls normally. */
+body > header{position:relative!important;top:auto!important}
+/* Light theme (toggled from the shared header) */
+[data-theme="light"]{--bg:#f3f4f8;--card:#ffffff;--card2:#f3f4f8;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--green:#0f8a3e;--red:#c72b2b;--yellow:#a16207;--blue:#2563eb;--purple:#6d28d9;color-scheme:light}
+[data-theme="light"] .wallet-hero,[data-theme="light"] .backtest-hero{background:linear-gradient(145deg,#fff,#eef0ff)}
+[data-theme="light"] .connection-log{background:#fff}
+[data-theme="light"] .live-list-table tbody tr:hover{background:rgba(0,0,0,.03)}
+[data-theme="light"] .notification-row,[data-theme="light"] .connection-log-row{border-bottom-color:rgba(0,0,0,.06)}
+[data-theme="light"] select,[data-theme="light"] input,[data-theme="light"] textarea{color-scheme:light}
+</style>
 </head>
 <body>
+<div id="mpHeader"></div>
 
 <header>
 <div>

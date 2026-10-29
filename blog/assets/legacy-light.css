@@ -1,0 +1,17 @@
+/* Light-theme colours for the oldest Stock Spotlight pages, which hard-code a dark palette.
+   The theme itself is applied by /site-header.js. */
+body > .topbar { display: none; }
+[data-theme="light"] body { background: #f3f4f8 !important; color: #1f2937 !important; }
+[data-theme="light"] h1, [data-theme="light"] .section h2, [data-theme="light"] .summary strong, [data-theme="light"] .metric-value, [data-theme="light"] .section-title, [data-theme="light"] .key-value, [data-theme="light"] .content strong, [data-theme="light"] .content h2, [data-theme="light"] .data-heading { color: #0f0f1a !important; }
+[data-theme="light"] .breadcrumb, [data-theme="light"] .meta, [data-theme="light"] .metric-label, [data-theme="light"] .key-label, [data-theme="light"] .key-sub { color: #5a5d6b !important; }
+[data-theme="light"] .breadcrumb a, [data-theme="light"] .bullet-list li::before { color: #4f46e5 !important; }
+[data-theme="light"] .category-badge { background: #ede9fe !important; color: #4c1d95 !important; }
+[data-theme="light"] .summary, [data-theme="light"] .bottom-line { background: #eef0ff !important; color: #1f2937 !important; border-left-color: #6366f1 !important; }
+[data-theme="light"] .metric-card, [data-theme="light"] .key-card, [data-theme="light"] .data-card { background: #ffffff !important; border: 1px solid #e2e4ee; }
+[data-theme="light"] .text-content, [data-theme="light"] .bullet-list li, [data-theme="light"] .content { color: #374151 !important; border-bottom-color: #e2e4ee !important; }
+[data-theme="light"] .positive { color: #0f8a3e !important; }
+[data-theme="light"] .negative { color: #c72b2b !important; }
+[data-theme="light"] .sentiment-bullish { background: #e7f7ec !important; color: #0f8a3e !important; }
+[data-theme="light"] .sentiment-bearish { background: #fcebeb !important; color: #c72b2b !important; }
+[data-theme="light"] .sentiment-mixed { background: #fbf3df !important; color: #8a6200 !important; }
+[data-theme="light"] .data-row { border-bottom-color: #e2e4ee !important; }

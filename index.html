@@ -3392,7 +3392,7 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
-<link rel="stylesheet" href="/home-overview.css?v=3">
+<link rel="stylesheet" href="/home-overview.css?v=4">
 </head>
 <body>
 
@@ -3401,11 +3401,14 @@ input,select,textarea{min-width:0;}
       <button class="topbar-brand" id="marketPulseHome" type="button" title="Go to Home"><span class="diamond"></span>MarketPulse</button>
       <button class="mp-menu-btn" id="mpMenuBtn" type="button" aria-label="Open menu" aria-controls="mpSidebar" aria-expanded="false"><span></span><span></span><span></span></button>
   <nav class="page-nav" id="pageNav" aria-label="MarketPulse pages">
-    <button class="page-nav-link active" data-page="home" type="button"><span class="mp-ico">⌂</span>Home</button>
-    <button class="page-nav-link" data-page="sectors" type="button"><span class="mp-ico">▥</span>Sectors</button>
-    <button class="page-nav-link" data-page="crude" type="button"><span class="mp-ico">◆</span>Crude Impact</button>
-    <button class="page-nav-link" data-page="global" type="button"><span class="mp-ico">◍</span>Global Market</button>
-    <button class="page-nav-link" data-page="crypto" type="button"><span class="mp-ico">₿</span>Crypto Bot</button>
+    <!-- Same options, in the same order, as the shared header on every other page (/site-header.js). -->
+    <button class="page-nav-link active" data-page="home" type="button">Home</button>
+    <button class="page-nav-link" data-page="sectors" type="button">Sectors</button>
+    <a class="page-nav-link" href="/stock-analysis.html" target="_self">Analysis</a>
+    <a class="page-nav-link" href="/stock-signals.html" target="_self">Signals</a>
+    <a class="page-nav-link" href="/portfolio.html" target="_self">Portfolio</a>
+    <a class="page-nav-link" href="/crypto-signals.html" target="_self">Crypto</a>
+    <a class="page-nav-link" href="/blog/" target="_self">Blog</a>
   </nav>
 
   <div class="controls-bar">
@@ -3426,15 +3429,6 @@ input,select,textarea{min-width:0;}
   </div>
 
   <div class="topbar-right">
-    <a class="blog-nav nav-pill" href="/blog/" target="_self" title="MarketPulse Blog">
-      <img src="/blogger_Yellow.png" alt="" class="blog-icon"><span class="nav-pill-text">Blog</span>
-    </a>
-    <a class="blog-nav nav-pill" href="/stock-signals.html" target="_self" title="Stock Trading Signals" aria-label="Stock Trading Signals">
-      <span>📈</span><span class="nav-pill-text">Signals</span>
-    </a>
-    <a class="blog-nav nav-pill" href="/stock-analysis.html" target="_self" title="Stock Technical Analysis" aria-label="Stock Technical Analysis">
-      <span>🧠</span><span class="nav-pill-text">Analysis</span>
-    </a>
     <button class="mp-search-btn" id="mpSearchBtn" type="button" aria-label="Search stocks" aria-controls="searchInput" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></button>
     <button class="auth-button" id="authButton" type="button">Login</button>
     <div class="account-wrap" id="accountWrap">
@@ -9640,6 +9634,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
-<script src="/home-overview.js?v=3"></script>
+<script src="/home-overview.js?v=4"></script>
 </body>
 </html>   

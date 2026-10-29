@@ -7,16 +7,20 @@
 <title>Stock Signals · MarketPulse</title>
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="stylesheet" href="stock-signals.css">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<style>/* Shared header sits above; this bar is now the page title and scrolls normally. */.appbar{position:static!important;padding-top:10px!important}.appbar [hidden]{display:none!important}</style>
 </head>
 <body>
 
+<div id="mpHeader"></div>
 <header class="appbar">
-  <a class="back" href="/" aria-label="Back to MarketPulse">‹</a>
+  <a class="back" href="/" aria-label="Back to MarketPulse" hidden>‹</a>
   <div class="apptitle">
     <h1>Stock Signals</h1>
     <span class="mkt" id="marketChip"><i class="dot"></i><span id="marketText">Checking market…</span></span>
   </div>
-  <button class="iconbtn" id="themeBtn" aria-label="Toggle theme">◐</button>
+  <button class="iconbtn" id="themeBtn" aria-label="Toggle theme" hidden>◐</button>
 </header>
 
 <div class="indexstrip" id="indexStrip" aria-label="Market indices"></div>

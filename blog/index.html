@@ -1001,6 +1001,8 @@ body{background:var(--bg)}
 
 <base target="_blank">
 
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
 </head>
 
 
@@ -1011,35 +1013,9 @@ body{background:var(--bg)}
      TOPBAR
 ===================================================== -->
 
-<div class="topbar">
-
-  <div class="topbar-inner">
-
-    <a href="../" class="topbar-brand">
-
-      <span class="diamond"></span>
-
-      MarketPulse
-
-    </a>
-
-
-    <div class="topbar-right">
-
-      <button
-        class="theme-toggle"
-        id="themeToggle"
-        title="Toggle light mode"
-        aria-label="Toggle light mode"
-      >
-        ☀️
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
+<div id="mpHeader"></div>
+<!-- The shared header has the theme toggle; this hidden button keeps the page script working. -->
+<button id="themeToggle" hidden aria-hidden="true"></button>
 
 
 
