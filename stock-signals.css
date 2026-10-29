@@ -107,23 +107,23 @@ select{font-size:12.5px;font-weight:600}
 .gate h2{margin:0 0 6px}
 .gate p{color:var(--muted);margin:0 0 18px}
 
-/* ---- bottom tab bar ---- */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tabbar button{flex:1;position:relative;background:none;border:0;padding:8px 0 7px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;height:var(--tabh)}
-.tabbar b{font-size:19px;line-height:1.1}
-.tabbar span{font-size:10.5px;font-weight:600}
-.tabbar button.on{color:var(--accent)}
-.tabbar em{position:absolute;top:6px;left:calc(50% + 8px);background:var(--red);color:#fff;font:700 9px var(--mono);border-radius:9px;padding:1px 5px;font-style:normal}
+/* Section tabs: a segmented bar pinned under the shared site header (which owns the phone bottom bar). */
+.tabbar{position:sticky;top:56px;z-index:40;display:flex;gap:4px;margin:2px 14px 10px;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.tabbar button{flex:1;position:relative;background:none;border:0;border-radius:10px;padding:0 4px;height:42px;color:var(--muted);display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:inherit}
+.tabbar b{font-size:15px;line-height:1}
+.tabbar span{font-size:12.5px;font-weight:700}
+.tabbar button.on{color:#fff;background:var(--accent)}
+.tabbar em{position:absolute;top:3px;right:6px;background:var(--red);color:#fff;font:700 9px var(--mono);border-radius:9px;padding:1px 5px;font-style:normal}
+@media(max-width:380px){.tabbar b{display:none}}
+@media(min-width:761px){body{padding-bottom:20px}.tabbar{top:60px}}
 @media(min-width:900px){
-  body{padding-bottom:20px}
-  .tabbar{position:sticky;top:60px;bottom:auto;max-width:860px;margin:0 auto 10px;border:1px solid var(--border);border-radius:14px;overflow:hidden}
-  .tabbar button{height:48px;flex-direction:row;justify-content:center;gap:8px}
+  .tabbar{max-width:860px;margin:2px auto 12px}
   .list{display:grid;grid-template-columns:1fr 1fr}
 }
 
 /* ---- bottom sheet ---- */
-.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:70;max-height:92vh;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border);padding:8px 16px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .22s ease;max-width:640px;margin:0 auto}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:160}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:170;max-height:92vh;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border);padding:8px 16px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .22s ease;max-width:640px;margin:0 auto}
 .sheet.open{transform:none}
 .sheet .grab{width:44px;height:4px;border-radius:4px;background:var(--border);margin:4px auto 12px}
 .sheet h2{margin:0;font-size:18px}
