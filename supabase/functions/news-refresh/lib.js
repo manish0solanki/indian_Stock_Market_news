@@ -182,10 +182,20 @@ function summarise(title, description) {
   return end > 80 ? cut.slice(0, end + 1) : cut.slice(0, cut.lastIndexOf(" ")) + "…";
 }
 
+// Auto-generated per-company pages such as "Jio Financial Services Share Price Live Updates:
+// Jio Financial Services News" or "...: ITC Surges Above 20-Day SMA" only restate the price,
+// moving averages or beta. Drop them unless the part after the colon names a real event.
+const LIVE_PAGE = /\b(?:share|stock)\s+price\s+(?:live\s+(?:updates?|blog)|today\s+live(?:\s+updates?)?|live\s+today)\s*[:|\-–]\s*(.*)$/i;
+const EVENT = /\b(order|contract|deal|acqui\w*|merger|demerger|results?|q[1-4]|profit|loss|earnings|revenue|dividend|bonus|split|buyback|stake|approval|licen[cs]e|fraud|probe|raid|penalty|default|insolvency|resign\w*|appoint\w*|launch\w*|guidance|rating|upgrades?|downgrades?|target|ipo|listing|fund ?rais\w*|block|bulk)\b/i;
+export function isLowValue(title) {
+  const m = LIVE_PAGE.exec(String(title || ""));
+  return !!m && !EVENT.test(m[1]);
+}
+
 // RSS item -> news row, or null when no listed company is mentioned in the headline.
 export function toNewsRow(item, match) {
   const title = cleanText(item.title);
-  if (!title || !item.link) return null;
+  if (!title || !item.link || isLowValue(title)) return null;
   const m = match(title);
   if (!m) return null;
   const s = sentiment(title, item.description);
