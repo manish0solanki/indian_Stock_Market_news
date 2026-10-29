@@ -1,58 +1,65 @@
 [
   {
-    "slug": "adaniports-stock-spotlight",
-    "title": "Adani Ports Surges 6.3% on 2.6x Volume, Within 1% of 52-Week High",
-    "excerpt": "PRICE ACTION: Adani Ports delivered its strongest single-day advance in recent sessions, with volume surging to 2.6 times the daily average indicating genuine institutional part...",
+    "slug": "bsoft-stock-spotlight-29-oct-2026",
+    "title": "BIRLASOFT Surges 11.9% on 31.4x Volume",
+    "excerpt": "BIRLASOFT (BSOFT) rose 11.89% to ₹342.50 on volume 31.4 times its three-month average.",
     "category": "stock-spotlight",
-    "date": "2026-10-29",
-    "readTime": "1 min read",
+    "date": "2026-10-29T16:28:27+05:30",
+    "readTime": "2 min read",
     "tags": [
       "Stock Spotlight",
-      "ADANIPORTS",
-      "ADANI PORT & SEZ LTD"
+      "BSOFT",
+      "BIRLASOFT"
     ],
     "author": "MarketPulse AI",
     "featured": false,
     "dataSources": [
-      "stock-market-data",
-      "nse-announcements",
-      "google-news-rss"
-    ]
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
   },
   {
-    "slug": "nifty-realty-gains-1-83-percent-as-large-cap-developers-lead-advance",
-    "title": "Nifty Realty Gains 1.83% as Large-Cap Developers Lead Advance",
-    "excerpt": "Nifty Realty rose 1.83% (14.75 points) to 819.8, with 44 of 78 tracked stocks advancing against 31 declining. Large-cap strength drove the move: the top 10 companies by market capitalization averaged 1.58% versus 0.55% for smaller stocks, while the market-cap-weighted change reached 2.55%. DLF gained 4.21%, Lodha 3.84%, and Phoenix Mills 3.72%.",
+    "slug": "nifty-fmcg-jumps-2-34-percent-as-63-of-96-stocks-advance",
+    "title": "Nifty FMCG Jumps 2.34% as 63 of 96 Stocks Advance",
+    "excerpt": "Nifty FMCG rose 2.34% (1,004.60 points) to 43,882.95. Across 96 listed FMCG stocks, 63 advanced and 31 declined.",
     "category": "sector-analysis",
-    "date": "2026-10-29T10:10:20.054Z",
-    "readTime": "6 min read",
-    "tags": [],
+    "date": "2026-10-29T16:28:27+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty FMCG",
+      "Sector Analysis",
+      "FMCG",
+      "Market Breadth"
+    ],
     "author": "MarketPulse AI",
     "featured": false,
-    "dataSources": []
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
   },
   {
     "slug": "nifty-50-daily-wrap-29-oct-2026",
-    "title": "Nifty 50 Daily Wrap — 29 Oct 2026: Drops 0.02%",
-    "excerpt": "Markets ended flat with a mixed mood — NIFTY 50 closed at 22,749.75, down just 3 points. Perfect balance in breadth: 25 stocks up, 25 down. What worked: Tata Consumer was the star, surging 6.78% to hit the ₹1,000 mark exactly, riding strong Q2 volume growth in beverages and foods.",
+    "title": "Nifty 50 Daily Wrap — 29 Oct 2026: Gains 1.05%",
+    "excerpt": "Nifty 50 rose 237.90 points (1.05%) to close at 22,936.75, with 39 of 50 constituents advancing and 11 declining. Realty was the strongest sector (+2.75%) and Auto the weakest (-0.24%).",
     "category": "daily-wrap",
-    "date": "2026-10-29T15:35:19+05:30",
-    "readTime": "4 min read",
+    "date": "2026-10-29T16:28:27+05:30",
+    "readTime": "2 min read",
     "tags": [
       "Nifty 50",
+      "Market Wrap",
+      "Sensex",
       "Bank Nifty",
-      "mildly bearish",
-      "market wrap"
+      "Bullish"
     ],
     "author": "MarketPulse AI",
     "featured": false,
     "dataSources": [
-      "price-feed",
-      "index-feed",
-      "heatmap-data",
-      "market-breadth",
-      "fii-dii-data"
-    ]
+      "nse-market-data"
+    ],
+    "bot": true
   },
   {
     "slug": "fii-return-to-buying-with-4240-cr-net-inflow-as-nifty-edges-lower",
