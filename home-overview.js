@@ -250,7 +250,6 @@
     row.dataset.movers = b.dataset.moversTab;
     row.querySelectorAll('[data-movers-tab]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', String(x === b)); });
   }));
-  document.querySelector('[data-mp-menu]')?.addEventListener('click', () => setDrawer(true));
   // Bottom bar highlight follows the section in view.
   const tabs = [...document.querySelectorAll('#mpTabbar [data-mp-scroll]')];
   const tabTargets = tabs.map(t => t.dataset.mpScroll === 'top' ? null : $(t.dataset.mpScroll));

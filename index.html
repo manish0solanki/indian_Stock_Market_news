@@ -3392,7 +3392,7 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
-<link rel="stylesheet" href="/home-overview.css?v=2">
+<link rel="stylesheet" href="/home-overview.css?v=3">
 </head>
 <body>
 
@@ -4199,11 +4199,11 @@ input,select,textarea{min-width:0;}
   </div><!-- /.mp-shell -->
   <div class="mp-scrim" id="mpScrim" hidden></div>
   <nav class="mp-tabbar" id="mpTabbar" aria-label="Quick navigation">
-    <button type="button" data-mp-go="home" data-mp-scroll="top" class="on"><span>⌂</span>Home</button>
-    <button type="button" data-mp-go="home" data-mp-scroll="mpHeatmap"><span>▦</span>Markets</button>
-    <button type="button" data-mp-go="home" data-mp-scroll="marketNews"><span>≣</span>News</button>
-    <a href="/stock-analysis.html"><span>⌕</span>Analysis</a>
-    <button type="button" data-mp-menu><span>☰</span>More</button>
+    <button type="button" data-mp-go="home" data-mp-scroll="top" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>Home</button>
+    <button type="button" data-mp-go="home" data-mp-scroll="mpHeatmap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/></svg>Markets</button>
+    <button type="button" data-mp-go="home" data-mp-scroll="marketNews"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg>News</button>
+    <a href="/stock-analysis.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="M6 16l4-5 3 3 5-7"/><circle cx="18" cy="7" r="1.2"/></svg>Analysis</a>
+    <a href="/portfolio.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg>Portfolio</a>
   </nav>
 
   <!-- Authentication Modal -->
@@ -9640,6 +9640,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
-<script src="/home-overview.js?v=2"></script>
+<script src="/home-overview.js?v=3"></script>
 </body>
 </html>   
