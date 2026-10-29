@@ -341,7 +341,11 @@ body { background: var(--bg); padding-top: 0 !important; }
   .topbar { padding: 8px 12px !important; }
   .topbar .topbar-inner { flex-wrap: wrap !important; gap: 8px !important; }
   .mp-menu-btn { order: -1; width: 38px; height: 38px; }
-  .topbar .topbar-brand { font-size: 18px !important; margin-right: auto; }
+  /* The brand takes whatever room is left and shrinks (never wraps the icons onto a second row),
+     e.g. on 360px phones or with a larger system font when signed in as admin. */
+  .topbar .topbar-brand { font-size: 18px !important; margin-right: auto; flex: 1 1 0 !important; min-width: 0 !important; overflow: hidden; white-space: nowrap; }
+  .topbar .topbar-right { flex: 0 0 auto !important; flex-wrap: nowrap !important; }
+  .topbar .topbar-brand .diamond { flex: 0 0 auto; }
   /* An older rule made this group a scroll box (overflow:auto, max-width:65vw), which clipped
      the account dropdown so taps on it landed on the page behind. */
   .topbar .topbar-right { gap: 6px !important; overflow: visible !important; max-width: none !important; }
@@ -353,6 +357,19 @@ body { background: var(--bg); padding-top: 0 !important; }
   .topbar .controls-bar { display: none !important; }
   body.mp-search-open .topbar .controls-bar { display: flex !important; order: 10; flex: 1 1 100%; }
   body.mp-search-open .mp-search-btn { background: var(--mp-accent); border-color: var(--mp-accent); color: #fff; }
+  @media (max-width: 380px) {
+    .topbar { padding: 8px 10px !important; }
+    .topbar .topbar-inner { gap: 6px !important; }
+    .topbar .topbar-brand { font-size: 16.5px !important; gap: 7px !important; }
+    .topbar .topbar-right { gap: 4px !important; }
+    .mp-menu-btn, .mp-search-btn { width: 36px; height: 36px; }
+    .topbar .theme-toggle { min-width: 36px !important; min-height: 36px !important; }
+    .topbar .settings-toggle { padding: 0 2px !important; }
+  }
+  @media (max-width: 340px) {
+    .topbar .topbar-brand { font-size: 15px !important; gap: 6px !important; }
+    .topbar .topbar-brand .diamond { width: 13px; height: 13px; }
+  }
 
   /* Bottom bar */
   .mp-tabbar {
