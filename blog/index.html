@@ -973,6 +973,30 @@ body {
 
 }
 
+
+/* ===== 2026 refresh: site palette, compact phone layout ===== */
+:root:not([data-theme="light"]){--bg:#0a0f1e;--surface:#0f1629;--surface-hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--text-secondary:#a3aec6;--text-muted:#6e7b98}
+body{background:var(--bg)}
+.topbar{background:color-mix(in srgb,var(--bg) 92%,#000)!important;border-bottom:1px solid var(--border);backdrop-filter:blur(10px)}
+[data-theme="light"] .topbar{background:#fff!important}
+[data-theme="light"] .topbar,[data-theme="light"] .topbar a{color:var(--text)!important}
+.article-see-all{display:block;width:100%;margin:8px 0 0;padding:11px 14px;border:1px dashed var(--border);border-radius:12px;background:transparent;color:var(--indigo-light,#818cf8);font:600 13px var(--font-body,inherit);cursor:pointer;text-align:center}
+.article-see-all:hover{background:var(--surface-hover);border-style:solid}
+@media (max-width:760px){
+  .category-section{margin-bottom:14px!important}
+  .category-cards{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+  .category-card{padding:12px 8px!important;min-height:0!important;text-align:center;border-radius:12px!important}
+  .category-card-top{justify-content:center!important;margin-bottom:6px!important}
+  .category-card-icon{width:34px!important;height:34px!important;font-size:17px!important;margin:0 auto!important}
+  .category-card-arrow,.category-card-description,.category-card-latest{display:none!important}
+  .category-card-title{font-size:12.5px!important;line-height:1.25!important;margin:0!important}
+  .category-card-footer{border:0!important;padding:4px 0 0!important;margin:0!important;justify-content:center!important}
+  .category-card-count{font-size:11px!important}
+  .category-section-subtitle{display:none!important}
+  .article-row{padding:12px 14px!important;gap:4px 10px!important}
+  .article-row-title{font-size:14px!important;line-height:1.4!important}
+  .blog-hero h1,.blog-title{font-size:24px!important}
+}
 </style>
 
 <base target="_blank">
@@ -2322,12 +2346,20 @@ function renderArticles() {
               <div class="article-list">
 
                 ${
+                  // "All" view shows the latest few per category; searching shows every match.
                   posts
+                    .slice(0, currentSearch ? posts.length : 5)
                     .map(createArticleRow)
                     .join('')
                 }
 
               </div>
+
+              ${
+                !currentSearch && posts.length > 5
+                  ? `<button type="button" class="article-see-all" onclick="selectCategory('${category}')">See all ${posts.length} ${label} articles →</button>`
+                  : ''
+              }
 
             </div>
 

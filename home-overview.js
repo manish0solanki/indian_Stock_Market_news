@@ -169,9 +169,9 @@
   const expanded = { mpGainers: false, mpLosers: false };
   function moverTable(rows) {
     if (!rows.length) return '<div class="mp-loading">No data right now.</div>';
-    return `<table class="mpx-table"><thead><tr><th>#</th><th>Stock</th><th class="r">LTP (₹)</th><th class="r">Change</th><th class="r">%</th></tr></thead><tbody>${rows.map((r, i) => {
+    return `<table class="mpx-table"><thead><tr><th class="sm-hide">#</th><th>Stock</th><th class="r">LTP (₹)</th><th class="r sm-hide">Change</th><th class="r">%</th></tr></thead><tbody>${rows.map((r, i) => {
       const c = num(r.change_percent), ch = Number.isFinite(num(r.change)) ? num(r.change) : num(r.price) - num(r.price) / (1 + c / 100);
-      return `<tr><td class="n">${i + 1}</td><td><a href="${analysisUrl(r.symbol)}" title="${esc(r.company_name || '')}">${esc(r.symbol)}</a></td><td class="r">${fmt(num(r.price))}</td><td class="r ${tone(ch)}">${signed(ch)}</td><td class="r ${tone(c)}">${signed(c)}%</td></tr>`;
+      return `<tr><td class="n sm-hide">${i + 1}</td><td><a href="${analysisUrl(r.symbol)}" title="${esc(r.company_name || '')}">${esc(r.symbol)}</a><small class="sm-only">${esc(r.company_name || '')}</small></td><td class="r">${fmt(num(r.price))}</td><td class="r sm-hide ${tone(ch)}">${signed(ch)}</td><td class="r"><span class="mpx-pill ${tone(c)}">${signed(c)}%</span></td></tr>`;
     }).join('')}</tbody></table>`;
   }
   function renderMovers() {
@@ -222,9 +222,9 @@
   hook('renderGlobalIndices', items => {
     const host = $('mpGlobalBody');
     if (!host || !Array.isArray(items) || !items.length) return;
-    host.innerHTML = `<table class="mpx-table"><thead><tr><th>Index</th><th class="r">Value</th><th class="r">Change</th><th class="r">%</th></tr></thead><tbody>${items.slice(0, 6).map(x => {
+    host.innerHTML = `<table class="mpx-table"><thead><tr><th>Index</th><th class="r">Value</th><th class="r sm-hide">Change</th><th class="r">%</th></tr></thead><tbody>${items.slice(0, 6).map(x => {
       const ch = num(x.change), pct = num(x.change_percent);
-      return `<tr><td><b>${esc(x.name || x.display_name || x.symbol)}</b></td><td class="r">${fmt(num(x.price))}</td><td class="r ${tone(ch)}">${signed(ch)}</td><td class="r ${tone(pct)}">${signed(pct)}%</td></tr>`;
+      return `<tr><td><b>${esc(x.name || x.display_name || x.symbol)}</b></td><td class="r">${fmt(num(x.price))}</td><td class="r sm-hide ${tone(ch)}">${signed(ch)}</td><td class="r"><span class="mpx-pill ${tone(pct)}">${signed(pct)}%</span></td></tr>`;
     }).join('')}</tbody></table>`;
   });
 
@@ -236,6 +236,39 @@
     if (menuBtn) menuBtn.setAttribute('aria-expanded', String(open));
   }
   menuBtn?.addEventListener('click', () => setDrawer(!body.classList.contains('mp-nav-open')));
+
+  /* ───────── Phone helpers: search toggle, movers tabs, bottom bar, news "show more" ───────── */
+  const searchBtn = $('mpSearchBtn');
+  searchBtn?.addEventListener('click', () => {
+    const open = !body.classList.contains('mp-search-open');
+    body.classList.toggle('mp-search-open', open);
+    searchBtn.setAttribute('aria-expanded', String(open));
+    if (open) setTimeout(() => $('searchInput')?.focus(), 50);
+  });
+  document.querySelectorAll('[data-movers-tab]').forEach(b => b.addEventListener('click', () => {
+    const row = b.closest('[data-movers]');
+    row.dataset.movers = b.dataset.moversTab;
+    row.querySelectorAll('[data-movers-tab]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', String(x === b)); });
+  }));
+  document.querySelector('[data-mp-menu]')?.addEventListener('click', () => setDrawer(true));
+  // Bottom bar highlight follows the section in view.
+  const tabs = [...document.querySelectorAll('#mpTabbar [data-mp-scroll]')];
+  const tabTargets = tabs.map(t => t.dataset.mpScroll === 'top' ? null : $(t.dataset.mpScroll));
+  const syncTabs = () => {
+    let active = 0;
+    tabTargets.forEach((el, i) => { if (el && el.getBoundingClientRect().top < innerHeight * 0.4) active = i; });
+    tabs.forEach((t, i) => t.classList.toggle('on', i === active && homeVisible()));
+  };
+  addEventListener('scroll', () => requestAnimationFrame(syncTabs), { passive: true });
+  // The news feed scrolls inside a fixed box on desktop; on phones it flows with the page,
+  // showing the first 12 stories until "Show more" is tapped.
+  const feed = $('feed'), more = $('mpNewsMore');
+  if (feed && more) {
+    const sync = () => { more.hidden = body.classList.contains('mp-news-all') || feed.querySelectorAll(':scope > .news-card').length <= 12; };
+    new MutationObserver(sync).observe(feed, { childList: true });
+    more.addEventListener('click', () => { body.classList.add('mp-news-all'); sync(); });
+    sync();
+  }
   scrim?.addEventListener('click', () => setDrawer(false));
   document.addEventListener('keydown', e => { if (e.key === 'Escape') setDrawer(false); });
 
@@ -250,10 +283,18 @@
     const go = e.target.closest('[data-mp-go]');
     if (!go) return;
     const page = go.dataset.mpGo, target = go.dataset.mpScroll;
-    if (window.MarketPulsePages?.setPage) window.MarketPulsePages.setPage(page);
+    const current = (location.hash || '#home').slice(1);
+    // Switching pages scrolls to the top itself; only do it when the page actually changes,
+    // otherwise its smooth scroll fights the jump to the section below.
+    if (page !== current && window.MarketPulsePages?.setPage) window.MarketPulsePages.setPage(page);
     markActive(page, target);
     setDrawer(false);
-    if (target && target !== 'top') setTimeout(() => $(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    if (!target || target === 'top') { if (page === current) scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    setTimeout(() => {
+      const el = $(target); if (!el) return;
+      const offset = (document.querySelector('.topbar')?.offsetHeight || 60) + 10;
+      scrollTo({ top: el.getBoundingClientRect().top + scrollY - offset, behavior: 'smooth' });
+    }, page !== current ? 350 : 0);
     if (page === 'home') { loadMarket(true); loadSparks(); }
   });
   window.addEventListener('hashchange', () => markActive((location.hash || '#home').slice(1)));
