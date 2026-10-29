@@ -797,6 +797,7 @@ img,svg,canvas{max-width:100%}
 <base target="_blank">
 <base target="_blank">
 <link rel="stylesheet" href="/site-header.css">
+<link rel="stylesheet" href="/crypto-performance.css?v=1">
 <script src="/site-header.js"></script>
 <style>
 /* Shared header sits above; this page's own header becomes the page title and scrolls normally. */
@@ -912,8 +913,11 @@ body > header{position:relative!important;top:auto!important}
   </div>
 </div>
 
+<div class="edge-strip" id="edgeStrip" hidden></div>
+
 <div class="tabs">
   <div class="tab active" data-tab="signals">📶 Signals</div>
+  <div class="tab" data-tab="performance">📈 Performance</div>
   <div class="tab" data-tab="live">🟢 Live Trades <span id="liveTabCount"></span></div>
   <div class="tab" data-tab="archive">🗄️ Archive <span id="archiveTabCount"></span></div>
   <div class="tab" data-tab="wallet">💰 Wallet <span id="walletBalanceTab"></span></div>
@@ -960,6 +964,8 @@ body > header{position:relative!important;top:auto!important}
   <div class="wallet-note">🔒 Auto Trades and manual paper trades can use only the available wallet balance. Capital is reserved when a trade opens and returned with profit/loss when it closes.</div>
   <div class="wallet-history" id="walletHistory"></div>
 </div>
+<div class="perf-panel" id="perfPane" hidden></div>
+
 <div class="reports-panel" id="reportsPane" hidden>
   <div class="report-controls">
     <div><label>From</label><input id="reportFrom" type="date"></div>
@@ -1745,6 +1751,9 @@ const V6_PAIR_LOSS_COOLDOWN_HOURS = 6;
 const V6_PAIR_LOSS_KEY = "cs_v6_pair_loss_cooldowns";
 
 let consecutiveLosses = 0;
+// One-time switch-on (29 Oct 2026): the daily-loss and losing-streak limits were off; they now start on.
+// The Limits button still turns them off again afterwards.
+if(localStorage.getItem("cs_v6_limits_reset_v1")!=="1"){localStorage.setItem("cs_v6_trade_limits","1");localStorage.setItem("cs_v6_limits_reset_v1","1");}
 let v6TradeLimitsEnabled = localStorage.getItem("cs_v6_trade_limits") !== "0";
 let lastLossTime = null;
 const riskNotificationSeen = new Map();
@@ -5895,7 +5904,7 @@ function selectAppTab(sel){
   // Hide every main content pane first. The previous tab logic only hid the
   // Signals/Live/Archive panes, leaving Wallet/Reports/Backtest/Settings hidden
   // permanently because those panes use the HTML `hidden` attribute.
-  const panes=["signalsGrid","liveTradesList","archiveList","tradeListPane","walletPane","reportsPane","backtestPane","settingsPane"];
+  const panes=["signalsGrid","liveTradesList","archiveList","tradeListPane","walletPane","perfPane","reportsPane","backtestPane","settingsPane"];
   panes.forEach(id=>{const el=$(id);if(el)el.hidden=true;});
 
   // Remove the detailed-card display helper from inactive trade panels.
@@ -5948,6 +5957,9 @@ function selectAppTab(sel){
   }else if(sel==="wallet"){
     $("walletPane").hidden=false;
     renderWallet();
+  }else if(sel==="performance"){
+    $("perfPane").hidden=false;
+    window.mpCryptoPerf?.render();
   }else if(sel==="reports"){
     $("reportsPane").hidden=false;
     generateReport();
@@ -6298,5 +6310,6 @@ liveTimer=setInterval(updateLivePrices,LIVE_UPDATE_MS);
 </script>
 
 
+<script src="/crypto-performance.js?v=1"></script>
 </body>
 </html>
