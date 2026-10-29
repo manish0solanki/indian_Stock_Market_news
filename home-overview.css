@@ -71,8 +71,22 @@ body { background: var(--bg); padding-top: 0 !important; }
 .mp-menu-btn { display: none; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--mp-line); background: var(--surface); cursor: pointer; flex-direction: column; justify-content: center; align-items: center; gap: 4px; flex: 0 0 auto; }
 .mp-menu-btn span { display: block; width: 16px; height: 2px; border-radius: 2px; background: var(--text); }
 
-/* The scrolling ticker is replaced by the index cards. */
-.ticker-wrap { display: none !important; }
+/* Scrolling stock ticker, in the page flow just under the top bar (overrides the legacy fixed ticker). */
+.ticker-wrap {
+  display: block !important; position: relative !important; top: auto !important; left: auto !important; right: auto !important;
+  width: auto !important; max-width: none !important; height: auto !important; margin: 0 !important; padding: 7px 0 !important;
+  overflow: hidden !important; white-space: nowrap; z-index: 1 !important;
+  background: var(--mp-card) !important; border-bottom: 1px solid var(--mp-line) !important; border-top: 0 !important;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+.ticker-wrap .ticker-item { color: var(--text) !important; font-size: 12px !important; padding: 0 18px !important; border-right: 1px solid var(--mp-line) !important; }
+.ticker-wrap .ticker-symbol { font-weight: 700; }
+.ticker-wrap .ticker-price { color: var(--text-secondary) !important; }
+.ticker-wrap .ticker-change.up { color: var(--positive) !important; }
+.ticker-wrap .ticker-change.down { color: var(--negative) !important; }
+.ticker-wrap .ticker-loading { color: var(--text-muted) !important; }
+.ticker-wrap .fno-badge { color: var(--mp-accent-2) !important; background: color-mix(in srgb, var(--mp-accent) 15%, transparent) !important; }
 
 /* ───────── Shell ───────── */
 .mp-shell { display: grid; grid-template-columns: var(--mp-sidebar-w) minmax(0, 1fr); gap: 18px; padding: 16px 20px 0; max-width: 1760px; margin: 0 auto; align-items: start; }
@@ -169,7 +183,16 @@ body { background: var(--bg); padding-top: 0 !important; }
 .mp-main .latest-blog-read { color: var(--mp-accent-2) !important; font-weight: 600 !important; }
 
 /* ───────── Index cards ───────── */
-.mp-index-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.mp-index-cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+/* GIFT Nifty strip: first row of the index section */
+.mp-gift { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--mp-line); background: linear-gradient(90deg, color-mix(in srgb, var(--mp-accent) 14%, var(--mp-card)), var(--mp-card) 60%); font-variant-numeric: tabular-nums; }
+.mp-gift-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; letter-spacing: .3px; }
+.mp-gift-name i { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.mp-gift-name i.live { background: var(--positive); box-shadow: 0 0 0 3px color-mix(in srgb, var(--positive) 25%, transparent); }
+.mp-gift-price { font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
+.mp-gift-chg { font-size: 14px; font-weight: 700; }
+.mp-gift-note { margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
+.mp-gift-cue { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface-hover); color: var(--text-secondary); }
 .mp-idx-card { padding: 16px; display: flex; flex-direction: column; gap: 2px; position: relative; overflow: hidden; }
 .mp-idx-name { font-size: 15px; font-weight: 700; letter-spacing: .2px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .mp-idx-name a { color: var(--text-muted); text-decoration: none; font-size: 14px; border: 1px solid var(--mp-line); border-radius: 7px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
@@ -247,8 +270,13 @@ body { background: var(--bg); padding-top: 0 !important; }
 @media (max-width: 1500px) {
   .topbar .page-nav-link { padding: 8px 10px !important; }
   .topbar .nav-pill-text { display: none; }
-  .mp-index-cards { grid-template-columns: repeat(5, minmax(170px, 1fr)); overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
-  .mp-idx-card { scroll-snap-align: start; }
+  .mp-index-cards { gap: 10px; }
+  .mp-idx-card { padding: 13px; }
+  .mp-idx-name { font-size: 13px; }
+  .mp-idx-price { font-size: 21px; }
+  .mp-idx-chg { font-size: 13px; }
+  .mp-idx-meta { grid-template-columns: 1fr; }
+  .mp-idx-meta span:nth-child(2), .mp-idx-meta b:nth-child(4) { display: none; }
 }
 @media (max-width: 1360px) {
   .mp-main .latest-blog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
@@ -259,6 +287,9 @@ body { background: var(--bg); padding-top: 0 !important; }
 }
 @media (max-width: 1180px) {
   :root { --mp-top-h: 60px; }
+  .mp-index-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mp-idx-meta { grid-template-columns: auto 1fr; }
+  .mp-idx-meta span:nth-child(2), .mp-idx-meta b:nth-child(4) { display: block; }
   .mp-menu-btn { display: inline-flex; }
   .topbar .page-nav { display: none !important; }
   .mp-shell { grid-template-columns: minmax(0, 1fr); padding: 12px 14px 0; }
@@ -281,7 +312,7 @@ body { background: var(--bg); padding-top: 0 !important; }
   .topbar .controls-bar .search-wrap { max-width: none !important; }
   .topbar .topbar-status, .topbar .nav-pill, .topbar .blog-nav { display: none !important; }
   /* Phones: market data first, insights as a swipeable row. */
-  .mp-index-cards { order: -2; grid-template-columns: repeat(5, 78%); }
+  .mp-index-cards { order: -2; grid-template-columns: repeat(6, 78%); }
   .mp-main .latest-blog-snapshots { order: -1; }
   .mp-main .stock-detail-card { order: -3; }
   .mp-main .latest-blog-grid { grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: 84%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
@@ -352,12 +383,21 @@ body { background: var(--bg); padding-top: 0 !important; }
   .mp-index-cards { grid-template-columns: 1fr 1fr !important; overflow: visible !important; gap: 8px; padding: 0; scroll-snap-type: none; }
   .mp-idx-card { padding: 11px 12px; gap: 0; }
   .mp-idx-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .mp-gift ~ .mp-idx-card:last-child:nth-child(odd) { grid-column: auto; }
+  .mp-gift ~ .mp-idx-card:last-child:nth-child(even) { grid-column: 1 / -1; }
   .mp-idx-name { font-size: 11.5px; letter-spacing: .3px; color: var(--text-secondary); }
   .mp-idx-price { font-size: 19px; margin-top: 3px; }
   .mp-idx-chg { font-size: 12.5px; }
   .mp-spark, .mp-spark-empty { height: 32px; margin: 6px 0 0; }
   .mp-spark-empty { font-size: 10px; }
   .mp-idx-meta { display: none; }
+  .mp-gift { padding: 10px 12px; gap: 4px 10px; }
+  .mp-gift-price { font-size: 17px; }
+  .mp-gift-chg { font-size: 12.5px; }
+  .mp-gift-note { margin-left: 0; flex-basis: 100%; font-size: 11px; }
+  .mp-gift-cue { font-size: 11px; }
+  .ticker-wrap { padding: 5px 0 !important; }
+  .ticker-wrap .ticker-item { font-size: 11px !important; padding: 0 12px !important; }
 
   /* Insights: swipeable, shorter cards */
   .mp-main .latest-blog-title { font-size: 16px !important; }

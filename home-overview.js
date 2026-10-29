@@ -9,7 +9,7 @@
   if (typeof supabaseClient === 'undefined') return;
 
   const SPARK_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/index-sparklines';
-  const CARD_INDICES = ['^NSEI', '^NSEBANK', '^BSESN', '^NSEMDCP50', 'NIFTY_FIN_SERVICE.NS'];
+  const CARD_INDICES = ['^NSEI', '^NSEBANK', '^BSESN', 'BSE-BANK.BO', '^NSEMDCP50', 'NIFTY_FIN_SERVICE.NS'];
   const NIFTY50 = ['ADANIENT','ADANIPORTS','APOLLOHOSP','ASIANPAINT','AXISBANK','BAJAJ-AUTO','BAJFINANCE','BAJAJFINSV','BEL','BHARTIARTL',
     'CIPLA','COALINDIA','DRREDDY','EICHERMOT','ETERNAL','GRASIM','HCLTECH','HDFCBANK','HDFCLIFE','HINDALCO','HINDUNILVR','ICICIBANK',
     'INDIGO','INFY','ITC','JIOFIN','JSWSTEEL','KOTAKBANK','LT','M&M','MARUTI','MAXHEALTH','NESTLEIND','NTPC','ONGC','POWERGRID',
@@ -39,7 +39,7 @@
   }
 
   /* ───────── Index cards ───────── */
-  let snapshot = [], sparks = {};
+  let snapshot = [], sparks = {}, gift = null;
   function sparkSvg(points, prevClose, up) {
     const vals = points.map(p => p[1]);
     if (vals.length < 2) return '<div class="mp-spark-empty">Intraday chart unavailable</div>';
@@ -58,7 +58,7 @@
     const host = $('mpIndexCards');
     if (!host || !snapshot.length) return;
     const bySym = Object.fromEntries(snapshot.map(x => [x.symbol, x]));
-    host.innerHTML = CARD_INDICES.filter(s => bySym[s] || sparks[s]).map(sym => {
+    host.innerHTML = giftStrip(bySym['^NSEI']) + CARD_INDICES.filter(s => bySym[s] || sparks[s]).map(sym => {
       const q = bySym[sym] || {}, sp = sparks[sym] || {};
       const price = Number.isFinite(num(q.price)) ? num(q.price) : num(sp.price);
       const prev = Number.isFinite(num(q.previous_close)) ? num(q.previous_close) : num(sp.previous_close);
@@ -74,16 +74,34 @@
       </article>`;
     }).join('');
   }
+  // GIFT Nifty: near-month Nifty future on NSE IX, which trades before and after Indian market hours.
+  function giftStrip(nifty) {
+    if (!gift || !Number.isFinite(num(gift.price))) return '';
+    const chg = num(gift.change), pct = num(gift.change_percent);
+    const live = /open/i.test(gift.status || '') && !/clos/i.test(gift.status || '');
+    const spot = num(nifty?.price);
+    const gap = Number.isFinite(spot) ? num(gift.price) - spot : NaN;
+    const cue = Number.isFinite(gap) ? `<span class="mp-gift-cue" title="GIFT Nifty minus Nifty 50">${gap >= 0 ? 'Premium' : 'Discount'} ${signed(gap)} pts vs Nifty</span>` : '';
+    const when = (String(gift.as_of || '').match(/\d{1,2}:\d{2}/) || [''])[0];
+    const exp = String(gift.expiry || '').split('-').slice(1).join(' ');
+    return `<div class="mp-gift" title="${esc(gift.status || 'NSE IX')}">
+      <span class="mp-gift-name"><i class="${live ? 'live' : ''}"></i>GIFT NIFTY</span>
+      <span class="mp-gift-price">${fmt(num(gift.price))}</span>
+      <span class="mp-gift-chg ${tone(chg)}">${signed(chg)} (${signed(pct)}%)</span>
+      ${cue}
+      <span class="mp-gift-note">NSE IX${exp ? ' · ' + esc(exp) + ' futures' : ''}${when ? ' · as of ' + esc(when) + ' IST' : ''}</span>
+    </div>`;
+  }
   hook('renderSnapshot', items => { snapshot = Array.isArray(items) ? items : []; renderIndexCards(); });
 
   let sparkAt = 0;
   async function loadSparks(force) {
-    // Every minute while the market is open; every 15 minutes otherwise.
-    if (!force && (!homeVisible() || Date.now() - sparkAt < (marketOpen() ? 55e3 : 15 * 60e3))) return;
+    // Every minute while the market is open; every 5 minutes otherwise (GIFT Nifty trades outside market hours).
+    if (!force && (!homeVisible() || Date.now() - sparkAt < (marketOpen() ? 55e3 : 5 * 60e3))) return;
     try {
       const r = await fetch(SPARK_URL, { cache: 'no-store' });
       const d = await r.json();
-      if (d?.series) { sparks = d.series; sparkAt = Date.now(); renderIndexCards(); }
+      if (d?.series) { sparks = d.series; gift = d.gift_nifty || gift; sparkAt = Date.now(); renderIndexCards(); }
     } catch (e) { console.warn('[Index sparklines]', e); }
   }
 
