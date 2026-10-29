@@ -287,7 +287,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/stock-search.js?v=1"></script>
-<script src="/cas-parser.js?v=2"></script>
+<script src="/cas-parser.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
@@ -690,8 +690,9 @@ $('casRead').onclick=async()=>{
   const inv=casPlan.reduce((a,p)=>a+(p.f.cost||0),0);
   $('casPreview').innerHTML='<div class="caslist">'+plan.map(p=>'<div class="casrow"><div><b>'+esc(fundShort(p.f.name))+'</b>'+(fundPlan(p.f.name)?' <span class="plan">'+esc(fundPlan(p.f.name))+'</span>':'')+
    '<small>'+units(p.f.closing)+' units'+(p.f.cost!=null?' · cost '+money(p.f.cost).replace(/\.\d+$/,''):'')+(p.f.amc?' · '+esc(p.f.amc):'')+'</small></div>'+
-   (!p.sch?'<span class="tag bad">Not matched, skipped</span>':p.f.mode==='transactions'?'<span class="tag good">'+p.rows.length+' transaction'+(p.rows.length===1?'':'s')+'</span>':'<span class="tag" title="The statement does not cover this fund from its first purchase, so units and cost are imported as one holding">Holding snapshot</span>')+'</div>').join('')+'</div>'+
-   (plan.some(p=>p.sch&&p.f.mode!=='transactions')?'<div class="hint">“Holding snapshot”: the statement doesn\'t go back to this fund\'s first purchase, so its units and cost are added as one entry. Request a CAS from the earliest date to get every transaction.</div>':'');
+   (!p.sch?'<span class="tag bad">Not matched, skipped</span>':p.f.mode==='transactions'?'<span class="tag good">'+p.rows.length+' transaction'+(p.rows.length===1?'':'s')+'</span>':'<span class="tag" title="Imported as one holding with total units and cost">Holding</span>')+'</div>').join('')+'</div>'+
+   (plan.some(p=>p.sch&&p.f.kind==='summary')?'<div class="hint">This is a <b>Summary</b> statement, so each fund is added as one holding with its total units and cost, dated '+esc(fmtDate((plan[0].f.period&&plan[0].f.period.to)||todayLocal()))+'. For every purchase and SIP, request the <b>Detailed</b> statement from the earliest date and import it instead.</div>':
+    plan.some(p=>p.sch&&p.f.mode!=='transactions')?'<div class="hint">“Holding snapshot”: the statement doesn\'t go back to this fund\'s first purchase, so its units and cost are added as one entry. Request a CAS from the earliest date to get every transaction.</div>':'');
   $('casFoot').textContent=casPlan.length?casPlan.length+' fund'+(casPlan.length===1?'':'s')+' · '+money(inv).replace(/\.\d+$/,'')+' invested'+(redeemed?' · '+redeemed+' fully redeemed skipped':''):'';
   $('casImport').hidden=false;$('casImport').disabled=!casPlan.length;
   $('casImport').textContent='Import '+casPlan.length+' fund'+(casPlan.length===1?'':'s');

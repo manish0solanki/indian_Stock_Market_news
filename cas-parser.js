@@ -28,11 +28,14 @@
     return m[3] + '-' + String(MONTHS[m[2].toLowerCase()]).padStart(2, '0') + '-' + m[1].padStart(2, '0');
   }
   const NUM = /^\(?-?[\d,]*\d(?:\.\d+)?\)?$/;
+  const SUMMARY_ROW = /^(?:(\S+)\s+)?(IN[A-Z0-9]{10})\s+(?:[A-Z0-9]{2,10}\s*-\s*)?(.+?)\s+([\d,]+\.\d+)\s+([\d,]+\.\d+)\s+(\d{2}-[A-Za-z]{3}-\d{4})\s+([\d,]+\.\d+)\s+([\d,]+\.\d+)(?:\s+\S+)?$/;
+  // "Fund (erstwhile X) - Direct Plan - Growth (formerly Y) (Non -Demat)" -> "Fund - Direct Plan - Growth"
+  const tidyName = (n) => String(n || '').replace(/\s*\((?:[^()]*\b(?:formerly|erstwhile)\b[^()]*|Non\s*-?\s*-?\s*Demat|Demat)\)/gi, '').replace(/\s+/g, ' ').replace(/\s*-\s*$/, '').trim();
 
   // Funds keyed by ISIN; the same scheme in two folios is merged.
   function parseLines(lines) {
     const funds = new Map();
-    let folio = '', cur = null, period = null;
+    let folio = '', cur = null, period = null, wrap = 0;
     const amc = { name: '' };
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].replace(/\s+/g, ' ').trim();
@@ -44,6 +47,32 @@
       if (/Mutual Fund\s*$/i.test(line) && !/ISIN/i.test(line) && line.length < 80) amc.name = line;
       const fm = /Folio\s*No\s*[:.]?\s*([A-Za-z0-9/ ]+?)(?=\s{1,}(?:PAN|KYC|Nominee)|$)/i.exec(line);
       if (fm) folio = fm[1].trim();
+
+      // Summary CAS ("Consolidated Account Summary"): one row per folio, the scheme name may wrap
+      // onto the next lines:
+      //   5061920/75 INF740K01OK1 D739 - DSP ELSS Tax Saver Fund - Direct 34,512.900 274.537 28-Oct-2026 146.483 40,215.00 CAMS
+      //   (folio, ISIN, scheme, cost value, units, NAV date, NAV, market value, registrar)
+      const sm = SUMMARY_ROW.exec(line);
+      if (sm) {
+        const isin = sm[2].toUpperCase();
+        if (!funds.has(isin)) funds.set(isin, { isin, name: '', amc: amc.name, folios: [], txs: [], opening: 0, closing: null, cost: null, nav: null, navDate: null, value: null, kind: 'summary' });
+        cur = funds.get(isin);
+        if (!cur.name) cur.name = sm[3];
+        cur.part = { folio: sm[1] || '', opening: 0, closing: parseNumber(sm[5]), cost: parseNumber(sm[4]), value: parseNumber(sm[8]) };
+        cur.folios.push(cur.part);
+        cur.navDate = isoDate(sm[6]); cur.nav = parseNumber(sm[7]);
+        wrap = cur.name === sm[3] ? 4 : 0;
+        continue;
+      }
+      if (wrap > 0) {
+        // Continuation of a wrapped scheme name; stops at totals, page footers or another number-heavy line.
+        if (/^(Total|Page \d|CAMSCAS|Consolidated Account|Loads and Fees)/i.test(line) || /\d{2}-[A-Za-z]{3}-\d{4}|\d[\d,]*\.\d{2,}/.test(line)) wrap = 0;
+        else { cur.name += ' ' + line; wrap--; continue; }
+      }
+      if (!period) {
+        const asOn = /As on\s+(\d{2}-[A-Za-z]{3}-\d{4})/i.exec(line);
+        if (asOn) period = { from: null, to: isoDate(asOn[1]) };
+      }
 
       const im = /ISIN\s*:?\s*(IN[A-Z0-9]{10})/i.exec(line) || /I\s*S\s*I\s*N\s*:?\s*((?:[A-Z0-9]\s*){12})/.exec(line);
       if (im) {
@@ -98,7 +127,7 @@
       // Transactions are only trusted when they add up to the closing balance from a zero opening.
       const complete = closing !== null && opening < 0.001 && f.txs.length > 0 && Math.abs(net - closing) <= Math.max(0.01, closing * 0.0005);
       return {
-        isin: f.isin, name: f.name, amc: f.amc, folios: parts.map((p) => p.folio).filter(Boolean),
+        isin: f.isin, name: tidyName(f.name), amc: f.amc, kind: f.kind || 'detailed', folios: parts.map((p) => p.folio).filter(Boolean),
         txs: f.txs, closing, cost, opening, nav: f.nav, navDate: f.navDate, value: sum('value') || null,
         mode: complete ? 'transactions' : closing ? 'snapshot' : 'skip', net,
       };
@@ -134,12 +163,14 @@
   // A shareable outline of what was read, for when a statement isn't recognised:
   // the investor block at the top, PAN, email, phone and folio numbers are masked.
   function redact(lines) {
-    const start = lines.findIndex((l) => /Mutual Fund|ISIN|Folio/i.test(l));
-    return lines.map((l, i) => (start > 0 && i < start) ? '[header line hidden]' : l
+    // Everything before the first fund/folio line is the investor's name and address block.
+    const start = lines.findIndex((l) => /\bIN[A-Z0-9]{10}\b|Folio\s*No/i.test(l));
+    return lines.map((l, i) => (start < 0 || i < start) ? '[header line hidden]' : l
       .replace(/[A-Z]{5}[0-9]{4}[A-Z]/g, 'XXXXX0000X')
       .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, 'x@x.x')
-      .replace(/\b\d{10}\b/g, '0000000000')
-      .replace(/(Folio\s*No\s*[:.]?\s*)[A-Za-z0-9/ ]+?(?=\s+(?:PAN|KYC|Nominee)|$)/i, '$1000000')).join('\n');
+      .replace(/\+?\d[\d\s-]{8,}\d/g, (m) => /[.,]\d/.test(m) ? m : '0000000000')
+      .replace(/\b\d{3,}\s*\/\s*\d{1,4}\b/g, '000000/00')
+      .replace(/(Folio\s*No\.?\s*[:.]?\s*)[A-Za-z0-9/ ]+?(?=\s+(?:PAN|KYC|Nominee)|$)/i, '$1000000')).join('\n');
   }
 
   function loadPdfJs() {
@@ -181,5 +212,5 @@
   }
 
   let lastLines = [];
-  window.mpCas = { readPdf, parseLines, parseNumber, isoDate, outline: () => redact(lastLines), pages: () => lastLines.length };
+  window.mpCas = { readPdf, parseLines, parseNumber, isoDate, outline: () => redact(lastLines), redact, pages: () => lastLines.length };
 })();
