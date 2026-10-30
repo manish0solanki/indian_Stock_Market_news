@@ -719,12 +719,50 @@ let runId = 0, liveTimer = null;
 let chartRange = store.get('mp_sa_range', '6M'), chartType = store.get('mp_sa_type', 'candle');
 const overlays = Object.assign({ema20: true, ema50: true, sma200: false, bb: false, levels: true}, store.get('mp_sa_overlays', {}));
 
-/* ───────── Watchlist / recent ───────── */
+/* ───────── Watchlist / recent ─────────
+   Signed in: the same saved watchlist as Home (watchlist table: the stock card's ☆ button, the
+   My Watchlist window and widget). This browser keeps a copy so chips draw instantly. Signed out:
+   this browser only. On the first sign-in sync, stocks saved only in this browser join the account. */
+let watchUser = null;
 const getWatch = () => store.get('mp_sa_watchlist', []);
+const normSym = s => String(s || '').trim().toUpperCase();
+let syncing = null;
+// One sync at a time (page load and the auth listener can both ask for one).
+function syncWatch() { return syncing || (syncing = doSyncWatch().finally(() => { syncing = null; })); }
+async function doSyncWatch() {
+ if (!sb) return;
+ try {
+  const {data: {session}} = await sb.auth.getSession();
+  watchUser = session?.user || null;
+  if (!watchUser) return;
+  const {data, error} = await sb.from('watchlist').select('symbol,created_at').eq('user_id', watchUser.id).order('created_at', {ascending: false});
+  if (error) throw error;
+  let list = [...new Set((data || []).map(r => normSym(r.symbol)).filter(Boolean))];
+  const mergedKey = 'mp_sa_watch_merged_' + watchUser.id;
+  const onlyHere = getWatch().filter(s => !list.includes(s));
+  if (onlyHere.length && !store.get(mergedKey, false)) {
+   const {error: e2} = await sb.from('watchlist').upsert(onlyHere.map(symbol => ({user_id: watchUser.id, symbol})), {onConflict: 'user_id,symbol', ignoreDuplicates: true});
+   if (!e2) list = [...onlyHere, ...list];
+  }
+  store.set(mergedKey, true);
+  store.set('mp_sa_watchlist', list);
+  renderChips(); updateWatchBtn(); refreshWatchPrices();
+ } catch (e) { console.warn('[Watchlist sync]', e); }
+}
 const getRecent = () => store.get('mp_sa_recent', []);
 function pushRecent(sym) { store.set('mp_sa_recent', [sym, ...getRecent().filter(s => s !== sym)].slice(0, 8)); }
-function toggleWatch(sym) { const w = getWatch(); store.set('mp_sa_watchlist', w.includes(sym) ? w.filter(s => s !== sym) : [sym, ...w].slice(0, 20)); renderChips(); updateWatchBtn(); }
-function updateWatchBtn() { if (!current) return; const on = getWatch().includes(current.sym); $('watchBtn').textContent = on ? '★ Watching' : '☆ Watch'; $('watchBtn').setAttribute('aria-pressed', on); }
+async function toggleWatch(sym) {
+ sym = normSym(sym);
+ const w = getWatch(), removing = w.includes(sym);
+ store.set('mp_sa_watchlist', removing ? w.filter(s => s !== sym) : [sym, ...w].slice(0, watchUser ? 100 : 20));
+ renderChips(); updateWatchBtn();
+ if (!watchUser || !sb) return;
+ const q = removing ? sb.from('watchlist').delete().eq('user_id', watchUser.id).eq('symbol', sym)
+  : sb.from('watchlist').upsert({user_id: watchUser.id, symbol: sym}, {onConflict: 'user_id,symbol', ignoreDuplicates: true});
+ const {error} = await q;
+ if (error) { console.warn('[Watchlist]', error); store.set('mp_sa_watchlist', w); renderChips(); updateWatchBtn(); }
+}
+function updateWatchBtn() { if (!current) return; const on = getWatch().includes(current.sym); $('watchBtn').textContent = on ? '★ Watching' : '☆ Watch'; $('watchBtn').setAttribute('aria-pressed', on); $('watchBtn').title = watchUser ? 'Saved to your account: also shows on Home → My Watchlist' : 'Saved in this browser. Log in to keep it in your account and see it on Home'; }
 const chipChange = {};
 function chipHtml(sym, removable) {
  const ch = chipChange[sym];
@@ -1177,6 +1215,9 @@ $('refreshPicks').onclick = () => refreshPicks(true);
 /* ───────── Boot ───────── */
 syncChartControls();
 renderChips();
+syncWatch();
+// Another tab or page signed in or out: follow the account's list.
+if (sb) sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') { if (ev === 'SIGNED_OUT') watchUser = null; syncWatch(); updateWatchBtn(); } });
 const initial = new URLSearchParams(location.search).get('symbol');
 if (initial) analyze(initial);
 loadSavedKey();
