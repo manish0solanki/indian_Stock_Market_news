@@ -1,13 +1,16 @@
 // Writes the commentary paragraphs with Moonshot (Kimi), using only the supplied facts.
 // Needs MOONSHOT_API_KEY; the model is MOONSHOT_MODEL (default kimi-k3, then kimi-k3.1-pro and kimi-k2.6 as fallbacks).
-// kimi-k3 was the fastest good writer in the Blog AI check (about 20s); all of these "think" first, so they
-// need a large max_tokens or the reasoning uses it all up and no text comes back.
+// Output is capped at MOONSHOT_MAX_TOKENS (default 500) per post. These models "think" before writing and
+// thinking counts against the cap, so it is switched off (Moonshot then requires temperature 0.6);
+// set MOONSHOT_THINKING=enabled to turn it back on (needs a much larger cap).
 // Every number in the AI's text must match a number in the facts; otherwise the post falls
 // back to the plain-language paragraphs built from the data, so nothing invented gets published.
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RETRY_WAITS = [0, 8000, 20000]; // busy / rate-limited models usually recover within seconds
 // kimi-k2.x "thinking" models often need 60-120s; a hung request still can't stall the job for long.
 const TIMEOUT_MS = Number(process.env.MOONSHOT_TIMEOUT_MS || 150000);
+const MAX_TOKENS = Number(process.env.MOONSHOT_MAX_TOKENS || 500);
+const THINKING = process.env.MOONSHOT_THINKING === "enabled";
 
 async function callMoonshot(key, model, prompt) {
   const res = await fetch("https://api.moonshot.ai/v1/chat/completions", {
@@ -19,13 +22,17 @@ async function callMoonshot(key, model, prompt) {
         { role: "system", content: "You are a careful Indian stock-market journalist. Use only the facts you are given." },
         { role: "user", content: prompt },
       ],
-      // kimi-k2.x models only accept temperature 1; extra tokens leave room for their reasoning.
-      temperature: Number(process.env.MOONSHOT_TEMPERATURE || 1),
-      max_tokens: Number(process.env.MOONSHOT_MAX_TOKENS || 12000),
+      // With thinking on these models only accept temperature 1; with it off, only 0.6.
+      temperature: Number(process.env.MOONSHOT_TEMPERATURE || (THINKING ? 1 : 0.6)),
+      max_tokens: MAX_TOKENS,
+      ...(THINKING ? {} : { thinking: { type: "disabled" } }),
     }),
   });
   const d = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, error: d?.error?.message, text: d?.choices?.[0]?.message?.content || "" };
+  let text = d?.choices?.[0]?.message?.content || "";
+  // Cut off by the token cap: keep only up to the last complete sentence.
+  if (d?.choices?.[0]?.finish_reason === "length") text = text.slice(0, Math.max(text.lastIndexOf(". "), text.lastIndexOf(".\n")) + 1);
+  return { ok: res.ok, status: res.status, error: d?.error?.message, text };
 }
 
 function providers() {
@@ -93,7 +100,7 @@ export async function writeNarrative(post) {
     "Rules:",
     "- Use ONLY the facts in the JSON below. Do not add news, causes, forecasts, price targets or numbers that are not in it.",
     "- Every number you write must appear in the JSON (you may round to 1 or 2 decimals). Write rupee amounts as ₹ with Cr for crore.",
-    "- 4 paragraphs, 240-320 words in total, plain text, no headings, no bullet points, no markdown.",
+    "- 3 or 4 paragraphs, 200-260 words in total (never more), plain text, no headings, no bullet points, no markdown.",
     "Style (make it a story worth reading, not a list of numbers):",
     "- Open with one sharp sentence that captures the day's main story, like a newspaper lead. Do not start with the date or 'Today'.",
     "- Then explain what stood out and how the pieces connect, e.g. an index up while most stocks fell, or one sector carrying the market.",
