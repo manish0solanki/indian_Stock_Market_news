@@ -167,4 +167,8 @@
   window.addEventListener('storage', function (e) { if (e.key === THEME_KEY) applyTheme(storedTheme()); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
   window.MPHeader = { applyTheme: applyTheme };
+  // Outside links open in an in-site viewer or the same tab, never a new tab (/link-viewer.js).
+  if (!document.querySelector('script[src*="link-viewer.js"]')) {
+    var lv = document.createElement('script'); lv.src = '/link-viewer.js?v=1'; lv.defer = true; document.head.appendChild(lv);
+  }
 })();
