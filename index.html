@@ -1127,6 +1127,11 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
   background: var(--surface-hover);
 }
 
+.fundamentals-table td small.fq-sub { display: block; font-size: 10px; color: var(--text-muted); font-weight: 500; }
+.fq-chg { display: block; font-size: 10px; font-weight: 700; margin-top: 2px; }
+.fq-chg.up { color: var(--positive); } .fq-chg.down { color: var(--negative); }
+.fq-latest { color: var(--positive); font-size: 9px; margin-left: 5px; font-weight: 700; }
+.fundamental-metric-value .fq-chg { font-size: 11px; }
 .fundamentals-loading {
   text-align: center !important;
   color: var(--text-muted);
@@ -3592,7 +3597,7 @@ input,select,textarea{min-width:0;}
           <div>
             <div class="stock-fundamentals-title">Fundamentals</div>
             <div class="stock-fundamentals-source">
-              NSE consolidated financial results
+              Quarterly results from NSE filings · trailing figures from Yahoo Finance
             </div>
           </div>
 
@@ -3632,13 +3637,15 @@ input,select,textarea{min-width:0;}
         <div class="stock-chart-head">
           <div>
             <div class="stock-chart-title">Price History <span style="font-size:9px;color:var(--text-muted);font-weight:500;">LINE</span></div>
-            <div class="stock-chart-source">NSE daily EOD · Closing price</div>
+            <div class="stock-chart-source">Daily closing price · Yahoo Finance</div>
           </div>
           <div class="stock-chart-ranges" id="stockChartRanges">
             <button class="stock-chart-range" data-range="1D" type="button">1D</button>
             <button class="stock-chart-range" data-range="1W" type="button">1W</button>
             <button class="stock-chart-range active" data-range="1M" type="button">1M</button>
             <button class="stock-chart-range" data-range="3M" type="button">3M</button>
+            <button class="stock-chart-range" data-range="6M" type="button">6M</button>
+            <button class="stock-chart-range" data-range="1Y" type="button">1Y</button>
           </div>
         </div>
         <div class="stock-chart-canvas" id="stockChartCanvas">
@@ -5832,12 +5839,13 @@ const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 const STOCK_DATA_FUNCTION_URL =
   'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-data';
 
-async function fetchStockDetailFromSupabase(symbol) {
+// days: how much daily history to include (the function returns 14 days unless asked; the search card asks for a year).
+async function fetchStockDetailFromSupabase(symbol, days) {
   const cleanSymbol = String(symbol || '').trim().toUpperCase();
   if (!cleanSymbol) throw new Error('Missing stock symbol');
 
   const response = await fetch(
-    STOCK_DATA_FUNCTION_URL + '?symbol=' + encodeURIComponent(cleanSymbol),
+    STOCK_DATA_FUNCTION_URL + '?symbol=' + encodeURIComponent(cleanSymbol) + (days ? '&days=' + days : ''),
     {
       cache: 'no-store',
       headers: {
@@ -7117,7 +7125,7 @@ async function openStockDetailFromNews(symbol, companyName) {
   stockDetailCard.style.display = 'none';
 
   try {
-    const data = await fetchStockDetailFromSupabase(cleanSymbol);
+    const data = await fetchStockDetailFromSupabase(cleanSymbol, 400);
     renderStockDetail(data);
     sdHint.textContent = '';
 
@@ -7700,12 +7708,10 @@ function renderStockDetail(stock) {
     { label: 'Day Low', value: fmtNum(stock.low, 2) },
     { label: '52W High', value: fmtNum(stock.high_52w, 2) },
     { label: '52W Low', value: fmtNum(stock.low_52w, 2) },
-    { label: 'Market Cap', value: fmtNum(fundamentals.market_cap, 2) },
+    { label: 'Market Cap', value: Number(fundamentals.market_cap) > 0 ? '₹' + Math.round(fundamentals.market_cap / 1e7).toLocaleString('en-IN') + ' Cr' : '—' },
     { label: 'P/E', value: fmtNum(fundamentals.pe, 2) },
     { label: 'ROE', value: Number.isFinite(roePct) ? roePct.toFixed(2) + '%' : '—' },
-    { label: 'ROCE', value: '—' },
     { label: 'Book Value', value: fmtNum(fundamentals.book_value, 2) },
-    { label: 'Face Value', value: '—' },
     { label: 'Div Yield', value: Number.isFinite(divYieldPct) ? divYieldPct.toFixed(2) + '%' : '—' },
     { label: 'Promoters (Latest)', value: fmtPromoter(stock.promoters_latest ?? stock.last_quarter_promoters), cls: 'promoters' },
     { label: 'Promoters (Prev)', value: fmtPromoter(stock.promoters_previous ?? stock.previous_quarter_promoters), cls: 'promoters' },
@@ -7720,153 +7726,143 @@ function renderStockDetail(stock) {
 
   // The on-demand Yahoo API returns the daily history used by the chart.
   // Make the chart visible immediately when a stock is selected.
-  stockChartData = Array.isArray(stock.history) ? stock.history.slice() : [];
-  stockChartData.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  stockChartData = normaliseStockHistory(stock);
   stockChartLoadedSymbol = selectedStockSymbol;
   stockChartVisibleData = [];
   if (stockChartWrap) {
     stockChartWrap.style.display = 'block';
   }
-  renderStockHistoryChart(getStockHistorySlice(stockChartData, '1M'));
+  loadStockHistory(selectedStockSymbol, '1M');
 
-  // Yahoo's current on-demand response does not yet expose quarterly
-  // income-statement rows, so load only the quarterly table from the
-  // existing fundamentals endpoint without replacing the Yahoo metrics.
-  loadQuarterlyResults(selectedStockSymbol);
-
+  // Yahoo metrics show at once; the quarterly results (NSE filings) fill in when they arrive.
+  latestOnDemandStock = stock;
+  latestQuarterlyData = null;
   renderOnDemandFundamentals(stock);
+  loadQuarterlyResults(selectedStockSymbol);
 }
+
+// Yahoo daily bars -> one row per IST trading date with a close, oldest first. The newest bar often
+// has no close until the next day, so today's live price fills it in.
+function normaliseStockHistory(stock) {
+  const istDay = v => {
+    const t = typeof v === 'number' ? v * 1000 : Date.parse(v);
+    return Number.isFinite(t) ? new Date(t + 330 * 60e3).toISOString().slice(0, 10) : '';
+  };
+  const byDay = new Map();
+  (Array.isArray(stock.history) ? stock.history : []).forEach(b => {
+    const date = istDay(b.timestamp ?? b.date);
+    if (!date) return;
+    byDay.set(date, { date, open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume });
+  });
+  const live = Number(stock.price), liveDay = stock.latest_trading_date_ist;
+  if (liveDay && Number.isFinite(live) && live > 0) {
+    const row = byDay.get(liveDay) || { date: liveDay, open: stock.open, high: stock.high, low: stock.low, volume: stock.volume };
+    if (!Number.isFinite(Number(row.close)) || row.close === null) row.close = live;
+    byDay.set(liveDay, row);
+  }
+  return [...byDay.values()]
+    .filter(r => r.close !== null && Number.isFinite(Number(r.close)))
+    .map(r => ({ ...r, open: r.open ?? r.close, high: r.high ?? r.close, low: r.low ?? r.close }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+let latestOnDemandStock = null, latestQuarterlyData = null;
+const STOCK_FUNDAMENTALS_URL = SUPABASE_URL + '/functions/v1/stock-fundamentals';
 
 async function loadQuarterlyResults(symbol) {
   const cleanSymbol = String(symbol || '').trim().toUpperCase();
   if (!cleanSymbol || !fundamentalsQuarterlyBody) return;
 
   const requestId = ++fundamentalsRequestId;
-
-  fundamentalsQuarterlyBody.innerHTML = `
-    <tr>
-      <td colspan="5" class="fundamentals-loading">
-        Loading quarterly results…
-      </td>
-    </tr>
-  `;
+  fundamentalsQuarterlyBody.innerHTML = '<tr><td colspan="5" class="fundamentals-loading">Loading quarterly results…</td></tr>';
 
   try {
-    const res = await fetch(
-      FUNDAMENTALS_URL() +
-      '?symbol=' + encodeURIComponent(cleanSymbol),
-      { cache: 'no-store' }
-    );
+    const res = await fetch(STOCK_FUNDAMENTALS_URL + '?symbol=' + encodeURIComponent(cleanSymbol));
+    const data = await res.json().catch(() => null);
+    if (requestId !== fundamentalsRequestId || selectedStockSymbol !== cleanSymbol) return;
+    const quarterly = Array.isArray(data?.quarterly) ? data.quarterly : [];
+    if (!res.ok || !quarterly.length) throw new Error(data?.error || 'HTTP ' + res.status);
 
-    if (!res.ok) {
-      throw new Error('HTTP ' + res.status);
-    }
+    latestQuarterlyData = data;
+    if (latestOnDemandStock) renderOnDemandFundamentals(latestOnDemandStock);
 
-    const data = await res.json();
-
-    if (
-      requestId !== fundamentalsRequestId ||
-      selectedStockSymbol !== cleanSymbol
-    ) {
-      return;
-    }
-
-    const quarterly = Array.isArray(data?.quarterly)
-      ? data.quarterly
-      : [];
-
-    if (!quarterly.length) {
-      throw new Error('No quarterly results returned');
-    }
-
-    fundamentalsQuarterlyBody.innerHTML =
-      quarterly.map((quarter, index) => {
-        const f = quarter.financials || {};
-        const e = quarter.eps || {};
-        const d = quarter.derived || {};
-
-        const period = formatFundamentalDate(quarter.period_end);
-
-        const margin = Number.isFinite(Number(d.net_margin_percent))
-          ? formatFundamentalNumber(d.net_margin_percent, 2) + '%'
-          : '—';
-
-        return `
-          <tr>
-            <td>
-              ${period}
-              ${index === 0
-                ? '<span style="color:var(--positive);font-size:9px;margin-left:4px;">LATEST</span>'
-                : ''}
-            </td>
-            <td>${formatFundamentalCr(f.revenue)}</td>
-            <td>${formatFundamentalCr(f.net_profit)}</td>
-            <td>
-              ${Number.isFinite(Number(e.basic))
-                ? '₹' + formatFundamentalNumber(e.basic, 2)
-                : '—'}
-            </td>
-            <td>${margin}</td>
-          </tr>
-        `;
-      }).join('');
+    const cr = v => formatFundamentalCr(v);
+    const chg = (v, label) => Number.isFinite(Number(v)) && v !== null
+      ? `<small class="fq-chg ${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(1)}% ${label}</small>` : '';
+    fundamentalsQuarterlyBody.innerHTML = quarterly.map((q, i) => {
+      const f = q.financials || {}, e = q.eps || {}, d = q.derived || {};
+      const margin = Number.isFinite(Number(d.net_margin_percent)) && d.net_margin_percent !== null ? formatFundamentalNumber(d.net_margin_percent, 2) + '%' : '—';
+      const eps = Number.isFinite(Number(e.basic)) && e.basic !== null ? '₹' + formatFundamentalNumber(e.basic, 2) : '—';
+      const label = escapeHtml(q.label || formatFundamentalDate(q.period_end));
+      const when = escapeHtml(formatFundamentalDate(q.period_end));
+      return `<tr>
+        <td><b>${label}</b>${i === 0 ? '<span class="fq-latest">LATEST</span>' : ''}<small class="fq-sub">${when}</small></td>
+        <td>${cr(f.revenue)}${chg(d.revenue_yoy, 'YoY')}</td>
+        <td>${cr(f.net_profit)}${chg(d.profit_yoy, 'YoY')}</td>
+        <td>${eps}</td>
+        <td>${margin}</td>
+      </tr>`;
+    }).join('');
+    const head = document.querySelector('#stockFundamentalsWrap .fundamentals-table th:nth-child(2)');
+    if (head) head.textContent = quarterly[0].revenue_label || 'Revenue';
   } catch (error) {
-    if (
-      requestId !== fundamentalsRequestId ||
-      selectedStockSymbol !== cleanSymbol
-    ) {
-      return;
-    }
-
-    fundamentalsQuarterlyBody.innerHTML = `
-      <tr>
-        <td colspan="5" class="fundamentals-loading">
-          Quarterly results are currently unavailable.
-        </td>
-      </tr>
-    `;
-
-    console.error('[Quarterly Results]', error);
+    if (requestId !== fundamentalsRequestId || selectedStockSymbol !== cleanSymbol) return;
+    fundamentalsQuarterlyBody.innerHTML = '<tr><td colspan="5" class="fundamentals-loading">No quarterly results found on NSE for this stock.</td></tr>';
+    console.warn('[Quarterly Results]', error);
   }
 }
 
+// Tiles: the latest quarter from the NSE filing (once loaded), then Yahoo's trailing figures.
+// Tiles with no value are left out rather than shown as a row of dashes.
 function renderOnDemandFundamentals(stock) {
   if (!stockFundamentalsWrap) return;
 
   const f = stock.fundamentals || {};
   const fmtCr = value => {
     const n = Number(value);
-    return Number.isFinite(n)
-      ? '₹' + (n / 1e7).toLocaleString('en-IN', { maximumFractionDigits: 2 }) + ' Cr'
+    return value !== null && value !== undefined && Number.isFinite(n)
+      ? '₹' + (n / 1e7).toLocaleString('en-IN', { maximumFractionDigits: 0 }) + ' Cr'
       : '—';
   };
   const fmtPctValue = value => {
     const n = Number(value) * 100;
-    return Number.isFinite(n) ? n.toFixed(2) + '%' : '—';
+    return value !== null && value !== undefined && Number.isFinite(n) ? n.toFixed(2) + '%' : '—';
   };
+  const yoy = v => v !== null && v !== undefined && Number.isFinite(Number(v))
+    ? `<small class="fq-chg ${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(1)}% YoY</small>` : '';
 
-  fundamentalsPeriod.textContent = 'Yahoo Finance · Live';
+  const metrics = [];
+  const q = latestQuarterlyData?.latest;
+  if (q) {
+    const qf = q.financials || {}, qd = q.derived || {};
+    const tag = escapeHtml(q.label || '');
+    metrics.push(
+      { label: `${escapeHtml(q.revenue_label || 'Revenue')} (${tag})`, value: formatFundamentalCr(qf.revenue) + yoy(qd.revenue_yoy) },
+      { label: `Net profit (${tag})`, value: formatFundamentalCr(qf.net_profit) + yoy(qd.profit_yoy) },
+      { label: `EPS (${tag})`, value: Number.isFinite(Number(q.eps?.basic)) && q.eps?.basic !== null ? '₹' + formatFundamentalNumber(q.eps.basic, 2) : '—' },
+      { label: `Net margin (${tag})`, value: Number.isFinite(Number(qd.net_margin_percent)) && qd.net_margin_percent !== null ? formatFundamentalNumber(qd.net_margin_percent, 2) + '%' : '—' }
+    );
+    fundamentalsPeriod.textContent = `${q.label} · ${q.consolidated || ''} · filed ${String(q.filed_at || '').split(' ')[0]}`;
+  } else {
+    fundamentalsPeriod.textContent = 'Loading latest quarter…';
+  }
+  metrics.push(
+    { label: 'Revenue (TTM)', value: fmtCr(f.revenue), yahoo: true },
+    { label: 'Profit margin (TTM)', value: fmtPctValue(f.profit_margin), yahoo: true },
+    { label: 'Revenue growth', value: fmtPctValue(f.revenue_growth), yahoo: true },
+    { label: 'Earnings growth', value: fmtPctValue(f.earnings_growth), yahoo: true },
+    { label: 'ROE', value: fmtPctValue(f.return_on_equity), yahoo: true },
+    { label: 'P/B', value: Number.isFinite(Number(f.price_to_book)) && f.price_to_book !== null ? Number(f.price_to_book).toFixed(2) : '—', yahoo: true },
+    { label: 'Total cash', value: fmtCr(f.total_cash), yahoo: true },
+    { label: 'Total debt', value: fmtCr(f.total_debt), yahoo: true }
+  );
 
-  const metrics = [
-    { label: 'Revenue', value: fmtCr(f.revenue) },
-    { label: 'EPS', value: Number.isFinite(Number(f.eps)) ? '₹' + Number(f.eps).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—' },
-    { label: 'Profit Margin', value: fmtPctValue(f.profit_margin) },
-    { label: 'ROE', value: fmtPctValue(f.return_on_equity) },
-    { label: 'ROA', value: fmtPctValue(f.return_on_assets) },
-    { label: 'Free Cash Flow', value: fmtCr(f.free_cash_flow) },
-    { label: 'Total Cash', value: fmtCr(f.total_cash) },
-    { label: 'Total Debt', value: fmtCr(f.total_debt) }
-  ];
-
-  fundamentalsMetrics.innerHTML = metrics.map(metric => `
+  fundamentalsMetrics.innerHTML = metrics.filter(m => !m.yahoo || m.value !== '—').map(metric => `
     <div class="fundamental-metric">
       <div class="fundamental-metric-label">${metric.label}</div>
       <div class="fundamental-metric-value">${metric.value}</div>
     </div>
   `).join('');
-
-  // Quarterly rows are loaded separately by loadQuarterlyResults().
-  // Keep the Yahoo Finance metrics above intact while that request runs.
 
   stockFundamentalsWrap.style.display = 'block';
 }
@@ -7885,7 +7881,7 @@ const stockChartRanges = document.getElementById('stockChartRanges');
 
 const stockChartRangeNames = {
   '1D': 'Last trading day', '1W': 'Last 1 week', '1M': 'Last 1 month',
-  '3M': 'Last 3 months'
+  '3M': 'Last 3 months', '6M': 'Last 6 months', '1Y': 'Last 1 year'
 };
 
 function renderStockHistoryChart(data) {
@@ -8066,9 +8062,11 @@ function getStockHistorySlice(data, range) {
     '1W': 7,
     '1M': 31,
     '3M': 92,
+    '6M': 183,
+    '1Y': 366,
   }[range];
 
-  if (!days || range === '1Y') return rows;
+  if (!days) return rows;
 
   const cutoff = new Date(lastDate);
   cutoff.setDate(cutoff.getDate() - (days - 1));
@@ -8159,7 +8157,7 @@ async function searchStock(query) {
         searchInput.value = stock.company_name || stock.symbol || '';
         sdHint.textContent = 'Fetching…';
         stockDetailCard.style.display = 'none';
-        fetchStockDetailFromSupabase(stock.symbol)
+        fetchStockDetailFromSupabase(stock.symbol, 400)
           .then(data => { renderStockDetail(data); sdHint.textContent = ''; })
           .catch(e => { sdHint.textContent = 'Stock data unavailable'; console.error('[Supabase Stock Detail]', e); });
       });
