@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a0f1e">
+<title>Data Health — MarketPulse Admin</title>
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--ok:#2fd27f;--warn:#f3c969;--fail:#ff5d6c;--idle:#6e7b98;--okbg:rgba(47,210,127,.12);--warnbg:rgba(243,201,105,.14);--failbg:rgba(255,93,108,.13)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}a{color:var(--accent2)}
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:12px clamp(12px,2.4vw,28px);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:18px;text-decoration:none;color:var(--text)}
+.brand i{width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg,#ffcf3d,#f59e0b);transform:rotate(45deg)}
+.brand small{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
+.top nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;color:var(--text);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent2)}.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}.btn:disabled{opacity:.5;cursor:default}
+.page{max-width:1280px;margin:0 auto;padding:20px clamp(12px,2.4vw,28px) 40px}
+.gate{max-width:420px;margin:60px auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px}
+.gate h1{margin:0 0 6px;font-size:20px}.gate p{color:var(--muted);font-size:13px;margin:0 0 14px}
+.gate input{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);margin-bottom:10px}
+.gate .msg{font-size:12.5px;color:var(--fail);min-height:18px}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;min-width:0}
+.overall .l{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.overall .v{font-size:24px;font-weight:800;letter-spacing:-.4px;margin:2px 0}
+.overall .s{font-size:12.5px;color:var(--muted)}
+.overall.ok{border-left:4px solid var(--ok)}.overall.warn{border-left:4px solid var(--warn)}.overall.fail{border-left:4px solid var(--fail)}
+.num .l{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.num .v{font-size:26px;font-weight:800}
+.num.ok .v{color:var(--ok)}.num.warn .v{color:var(--warn)}.num.fail .v{color:var(--fail)}.num.idle .v{color:var(--idle)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar .sp{margin-left:auto;font-size:12px;color:var(--dim)}
+.grp{margin-bottom:14px}
+.grp h2{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+.grp h2 span{font-size:12px;color:var(--dim);font-weight:600}
+.rows{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.row{display:grid;grid-template-columns:96px minmax(0,1.3fr) minmax(0,2fr) 170px;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--border)}
+.row:first-child{border-top:0}
+.row .nm{font-weight:700;font-size:13.5px}
+.row .dt{font-size:12.5px;color:var(--muted)}
+.row .ex{font-size:11.5px;color:var(--dim)}
+.row .last{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.row .last small{display:block;color:var(--dim);font-size:11px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;width:max-content}
+.pill i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--ok);background:var(--okbg)}.pill.warn{color:var(--warn);background:var(--warnbg)}.pill.fail{color:var(--fail);background:var(--failbg)}
+.pill.idle,.pill.info{color:var(--dim);background:rgba(110,123,152,.14)}.pill.wait{color:var(--accent2);background:rgba(129,140,248,.14)}
+.row.fail{background:linear-gradient(90deg,var(--failbg),transparent 40%)}.row.warn{background:linear-gradient(90deg,var(--warnbg),transparent 40%)}
+.note{font-size:12px;color:var(--dim);margin-top:16px;line-height:1.6}
+@media(max-width:900px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.overall{grid-column:1/-1}.row{grid-template-columns:auto minmax(0,1fr);gap:4px 10px}.row .dt,.row .last{grid-column:2}.row .last{text-align:left}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><i></i>MarketPulse<small>Admin</small></a>
+  <nav><a class="btn" href="/admin-news.html">News</a><a class="btn on" href="/admin-health.html">Data health</a><a class="btn" href="/">← Site</a></nav>
+</header>
+
+<div class="gate" id="gate" hidden>
+  <h1>Admin sign-in</h1>
+  <p>The data health dashboard is for MarketPulse admins only.</p>
+  <form id="loginForm"><input id="email" type="email" autocomplete="username" placeholder="Email" required><input id="password" type="password" autocomplete="current-password" placeholder="Password" required><button class="btn on" type="submit">Sign in</button></form>
+  <div class="msg" id="gateMsg"></div>
+</div>
+
+<main class="page" id="app" hidden>
+  <section class="hero" id="hero"></section>
+  <div class="bar">
+    <button class="btn on" data-filter="all" type="button">All checks</button>
+    <button class="btn" data-filter="problems" type="button">Problems only</button>
+    <button class="btn" id="refresh" type="button">↻ Re-check</button>
+    <span class="sp" id="stamp"></span>
+  </div>
+  <div id="groups"></div>
+  <p class="note">Database checks compare each feed's newest data with what should exist right now: live feeds are strict during NSE hours (Mon–Fri 09:15–15:30 IST) and only need the last session's data otherwise, so evenings and weekends don't raise false alarms. Exchange holidays aren't known, so a holiday can show market-hours feeds as late. Live checks call each backend function from this browser. The page re-checks every 2 minutes while open.</p>
+</main>
+
+<script>
+const SB_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co', KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+const sb = window.supabase.createClient(SB_URL, KEY);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ORDER = { fail: 0, warn: 1, wait: 2, ok: 3, idle: 4, info: 5 };
+const LABEL = { ok: 'OK', warn: 'Late', fail: 'Broken', idle: 'Idle', info: 'Info', wait: 'Checking' };
+let db = null, live = [], filter = 'all', busy = false;
+
+function ago(v) {
+  if (!v) return '';
+  const t = /^\d{4}-\d{2}-\d{2}$/.test(v) ? Date.parse(v + 'T10:00:00Z') : Date.parse(v);
+  if (!Number.isFinite(t)) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(t).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const m = Math.round((Date.now() - t) / 60e3);
+  return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min ago' : Math.round(m / 1440) + ' days ago';
+}
+const ist = (v) => v && !/^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) + ' IST' : '';
+
+/* ───────── Live checks: each backend function, called from this browser ───────── */
+async function timed(url, test) {
+  const t0 = performance.now();
+  try {
+    const r = await fetch(url, { cache: 'no-store', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
+    const ms = Math.round(performance.now() - t0);
+    if (!r.ok) return { status: 'fail', detail: 'HTTP ' + r.status + ' after ' + ms + ' ms' };
+    const d = await r.json();
+    const [ok, what] = test(d);
+    return { status: ok ? (ms > 8000 ? 'warn' : 'ok') : 'fail', detail: what + ' · ' + ms + ' ms' + (ms > 8000 ? ' (slow)' : '') };
+  } catch (e) { return { status: 'fail', detail: 'Request failed: ' + (e.message || e) }; }
+}
+function lastSessionDate(d) { return d && d.last_session; }
+const LIVE = [
+  ['GIFT Nifty & index charts (index-sparklines)', () => timed(SB_URL + '/functions/v1/index-sparklines', (d) => {
+    const g = d.gift_nifty, n = Object.values(d.series || {}).filter((s) => s.points && s.points.length).length;
+    return [!!(g && g.price) && n > 0, (g && g.price ? 'GIFT Nifty ' + g.price + ' (' + (g.live ? 'live' : 'closed') + ')' : 'no GIFT Nifty') + ' · ' + n + ' index charts'];
+  })],
+  ['Option chain (option-chain, NSE)', () => timed(SB_URL + '/functions/v1/option-chain?symbol=NIFTY', (d) => [(d.rows || []).length > 20, (d.rows || []).length + ' strikes · PCR ' + (d.pcr ?? '—') + ' · NSE as of ' + (d.timestamp || '—')])],
+  ['Nifty history (index-history)', () => timed(SB_URL + '/functions/v1/index-history?index=NIFTY50', (d) => [(d.closes || []).length > 200, (d.closes || []).length + ' daily closes'])],
+  ['Stock quote (stock-data)', () => timed(SB_URL + '/functions/v1/stock-data?symbol=RELIANCE', (d) => { const q = d.data || d.stock || d; return [Number(q.price) > 0, 'RELIANCE ₹' + (q.price ?? '—')]; })],
+  ['Stock news (stock-news: Google News + NSE filings)', () => timed(SB_URL + '/functions/v1/stock-news?symbol=RELIANCE&name=Reliance%20Industries%20Limited', (d) => [(d.headlines || []).length > 0 || (d.filings || []).length > 0, (d.headlines || []).length + ' headlines · ' + (d.filings || []).length + ' filings' + ((d.errors || []).length ? ' · errors: ' + d.errors.join('; ') : '')])],
+  ['Mutual fund NAVs (mf-data)', () => timed(SB_URL + '/functions/v1/mf-data?q=nifty', (d) => { const n = (d.funds || d.results || d || []).length || 0; return [n > 0, n + ' funds found for "nifty"']; })],
+  ['Global market page data (global_market)', async () => {
+    const t0 = performance.now();
+    const { data, error } = await sb.rpc('global_market');
+    if (error) return { status: 'fail', detail: error.message };
+    const n = (data.quotes || []).length;
+    return { status: n >= 30 ? 'ok' : 'warn', detail: n + ' quotes · ' + Math.round(performance.now() - t0) + ' ms' };
+  }],
+];
+// Blog posts are built by GitHub Actions and published with the site.
+async function blogChecks() {
+  try {
+    const r = await fetch('/blog/posts.json?_=' + Date.now(), { cache: 'no-store' });
+    const posts = await r.json();
+    const latest = {}; for (const p of posts) if (!latest[p.category] || p.date > latest[p.category]) latest[p.category] = p.date;
+    const sess = db && db.last_session;
+    const istNow = new Date(Date.now() + 330 * 60e3), today = istNow.toISOString().slice(0, 10), mins = istNow.getUTCHours() * 60 + istNow.getUTCMinutes();
+    // Market posts are due after the close (~15:40–17:00 IST); FII/DII after NSE's evening data (~19:30).
+    const prevOf = (d) => { const t = new Date(d + 'T00:00:00Z'); do { t.setUTCDate(t.getUTCDate() - 1); } while ([0, 6].includes(t.getUTCDay())); return t.toISOString().slice(0, 10); };
+    const want = (dueMin) => !sess ? null : (sess === today && mins < dueMin ? prevOf(sess) : sess);
+    return [['Daily Wrap', 'daily-wrap', 1050], ['Sector Analysis', 'sector-analysis', 1050], ['Stock Spotlight', 'stock-spotlight', 1050], ['FII / DII post', 'fiidii-flows', 1260]].map(([nm, cat, due]) => {
+      const have = (latest[cat] || '').slice(0, 10), w = want(due);
+      const status = !have ? 'fail' : !w || have >= w ? 'ok' : have >= prevOf(w) ? 'warn' : 'fail';
+      return { group: 'Blog (published site)', name: nm, status, detail: (have ? 'Latest post ' + have : 'No posts') + (w ? ' · expected ' + w : ''), last: latest[cat] || null };
+    });
+  } catch (e) { return [{ group: 'Blog (published site)', name: 'posts.json', status: 'fail', detail: 'Could not read /blog/posts.json: ' + e.message }]; }
+}
+
+/* ───────── Render ───────── */
+function render() {
+  const all = [...(db ? db.checks : []), ...live];
+  const count = (s) => all.filter((c) => c.status === s).length;
+  const f = count('fail'), w = count('warn'), ok = count('ok'), idle = count('idle') + count('info');
+  const overall = f ? 'fail' : w ? 'warn' : 'ok';
+  $('hero').innerHTML = `<div class="card overall ${overall}"><div class="l">Overall</div><div class="v">${f ? f + ' broken' : w ? w + ' running late' : 'All systems normal'}</div>
+    <div class="s">${db ? (db.market_open ? 'Market open' : 'Market closed') + ' · ' + esc(db.ist) + ' IST · last session ' + esc(db.last_session) : 'Loading…'}</div></div>
+    <div class="card num fail"><div class="l">Broken</div><div class="v">${f}</div></div><div class="card num warn"><div class="l">Late</div><div class="v">${w}</div></div>
+    <div class="card num ok"><div class="l">OK</div><div class="v">${ok}</div></div><div class="card num idle"><div class="l">Idle / info</div><div class="v">${idle}</div></div>`;
+  const groups = {};
+  for (const c of all) (groups[c.group] || (groups[c.group] = [])).push(c);
+  const order = ['Live checks', 'Market data', 'News & content', 'Blog (published site)', 'Signals', 'Background jobs', 'Scheduler'];
+  $('groups').innerHTML = Object.keys(groups).sort((a, b) => order.indexOf(a) - order.indexOf(b)).map((g) => {
+    let rows = groups[g].slice().sort((a, b) => ORDER[a.status] - ORDER[b.status]);
+    const bad = rows.filter((c) => c.status === 'fail' || c.status === 'warn').length;
+    if (filter === 'problems') rows = rows.filter((c) => c.status === 'fail' || c.status === 'warn');
+    if (!rows.length) return '';
+    return `<section class="grp"><h2>${esc(g)} <span>${groups[g].length} check${groups[g].length === 1 ? '' : 's'}${bad ? ' · ' + bad + ' need attention' : ''}</span></h2><div class="rows">${rows.map((c) => `
+      <div class="row ${c.status}"><span class="pill ${c.status}"><i></i>${LABEL[c.status] || c.status}</span>
+        <div><div class="nm">${esc(c.name)}</div>${c.expect ? `<div class="ex">${esc(c.expect)}</div>` : ''}</div>
+        <div class="dt">${esc(c.detail || '')}</div>
+        <div class="last">${c.last ? esc(ago(c.last)) + `<small>${esc(ist(c.last))}</small>` : ''}</div></div>`).join('')}</div></section>`;
+  }).join('') || '<div class="card">No problems right now. 🎉</div>';
+  $('stamp').textContent = db ? 'Checked ' + new Date(db.checked_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Kolkata' }) + ' IST' : '';
+}
+
+async function check() {
+  if (busy) return; busy = true; $('refresh').disabled = true;
+  live = LIVE.map(([name]) => ({ group: 'Live checks', name, status: 'wait', detail: 'Checking…' }));
+  try {
+    const { data, error } = await sb.rpc('data_health');
+    if (error) throw error;
+    db = data;
+  } catch (e) { db = { checks: [{ group: 'Market data', name: 'Health check', status: 'fail', detail: e.message }], checked_at: new Date().toISOString(), ist: '', last_session: '' }; }
+  render();
+  const blog = await blogChecks();
+  await Promise.all(LIVE.map(async ([name, fn], i) => { const r = await fn(); live[i] = { group: 'Live checks', name, ...r }; render(); }));
+  live.push(...blog); render();
+  busy = false; $('refresh').disabled = false;
+}
+
+async function start() {
+  const { data: { session } } = await sb.auth.getSession();
+  const user = session && session.user;
+  if (!user) { $('gate').hidden = false; return; }
+  const { data: p } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (!p || p.role !== 'admin') { $('gate').hidden = false; $('gateMsg').textContent = 'This account is not an admin.'; $('loginForm').hidden = true; return; }
+  $('gate').hidden = true; $('app').hidden = false;
+  check();
+  setInterval(() => { if (!document.hidden) check(); }, 120e3);
+}
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); $('gateMsg').textContent = '';
+  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+  if (error) { $('gateMsg').textContent = error.message; return; }
+  start();
+});
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-filter]');
+  if (b) { filter = b.dataset.filter; document.querySelectorAll('[data-filter]').forEach((x) => x.classList.toggle('on', x === b)); render(); }
+});
+$('refresh').addEventListener('click', check);
+start();
+</script>
+</body>
+</html>

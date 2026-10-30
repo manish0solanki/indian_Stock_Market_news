@@ -3450,6 +3450,7 @@ input,select,textarea{min-width:0;}
         <button class="watchlist-menu-button" id="watchlistButton" type="button">⭐ My Watchlist</button>
         <button class="alert-menu-button" id="alertButton" type="button">🔔 My Alerts</button>
         <button class="admin-menu-button" id="adminPanelButton" type="button" style="display:none;">🛡️ Admin Panel</button>
+        <a class="admin-menu-button" id="dataHealthButton" href="/admin-health.html" style="display:none;text-decoration:none;">🩺 Data health</a>
         <button id="logoutButton" type="button">Log out</button>
       </div>
     </div>
@@ -5620,12 +5621,14 @@ function updateAccountUI(user) {
   authButton.style.display = loggedIn ? 'none' : 'inline-flex';
   accountWrap.classList.toggle('visible', loggedIn);
   adminPanelButton.style.display = loggedIn && isAdmin ? 'block' : 'none';
+  document.getElementById('dataHealthButton').style.display = loggedIn && isAdmin ? 'block' : 'none';
   if (settingsToggle) settingsToggle.style.display = loggedIn && isAdmin ? 'inline-flex' : 'none';
   if (!loggedIn) {
     currentUser = null;
     currentProfile = null;
     isAdmin = false;
     adminPanelButton.style.display = 'none';
+    document.getElementById('dataHealthButton').style.display = 'none';
     accountAvatar.textContent = 'M';
     accountLabel.textContent = 'Account';
     return;
