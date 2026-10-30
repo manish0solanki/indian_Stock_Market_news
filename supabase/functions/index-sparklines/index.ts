@@ -11,7 +11,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-const SYMBOLS = ["^NSEI", "^NSEBANK", "^BSESN", "^NSEMDCP50", "NIFTY_FIN_SERVICE.NS", "BSE-BANK.BO"];
+// ^INDIAVIX is shown as a tile beside GIFT Nifty, not as an index card.
+const SYMBOLS = ["^NSEI", "^NSEBANK", "^BSESN", "^NSEMDCP50", "NIFTY_FIN_SERVICE.NS", "BSE-BANK.BO", "^INDIAVIX"];
 const CACHE_MS = 60_000;
 
 type Series = {

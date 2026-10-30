@@ -259,7 +259,14 @@ body { background: var(--bg); padding-top: 0 !important; }
 /* ───────── Index cards ───────── */
 .mp-index-cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
 /* GIFT Nifty strip: first row of the index section */
-.mp-gift { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--mp-line); background: linear-gradient(90deg, color-mix(in srgb, var(--mp-accent) 14%, var(--mp-card)), var(--mp-card) 60%); font-variant-numeric: tabular-nums; }
+.mp-cues { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 10px; }
+.mp-cues.solo { grid-template-columns: minmax(0, 1fr); }
+.mp-vix { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--mp-line); background: var(--mp-card); font-variant-numeric: tabular-nums; min-width: 0; }
+.mp-vix .mp-gift-note { margin-left: 0; flex-basis: 100%; }
+.mp-vix-mood { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--surface-hover); }
+.mp-vix-mood.calm { color: var(--positive); } .mp-vix-mood.normal { color: var(--text-secondary); }
+.mp-vix-mood.nervy { color: #f59e0b; } .mp-vix-mood.fear { color: var(--negative); }
+.mp-gift { min-width: 0; display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--mp-line); background: linear-gradient(90deg, color-mix(in srgb, var(--mp-accent) 14%, var(--mp-card)), var(--mp-card) 60%); font-variant-numeric: tabular-nums; }
 .mp-gift-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; letter-spacing: .3px; }
 .mp-gift-name i { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
 .mp-gift-name i.live { background: var(--positive); box-shadow: 0 0 0 3px color-mix(in srgb, var(--positive) 25%, transparent); }
@@ -474,8 +481,10 @@ body { background: var(--bg); padding-top: 0 !important; }
   .mp-index-cards { grid-template-columns: 1fr 1fr !important; overflow: visible !important; gap: 8px; padding: 0; scroll-snap-type: none; }
   .mp-idx-card { padding: 11px 12px; gap: 0; }
   .mp-idx-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
-  .mp-gift ~ .mp-idx-card:last-child:nth-child(odd) { grid-column: auto; }
-  .mp-gift ~ .mp-idx-card:last-child:nth-child(even) { grid-column: 1 / -1; }
+  .mp-cues ~ .mp-idx-card:last-child:nth-child(odd) { grid-column: auto; }
+  .mp-cues ~ .mp-idx-card:last-child:nth-child(even) { grid-column: 1 / -1; }
+  .mp-cues { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .mp-vix { padding: 9px 12px; gap: 4px 10px; }
   .mp-idx-name { font-size: 11.5px; letter-spacing: .3px; color: var(--text-secondary); }
   .mp-idx-price { font-size: 19px; margin-top: 3px; }
   .mp-idx-chg { font-size: 12.5px; }
@@ -564,6 +573,10 @@ body { background: var(--bg); padding-top: 0 !important; }
 .li-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--positive); margin-right: 8px; vertical-align: 1px; box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive) 60%, transparent); animation: liPulse 2s infinite; }
 @keyframes liPulse { 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .li-wrap[hidden], #latestBlogGrid[hidden] { display: none !important; }
+.li-asof { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 10px; padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--text-muted); }
+.li-asof b { color: var(--text); font-variant-numeric: tabular-nums; }
+.li-asof .li-next { margin-left: auto; }
+@media (max-width: 560px) { .li-asof .li-next { margin-left: 0; } }
 .li-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .li-card { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--text-muted); border-radius: var(--radius-md); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .li-card.li-positive { border-left-color: var(--positive); }

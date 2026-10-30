@@ -61,6 +61,7 @@
     const trail = runs.slice(0, 12).reverse().map((run) => run.items.find((x) => x.kind === 'pulse')).filter(Boolean)
       .map((p) => { const v = Number(p.data?.nifty_pct); return `<span class="li-tick ${v >= 0 ? 'up' : 'down'}"><b>${esc(p.data?.at || hhmm(p.created_at))}</b>${Number.isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%' : '—'}</span>`; });
     live.innerHTML =
+      `<div class="li-asof"><span class="li-dot" aria-hidden="true"></span><span>Insights as of <b>${hhmm(latest.at)} IST</b> <span class="li-age" data-at="${esc(latest.at)}">${ago(latest.at)}</span></span><span class="li-next">Next update around ${nextTxt}</span></div>` +
       `<div class="li-grid">${shown.map((r) => `
         <article class="li-card li-${esc(r.tone)} li-k-${esc(r.kind)}">
           <div class="li-top"><span class="li-ico" aria-hidden="true">${ICON[r.kind] || '•'}</span><h3>${esc(r.title)}</h3></div>
@@ -71,6 +72,10 @@
       '<div class="li-note">Generated automatically from live prices every 15 minutes. Information only, not investment advice.</div>';
     live.querySelector('.li-more')?.addEventListener('click', () => { expanded = !expanded; render(rows); });
   }
+
+  const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60e3)); return m < 1 ? '(just now)' : `(${m} min ago)`; };
+  // Keep the "(n min ago)" text current between batches.
+  setInterval(() => live.querySelectorAll('.li-age').forEach((el) => { el.textContent = ago(el.dataset.at); }), 30e3);
 
   let busy = false;
   async function refresh() {

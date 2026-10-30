@@ -58,7 +58,8 @@
     const host = $('mpIndexCards');
     if (!host || !snapshot.length) return;
     const bySym = Object.fromEntries(snapshot.map(x => [x.symbol, x]));
-    host.innerHTML = giftStrip(bySym['^NSEI']) + CARD_INDICES.filter(s => bySym[s] || sparks[s]).map(sym => {
+    const cues = giftStrip(bySym['^NSEI']) + vixTile();
+    host.innerHTML = (cues ? `<div class="mp-cues${gift && Number.isFinite(num(gift.price)) ? '' : ' solo'}">${cues}</div>` : '') + CARD_INDICES.filter(s => bySym[s] || sparks[s]).map(sym => {
       const q = bySym[sym] || {}, sp = sparks[sym] || {};
       const price = Number.isFinite(num(q.price)) ? num(q.price) : num(sp.price);
       const prev = Number.isFinite(num(q.previous_close)) ? num(q.previous_close) : num(sp.previous_close);
@@ -90,6 +91,23 @@
       <span class="mp-gift-chg ${tone(chg)}">${signed(chg)} (${signed(pct)}%)</span>
       ${cue}
       <span class="mp-gift-note">NSE IX${exp ? ' · ' + esc(exp) + ' futures' : ''}${when ? ' · as of ' + esc(when) + ' IST' : ''}</span>
+    </div>`;
+  }
+  // India VIX: the market's expected 30-day volatility of Nifty ("fear gauge"). From the sparklines feed.
+  function vixTile() {
+    const v = sparks['^INDIAVIX'];
+    const price = num(v?.price), prev = num(v?.previous_close);
+    if (!Number.isFinite(price)) return '';
+    const chg = Number.isFinite(prev) ? price - prev : NaN, pct = Number.isFinite(prev) && prev ? chg / prev * 100 : NaN;
+    const mood = price < 12 ? ['Very calm', 'calm'] : price < 16 ? ['Calm', 'calm'] : price < 20 ? ['Normal', 'normal'] : price < 25 ? ['Nervous', 'nervy'] : ['High fear', 'fear'];
+    const lo = num(v.day_low), hi = num(v.day_high);
+    // VIX up is bad for the market, so its colour is inverted.
+    return `<div class="mp-vix" title="India VIX: expected Nifty volatility over the next 30 days. Below 15 is calm, above 20 means traders expect big swings.">
+      <span class="mp-gift-name">INDIA VIX</span>
+      <span class="mp-gift-price">${price.toFixed(2)}</span>
+      ${Number.isFinite(chg) ? `<span class="mp-gift-chg ${tone(-chg)}">${signed(chg)} (${signed(pct)}%)</span>` : ''}
+      <span class="mp-vix-mood ${mood[1]}">${mood[0]}</span>
+      <span class="mp-gift-note">Fear gauge${Number.isFinite(lo) && Number.isFinite(hi) ? ` · range ${lo.toFixed(2)}–${hi.toFixed(2)}` : ''}</span>
     </div>`;
   }
   hook('renderSnapshot', items => { snapshot = Array.isArray(items) ? items : []; renderIndexCards(); });
