@@ -39,6 +39,7 @@
   The panel also shows a Nifty timeline, an "as of" time and a 🔊 **Listen** (read-aloud) button. After the close it shows the day's final insights until the Daily Wrap is published, then switches to the latest blog articles.
 - **🎯 Top Signals**: the best 3 stock signals still in their entry zone, ranked by quality (see [Stock Signals](#-stock-signals-stock-signalshtml)). Signed-out visitors see a sign-in prompt.
 - **Market heatmap** (Nifty 50 / Top 100 / Top 500), top gainers and losers, market breadth, FII/DII flows, global indices, crude oil impact, and a news feed with sentiment tags.
+- **Global Market page** (`index.html#global`, `global-market.js`): a rule-based "global cues for India" read (GIFT Nifty, US futures, Asia, Brent, rupee, US 10-year yield, VIX), a market clock showing which exchanges are open, US / Asia-Pacific / Europe indices, currencies and yields, commodities and crypto with 5-day trends and a note on why each matters for India, plus global headlines. Data: `global_market()` (`supabase/global-market.sql`).
 - **Stock search**, with a detail card showing:
   - live quote and key metrics
   - **quarterly results from NSE filings** (last 8 quarters with YoY growth)
@@ -145,7 +146,7 @@
 
 | Job | Schedule | What it does |
 |---|---|---|
-| `index-refresh` | every minute | Indices, global markets, crude, Bitcoin (`index_quotes`) |
+| `index-refresh` | every minute | Indices every minute; global markets, US futures, Asian and European indices, VIX, US yields, currencies, commodities and crypto every 5 minutes (`index_quotes`, with last trade time and 5-day closes) |
 | `sector-refresh` | every 3 min | Sector indices and ~2,600 stock quotes (`sector_index_quotes`, `stock_quotes`) |
 | `stock-signals-refresh` | every 5 min | Rebuilds swing and intraday signals (`stock_signals`) |
 | `stock-paper-monitor` | every minute | Fills stops and targets on open paper trades |

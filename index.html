@@ -3392,7 +3392,8 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
-<link rel="stylesheet" href="/home-overview.css?v=19">
+<link rel="stylesheet" href="/home-overview.css?v=20">
+<link rel="stylesheet" href="/global-market.css?v=1">
 <script src="/refresh-stamp.js?v=1"></script>
 <script src="/link-viewer.js?v=1" defer></script>
 </head>
@@ -3888,33 +3889,11 @@ input,select,textarea{min-width:0;}
       <div class="mp-page-kicker">Global Context</div>
       <h1 class="mp-page-title">Global Market</h1>
       <p class="mp-page-subtitle">
-        Global indices and headlines that can influence the Indian market before and during the trading session.
+        What US, Asian and European markets, the dollar, bond yields and commodities are doing, which exchanges are open, and what it means for the Indian market.
       </p>
     </div>
 
-    <div class="mp-page-grid">
-      <div class="mp-panel span-8">
-        <div class="mp-panel-title">
-          <span>Global Indices</span>
-          <span class="widget-badge positive">LIVE</span>
-        </div>
-        <div class="mp-table-wrap">
-          <table class="mp-table">
-            <thead>
-              <tr><th>Index</th><th>Price</th><th>Change</th><th>Direction</th></tr>
-            </thead>
-            <tbody id="pageGlobalBody">
-              <tr><td colspan="4" class="mp-empty-state">Loading global market data…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="mp-panel span-4">
-        <div class="mp-panel-title"><span>Global Headlines</span></div>
-        <div id="pageGlobalHeadlines" class="mp-empty-state">Open this page after global news loads to see the latest headlines.</div>
-      </div>
-    </div>
+    <div id="gmRoot"></div>
   </section>
 
   <!-- ═══ Home overview (rendered by /home-overview.js) ═══ -->
@@ -8909,31 +8888,9 @@ function renderSectorInsights() {
   }, 60000);
 })();
 
+// The Global Market page is rendered by /global-market.js.
 function renderPageGlobal() {
-  const source = document.getElementById('globalIndicesBody');
-  const target = document.getElementById('pageGlobalBody');
-  if (source && target) {
-    const rows = Array.from(source.querySelectorAll('tr'));
-    const html = rows.map(row => {
-      const cells = Array.from(row.querySelectorAll('td'));
-      if (cells.length < 3) return '';
-      return `
-        <tr>
-          <td>${cells[0].innerHTML}</td>
-          <td class="mono">${cells[1].innerHTML}</td>
-          <td class="mono">${cells[2].innerHTML}</td>
-          <td>Live</td>
-        </tr>
-      `;
-    }).filter(Boolean).join('');
-    if (html) target.innerHTML = html;
-  }
-
-  const sourceNews = document.getElementById('globalHeadlines');
-  const targetNews = document.getElementById('pageGlobalHeadlines');
-  if (sourceNews && targetNews) {
-    targetNews.innerHTML = sourceNews.innerHTML;
-  }
+  if (window.mpGlobalMarket) window.mpGlobalMarket.show();
 }
 
 /* ─── Filter Chips ─── */
@@ -9445,6 +9402,7 @@ if ('serviceWorker' in navigator) {
 <script src="/home-overview.js?v=10"></script>
 <script src="/live-insights.js?v=4"></script>
 <script src="/top-signals.js?v=2"></script>
+<script src="/global-market.js?v=1"></script>
 <script src="/auth-extra.js?v=1"></script>
 </body>
 </html>   

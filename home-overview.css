@@ -43,6 +43,10 @@ body { background: var(--bg); padding-top: 0 !important; }
 .topbar .page-nav-link:hover { color: var(--text) !important; background: var(--surface-hover) !important; }
 .topbar a.page-nav-link { text-decoration: none !important; }
 .topbar .page-nav-link.active { background: var(--mp-accent) !important; border-color: var(--mp-accent) !important; color: #fff !important; }
+/* The search box shrinks before the menu does; below 1400 px the menu hides (the sidebar has every link). */
+.topbar .page-nav { flex: 0 0 auto !important; width: auto !important; }
+@media (max-width: 1600px) { .topbar .page-nav-link { padding: 7px 9px !important; font-size: 12.5px !important; } .topbar .page-nav { gap: 3px !important; } }
+@media (max-width: 1400px) { .topbar .page-nav { display: none !important; } }
 .mp-ico { font-size: 14px; line-height: 1; opacity: .9; }
 
 .topbar .controls-bar {
@@ -349,7 +353,7 @@ body { background: var(--bg); padding-top: 0 !important; }
 
 /* ───────── Responsive ───────── */
 @media (max-width: 1500px) {
-  .topbar .page-nav-link { padding: 8px 10px !important; }
+  .topbar .page-nav-link { padding: 7px 9px !important; }
   .topbar .nav-pill-text { display: none; }
   .mp-index-cards { gap: 10px; }
   .mp-idx-card { padding: 13px; }

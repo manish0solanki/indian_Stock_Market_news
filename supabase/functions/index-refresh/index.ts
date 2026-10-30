@@ -6,6 +6,9 @@
 // the close of the last finished session. (Yahoo's quote API returns the close from two sessions
 // back as "previous close" after market hours, which made the evening change wrong.)
 // Global indices are refreshed every 5 minutes; Indian indices every minute.
+// grp "world" holds the extra global cues for the Global Market page (US futures, more Asian markets,
+// volatility, bond yields, currencies, commodities, crypto), refreshed with the global group.
+// Each row also keeps the exchange's last trade time and the last 5 daily closes (spark).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const supabase = createClient(
@@ -17,7 +20,7 @@ const supabase = createClient(
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36";
 
 // nse: index name in NSE's allIndices feed; tickers: Yahoo symbols, first one that returns data wins.
-type Def = { grp: "snapshot" | "global"; name: string; order: number; tickers: string[]; nse?: string };
+type Def = { grp: "snapshot" | "global" | "world"; name: string; order: number; tickers: string[]; nse?: string };
 const DEFS: Def[] = [
   { grp: "snapshot", name: "NIFTY 50", order: 1, tickers: ["^NSEI"], nse: "NIFTY 50" },
   { grp: "snapshot", name: "NIFTY BANK", order: 2, tickers: ["^NSEBANK"], nse: "NIFTY BANK" },
@@ -35,9 +38,32 @@ const DEFS: Def[] = [
   { grp: "global", name: "CAC 40", order: 8, tickers: ["^FCHI"] },
   { grp: "global", name: "Crude Oil", order: 9, tickers: ["CL=F"] },
   { grp: "global", name: "Bitcoin", order: 10, tickers: ["BTC-USD"] },
+  { grp: "world", name: "S&P 500 futures", order: 1, tickers: ["ES=F"] },
+  { grp: "world", name: "Nasdaq 100 futures", order: 2, tickers: ["NQ=F"] },
+  { grp: "world", name: "Dow futures", order: 3, tickers: ["YM=F"] },
+  { grp: "world", name: "S&P 500", order: 4, tickers: ["^GSPC"] },
+  { grp: "world", name: "Shanghai Composite", order: 10, tickers: ["000001.SS"] },
+  { grp: "world", name: "KOSPI", order: 11, tickers: ["^KS11"] },
+  { grp: "world", name: "Taiwan Weighted", order: 12, tickers: ["^TWII"] },
+  { grp: "world", name: "Straits Times", order: 13, tickers: ["^STI"] },
+  { grp: "world", name: "ASX 200", order: 14, tickers: ["^AXJO"] },
+  { grp: "world", name: "Euro Stoxx 50", order: 15, tickers: ["^STOXX50E"] },
+  { grp: "world", name: "US VIX", order: 20, tickers: ["^VIX"] },
+  { grp: "world", name: "US 10-year yield", order: 21, tickers: ["^TNX"] },
+  { grp: "world", name: "Dollar index", order: 22, tickers: ["DX-Y.NYB"] },
+  { grp: "world", name: "USD / INR", order: 23, tickers: ["INR=X"] },
+  { grp: "world", name: "EUR / USD", order: 24, tickers: ["EURUSD=X"] },
+  { grp: "world", name: "USD / JPY", order: 25, tickers: ["JPY=X"] },
+  { grp: "world", name: "Brent crude", order: 30, tickers: ["BZ=F"] },
+  { grp: "world", name: "WTI crude", order: 31, tickers: ["CL=F"] },
+  { grp: "world", name: "Natural gas", order: 32, tickers: ["NG=F"] },
+  { grp: "world", name: "Gold", order: 33, tickers: ["GC=F"] },
+  { grp: "world", name: "Silver", order: 34, tickers: ["SI=F"] },
+  { grp: "world", name: "Copper", order: 35, tickers: ["HG=F"] },
+  { grp: "world", name: "Ethereum", order: 40, tickers: ["ETH-USD"] },
 ];
 
-type Quote = { price: number; prev: number | null; source: string };
+type Quote = { price: number; prev: number | null; source: string; at?: string | null; spark?: number[] | null };
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -71,9 +97,18 @@ async function yahooChart(symbol: string): Promise<Quote | null> {
   const bars = ts.map((t, i) => ({ t, c: Number(closes[i]) })).filter((b) => b.c > 0);
   const price = Number(meta.regularMarketPrice) || bars[bars.length - 1]?.c;
   if (!(price > 0)) return null;
-  const prev = bars.length >= 2 ? bars[bars.length - 2].c : Number(meta.chartPreviousClose) || null;
-  const r2 = (n: number) => Math.round(n * 100) / 100;
-  return { price: r2(price), prev: prev && prev > 0 ? r2(prev) : null, source: "yahoo-chart" };
+  // Yahoo sometimes has no bar yet for the latest session (often for Asian markets): then the last
+  // bar is the previous session and is itself the previous close.
+  // (A daily bar is stamped at its session start, so a latest-session bar is never >30 h before the last trade.)
+  const mt = Number(meta.regularMarketTime) || 0;
+  const last = bars[bars.length - 1];
+  const lastIsLatest = !last || !mt || mt - last.t <= 30 * 3600;
+  const done = lastIsLatest ? bars.slice(0, -1) : bars; // finished sessions before the latest one
+  const prev = done.length ? done[done.length - 1].c : Number(meta.chartPreviousClose) || null;
+  const r2 = (n: number) => Math.abs(n) < 50 ? Math.round(n * 10000) / 10000 : Math.round(n * 100) / 100; // FX and yields need 4 decimals
+  const at = mt > 0 ? new Date(mt * 1000).toISOString() : null;
+  const spark = done.slice(-4).map((b) => r2(b.c)).concat(r2(price));
+  return { price: r2(price), prev: prev && prev > 0 ? r2(prev) : null, source: "yahoo-chart", at, spark };
 }
 
 Deno.serve(async (req) => {
@@ -101,6 +136,9 @@ Deno.serve(async (req) => {
 
     const withGlobal = test || url.searchParams.get("global") === "1" || new Date().getUTCMinutes() % 5 === 0;
     const defs = DEFS.filter((d) => d.grp === "snapshot" || withGlobal);
+    // The same Yahoo ticker can feed two groups (ES=F, CL=F): fetch it once.
+    const yq = new Map<string, Promise<Quote | null>>();
+    const yahoo = (t: string) => { if (!yq.has(t)) yq.set(t, yahooChart(t).catch(() => null)); return yq.get(t)!; };
     const nse = await nseIndices().catch((e) => { console.warn("NSE feed unavailable:", String(e)); return new Map<string, Quote>(); });
 
     const nowIso = new Date().toISOString();
@@ -110,7 +148,7 @@ Deno.serve(async (req) => {
       let used = q ? "NSE" : "";
       for (const t of d.tickers) {
         if (q) break;
-        q = await yahooChart(t).catch(() => null);
+        q = await yahoo(t);
         if (q) used = t;
       }
       report[`${d.grp}:${d.name}`] = used || "NOT FOUND";
@@ -119,6 +157,7 @@ Deno.serve(async (req) => {
       return {
         grp: d.grp, symbol: d.tickers[0], display_name: d.name, sort_order: d.order,
         price: q.price, previous_close: q.prev, change, change_percent: q.prev ? change / q.prev * 100 : 0, updated_at: nowIso,
+        market_time: q.at || null, spark: q.spark || null,
       };
     }))).filter(Boolean);
     if (test) return json({ test: true, found: rows.length, of: defs.length, report, rows });
