@@ -496,6 +496,9 @@ async function init() {
   if (!S.user) { $('gate').hidden = false; document.querySelectorAll('.tab,#tabbar').forEach((el) => { el.hidden = true; }); await Promise.all([loadIndices()]); renderMarket(); renderIndexStrip(); return; }
   window.mpRefreshNow = () => refresh(true);
   await refresh(true);
+  // ?sig=SYMBOL|tf (from Home's Top Signals) opens that signal's details.
+  const deep = new URLSearchParams(location.search).get('sig');
+  if (deep) { const s = sigByKey(deep) || S.signals.find((x) => x.symbol === deep.split('|')[0]); if (s) openSignal(s); history.replaceState(null, '', location.pathname); }
   // live refresh: server prices update every ~3 min; the clocks tick every second
   setInterval(() => { if (!document.hidden) refresh(false); }, 20000);
   setInterval(() => { renderMarket(); if (S.tab === 'signals') $('signalNote') && renderSignals(); }, 30000);

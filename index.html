@@ -3386,7 +3386,7 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
-<link rel="stylesheet" href="/home-overview.css?v=16">
+<link rel="stylesheet" href="/home-overview.css?v=19">
 <script src="/refresh-stamp.js?v=1"></script>
 <script src="/link-viewer.js?v=1" defer></script>
 </head>
@@ -3920,6 +3920,9 @@ input,select,textarea{min-width:0;}
       <div class="latest-blog-loading">Loading latest insights…</div>
     </div>
   </section>
+
+  <!-- Top signals: the few strongest tradable setups, rendered by /top-signals.js -->
+  <section class="mp-card mp-topsig" id="mpTopSignals" data-home-only="true" hidden aria-label="Top signals"></section>
 
   <!-- ═══ Home overview (rendered by /home-overview.js) ═══ -->
   <section class="mp-index-cards" id="mpIndexCards" data-home-only="true" aria-label="Key indices">
@@ -9421,5 +9424,6 @@ if ('serviceWorker' in navigator) {
 <script src="/my-ticker.js?v=2"></script>
 <script src="/home-overview.js?v=10"></script>
 <script src="/live-insights.js?v=4"></script>
+<script src="/top-signals.js?v=1"></script>
 </body>
 </html>   

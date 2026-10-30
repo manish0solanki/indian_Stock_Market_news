@@ -395,6 +395,7 @@ body { background: var(--bg); padding-top: 0 !important; }
   /* Phones: market data first, insights as a swipeable row. */
   .mp-index-cards { order: -2; grid-template-columns: repeat(6, 78%); }
   .mp-main .latest-blog-snapshots { order: -1; }
+  .mp-main .mp-topsig { order: -1; }
   .mp-main .stock-detail-card { order: -3; }
   .mp-main .latest-blog-grid { grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: 84%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
   .mp-main .latest-blog-card { scroll-snap-align: start; }
@@ -606,3 +607,43 @@ body { background: var(--bg); padding-top: 0 !important; }
 .li-note { margin-top: 8px; font-size: 10.5px; color: var(--text-muted); }
 @media (max-width: 1000px) { .li-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .li-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ───────── Top signals (top-signals.js) ───────── */
+.mp-topsig[hidden] { display: none !important; }
+.ts-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.ts-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ts-card { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--mp-line); border-top: 3px solid var(--positive); background: var(--mp-card-2); color: var(--text); text-decoration: none !important; transition: transform .15s, border-color .15s; }
+.ts-card.sell { border-top-color: var(--negative); }
+.ts-card:hover { transform: translateY(-2px); border-color: var(--mp-accent); }
+.ts-top { display: flex; justify-content: space-between; gap: 10px; }
+.ts-id { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ts-id b { font-size: 15px; letter-spacing: .2px; }
+.ts-id small, .ts-px small { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-px { text-align: right; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.ts-px { flex: 0 0 auto; }
+.ts-px b { font-size: 15px; white-space: nowrap; }
+.ts-px small.up, .ts-lv .up { color: var(--positive); } .ts-px small.down, .ts-lv .down { color: var(--negative); }
+.ts-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.ts-tags span { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--mp-line); color: var(--text-secondary); }
+.ts-tags .ts-side.buy { color: var(--positive); border-color: color-mix(in srgb, var(--positive) 45%, transparent); }
+.ts-tags .ts-side.sell { color: var(--negative); border-color: color-mix(in srgb, var(--negative) 45%, transparent); }
+.ts-lv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px 10px; border-radius: 10px; background: var(--mp-card); font-variant-numeric: tabular-nums; }
+.ts-lv div { display: flex; flex-direction: column; min-width: 0; }
+.ts-lv span { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; }
+.ts-lv b { font-size: 13px; white-space: nowrap; }
+.ts-why { display: flex; flex-wrap: wrap; gap: 5px; }
+.ts-why span { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--mp-accent) 12%, transparent); color: var(--text-secondary); }
+.ts-foot { display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--text-muted); margin-top: auto; }
+.ts-foot b { color: var(--text); }
+.ts-open { margin-left: auto; color: var(--mp-accent-2); font-weight: 700; }
+.ts-empty { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.ts-empty b { display: block; font-size: 15px; }
+.ts-empty span { color: var(--text-secondary); font-size: 13px; }
+.ts-note { margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+/* Phones and tablets: one swipeable row, so three picks don't take a whole screen. */
+@media (max-width: 1000px) {
+  .ts-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(86%, 340px); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; scrollbar-width: none; }
+  .ts-grid::-webkit-scrollbar { display: none; }
+  .ts-card { scroll-snap-align: start; }
+  .ts-grid:has(> .ts-card:only-child) { grid-auto-columns: 100%; }
+}
