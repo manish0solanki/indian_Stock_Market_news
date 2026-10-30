@@ -7,8 +7,9 @@
 .mph { position: sticky; top: 0; z-index: 120; background: color-mix(in srgb, var(--mph-bg) 94%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--mph-line); font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--mph-text); }
 .mph * { box-sizing: border-box; }
 .mph-in { display: flex; align-items: center; gap: 14px; max-width: 1760px; margin: 0 auto; padding: 10px 20px; min-height: 60px; }
-.mph-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -.4px; color: var(--mph-text) !important; text-decoration: none !important; flex: 0 0 auto; }
-.mph-brand i { width: 16px; height: 16px; border-radius: 3px; background: linear-gradient(135deg, #ffcf3d, #f59e0b); }
+.mph-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; letter-spacing: -.5px; color: var(--mph-text) !important; text-decoration: none !important; flex: 0 0 auto; }
+/* Same mark as the Home page (.topbar-brand .diamond): a gold gradient square turned 45°. */
+.mph-brand i { width: 16px; height: 16px; border-radius: 3px; background: linear-gradient(135deg, #ffcf3d, #f59e0b); transform: rotate(45deg); flex: 0 0 auto; display: inline-block; }
 .mph-nav { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .mph-nav::-webkit-scrollbar { display: none; }
 .mph-nav a { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 13px; border-radius: 10px; border: 1px solid var(--mph-line); color: var(--mph-muted) !important; text-decoration: none !important; font-size: 13px; font-weight: 600; white-space: nowrap; }
@@ -96,3 +97,4 @@
 /* Company names and symbols that open the stock's analysis (data-sym, handled in site-header.js) */
 [data-sym] { cursor: pointer; }
 [data-sym]:hover { text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 340px) { .mph-brand i { width: 13px; height: 13px; } }
