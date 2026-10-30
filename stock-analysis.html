@@ -117,6 +117,11 @@ a{color:var(--blue)}
 /* Verdict */
 #verdict{position:relative;overflow:hidden}
 #verdict::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--accent)}
+#vExtra .xsig{margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;line-height:1.5}
+#vExtra .xsig.buy{border-color:color-mix(in srgb,var(--green) 45%,var(--border))}#vExtra .xsig.sell{border-color:color-mix(in srgb,var(--red) 45%,var(--border))}
+#vExtra .xsig b.side{font-weight:800}#vExtra .xsig .lv{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0;font-size:12.5px}
+#vExtra .xsig .why{margin-top:6px;color:var(--muted);font-size:12.5px}#vExtra .xsig a{font-weight:700}
+#vExtra .xwarn{margin-top:10px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--gold) 14%,transparent);font-size:12.5px;line-height:1.5}
 #verdict.buy::before{background:var(--green)}#verdict.sell::before{background:var(--red)}#verdict.wait::before{background:var(--gold)}
 .vtop{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
 .vlabel{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1}
@@ -332,6 +337,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
      <p id="vReason" class="sub" style="margin:12px 0 0"></p>
      <ul class="checks" id="vChecks"></ul>
      <div class="note">The score counts how many rules agree. It is not a probability of profit.</div>
+     <div id="vExtra"></div>
     </div>
 
     <div class="panel">
@@ -634,6 +640,53 @@ function decide(t) {
  return {label, score, reason, checks};
 }
 
+/* ───────── Scanner signal + upcoming results, shown with the verdict ─────────
+   The Stock Signals scanner (also shown on Events and Home) looks for trade setups such as a
+   20-day breakout and fires as soon as one appears; the verdict above waits until trend and
+   momentum agree. Showing both, and why they differ, avoids "BUY there, WAIT here" confusion. */
+let feedCache = null;
+async function scannerSignals(sym) {
+ if (!sb) return [];
+ if (!feedCache || Date.now() - feedCache.at > 3 * 60e3) {
+  const {data} = await sb.rpc('stock_signals_feed');
+  feedCache = {at: Date.now(), list: (data && data.signals) || []};
+ }
+ return feedCache.list.filter(x => String(x.symbol).toUpperCase() === sym);
+}
+async function upcomingResults(sym) {
+ if (!sb) return null;
+ const today = new Date(Date.now() + 330 * 60e3).toISOString().slice(0, 10);
+ const {data} = await sb.from('market_events').select('event_date,kind').eq('symbol', sym).eq('kind', 'results').gte('event_date', today).order('event_date').limit(1);
+ return data && data[0] || null;
+}
+async function renderVerdictExtras() {
+ const host = $('vExtra'); if (!host || !current) return;
+ const sym = current.sym, d = current.decision;
+ host.innerHTML = '';
+ const [sigs, res] = await Promise.all([scannerSignals(sym).catch(() => []), upcomingResults(sym).catch(() => null)]);
+ if (!current || current.sym !== sym) return;
+ let html = '';
+ for (const g of sigs) {
+  const buy = g.side === 'BUY', tf = g.tf === 'intraday' ? 'Intraday' : 'Swing';
+  const agree = (buy && d.label === 'BUY') || (!buy && d.label === 'SELL');
+  let why = '';
+  if (!agree) {
+   const against = d.checks.filter(c => c.c === (buy ? 'negative' : 'positive')).map(c => c.text.replace(/ \(.*\)$/, ''));
+   why = `<div class="why"><b>Why the verdict says ${esc(d.label)}:</b> the scanner fires as soon as a setup appears (${esc(g.setup || 'trade setup')}), while the verdict above waits until trend and momentum line up${against.length ? ' — here ' + esc(against.slice(0, 2).map(x => /^[A-Z]{2}/.test(x) ? x : x[0].toLowerCase() + x.slice(1)).join(' and ')) : ''}. Treat it as an early ${buy ? 'entry' : 'short'}: size it smaller and respect the stop.</div>`;
+  }
+  html += `<div class="xsig ${buy ? 'buy' : 'sell'}"><div><span class="sub">STOCK SIGNALS SCANNER · ${tf.toUpperCase()}</span></div>
+   <div><b class="side ${buy ? 'positive' : 'negative'}">${buy ? '▲ BUY' : '▼ SELL'}</b> · ${esc(g.setup || '')} <span class="sub">· score ${esc(g.score)}${g.bar_date ? ' · ' + esc(g.bar_date) : ''}</span></div>
+   <div class="lv"><span>Entry <b>${rs(num(g.entry))}</b></span><span>Stop <b class="negative">${rs(num(g.stop))}</b></span><span>Target 1 <b class="positive">${rs(num(g.target1))}</b></span>${num(g.target2) ? `<span>Target 2 <b class="positive">${rs(num(g.target2))}</b></span>` : ''}</div>
+   ${agree ? '<div class="why">The scanner and the verdict agree.</div>' : why}
+   <div style="margin-top:4px"><a href="/stock-signals.html?sig=${encodeURIComponent(sym + '|' + g.tf)}">Open in Stock Signals →</a></div></div>`;
+ }
+ if (res) {
+  const days = Math.round((Date.parse(res.event_date) - Date.parse(new Date(Date.now() + 330 * 60e3).toISOString().slice(0, 10))) / 864e5);
+  if (days <= 10) html += `<div class="xwarn">⚠️ Results are due ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'in ' + days + ' days'} (${new Date(res.event_date + 'T00:00:00Z').toLocaleDateString('en-IN', {weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC'})}). Prices often gap on results, which can jump past a stop. <a href="/events.html">Events →</a></div>`;
+ }
+ host.innerHTML = html;
+}
+
 /* ───────── State ───────── */
 let current = null;           // {sym, name, quote, t, decision}
 let runId = 0, liveTimer = null;
@@ -783,6 +836,7 @@ function renderAll() {
  $('vScore').textContent = d.score + '/100'; $('vGauge').style.left = d.score + '%';
  $('vReason').textContent = d.reason;
  $('vChecks').innerHTML = d.checks.map(c => `<li><b class="${c.c}">${esc(c.s)}</b><span>${esc(c.text)}</span></li>`).join('');
+ renderVerdictExtras();
  // Risk plan
  const close = t.last.close, long = d.label !== 'SELL';
  const stop = long ? close - 1.5 * t.atr : close + 1.5 * t.atr;
