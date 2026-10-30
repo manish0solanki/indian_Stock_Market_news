@@ -36,6 +36,7 @@
   ];
   var ICON = {
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+    events: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/>',
     markets: '<rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/>',
     news: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/>',
     analysis: '<path d="M3 20h18"/><path d="M6 16l4-5 3 3 5-7"/><circle cx="18" cy="7" r="1.2"/>',
@@ -100,7 +101,7 @@
     }
 
     var navTest = function (name) { for (var i = 0; i < NAV.length; i++) if (NAV[i][0] === name) return NAV[i][2]; return null; };
-    var tabs = [['Home', '/', 'home', navTest('Home')], ['Markets', '/#mpHeatmap', 'markets', null], ['News', '/#marketNews', 'news', null],
+    var tabs = [['Home', '/', 'home', navTest('Home')], ['Events', '/events.html', 'events', navTest('Events')], ['News', '/#marketNews', 'news', null],
       ['Analysis', '/stock-analysis.html', 'analysis', navTest('Analysis')], ['Portfolio', '/portfolio.html', 'portfolio', navTest('Portfolio')]];
     var bar = document.createElement('div');
     bar.className = 'mph-tabbar'; bar.setAttribute('role', 'navigation'); bar.setAttribute('aria-label', 'Quick navigation');
