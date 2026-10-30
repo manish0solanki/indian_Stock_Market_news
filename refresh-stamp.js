@@ -2,7 +2,10 @@
    It watches the page's own data calls (Supabase REST / RPC / edge functions) and stamps the time of
    the last successful one, so pages need no wiring. Load it in <head>, before the Supabase client is
    created, because supabase-js keeps the fetch it finds at creation time.
-   A page can set window.mpRefreshNow = () => {...} to make the pill a "refresh now" button. */
+   A page can set window.mpRefreshNow = () => {...} to make the pill a "refresh now" button.
+   A view with its own refresh cycle can take over the pill with
+   window.mpStampCycle = { last: <ms timestamp of its last refresh>, every: <ms> }, which shows
+   "Updated 12s ago · next in 18s" from those times; set it back to null to return to normal. */
 (function () {
   if (window.mpStamp) return;
   let last = 0, el = null, busy = false;
@@ -31,10 +34,18 @@
     return h + 'h ' + (m % 60) + 'm ago';
   }
   function paint() {
-    if (!el || !last) return;
-    const age = Date.now() - last;
+    const cyc = window.mpStampCycle;
+    if (cyc && cyc.last) { mount(); if (el) el.hidden = false; }
+    if (!el || !(last || (cyc && cyc.last))) return;
+    const age = Date.now() - (cyc && cyc.last ? cyc.last : last);
     el.querySelector('b').textContent = ago(age);
-    el.dataset.age = age < 90e3 ? 'fresh' : age < 10 * 60e3 ? 'ok' : 'stale';
+    const nx = el.querySelector('em');
+    if (cyc && cyc.last && cyc.every) {
+      const left = Math.max(0, Math.ceil((cyc.last + cyc.every - Date.now()) / 1000));
+      nx.textContent = left ? '· next in ' + left + 's' : '· refreshing…';
+      nx.hidden = false;
+    } else nx.hidden = true;
+    el.dataset.age = age < (cyc && cyc.every ? cyc.every * 2 + 5e3 : 90e3) ? 'fresh' : age < 10 * 60e3 ? 'ok' : 'stale';
     el.title = 'Last data refresh: ' + new Date(last).toLocaleTimeString('en-IN') + (window.mpRefreshNow ? ' · tap to refresh now' : '');
     // Sit above whichever phone bottom bar the page shows (Home's, the shared header's, or the page's own).
     let h = 0;
@@ -49,6 +60,7 @@
     const css = document.createElement('style');
     css.textContent = '.mp-stamp{position:fixed;left:12px;bottom:12px;z-index:140;display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 9px;border-radius:999px;font:600 12px/1.2 Inter,system-ui,sans-serif;color:var(--text-muted,var(--muted,#94a3b8));background:color-mix(in srgb,var(--surface,var(--card,#111827)) 92%,transparent);border:1px solid var(--border,rgba(148,163,184,.25));box-shadow:0 6px 18px rgba(0,0,0,.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:default;user-select:none}' +
       '.mp-stamp b{color:var(--text,#e5e7eb);font-weight:700;font-variant-numeric:tabular-nums}' +
+      '.mp-stamp em{font-style:normal;font-variant-numeric:tabular-nums}' +
       '.mp-stamp i{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:0 0 auto}' +
       '.mp-stamp[data-age=fresh] i{background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:mpStampPulse 2s infinite}' +
       '.mp-stamp[data-age=ok] i{background:#f59e0b}' +
@@ -64,7 +76,7 @@
     el.className = 'mp-stamp';
     el.hidden = true;
     el.setAttribute('aria-live', 'off');
-    el.innerHTML = '<i aria-hidden="true"></i><span>Updated</span><b></b>';
+    el.innerHTML = '<i aria-hidden="true"></i><span>Updated</span><b></b><em hidden></em>';
     el.addEventListener('click', async () => {
       if (!window.mpRefreshNow || busy) return;
       busy = true; el.classList.add('busy');

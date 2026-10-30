@@ -12,3 +12,10 @@ language sql stable security definer set search_path = public as $$
   from index_quotes where grp in ('global', 'world') and price is not null;
 $$;
 grant execute on function public.global_market() to anon, authenticated;
+
+-- Global and world prices every 30 seconds (Yahoo batch quotes; see index-refresh ?fast=1).
+-- The per-minute index-refresh job keeps Indian indices, and every 5 minutes adds last trade times.
+select cron.schedule('index-refresh-global-30s', '30 seconds', $$select net.http_post(
+    url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/index-refresh?fast=1',
+    headers := jsonb_build_object('Content-Type','application/json','x-cron-secret',(select value from public.app_secrets where name='crypto_cron')),
+    body := '{}'::jsonb, timeout_milliseconds := 25000)$$);

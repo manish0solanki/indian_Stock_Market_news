@@ -3394,7 +3394,7 @@ input,select,textarea{min-width:0;}
 </style>
 <link rel="stylesheet" href="/home-overview.css?v=20">
 <link rel="stylesheet" href="/global-market.css?v=1">
-<script src="/refresh-stamp.js?v=1"></script>
+<script src="/refresh-stamp.js?v=2"></script>
 <script src="/link-viewer.js?v=1" defer></script>
 </head>
 <body>
@@ -9383,7 +9383,8 @@ setInterval(loadFiiDii, REFRESH_MS * 12);
 setInterval(loadHeatmap, REFRESH_MS * 2);
 setInterval(loadGlobalIndices, REFRESH_MS);
 // Tapping the "Updated …" pill (refresh-stamp.js) reloads the main live data at once.
-window.mpRefreshNow = () => Promise.allSettled([loadPrices(), loadIndices(), loadSectorIndices(), loadHeatmap(), loadGlobalIndices()]);
+window.mpRefreshNow = () => Promise.allSettled([loadPrices(), loadIndices(), loadSectorIndices(), loadHeatmap(), loadGlobalIndices(),
+  !document.getElementById('page-global')?.classList.contains('hidden') && window.mpGlobalMarket ? window.mpGlobalMarket.refresh() : null]);
 
 // Close dropdown on outside click
 document.addEventListener('click', (e) => {
@@ -9402,7 +9403,7 @@ if ('serviceWorker' in navigator) {
 <script src="/home-overview.js?v=10"></script>
 <script src="/live-insights.js?v=4"></script>
 <script src="/top-signals.js?v=2"></script>
-<script src="/global-market.js?v=1"></script>
+<script src="/global-market.js?v=2"></script>
 <script src="/auth-extra.js?v=1"></script>
 </body>
 </html>   

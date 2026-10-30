@@ -1,7 +1,9 @@
 /* Global Market page (index.html#global): what overseas markets, currencies, bond yields and
    commodities are doing, which exchanges are open, and a plain-English read of what it means for
    the Indian open. Quotes: global_market() (index-refresh, every 5 min). GIFT Nifty: index-sparklines.
-   Headlines: global_headlines_feed(). Rendered only while the page is open; refreshes every minute. */
+   Headlines: global_headlines_feed(). Rendered only while the page is open; refreshes every 30 s
+   (the quotes themselves are refreshed every 30 s by index-refresh?fast=1), and drives the
+   "Updated … · next in …" pill (refresh-stamp.js) while the page is showing. */
 (function () {
   const SB = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
   const KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
@@ -85,7 +87,8 @@
     ['crypto', 'Crypto', '₿', ['BTC-USD|global', 'ETH-USD|world']],
   ];
 
-  let Q = {}, updatedAt = null, gift = null, heads = [], timer = null, loading = false;
+  const EVERY = 30e3;
+  let Q = {}, updatedAt = null, gift = null, heads = [], timer = null, loading = false, lastLoad = 0, headsAt = 0;
 
   function spark(vals, up) {
     vals = (vals || []).map(Number).filter(Number.isFinite);
@@ -175,32 +178,43 @@
       <div class="mp-panel gm-heads"><div class="mp-panel-title"><span>📰 Global headlines</span><span class="gm-muted">CNBC, MarketWatch and others</span></div>
         ${heads.length ? `<div class="gm-hl">${heads.map((a) => `<a class="gm-h" href="${esc(a.url || '#')}" target="_blank" rel="noopener"><b>${esc(unent(a.title || ''))}</b><span>${esc(typeof a.source === 'object' ? a.source?.name : a.source || 'News')} · ${esc(ago(a.publishedAt || a.published_at))}</span></a>`).join('')}</div>` : '<div class="gm-muted">No global headlines right now.</div>'}
       </div>
-      <div class="gm-foot">Prices from Yahoo Finance (refreshed every 5 minutes; some exchanges are delayed 15–20 min), GIFT Nifty from NSE IX. Updated ${esc(ago(updatedAt))}.</div>`;
+      <div class="gm-foot">Prices from Yahoo Finance, refreshed every 30 seconds (some exchanges are delayed 15–20 min by the source), GIFT Nifty from NSE IX. Updated ${esc(ago(updatedAt))}.</div>`;
   }
 
   async function load() {
     if (loading) return; loading = true;
     try {
+      // Headlines change slowly: fetch them every 5 minutes, not on every 30-second tick.
+      const wantHeads = Date.now() - headsAt > 5 * 60e3;
       const [gm, sp, hl] = await Promise.all([
         fetch(SB + '/rest/v1/rpc/global_market', { method: 'POST', headers: H, body: '{}' }).then((r) => r.ok ? r.json() : null).catch(() => null),
         fetch(SB + '/functions/v1/index-sparklines', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null),
-        fetch(SB + '/rest/v1/rpc/global_headlines_feed', { method: 'POST', headers: H, body: JSON.stringify({ p_limit: 12 }) }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        wantHeads ? fetch(SB + '/rest/v1/rpc/global_headlines_feed', { method: 'POST', headers: H, body: JSON.stringify({ p_limit: 12 }) }).then((r) => r.ok ? r.json() : null).catch(() => null) : null,
       ]);
       if (gm && Array.isArray(gm.quotes)) { Q = {}; for (const q of gm.quotes) Q[q.symbol + '|' + q.grp] = q; updatedAt = gm.updated_at; }
       if (sp) gift = sp.gift_nifty || null;
-      if (hl) heads = Array.isArray(hl) ? hl : (hl.articles || []);
+      if (hl) { heads = Array.isArray(hl) ? hl : (hl.articles || []); headsAt = Date.now(); }
+      if (gm) lastLoad = Date.now();
       render();
+      cycle();
     } finally { loading = false; }
   }
   function visible() { const p = $('page-global'); return p && !p.classList.contains('hidden') && !document.hidden; }
+  // While the page is on screen the "Updated" pill counts this page's 30-second cycle.
+  function cycle() {
+    const p = $('page-global'), on = p && !p.classList.contains('hidden');
+    window.mpStampCycle = on && lastLoad ? { last: lastLoad, every: EVERY } : null;
+  }
 
   window.mpGlobalMarket = {
     show() {
       if (!$('gmRoot')) return;
       if (!Object.keys(Q).length) $('gmRoot').innerHTML = '<div class="mp-panel gm-empty">Loading global markets…</div>';
       load();
-      if (!timer) timer = setInterval(() => { if (visible()) load(); }, 60e3);
+      if (!timer) timer = setInterval(() => { cycle(); if (visible() && Date.now() - lastLoad >= EVERY - 500) load(); }, 1000);
+      cycle();
     },
+    refresh: () => load(),
   };
   // Opened straight from a #global link before this script loaded.
   if (visible()) window.mpGlobalMarket.show();

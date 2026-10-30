@@ -9,6 +9,11 @@
 // grp "world" holds the extra global cues for the Global Market page (US futures, more Asian markets,
 // volatility, bond yields, currencies, commodities, crypto), refreshed with the global group.
 // Each row also keeps the exchange's last trade time and the last 5 daily closes (spark).
+// ?fast=1 (cron every 30 s): global + world prices only, from Yahoo's batch spark endpoint (20 symbols
+// per request), so the Global Market page is never more than ~30 s behind without hammering Yahoo.
+// Last trade times still come from the 5-minute run, which uses the per-symbol chart. While the fast
+// run is healthy, the 5-minute run writes only those times for global/world rows: Yahoo's batch day
+// change is more reliable (the per-symbol daily bars sometimes miss a session, e.g. Shanghai, Taiwan).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const supabase = createClient(
@@ -111,6 +116,53 @@ async function yahooChart(symbol: string): Promise<Quote | null> {
   return { price: r2(price), prev: prev && prev > 0 ? r2(prev) : null, source: "yahoo-chart", at, spark };
 }
 
+// Batch quotes: price, Yahoo's own day change and the daily closes for up to 20 symbols per call.
+type Fast = { price: number; prev: number | null; spark: number[] };
+async function yahooSpark(symbols: string[]): Promise<Map<string, Fast>> {
+  const out = new Map<string, Fast>();
+  for (let i = 0; i < symbols.length; i += 20) {
+    const chunk = symbols.slice(i, i + 20);
+    const r = await fetch("https://query1.finance.yahoo.com/v8/finance/spark?symbols=" + encodeURIComponent(chunk.join(",")) + "&range=5d&interval=1d", {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+    });
+    if (!r.ok) { console.warn("spark HTTP " + r.status); continue; }
+    const d = await r.json();
+    for (const sym of chunk) {
+      const x = d?.[sym];
+      const price = Number(x?.fulldayPrice), chg = Number(x?.fulldayChange);
+      if (!(price > 0)) continue;
+      const prev = Number.isFinite(chg) && price - chg > 0 ? price - chg : null;
+      const r2 = (n: number) => Math.abs(n) < 50 ? Math.round(n * 10000) / 10000 : Math.round(n * 100) / 100;
+      let closes: number[] = (x.close || []).map(Number).filter((c: number) => c > 0);
+      // Last close is today's bar if it is not the previous close; otherwise today's bar is missing.
+      if (closes.length && prev && Math.abs(closes[closes.length - 1] - prev) / prev < 1e-6) closes.push(price);
+      else if (closes.length) closes[closes.length - 1] = price;
+      else closes = [price];
+      out.set(sym, { price: r2(price), prev: prev ? r2(prev) : null, spark: closes.slice(-5).map(r2) });
+    }
+  }
+  return out;
+}
+
+async function fastRefresh(test: boolean) {
+  const defs = DEFS.filter((d) => d.grp !== "snapshot");
+  const quotes = await yahooSpark([...new Set(defs.map((d) => d.tickers[0]))]);
+  const nowIso = new Date().toISOString();
+  const rows = defs.flatMap((d) => {
+    const q = quotes.get(d.tickers[0]);
+    if (!q) return [];
+    const change = q.prev ? q.price - q.prev : 0;
+    // No market_time here: the upsert leaves the 5-minute run's last trade time in place.
+    return [{ grp: d.grp, symbol: d.tickers[0], display_name: d.name, sort_order: d.order, price: q.price, previous_close: q.prev,
+      change, change_percent: q.prev ? change / q.prev * 100 : 0, spark: q.spark, updated_at: nowIso }];
+  });
+  if (!test && rows.length) {
+    const { error } = await supabase.from("index_quotes").upsert(rows, { onConflict: "grp,symbol" });
+    if (error) throw new Error("upsert: " + error.message);
+  }
+  return { fast: true, found: rows.length, of: defs.length, ...(test ? { rows } : {}) };
+}
+
 Deno.serve(async (req) => {
   const started = Date.now();
   let beat = false;
@@ -127,6 +179,22 @@ Deno.serve(async (req) => {
     if (!sec || !secret || secret !== sec.value) return json({ error: "unauthorized" }, 401);
     const url = new URL(req.url);
     const test = url.searchParams.get("test") === "1";
+
+    if (url.searchParams.get("fast") === "1") {
+      if (!test) {
+        const { data: go } = await supabase.rpc("bot_job_start", { p_job: "index-fast", p_interval: 30 });
+        if (go === false) return json({ skipped: "previous fast run still in progress" });
+      }
+      try {
+        const res = await fastRefresh(test);
+        if (!test) await supabase.rpc("bot_job_finish", { p_job: "index-fast", p_ok: res.found > 0, p_error: res.found ? null : "no quotes", p_duration_ms: Date.now() - started, p_summary: res, p_log: false });
+        return json(res);
+      } catch (e) {
+        const msg = String((e as Error)?.message || e);
+        if (!test) { try { await supabase.rpc("bot_job_finish", { p_job: "index-fast", p_ok: false, p_error: msg, p_duration_ms: Date.now() - started, p_summary: { error: msg }, p_log: false }); } catch (_e) { /* ignore */ } }
+        return json({ error: msg }, 500);
+      }
+    }
 
     if (!test) {
       const { data: go } = await supabase.rpc("bot_job_start", { p_job: "index", p_interval: 60 });
@@ -162,11 +230,21 @@ Deno.serve(async (req) => {
     }))).filter(Boolean);
     if (test) return json({ test: true, found: rows.length, of: defs.length, report, rows });
 
-    if (rows.length) {
-      const { error } = await supabase.from("index_quotes").upsert(rows, { onConflict: "grp,symbol" });
+    // Fast run healthy in the last 3 minutes: keep its prices for global/world, only add last trade times.
+    let fastOk = false;
+    if (withGlobal) {
+      const { data: fs } = await supabase.from("crypto_bot_status").select("last_ok,last_run_at").eq("job", "index-fast").maybeSingle();
+      fastOk = !!(fs?.last_ok && fs.last_run_at && Date.now() - Date.parse(fs.last_run_at) < 180e3);
+    }
+    const full = rows.filter((r: any) => !fastOk || r.grp === "snapshot");
+    const timesOnly = fastOk ? rows.filter((r: any) => r.grp !== "snapshot" && r.market_time)
+      .map((r: any) => ({ grp: r.grp, symbol: r.symbol, display_name: r.display_name, sort_order: r.sort_order, market_time: r.market_time })) : [];
+    for (const batch of [full, timesOnly]) {
+      if (!batch.length) continue;
+      const { error } = await supabase.from("index_quotes").upsert(batch, { onConflict: "grp,symbol" });
       if (error) throw new Error("upsert: " + error.message);
     }
-    const summary = { found: rows.length, of: defs.length, missing: defs.length - rows.length, nse: nse.size > 0 };
+    const summary = { found: rows.length, of: defs.length, missing: defs.length - rows.length, nse: nse.size > 0, globalPricesFromFast: fastOk };
     await finish(rows.length > 0, rows.length ? null : "no index returned a price", summary);
     return json({ ...summary, report });
   } catch (e) {
