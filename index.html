@@ -5381,12 +5381,17 @@ async function loadUserProfile() {
     if (error) throw error;
 
     currentProfile = data || {};
-    const name = String(currentProfile.full_name || '').trim();
-    const email = currentUser.email || '';
-    const avatarUrl = String(currentProfile.avatar_url || '').trim();
+    // Google accounts bring a name and photo; phone accounts have a number instead of an email.
+    const meta = currentUser.user_metadata || {};
+    const name = String(currentProfile.full_name || meta.full_name || meta.name || '').trim();
+    const email = currentUser.email || (currentUser.phone ? '+' + String(currentUser.phone).replace(/^\+/, '') : '');
+    const avatarUrl = String(currentProfile.avatar_url || meta.avatar_url || meta.picture || '').trim();
 
     profileName.value = name;
+    profileEmail.type = currentUser.email ? 'email' : 'text';
     profileEmail.value = email;
+    const emailLabel = document.querySelector('label[for="profileEmail"]');
+    if (emailLabel) emailLabel.textContent = currentUser.email ? 'Email' : 'Phone';
     profileAvatarUrl.value = avatarUrl;
     profileRole.textContent = String(currentProfile.role || (isAdmin ? 'admin' : 'user'))
       .replace(/^./, c => c.toUpperCase());
@@ -5623,9 +5628,11 @@ function updateAccountUI(user) {
     return;
   }
 
-  const email = user.email || 'Account';
-  const name = String(currentProfile?.full_name || '').trim();
-  const avatarUrl = String(currentProfile?.avatar_url || '').trim();
+  // Phone sign-ins have no email; Google sign-ins bring a name and photo until the profile has its own.
+  const meta = user.user_metadata || {};
+  const email = user.email || (user.phone ? '+' + String(user.phone).replace(/^\+/, '') : 'Account');
+  const name = String(currentProfile?.full_name || meta.full_name || meta.name || '').trim();
+  const avatarUrl = String(currentProfile?.avatar_url || meta.avatar_url || meta.picture || '').trim();
 
   accountEmail.textContent = email;
   accountLabel.textContent = name || email.split('@')[0] || 'Account';
@@ -9425,5 +9432,6 @@ if ('serviceWorker' in navigator) {
 <script src="/home-overview.js?v=10"></script>
 <script src="/live-insights.js?v=4"></script>
 <script src="/top-signals.js?v=1"></script>
+<script src="/auth-extra.js?v=1"></script>
 </body>
 </html>   

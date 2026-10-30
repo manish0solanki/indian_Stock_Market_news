@@ -57,9 +57,11 @@
     var path = location.pathname;
     var navHtml = NAV.map(function (n) { return '<a href="' + n[1] + '" target="_self"' + (n[2](path) ? ' aria-current="page"' : '') + '>' + n[0] + '</a>'; }).join('');
     var user = session();
+    // Phone sign-ins have no email; Google ones carry a name.
+    var who = user ? (user.email || (user.phone ? '+' + String(user.phone).replace(/^\+/, '') : '') || (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || '') : '';
     var acct = user
-      ? '<div class="mph-rel"><button class="mph-acct" id="mphAcct" type="button" aria-haspopup="true" aria-expanded="false"><b>' + esc((user.email || 'U').charAt(0).toUpperCase()) + '</b><span>Account</span></button>' +
-        '<div class="mph-pop" id="mphAcctMenu" hidden><div class="mph-email">' + esc(user.email || '') + '</div>' +
+      ? '<div class="mph-rel"><button class="mph-acct" id="mphAcct" type="button" aria-haspopup="true" aria-expanded="false"><b>' + esc(((user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || user.email || 'U').charAt(0).toUpperCase()) + '</b><span>Account</span></button>' +
+        '<div class="mph-pop" id="mphAcctMenu" hidden><div class="mph-email">' + esc(who) + '</div>' +
         '<a href="/my-ticker.html" target="_self">✎ My Ticker</a><a href="/portfolio.html" target="_self">📊 My Portfolio</a><a href="/stock-signals.html" target="_self">📈 Stock Signals</a><a href="/" target="_self">🏠 Dashboard</a>' +
         '<button type="button" id="mphLogout">↩ Log out</button></div></div>'
       : '<a class="mph-login" href="/?login=1" target="_self">Login</a>';

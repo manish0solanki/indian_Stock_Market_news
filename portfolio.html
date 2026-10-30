@@ -365,7 +365,7 @@ document.addEventListener('focusin',e=>{
 
 async function boot(){
  const {data,error}=await sb.auth.getSession(); if(error||!data.session){location.href='/';return}
- user=data.session.user;$('userText').textContent=user.email||'Signed-in user';
+ user=data.session.user;$('userText').textContent=user.email||(user.phone?'+'+String(user.phone).replace(/^\+/,''):'')||user.user_metadata?.full_name||'Signed-in user';
  const {data:p,error:pe}=await sb.from('portfolios').select('*').eq('user_id',user.id).order('created_at').limit(1).maybeSingle();
  if(pe) throw pe;
  if(!p){const {data:n,error:ne}=await sb.from('portfolios').insert({user_id:user.id,name:'My Portfolio'}).select().single();if(ne)throw ne;portfolio=n}else portfolio=p;
