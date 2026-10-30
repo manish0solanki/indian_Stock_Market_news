@@ -40,6 +40,8 @@
 - **🎯 Top Signals**: the best 3 stock signals still in their entry zone, ranked by quality (see [Stock Signals](#-stock-signals-stock-signalshtml)). Signed-out visitors see a sign-in prompt.
 - **Market heatmap** (Nifty 50 / Top 100 / Top 500), top gainers and losers, market breadth, FII/DII flows, global indices, crude oil impact, and a news feed with sentiment tags.
 - **Global Market page** (`index.html#global`, `global-market.js`): a rule-based "global cues for India" read (GIFT Nifty, US futures, Asia, Brent, rupee, US 10-year yield, VIX), a market clock showing which exchanges are open, US / Asia-Pacific / Europe indices, currencies and yields, commodities and crypto with 5-day trends and a note on why each matters for India, plus global headlines. Refreshes every 30 seconds; the "Updated" pill shows a countdown to the next refresh on this page. Data: `global_market()` (`supabase/global-market.sql`).
+- **My Watchlist on Home** (`home-watchlist.js`): the signed-in user's watchlist (the same list as the ☆ button on the stock card) with live prices, day change, any active Stock Signals trade and results or ex-dividend dates in the next 7 days. Refreshes every minute in market hours.
+- **News tab on the stock card** (`stock-news.js`, also used on Stock Analysis): MarketPulse's impact-tagged news for the stock, the latest headlines (Google News, last 14 days) and the company's NSE filings, from the `stock-news` Edge Function (cached 15 minutes).
 - **Stock search**, with a detail card showing:
   - live quote and key metrics
   - **quarterly results from NSE filings** (last 8 quarters with YoY growth)
@@ -170,6 +172,7 @@
 | `stock-fundamentals` | Last 8 quarterly results from NSE integrated-filing XBRL, cached 6 h |
 | `index-sparklines` | Intraday index paths, GIFT Nifty (NSE IX) and India VIX |
 | `mf-data` | Mutual fund NAVs |
+| `stock-news` | Per-stock headlines (Google News) and NSE filings for the stock card's News tab (`?symbol=POWERGRID&name=...`), cached 15 min |
 | `option-chain` | NSE option chain with PCR, max pain, support/resistance and expected move (`?symbol=NIFTY&expiry=03-Nov-2026`), cached a minute |
 | `events-refresh` | Events calendar and results analysis |
 | `ipo-refresh` | IPOs and GMP |

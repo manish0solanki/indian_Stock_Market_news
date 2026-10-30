@@ -404,6 +404,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/stock-search.js?v=1"></script>
+<script src="/stock-news.js?v=1"></script>
 <script>
 (() => {
 'use strict';
@@ -1048,6 +1049,8 @@ function startLive() {
 /* ───────── News ───────── */
 async function loadNews(sym, id) {
  const host = $('news');
+ // Shared with the Home stock card: MarketPulse news + latest headlines + NSE filings (/stock-news.js).
+ if (window.mpStockNews) { if (id === runId) window.mpStockNews.render(host, {symbol: sym, name: current && current.sym === sym ? current.name : '', client: sb}); return; }
  host.innerHTML = '<div class="skel" style="height:64px"></div><div class="skel" style="height:64px"></div>';
  if (!sb) { host.innerHTML = '<div class="sub">News is unavailable right now.</div>'; return; }
  try {

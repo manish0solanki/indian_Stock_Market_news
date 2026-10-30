@@ -3392,7 +3392,7 @@ input,select,textarea{min-width:0;}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
-<link rel="stylesheet" href="/home-overview.css?v=21">
+<link rel="stylesheet" href="/home-overview.css?v=22">
 <link rel="stylesheet" href="/global-market.css?v=1">
 <script src="/refresh-stamp.js?v=2"></script>
 <script src="/link-viewer.js?v=1" defer></script>
@@ -3600,6 +3600,12 @@ input,select,textarea{min-width:0;}
           <span class="stock-change" id="sdChange">—</span>
         </div>
       </div>
+      <div class="sd-tabs" id="sdTabs" role="tablist" aria-label="Stock details">
+        <button type="button" class="on" data-sd-tab="overview" role="tab" aria-selected="true">Overview</button>
+        <button type="button" data-sd-tab="news" role="tab" aria-selected="false">News</button>
+        <a class="sd-tab-link" id="sdAnalysisLink" href="/stock-analysis.html" target="_self">Full analysis →</a>
+      </div>
+      <div class="sd-news" id="sdNews" hidden></div>
       <div class="stock-metrics-grid" id="sdMetrics"></div>
 
       <!-- Fundamentals -->
@@ -3920,6 +3926,9 @@ input,select,textarea{min-width:0;}
 
   <!-- Top signals: the few strongest tradable setups, rendered by /top-signals.js -->
   <section class="mp-card mp-topsig" id="mpTopSignals" data-home-only="true" hidden aria-label="Top signals"></section>
+
+  <!-- My watchlist: prices, signals and upcoming results for the user's watchlist, rendered by /home-watchlist.js -->
+  <section class="mp-card mp-watch" id="mpWatch" data-home-only="true" hidden aria-label="My watchlist"></section>
 
   <section class="mp-row mp-row-heat" data-home-only="true">
     <div class="mp-card" id="mpHeatmap">
@@ -4601,6 +4610,7 @@ async function toggleWatchlist(symbol) {
       watchlistSymbols.add(cleanSymbol);
     }
     updateStockWatchlistButton();
+    window.mpHomeWatch?.refresh();
     return true;
   } catch (error) {
     console.error('[Watchlist] Could not update watchlist:', error);
@@ -4726,6 +4736,7 @@ async function loadWatchlist() {
         }
         watchlistSymbols.delete(symbol);
         updateStockWatchlistButton();
+        window.mpHomeWatch?.refresh();
         await loadWatchlist();
       });
     });
@@ -5677,6 +5688,7 @@ async function loadUserRole(user) {
   updateAccountUI(user);
   await loadUserProfile();
   await loadWatchlistSymbols();
+  window.mpHomeWatch?.refresh();
   updateAccountUI(user);
 }
 
@@ -7660,6 +7672,21 @@ async function loadStockFundamentals(symbol) {
   }
 }
 
+/* Stock card tabs: Overview (price, fundamentals, chart) and News (/stock-news.js). */
+let sdNewsFor = '';
+function setStockTab(tab) {
+  const news = tab === 'news';
+  stockDetailCard.classList.toggle('sd-news-on', news);
+  document.querySelectorAll('#sdTabs [data-sd-tab]').forEach(b => { const on = b.dataset.sdTab === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+  const host = document.getElementById('sdNews');
+  host.hidden = !news;
+  if (news && sdNewsFor !== selectedStockSymbol && window.mpStockNews) {
+    sdNewsFor = selectedStockSymbol;
+    window.mpStockNews.render(host, { symbol: selectedStockSymbol, name: selectedStockName, client: supabaseClient });
+  }
+}
+document.getElementById('sdTabs').addEventListener('click', e => { const b = e.target.closest('[data-sd-tab]'); if (b) setStockTab(b.dataset.sdTab); });
+
 function renderStockDetail(stock) {
   if (!stock) {
     selectedStockSymbol = '';
@@ -7669,6 +7696,9 @@ function renderStockDetail(stock) {
   }
 
   selectedStockSymbol = String(stock.symbol || '').trim().toUpperCase();
+  setStockTab('overview');
+  const analysisLink = document.getElementById('sdAnalysisLink');
+  if (analysisLink) analysisLink.href = '/stock-analysis.html?symbol=' + encodeURIComponent(selectedStockSymbol);
   sdName.textContent = stock.company_name || stock.name || '—';
   sdSymbol.textContent = stock.symbol || '—';
   selectedStockName = String(stock.company_name || stock.name || '').trim();
@@ -9404,6 +9434,8 @@ if ('serviceWorker' in navigator) {
 <script src="/live-insights.js?v=4"></script>
 <script src="/top-signals.js?v=2"></script>
 <script src="/global-market.js?v=3"></script>
+<script src="/stock-news.js?v=1"></script>
+<script src="/home-watchlist.js?v=1"></script>
 <script src="/auth-extra.js?v=1"></script>
 </body>
 </html>   
