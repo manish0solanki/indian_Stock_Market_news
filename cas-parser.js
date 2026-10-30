@@ -109,11 +109,15 @@
         cur.part = { folio, opening: 0, closing: null, cost: null };
         cur.folios.push(cur.part);
       }
-      if ((m = /Opening Unit Balance\s*:?\s*(\(?-?[\d,]+\.?\d*\)?)/i.exec(line))) cur.part.opening = parseNumber(m[1]);
-      if ((m = /Closing Unit Balance\s*:?\s*(\(?-?[\d,]+\.?\d*\)?)/i.exec(line))) cur.part.closing = parseNumber(m[1]);
-      if ((m = /Cost Value\s*:?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+\.?\d*)/i.exec(line))) cur.part.cost = parseNumber(m[1]);
-      if ((m = /NAV on\s*(\d{2}-[A-Za-z]{3}-\d{4})\s*:?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+\.\d+)/i.exec(line))) { cur.navDate = isoDate(m[1]); cur.nav = parseNumber(m[2]); }
-      if ((m = /Market Value on\s*\S+\s*:?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+\.\d+)/i.exec(line))) cur.part.value = parseNumber(m[1]);
+      // A balance label can end the line with its value at the start of the next one
+      // ("... Total Cost Value:" / "4,25,500.00 Market Value on ..."), so read those with the next line attached.
+      const nextLine = (lines[i + 1] || '').replace(/\s+/g, ' ').trim();
+      const bal = /(Opening Unit Balance|Closing Unit Balance|Cost Value|NAV on\s*\S+|Market Value on\s*\S+)\s*:?\s*(?:INR|Rs\.?|₹)?\s*$/i.test(line) && /^\(?-?[\d,]*\d/.test(nextLine) ? line + ' ' + nextLine : line;
+      if ((m = /Opening Unit Balance\s*:?\s*(\(?-?[\d,]+\.?\d*\)?)/i.exec(bal))) cur.part.opening = parseNumber(m[1]);
+      if ((m = /Closing Unit Balance\s*:?\s*(\(?-?[\d,]+\.?\d*\)?)/i.exec(bal))) cur.part.closing = parseNumber(m[1]);
+      if ((m = /Cost Value\s*:?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+\.?\d*)/i.exec(bal))) cur.part.cost = parseNumber(m[1]);
+      if ((m = /NAV on\s*(\d{2}-[A-Za-z]{3}-\d{4})\s*:?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+\.\d+)/i.exec(bal))) { cur.navDate = isoDate(m[1]); cur.nav = parseNumber(m[2]); }
+      if ((m = /Market Value on\s*\S+\s*:?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+\.\d+)/i.exec(bal))) cur.part.value = parseNumber(m[1]);
 
       const tm = /^(\d{2}-[A-Za-z]{3}-\d{4})\s+(.+)$/.exec(line);
       if (!tm) continue;

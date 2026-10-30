@@ -222,6 +222,12 @@ td small{display:block;color:var(--dim);font-size:11.5px}
  .symbol-suggestions{position:fixed;left:12px;right:12px;max-height:180px;z-index:300}
  .preview{max-height:35vh}
 }
+/* Add-fund modes */
+.mfmode{display:flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--surface2)}
+.mfmode button{flex:1;border:0;background:none;color:var(--muted);font:700 13px inherit;padding:8px 10px;border-radius:8px;cursor:pointer}
+.mfmode button.on{background:var(--accent);color:#fff}
+.mfpreview{padding:10px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);font-size:13px;line-height:1.6}
+.field[hidden],.mfpreview[hidden]{display:none!important}
 /* Returns & tax panel (portfolio-returns.js) */
 .rt-panel{margin-top:16px}
 .rt-panel[hidden]{display:none}
@@ -321,13 +327,15 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 
 <div class="modalbg" id="mfModal"><div class="modal"><div class="modalhead"><h2 id="mfModalTitle">Add mutual fund</h2><button class="close" data-close="mfModal">×</button></div><form id="mfForm"><div class="form"><div class="fields">
 <div class="field full"><label>Fund</label><div class="symbol-wrap"><input id="mfFund" required placeholder="Search fund, e.g. Parag Parikh Flexi Cap" autocomplete="off"><div class="symbol-suggestions" id="mfSuggestions"></div></div><div class="symbol-company-hint" id="mfFundHint"></div></div>
-<div class="field"><label>Type</label><select id="mfType"><option value="BUY">Purchase / SIP instalment</option><option value="SELL">Redemption</option></select></div>
-<div class="field"><label>Date</label><input id="mfDate" type="date" required></div>
-<div class="field"><label>Amount (₹)</label><input id="mfAmount" type="number" min="0" step="any" required></div>
-<div class="field"><label>NAV</label><input id="mfNav" type="number" min="0.0001" step="any" required></div>
-<div class="field"><label>Units</label><input id="mfUnits" type="number" min="0.0001" step="any" required></div>
+<div class="field full"><div class="mfmode" id="mfMode" role="tablist" aria-label="How to add"><button type="button" role="tab" data-mode="tx" class="on" aria-selected="true">One purchase / redemption</button><button type="button" role="tab" data-mode="hold" aria-selected="false">Holding I already own</button></div></div>
+<div class="field" id="mfTypeField"><label>Type</label><select id="mfType"><option value="BUY">Purchase / SIP instalment</option><option value="SELL">Redemption</option></select></div>
+<div class="field"><label id="mfDateLabel">Date</label><input id="mfDate" type="date" required></div>
+<div class="field"><label id="mfAmountLabel">Amount (₹)</label><input id="mfAmount" type="number" min="0" step="any" required></div>
+<div class="field" id="mfNavField"><label>NAV</label><input id="mfNav" type="number" min="0.0001" step="any"></div>
+<div class="field"><label id="mfUnitsLabel">Units</label><input id="mfUnits" type="number" min="0.0001" step="any" required></div>
 <div class="field"><label>Notes</label><input id="mfNotes"></div>
-</div><div class="hint">Pick the fund and date and the NAV for that day fills in by itself. Enter the amount to calculate units, or type the exact units from your statement. Add each SIP instalment as a purchase.</div></div><div class="foot"><button class="btn" type="button" data-close="mfModal">Cancel</button><button class="btn primary" id="saveMf">Save</button></div></form></div></div>
+<div class="field full mfpreview" id="mfPreview" hidden></div>
+</div><div class="hint" id="mfHint">Pick the fund and date and the NAV for that day fills in by itself. Enter the amount to calculate units, or type the exact units from your statement. Add each SIP instalment as a purchase.</div></div><div class="foot"><button class="btn" type="button" data-close="mfModal">Cancel</button><button class="btn primary" id="saveMf">Save</button></div></form></div></div>
 
 <div class="modalbg" id="casModal"><div class="modal"><div class="modalhead"><h2>Import mutual funds from CAS</h2><button class="close" data-close="casModal">×</button></div><div class="form">
 <div class="steps" role="tablist"><button type="button" class="on" data-step="request">1 · Request statement</button><button type="button" data-step="upload">2 · Upload statement</button></div>
@@ -366,7 +374,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/stock-search.js?v=1"></script>
-<script src="/cas-parser.js?v=4"></script>
+<script src="/cas-parser.js?v=5"></script>
 <script src="/portfolio-returns.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -396,6 +404,21 @@ if(window.visualViewport){
  window.visualViewport.addEventListener('resize',syncViewport);
  window.visualViewport.addEventListener('scroll',syncViewport);
 }
+// On phones the search suggestions are position:fixed (so the modal's scroll area can't clip them);
+// place each open list right under its input, above the on-screen keyboard, and keep it there.
+const phoneSugg=matchMedia('(max-width:760px)');
+function placeSuggestions(){
+ if(!phoneSugg.matches)return;
+ document.querySelectorAll('.symbol-suggestions.open').forEach(list=>{
+  const input=list.parentElement&&list.parentElement.querySelector('input');if(!input)return;
+  const r=input.getBoundingClientRect(),vv=window.visualViewport,bottom=vv?vv.offsetTop+vv.height:innerHeight;
+  const below=bottom-r.bottom-12,above=r.top-12;
+  if(below>=140||below>=above){list.style.top=Math.round(r.bottom+4)+'px';list.style.bottom='auto';list.style.maxHeight=Math.max(120,Math.min(260,below))+'px'}
+  else{list.style.top='auto';list.style.bottom=Math.round(innerHeight-r.top+4)+'px';list.style.maxHeight=Math.max(120,Math.min(260,above))+'px'}
+ });
+}
+new MutationObserver(placeSuggestions).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class'],childList:true});
+['scroll','resize'].forEach(ev=>{addEventListener(ev,placeSuggestions,true);if(window.visualViewport)visualViewport.addEventListener(ev,placeSuggestions)});
 document.addEventListener('focusin',e=>{
  if(!e.target.matches('input,select,textarea'))return;
  setTimeout(()=>e.target.scrollIntoView({block:'center',behavior:'smooth'}),120);
@@ -670,8 +693,37 @@ function renderFunds(f,dayCell,pnlCell,weight){
 }
 
 let mfPick=null,mfEditId=null,mfLast='amount',mfSearchT=null,mfSearchId=0,mfNavId=0;
+// Two ways to add: one dated transaction (NAV for that day fills in), or a holding already owned
+// (total invested + units + when invested; average NAV = invested / units, no NAV lookup).
+let mfModeVal='tx';
+function setMfMode(m){
+ mfModeVal=m==='hold'?'hold':'tx';const hold=mfModeVal==='hold';
+ $('mfMode').querySelectorAll('button').forEach(b=>{const on=b.dataset.mode===mfModeVal;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+ $('mfTypeField').hidden=hold;$('mfNavField').hidden=hold;
+ if(hold){$('mfType').value='BUY';if(mfPick)$('mfFundHint').textContent='Scheme code '+mfPick.code}
+ else if(mfPick&&$('mfDate').value&&!mfEditId)fillMfNav();
+ $('mfDateLabel').textContent=hold?'Date you invested':'Date';
+ $('mfAmountLabel').textContent=hold?'Total amount invested (₹)':'Amount (₹)';
+ $('mfUnitsLabel').textContent=hold?'Units you hold':'Units';
+ $('mfHint').innerHTML=hold?'Enter what you <b>paid in total</b> and the <b>units you hold</b>, from your fund app or statement, and roughly <b>when you invested</b> (for SIPs, the date of your first instalment). Your average NAV is worked out from these, and today\'s value and P&amp;L use the latest NAV.'
+  :'Pick the fund and date and the NAV for that day fills in by itself. Enter the amount to calculate units, or type the exact units from your statement. Add each SIP instalment as a purchase.';
+ previewMf();
+}
+// Live preview in holding mode: average NAV, today's value and P&L.
+let mfPrevId=0;
+async function previewMf(){
+ const el=$('mfPreview'),a=num($('mfAmount').value),u=num($('mfUnits').value);
+ if(mfModeVal!=='hold'||!mfPick||!(a>0)||!(u>0)){el.hidden=true;return}
+ const id=++mfPrevId;let q=mfNav[mfPick.code];
+ if(!q){try{const d=await (await fetch(MF_URL+'?codes='+mfPick.code)).json();q=(d.funds||[])[0];if(q&&q.nav)mfNav[mfPick.code]={...q,at:Date.now()}}catch(_){}}
+ if(id!==mfPrevId)return;
+ const avg=a/u,nav=q&&num(q.nav);
+ el.hidden=false;
+ el.innerHTML='Average NAV <b>'+navTxt(avg)+'</b>'+(nav?' · Latest NAV <b>'+navTxt(nav)+'</b>'+(q.nav_date?' ('+esc(fmtDate(q.nav_date))+')':'')+' · Value today <b>'+money(u*nav)+'</b> · P&amp;L <b class="'+tone(u*nav-a)+'">'+signed(u*nav-a)+' ('+pctTxt((u*nav-a)/a*100)+')</b>':' · latest NAV not available yet');
+}
+$('mfMode').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b)setMfMode(b.dataset.mode)});
 function resetMfModal(){
- mfPick=null;mfEditId=null;mfLast='amount';
+ mfPick=null;mfEditId=null;mfLast='amount';setMfMode('tx');
  $('mfForm').reset();$('mfFundHint').textContent='';
  $('mfDate').value=todayLocal();
  $('mfModalTitle').textContent='Add mutual fund';$('saveMf').textContent='Save';
@@ -709,16 +761,19 @@ $('mfSuggestions').addEventListener('mousedown',e=>{
 $('mfFund').addEventListener('blur',()=>setTimeout(()=>$('mfSuggestions').classList.remove('open'),150));
 const round=(n,d)=>Math.round(n*10**d)/10**d;
 function syncMf(){
+ if(mfModeVal==='hold')return previewMf();
  const a=num($('mfAmount').value),n=num($('mfNav').value),u=num($('mfUnits').value);
  if(!n)return;
  if(mfLast==='units'&&u)$('mfAmount').value=round(u*n,2);
  else if(a)$('mfUnits').value=round(a/n,4);
 }
 $('mfAmount').addEventListener('input',()=>{mfLast='amount';syncMf()});
+$('mfDate').addEventListener('input',()=>{if(mfModeVal==='hold')previewMf()});
 $('mfUnits').addEventListener('input',()=>{mfLast='units';syncMf()});
 $('mfNav').addEventListener('input',syncMf);
 $('mfDate').addEventListener('change',fillMfNav);
 async function fillMfNav(){
+ if(mfModeVal==='hold'){previewMf();return}
  if(!mfPick||!$('mfDate').value)return;
  const id=++mfNavId;$('mfFundHint').textContent='Scheme code '+mfPick.code+' · looking up NAV…';
  try{
@@ -735,6 +790,11 @@ $('mfForm').onsubmit=async e=>{
   if(!mfPick)throw Error('Pick a fund from the search list');
   const row={portfolio_id:portfolio.id,user_id:user.id,scheme_code:mfPick.code,scheme_name:mfPick.name,transaction_type:$('mfType').value,
    units:round(num($('mfUnits').value),4),nav:num($('mfNav').value),amount:round(num($('mfAmount').value),2),trade_date:$('mfDate').value,notes:$('mfNotes').value||null};
+  if(mfModeVal==='hold'){
+   if(!(row.amount>0)||!(row.units>0))throw Error('Enter the total amount invested and the units you hold');
+   if(!row.trade_date||row.trade_date>todayLocal())throw Error('Enter the date you invested (not in the future)');
+   row.transaction_type='BUY';row.nav=round(row.amount/row.units,4);row.notes=row.notes||'Holding entry';
+  }
   if(row.units<=0||row.nav<=0)throw Error('Enter the amount and NAV, or the units');
   if(!row.amount)row.amount=round(row.units*row.nav,2);
   if(row.transaction_type==='SELL'&&!mfEditId){const held=buildFunds().find(x=>x.code===row.scheme_code);if(!held||row.units>held.units+0.001)throw Error('You hold '+units(held?held.units:0)+' units of this fund')}
@@ -760,6 +820,8 @@ function editFundTx(id){
  $('mfModalTitle').textContent='Edit fund transaction';$('saveMf').textContent='Save changes';
  $('mfFund').value=t.scheme_name;$('mfFundHint').textContent='Scheme code '+t.scheme_code;
  $('mfType').value=t.transaction_type;$('mfDate').value=t.trade_date;$('mfAmount').value=t.amount;$('mfNav').value=t.nav;$('mfUnits').value=t.units;$('mfNotes').value=t.notes||'';
+ // Holdings added as one entry (CAS snapshot or "Holding I already own") are edited the same way.
+ setMfMode(t.transaction_type==='BUY'&&/holding snapshot|holding entry/i.test(t.notes||'')?'hold':'tx');
  open('mfModal');
 }
 async function deleteFundTx(id){
@@ -829,7 +891,8 @@ $('casRead').onclick=async()=>{
   const inv=casPlan.reduce((a,p)=>a+(p.f.cost||0),0);
   $('casPreview').innerHTML='<div class="caslist">'+plan.map(p=>'<div class="casrow"><div><b>'+esc(fundShort(p.f.name))+'</b>'+(fundPlan(p.f.name)?' <span class="plan">'+esc(fundPlan(p.f.name))+'</span>':'')+
    '<small>'+units(p.f.closing)+' units'+(p.f.cost!=null?' · cost '+money(p.f.cost).replace(/\.\d+$/,''):'')+(p.f.amc?' · '+esc(p.f.amc):'')+'</small></div>'+
-   (!p.sch?'<span class="tag bad">Not matched, skipped</span>':p.f.mode==='transactions'?'<span class="tag good">'+p.rows.length+' transaction'+(p.rows.length===1?'':'s')+'</span>':'<span class="tag" title="Imported as one holding with total units and cost">Holding</span>')+'</div>').join('')+'</div>'+
+   (!p.sch?'<span class="tag bad">Not matched, skipped</span>':p.f.mode==='transactions'?'<span class="tag good">'+p.rows.length+' transaction'+(p.rows.length===1?'':'s')+'</span>':(p.f.cost==null?'<span class="tag bad" title="The statement did not show what you paid, so today\'s value is used as the invested amount. Edit the fund afterwards to enter what you paid.">Holding · cost missing</span>':'<span class="tag" title="Imported as one holding with total units and cost">Holding</span>'))+'</div>').join('')+'</div>'+
+    (plan.some(p=>p.sch&&p.f.mode!=='transactions'&&p.f.cost==null)?'<div class="hint"><b>Cost missing:</b> for funds marked so, the statement didn\'t show the amount you invested, so today\'s value is used and P&amp;L will read about zero. After importing, use <b>Edit</b> on the fund and enter your total invested amount (“Holding I already own”).</div>':'')+
    (plan.some(p=>p.sch&&p.f.kind==='summary')?'<div class="hint">This is a <b>Summary</b> statement, so each fund is added as one holding with its total units and cost, dated '+esc(fmtDate((plan[0].f.period&&plan[0].f.period.to)||todayLocal()))+'. For every purchase and SIP, request the <b>Detailed</b> statement from the earliest date and import it instead.</div>':
     (unknown.length?'<div class="hint" style="color:var(--red)"><b>'+unknown.length+' fund'+(unknown.length===1?'':'s')+' could not be identified and will not be imported</b> ('+unknown.map(f=>esc(String(f.name||'unnamed').slice(0,70))+' · '+units(f.closing)+' units').join('; ')+'). The statement\'s layout around '+(unknown.length===1?'this fund':'these funds')+' wasn\'t recognised; add '+(unknown.length===1?'it':'them')+' with “Add fund” instead.<details style="margin-top:6px"><summary style="cursor:pointer">Show the statement text to get this layout supported (PAN, email, phone, folio numbers and your name/address are masked)</summary><textarea readonly rows="8" style="width:100%;margin-top:6px;font:11px monospace">'+esc(window.mpCas.outline())+'</textarea></details></div>':'')+
     (plan.some(p=>p.sch&&p.f.mode!=='transactions')?'<div class="hint">“Holding snapshot”: the statement doesn\'t go back to this fund\'s first purchase, so its units and cost are added as one entry. Request a CAS from the earliest date to get every transaction.</div>':''));
