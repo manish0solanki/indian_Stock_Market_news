@@ -361,6 +361,9 @@
     const t = s.totals, when = new Date(s.at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     const share = t.value ? t.stocks.value / t.value * 100 : 0;
     const top = [...s.stocks, ...s.funds].sort((a, b) => (b.current || b.cost) - (a.current || a.cost)).slice(0, 4);
+    // Today's change per class, worked out from the holdings so older cached snapshots show it too.
+    const dayOf = (list) => { const d = list.reduce((a, x) => a + (x.day || 0), 0), base = list.reduce((a, x) => a + (x.current || 0), 0) - d; return { day: d, dayPct: base > 0 ? d / base * 100 : null }; };
+    const dayRow = (cls, label, list) => { if (!list.length) return ''; const d = dayOf(list); return `<div class="mp-pf-day"><i class="${cls}"></i><span>${label}</span><b class="${tone(d.day)}">${d.dayPct === null ? '—' : signedInr(d.day) + ' (' + pctTxt(d.dayPct) + ')'}</b></div>`; };
     const part = (cls, label, p) => `<div class="mp-pf-part"><i class="${cls}"></i><span>${label} <em>${p.count}</em></span><b>${inr0(p.value)}</b><small class="${tone(p.pnl)}">${p.pct === null ? '—' : signedInr(p.pnl) + ' · ' + pctTxt(p.pct)}</small></div>`;
     pfHost.innerHTML = head('· as of ' + when) + `
       <div class="mp-pf-grid">
@@ -368,6 +371,7 @@
           <span class="mp-pf-label">Total value</span>
           <div class="mp-pf-value">${inr0(t.value)}</div>
           <span class="mpx-pill ${tone(t.day)}">${signedInr(t.day)} (${pctTxt(t.dayPct)}) today</span>
+          <div class="mp-pf-days">${dayRow('s', 'Stocks today', s.stocks)}${dayRow('f', 'Mutual funds today', s.funds)}</div>
         </div>
         <div class="mp-pf-stats">
           <div><span class="mp-pf-label">Invested</span><b>${inr0(t.invested)}</b></div>

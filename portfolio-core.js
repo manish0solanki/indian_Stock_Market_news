@@ -64,11 +64,13 @@
     const pnlOf = (list) => sum(list, (x) => x.current ? x.current - x.cost : 0);
     const pricedCost = (list) => sum(list, (x) => x.current ? x.cost : 0);
     const day = sum(all, (x) => x.day), pricedValue = sum(all, (x) => x.current);
+    // Day change for one class, as a percent of that class's priced value at the previous close.
+    const dayOf = (list) => { const d = sum(list, (x) => x.day), base = sum(list, (x) => x.current) - d; return { day: d, dayPct: base > 0 ? d / base * 100 : null }; };
     const totals = {
       value: value(all), invested: sum(all, (x) => x.cost), pnl: pnlOf(all), pct: pricedCost(all) ? pnlOf(all) / pricedCost(all) * 100 : 0,
       day, dayPct: pricedValue - day > 0 ? day / (pricedValue - day) * 100 : 0,
-      stocks: { value: value(stocks), invested: sum(stocks, (x) => x.cost), pnl: pnlOf(stocks), pct: pricedCost(stocks) ? pnlOf(stocks) / pricedCost(stocks) * 100 : null, count: stocks.length },
-      funds: { value: value(funds), invested: sum(funds, (x) => x.cost), pnl: pnlOf(funds), pct: pricedCost(funds) ? pnlOf(funds) / pricedCost(funds) * 100 : null, count: funds.length },
+      stocks: { value: value(stocks), invested: sum(stocks, (x) => x.cost), pnl: pnlOf(stocks), pct: pricedCost(stocks) ? pnlOf(stocks) / pricedCost(stocks) * 100 : null, count: stocks.length, ...dayOf(stocks) },
+      funds: { value: value(funds), invested: sum(funds, (x) => x.cost), pnl: pnlOf(funds), pct: pricedCost(funds) ? pnlOf(funds) / pricedCost(funds) * 100 : null, count: funds.length, ...dayOf(funds) },
       priced: all.filter((x) => x.current).length, count: all.length,
     };
     const out = { stocks, funds, totals, at: Date.now() };

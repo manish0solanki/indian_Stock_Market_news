@@ -216,6 +216,12 @@ body { background: var(--bg); padding-top: 0 !important; }
 .mp-pf-total { background: linear-gradient(135deg, color-mix(in srgb, var(--mp-accent) 20%, var(--mp-card)), var(--mp-card-2)) !important; border-color: color-mix(in srgb, var(--mp-accent) 40%, var(--mp-line)) !important; }
 .mp-pf-value { font: 800 28px/1.15 var(--font-body); letter-spacing: -.6px; font-variant-numeric: tabular-nums; }
 .mp-pf-total .mpx-pill { align-self: flex-start; font-size: 12.5px; }
+.mp-pf-days { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--mp-accent) 25%, var(--mp-line)); }
+.mp-pf-day { display: grid; grid-template-columns: 8px 1fr auto; gap: 0 8px; align-items: center; font-size: 12.5px; color: var(--text-muted); }
+.mp-pf-day i { width: 8px; height: 8px; border-radius: 2px; }
+.mp-pf-day i.s { background: #6366f1; } .mp-pf-day i.f { background: #22c55e; }
+.mp-pf-day b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mp-pf-days:empty { display: none; }
 .mp-pf-stats { justify-content: space-around; }
 .mp-pf-stats b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .mp-pf-stats small { font-size: 12px; font-weight: 700; }

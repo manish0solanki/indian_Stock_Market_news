@@ -68,6 +68,10 @@ td .wt{display:block;color:var(--dim);font-size:11px;font-weight:500}
 .split{display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--accent) 25%,var(--border));font-size:12.5px;color:var(--muted)}
 .split b{color:var(--text);font-variant-numeric:tabular-nums}
 .split i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.daysplit{display:flex;gap:4px 14px;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.daysplit:empty{display:none}
+.daysplit b{font-variant-numeric:tabular-nums}
+.daysplit i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .card #pnlPct{font-size:14px;margin-top:2px}
 .green{color:var(--green)}.red{color:var(--red)}.neutral{color:var(--text)}
 .muted{color:var(--muted)}.mono{font-variant-numeric:tabular-nums}
@@ -243,7 +247,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 </div>
 <div id="status" class="status"></div>
 <section class="summary">
- <div class="card hero"><div class="label">Current value</div><div class="value" id="current">₹0</div><div class="heroline"><span class="value" id="dayChange">₹0</span><span>today</span></div><div class="split" id="splitLine"></div></div>
+ <div class="card hero"><div class="label">Current value</div><div class="value" id="current">₹0</div><div class="heroline"><span class="value" id="dayChange">₹0</span><span>today</span></div><div class="daysplit" id="daySplit"></div><div class="split" id="splitLine"></div></div>
  <div class="card"><div class="label">Invested</div><div class="value" id="invested">₹0</div></div>
  <div class="card"><div class="label">Total P&amp;L</div><div class="value" id="pnl">₹0</div><div class="value" id="pnlPct">0.00%</div></div>
  <div class="card"><div class="label">Holdings</div><div class="value" id="holdTotal">0</div><div class="sub" id="holdCount">0 holdings</div></div>
@@ -486,6 +490,10 @@ function render(){
  $('current').textContent=money(cur);
  $('dayChange').textContent=signed(dayChange)+' ('+pctTxt(dayPct)+')';
  $('dayChange').className='value '+tone(dayChange);
+ // Today's change for stocks and mutual funds separately.
+ const dayPart=(col,label,list)=>{if(!list.length)return '';const d=list.reduce((a,x)=>a+(Number.isFinite(x.dayChange)?x.dayChange:0),0),base=list.reduce((a,x)=>a+(Number.isFinite(x.dayChange)&&x.current?x.current:0),0)-d;
+  return '<span><i style="background:'+col+'"></i>'+label+' today <b class="'+tone(d)+'">'+(base>0?signed(d)+' ('+pctTxt(d/base*100)+')':'—')+'</b></span>'};
+ $('daySplit').innerHTML=dayPart('#6366f1','Stocks',h)+dayPart('#22c55e','Mutual funds',f);
  $('pnl').textContent=signed(pnl);$('pnl').className='value '+tone(pnl);
  $('pnlPct').textContent=pctTxt(pct);$('pnlPct').className='value '+tone(pct);
  $('holdTotal').textContent=all.length;
