@@ -21,7 +21,7 @@ button{font:inherit;color:inherit}
 .head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
 .head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
 .sub{font-size:13px;color:var(--muted)}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;min-width:0}
 .stat .l{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
 .stat .v{font-size:22px;font-weight:800;margin-top:3px;letter-spacing:-.4px}
@@ -37,7 +37,7 @@ button{font:inherit;color:inherit}
 .chip.on{color:var(--text);border-color:var(--accent2)}
 .search{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:13.5px Inter,system-ui,sans-serif;min-width:200px}
 .search:focus{outline:none;border-color:var(--accent2)}
-.k-results{background:var(--blue)}.k-dividend{background:var(--green)}.k-corp{background:var(--violet)}.k-buyback{background:var(--amber)}.k-other{background:var(--dim)}
+.k-results{background:var(--blue)}.k-dividend{background:var(--green)}.k-corp{background:var(--violet)}.k-buyback{background:var(--amber)}.k-other{background:var(--dim)}.k-econ{background:#22d3ee}
 
 /* Month grid */
 .cal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -123,6 +123,11 @@ button{font:inherit;color:inherit}
 .links{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;font-weight:600}
 .muted{color:var(--muted)}
 .disc{font-size:11.5px;color:var(--dim);line-height:1.5}
+@media(max-width:1180px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.ev.econ{border-color:rgba(34,211,238,.45)}
+.econ-why{font-size:13.5px;line-height:1.6}
+.linkish{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}.linkish:hover{text-decoration:underline}
+.econ-why li{margin:3px 0}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){
  .day{min-height:74px;padding:4px}
@@ -164,6 +169,7 @@ button{font:inherit;color:inherit}
    <button class="chip on" data-kind="corp"><i class="k-corp"></i>Bonus &amp; splits</button>
    <button class="chip on" data-kind="buyback"><i class="k-buyback"></i>Buybacks</button>
    <button class="chip on" data-kind="other"><i class="k-other"></i>Other</button>
+   <button class="chip on" data-kind="econ"><i class="k-econ"></i>Economy</button>
   </div>
   <div class="seg" id="when" role="group" aria-label="Upcoming or results out" hidden><button data-when="upcoming" class="on">Upcoming</button><button data-when="out">Results out</button></div>
  </div>
@@ -171,7 +177,7 @@ button{font:inherit;color:inherit}
  <section id="calendar"></section>
  <section id="listview" hidden></section>
 
- <p class="note">Events come from NSE's event calendar and corporate actions, refreshed hourly. For tracked stocks (the scanner's 219 stocks) and stocks in portfolios, results are read from the company's NSE filing once it is out, compared with the previous quarter and the same quarter last year, and checked against how the shares moved. The verdict is a rule-based summary of those facts, not a forecast, and trade signals come from the Stock Signals scanner. Nothing here is investment advice.</p>
+ <p class="note">Events come from NSE's event calendar and corporate actions, refreshed hourly. For tracked stocks (the scanner's 219 stocks) and stocks in portfolios, results are read from the company's NSE filing once it is out, compared with the previous quarter and the same quarter last year, and checked against how the shares moved. The verdict is a rule-based summary of those facts, not a forecast, and trade signals come from the Stock Signals scanner. The Economy dates (RBI policy, India CPI and GDP, the Union Budget, US Fed decisions and US CPI) come from the official calendars; dates marked “Expected date” follow the usual schedule and are not yet confirmed. Times are IST. Nothing here is investment advice.</p>
 </main>
 
 <div class="modalbg" id="modalbg" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" id="modal"></div></div>
@@ -192,17 +198,18 @@ const pct=(v,d=1)=>v==null?'—':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(d)+'
 const cls=v=>v>0?'pos':v<0?'neg':'';
 // Event type groups for colour and filters.
 const GROUP={results:'results',dividend:'dividend',bonus:'corp',split:'corp',rights:'corp',buyback:'buyback'};
-const groupOf=e=>GROUP[e.kind]||'other';
-const KIND_LABEL={results:'Results',dividend:'Dividend',bonus:'Bonus',split:'Split',rights:'Rights',buyback:'Buyback',fundraise:'Fund raising',agm:'AGM',board:'Board meeting',action:'Corporate action'};
+const groupOf=e=>e.econ?'econ':GROUP[e.kind]||'other';
+const KIND_LABEL={econ_rbi:'RBI policy',econ_fomc:'US Fed',econ_cpi:'India CPI',econ_gdp:'India GDP',econ_uscpi:'US CPI',econ_budget:'Union Budget',results:'Results',dividend:'Dividend',bonus:'Bonus',split:'Split',rights:'Rights',buyback:'Buyback',fundraise:'Fund raising',agm:'AGM',board:'Board meeting',action:'Corporate action'};
 const VERDICT={positive:['Positive','pos','▲'],negative:['Negative','neg','▼'],mixed:['Mixed','mix','◆']};
 
 let events=[],signals={},held=new Set(),user=null;
 let scope=localStorage.getItem('ev-scope')||'tracked',view=localStorage.getItem('ev-view')||(innerWidth<700?'list':'calendar'),when='upcoming';
-let kinds=new Set(['results','dividend','corp','buyback','other']),query='';
+let kinds=new Set(['results','dividend','corp','buyback','other','econ']),query='';
 let month=istToday().slice(0,7);
 
 function visible(e){
  if(!kinds.has(groupOf(e)))return false;
+ if(e.econ)return !query||(e.symbol+' '+e.title+' '+(e.period||'')).toLowerCase().includes(query.toLowerCase());
  if(scope==='tracked'&&!e.tracked&&!held.has(e.symbol))return false;
  if(scope==='mine'&&!held.has(e.symbol))return false;
  if(query){const q=query.toLowerCase();if(!e.symbol.toLowerCase().includes(q)&&!String(e.company||'').toLowerCase().includes(q))return false}
@@ -210,23 +217,75 @@ function visible(e){
 }
 const vd=e=>e.kind==='results'&&e.outcome&&e.outcome.verdict?e.outcome.verdict:null;
 
+/* ───────── Economic calendar (econ_events, supabase/econ-events.sql) ───────── */
+const FLAG={IN:'🇮🇳',US:'🇺🇸'};
+const ECON={
+ rbi:{short:'RBI',src:['RBI monetary policy','https://www.rbi.org.in/Scripts/AnnualPolicy.aspx'],
+  what:'The RBI Monetary Policy Committee sets the repo rate (the rate at which banks borrow from the RBI) and its stance. The decision and the Governor’s statement come at 10:00 IST on the last day of the meeting.',
+  impact:['A rate cut, or a softer stance, usually helps banks, NBFCs, real estate and autos, and lifts bond prices.','A hike or a hawkish tone tends to weigh on rate-sensitive stocks and can strengthen the rupee.','The RBI’s inflation and GDP forecasts in the statement often move the market as much as the rate itself.']},
+ fomc:{short:'Fed',src:['Federal Reserve FOMC calendar','https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm'],
+  what:'The US Federal Reserve’s FOMC sets the US policy rate. The statement comes at 2 pm New York time, which is late night in India, followed by the Chair’s press conference.',
+  impact:['US rate cuts tend to bring foreign money (FII flows) into emerging markets like India, and support IT and metals.','Hikes or a hawkish message can pull FII money out, weaken the rupee and pressure Indian stocks the next morning.','Watch GIFT Nifty after the decision for the likely opening the next day.']},
+ cpi:{short:'CPI',src:['MoSPI release calendar','https://www.mospi.gov.in/'],
+  what:'Consumer price inflation for India, released by MoSPI around 16:00 IST on the 12th of each month (the next working day if that is a holiday).',
+  impact:['Inflation below the RBI’s 4% target makes rate cuts more likely, which is good for banks, NBFCs and rate-sensitive sectors.','Inflation near or above 6% (the top of the RBI band) raises the chance of hikes and usually weighs on the market.','Food and fuel prices drive most of the monthly swings; core inflation shows the underlying trend.']},
+ gdp:{short:'GDP',src:['MoSPI release calendar','https://www.mospi.gov.in/'],
+  what:'India’s quarterly GDP growth, released by MoSPI at 16:00 IST, about two months after the quarter ends.',
+  impact:['Growth above expectations supports cyclical sectors such as banks, capital goods, autos and cement.','A slowdown can raise hopes of RBI support but usually hurts earnings expectations.','The release comes after market hours, so the reaction shows the next trading day.']},
+ uscpi:{short:'US CPI',src:['BLS CPI release schedule','https://www.bls.gov/schedule/news_release/cpi.htm'],
+  what:'US consumer price inflation from the Bureau of Labor Statistics, at 8:30 am New York time (18:00 or 19:00 IST, depending on US daylight saving).',
+  impact:['Hotter-than-expected US inflation pushes back Fed rate cuts, strengthens the dollar and can pull FII money out of India.','Softer inflation raises hopes of Fed cuts and tends to help Indian IT stocks and the rupee.','It lands during the evening in India, so it moves GIFT Nifty and the next day’s open.']},
+ budget:{short:'Budget',src:['Union Budget','https://www.indiabudget.gov.in/'],
+  what:'The Finance Minister presents the Union Budget in Parliament at 11:00 IST: government spending, borrowing and tax changes for the coming year.',
+  impact:['Higher capital spending usually helps infrastructure, capital goods, railways, defence and cement.','Tax changes (income tax, capital gains, STT) can move the whole market on the day.','The fiscal deficit target and borrowing plan matter for bond yields and banks.']},
+};
+function econEvent(r){
+ const k=ECON[r.kind]||{short:r.kind};
+ return {id:'econ:'+r.id,econ:true,tracked:true,country:r.country,ekind:r.kind,kind:'econ_'+r.kind,symbol:(FLAG[r.country]||'')+' '+k.short,event_date:r.event_date,
+  title:r.title,period:r.period,time:r.time_ist,confirmed:r.confirmed,previous:r.previous,actual:r.actual,note:r.note};
+}
+const daysTo=d=>Math.round((Date.parse(d)-Date.parse(istToday()))/864e5);
+const whenTxt=d=>{const n=daysTo(d);return n===0?'today':n===1?'tomorrow':n>1?'in '+n+' days':n===-1?'yesterday':-n+' days ago'};
+function econRow(e){
+ const tags=[];
+ if(e.actual)tags.push('<span class="pill">Actual '+esc(e.actual)+'</span>');
+ if(!e.confirmed)tags.push('<span class="pill" title="Follows the usual schedule; not confirmed from the official calendar">Expected date</span>');
+ return '<button class="row" data-id="'+esc(e.id)+'"><span class="dot k-econ"></span><span class="nm"><b>'+esc(e.symbol)+'</b> <span class="muted">· '+esc(e.title)+(e.time?' · '+esc(e.time)+' IST':'')+'</span><small>'+esc(e.period||'')+'</small></span><span class="tags">'+tags.join('')+'</span></button>';
+}
+function econDetail(e){
+ const k=ECON[e.ekind]||{},up=e.event_date>=istToday();
+ let body='<div class="kv"><div><span>Date</span><b>'+fmtDay(e.event_date,{weekday:'short',day:'numeric',month:'short',year:'numeric'})+'</b></div><div><span>Time</span><b>'+(e.time?esc(e.time)+' IST':'—')+'</b></div><div><span>For</span><b>'+esc(e.period||'—')+'</b></div><div><span>When</span><b>'+whenTxt(e.event_date)+'</b></div>'+
+  (e.previous?'<div><span>Previous</span><b>'+esc(e.previous)+'</b></div>':'')+(e.actual?'<div><span>Actual</span><b>'+esc(e.actual)+'</b></div>':'')+'</div>';
+ if(!e.confirmed)body+='<div class="advice info" style="margin-top:10px">'+(e.note?esc(e.note)+' ':'')+'This date follows the usual schedule but was not confirmed from the official calendar; check the source below before relying on it.</div>';
+ else if(e.note)body+='<div class="advice info" style="margin-top:10px">'+esc(e.note)+'</div>';
+ body+='<div class="sec"><h3>What it is</h3><div class="econ-why">'+esc(k.what||'')+'</div></div>';
+ body+='<div class="sec"><h3>'+(up?'How it can move Indian markets':'Why it mattered')+'</h3><ul class="econ-why">'+(k.impact||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
+ body+='<div class="links">'+(k.src?'<a href="'+esc(k.src[1])+'" target="_blank" rel="noopener">'+esc(k.src[0])+' ↗</a>':'')+'</div><div class="disc">Schedule from the official calendars; dates can change. General information, not advice.</div>';
+ $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle">'+esc(e.title)+'</h2><div class="co">'+esc(e.symbol)+' · '+esc(e.period||'')+'</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody">'+body+'</div>';
+ $('modalbg').classList.add('open');$('modalbg').setAttribute('aria-hidden','false');
+ $('mClose').focus();
+}
+
 /* ───────── Summary cards ───────── */
 function renderStats(){
- const t=istToday(),wk=addDays(t,7),inScope=events.filter(e=>scope==='all'||e.tracked||held.has(e.symbol));
+ const t=istToday(),wk=addDays(t,7),inScope=events.filter(e=>!e.econ&&(scope==='all'||e.tracked||held.has(e.symbol)));
+ const nextEcon=events.filter(e=>e.econ&&e.event_date>=t).slice(0,3);
  const thisWeek=inScope.filter(e=>e.kind==='results'&&e.event_date>=t&&e.event_date<=wk);
  const out=inScope.filter(e=>vd(e));
  const c=k=>out.filter(e=>vd(e).label===k).length;
  const divs=inScope.filter(e=>e.kind==='dividend'&&e.event_date>=t&&e.event_date<=wk&&e.id.endsWith('-ex'));
- const mine=events.filter(e=>held.has(e.symbol)&&e.event_date>=t&&e.event_date<=addDays(t,30));
+ const mine=events.filter(e=>!e.econ&&held.has(e.symbol)&&e.event_date>=t&&e.event_date<=addDays(t,30));
  $('stats').innerHTML=
   '<div class="stat"><div class="l">Results this week</div><div class="v">'+thisWeek.length+'</div><div class="s">'+(thisWeek.length?thisWeek.slice(0,3).map(e=>'<span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span>').join(', ')+(thisWeek.length>3?'…':''):'None scheduled')+'</div></div>'+
   '<div class="stat"><div class="l">Results out (3 weeks)</div><div class="v">'+out.length+'</div><div class="s"><span class="pos">'+c('positive')+' positive</span> · <span class="neg">'+c('negative')+' negative</span> · '+c('mixed')+' mixed</div></div>'+
   '<div class="stat"><div class="l">Dividends going ex this week</div><div class="v">'+divs.length+'</div><div class="s">'+(divs.length?divs.slice(0,3).map(e=>'<span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span>').join(', '):'None')+'</div></div>'+
-  '<div class="stat"><div class="l">Your portfolio, next 30 days</div><div class="v">'+(user?mine.length:'—')+'</div><div class="s">'+(user?(mine.length?mine.slice(0,3).map(e=>'<span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span> '+fmtDay(e.event_date,{day:'numeric',month:'short'})).join(', '):'No events for your stocks'):'<a href="/?login=1">Log in</a> to see yours')+'</div></div>';
+  '<div class="stat"><div class="l">Your portfolio, next 30 days</div><div class="v">'+(user?mine.length:'—')+'</div><div class="s">'+(user?(mine.length?mine.slice(0,3).map(e=>'<span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span> '+fmtDay(e.event_date,{day:'numeric',month:'short'})).join(', '):'No events for your stocks'):'<a href="/?login=1">Log in</a> to see yours')+'</div></div>'+
+  '<div class="stat"><div class="l">Next economy events</div><div class="v" style="font-size:17px">'+(nextEcon[0]?'<button class="linkish" data-id="'+esc(nextEcon[0].id)+'">'+esc(nextEcon[0].symbol)+'</button> <span style="font-size:13px;font-weight:600;color:var(--muted)">'+whenTxt(nextEcon[0].event_date)+'</span>':'—')+'</div><div class="s">'+(nextEcon.length?nextEcon.map(e=>'<span data-id="'+esc(e.id)+'" class="linkish">'+esc(e.symbol)+' '+fmtDay(e.event_date,{day:'numeric',month:'short'})+'</span>').join(', '):'None scheduled')+'</div></div>';
 }
 
 /* ───────── Calendar ───────── */
 function chip(e){
+ if(e.econ)return '<button class="ev econ" data-id="'+esc(e.id)+'" title="'+esc(e.title+' · '+(e.period||'')+(e.time?' · '+e.time+' IST':''))+'"><i class="k-econ"></i><b>'+esc(e.symbol)+'</b></button>';
  const v=vd(e),vv=v&&VERDICT[v.label];
  return '<button class="ev" data-id="'+esc(e.id)+'" title="'+esc(e.symbol+' · '+(KIND_LABEL[e.kind]||e.kind)+(v?' · '+vv[0]:''))+'"><i class="k-'+groupOf(e)+'"></i><b>'+esc(e.symbol)+'</b>'+(vv?'<span class="vd '+vv[1]+'">'+vv[2]+'</span>':'')+'</button>';
 }
@@ -239,7 +298,7 @@ function renderCalendar(){
  for(let i=0;i<42;i++){
   const d=new Date(gridStart.getTime()+i*864e5).toISOString().slice(0,10);
   if(i>=35&&d.slice(0,7)!==month)break;
-  const list=(byDay[d]||[]).sort((a,b)=>(b.tracked-a.tracked)||(groupOf(a)==='results'?-1:1)||a.symbol.localeCompare(b.symbol));
+  const list=(byDay[d]||[]).sort((a,b)=>(!!b.econ-!!a.econ)||(b.tracked-a.tracked)||(groupOf(a)==='results'?-1:1)||a.symbol.localeCompare(b.symbol));
   const cap=innerWidth<700?2:4;
   cells+='<div class="day'+(d.slice(0,7)!==month?' out':'')+(d===t?' today':'')+'"><div class="dn">'+Number(d.slice(8))+(list.length?'<em>'+list.length+'</em>':'')+'</div>'+
    list.slice(0,cap).map(chip).join('')+(list.length>cap?'<button class="more" data-day="'+d+'">+'+(list.length-cap)+' more</button>':'')+'</div>';
@@ -251,6 +310,7 @@ function renderCalendar(){
 
 /* ───────── List ───────── */
 function rowHtml(e){
+ if(e.econ)return econRow(e);
  const v=vd(e),vv=v&&VERDICT[v.label],s=signals[e.symbol];
  const r=e.outcome&&e.outcome.reaction;
  const tags=[];
@@ -271,7 +331,7 @@ function renderList(){
  }else{
   const up=vis.filter(e=>e.event_date>=t),by={};
   for(const e of up)(by[e.event_date]||(by[e.event_date]=[])).push(e);
-  groups=Object.keys(by).sort().slice(0,30).map(d=>[(d===t?'Today':d===addDays(t,1)?'Tomorrow':fmtDay(d,{weekday:'long',day:'numeric',month:'long'})),by[d].sort((a,b)=>(b.tracked-a.tracked)||a.symbol.localeCompare(b.symbol)),d]);
+  groups=Object.keys(by).sort().slice(0,30).map(d=>[(d===t?'Today':d===addDays(t,1)?'Tomorrow':fmtDay(d,{weekday:'long',day:'numeric',month:'long'})),by[d].sort((a,b)=>(!!b.econ-!!a.econ)||(b.tracked-a.tracked)||a.symbol.localeCompare(b.symbol)),d]);
   if(!groups.length){$('listview').innerHTML='<div class="empty">No upcoming events match these filters.</div>';return}
  }
  $('listview').innerHTML='<div class="list">'+groups.map(([h,list])=>'<div class="dayblock"><h3>'+esc(h)+'<span>'+list.length+' event'+(list.length===1?'':'s')+'</span></h3>'+list.slice(0,80).map(rowHtml).join('')+(list.length>80?'<div class="muted" style="padding:8px 14px">'+(list.length-80)+' more: narrow the filters or search.</div>':'')+'</div>').join('')+'</div>';
@@ -327,6 +387,7 @@ function signalBlock(e){
  return html+'</div>';
 }
 function detail(e){
+ if(e.econ)return econDetail(e);
  const t=istToday(),o=e.outcome,v=vd(e),pre=e.pre,upcoming=e.event_date>=t;
  let body='<div class="kv"><div><span>Date</span><b>'+fmtDay(e.event_date,{weekday:'short',day:'numeric',month:'short',year:'numeric'})+'</b></div><div><span>Type</span><b>'+esc(KIND_LABEL[e.kind]||e.kind)+'</b></div>'+
   (e.kind==='dividend'&&e.amount?'<div><span>Dividend</span><b>'+inr(e.amount)+' / share</b></div>':'')+
@@ -396,9 +457,10 @@ async function load(){
   if(error){$('calendar').innerHTML='<div class="empty">Events could not load. Please try again shortly.</div>';return}
   all.push(...(data||[]));if(!data||data.length<1000)break;
  }
- events=[...new Map(all.map(e=>[e.id,e])).values()]; // one row per event, whatever the paging returned
+ const econ=await sb.from('econ_events').select('*').order('event_date').then(r=>r.data||[]).catch(()=>[]);
+ events=[...new Map(all.map(e=>[e.id,e])).values()].concat(econ.map(econEvent)).sort((a,b)=>a.event_date.localeCompare(b.event_date)); // one row per event, whatever the paging returned
  const latest=all.map(e=>e.outcome_at).filter(Boolean).sort().pop();
- $('asOf').textContent='NSE results, dividends, bonus issues, splits and buybacks · '+all.length.toLocaleString('en-IN')+' events'+(latest?' · numbers updated '+new Date(latest).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'')+'. Click any event for the details.';
+ $('asOf').textContent='NSE results, dividends, bonus issues, splits and buybacks, plus RBI, Fed, CPI, GDP and Budget dates · '+all.length.toLocaleString('en-IN')+' events'+(latest?' · numbers updated '+new Date(latest).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'')+'. Click any event for the details.';
  render();
  const feed=await sb.rpc('stock_signals_feed').then(r=>r.data).catch(()=>null);
  for(const s of (feed&&feed.signals)||[])signals[String(s.symbol).toUpperCase()]=s;

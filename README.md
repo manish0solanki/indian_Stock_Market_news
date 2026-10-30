@@ -79,6 +79,7 @@
 - Data: the `option-chain` Edge Function (NSE's option-chain API, cached a minute). Refreshes every minute in market hours.
 
 ### 📅 Events Calendar (`events.html`)
+- **Economy events** alongside company events: RBI policy decisions, India CPI and GDP, the Union Budget, US Fed (FOMC) decisions and US CPI, with IST times, what each one is and how it tends to move Indian markets. Kept in `econ_events` (`supabase/econ-events.sql`); dates not read from the official calendar are marked "Expected date". Add new dates (e.g. the next RBI or Fed calendar) by extending that file and re-running it.
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
 - **After results**, each company gets:
   - the quarter's numbers vs the previous quarter and a year ago (from NSE's XBRL filings)
@@ -233,7 +234,7 @@ The main tables:
 | Signals | `stock_signals`, `stock_signals_feed()`, `stock_signals_top()` (`supabase/stock-signals-top.sql`), `stock_paper_accounts`, `stock_paper_trades` |
 | Screener | `stock_screener()`, `mp_broad_sector()` (`supabase/stock-screener.sql`) |
 | Fundamentals | `stock_fundamentals_cache` (`supabase/stock-fundamentals-schema.sql`) |
-| Events / IPO | `market_events` (`events-schema.sql`), `ipos` (`ipo-schema.sql`) |
+| Events / IPO | `market_events` (`events-schema.sql`), `econ_events` (`supabase/econ-events.sql`), `ipos` (`ipo-schema.sql`) |
 | Users | `profiles` (users can only edit their name and photo), `portfolios`, `portfolio_transactions`, `portfolio_mf_transactions`, `watchlist`, `stock_alerts`, `user_ticker` |
 | Crypto | `crypto_signals`, `crypto_trades`, `crypto_shadow_trades`, `crypto_bot_settings`, `crypto_bot_status`, `crypto_bot_runs`, `crypto_wallet_transactions`, `crypto_reset_trading()` |
 | Internal | `app_secrets` (cron shared secret), `feed_state` |
