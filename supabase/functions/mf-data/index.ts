@@ -5,8 +5,10 @@
 //   ?code=122639&date=2026-10-15 -> NAV on that date, or the last NAV before it
 //   ?isins=INF879O01027,...  -> scheme code and name per ISIN (max 100), from AMFI's daily NAV file;
 //                               used when importing a CAS statement, which lists funds by ISIN
-// If mfapi.in can't give a scheme's NAV, AMFI's file supplies the latest NAV (without the previous day's).
-// Responses are cached in memory for 15 minutes (NAVs change once a day).
+// AMFI's file gets each evening's NAV hours before mfapi.in (which often catches up next morning), so when
+// AMFI has a newer NAV it becomes the latest and mfapi's newest becomes the previous one. If mfapi.in can't
+// give a scheme's NAV at all, AMFI supplies the latest NAV (without the previous day's).
+// Responses are cached in memory for 15 minutes; AMFI's file for 30 minutes.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,12 +63,14 @@ async function latest(code: string) {
   };
 }
 
-// AMFI NAVAll.txt: "Scheme Code;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Scheme Name;NAV;Date"
-// One file with every scheme's latest NAV: maps ISINs to scheme codes, and backs up mfapi.in.
+// AMFI NAVAll.txt: "Scheme Code;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Scheme Name;NAV;Date".
+// The name can itself contain ';' (e.g. "HDFC Money Market Fund;Direct Plan;Growth Option"), so the NAV
+// and date are read from the end of the line and everything in between is the name.
+// One file with every scheme's latest NAV: maps ISINs to scheme codes, and backs up / updates mfapi.in.
 type AmfiRow = { code: string; name: string; nav: number | null; date: string | null };
 let amfi: { at: number; byIsin: Map<string, AmfiRow>; byCode: Map<string, AmfiRow> } | null = null;
 async function getAmfi() {
-  if (amfi && Date.now() - amfi.at < 6 * 3600e3) return amfi;
+  if (amfi && Date.now() - amfi.at < 30 * 60e3) return amfi;
   const res = await fetch("https://www.amfiindia.com/spages/NAVAll.txt");
   if (!res.ok) throw new Error("AMFI HTTP " + res.status);
   const byIsin = new Map<string, AmfiRow>(), byCode = new Map<string, AmfiRow>();
@@ -74,9 +78,10 @@ async function getAmfi() {
   for (const line of (await res.text()).split(/\r?\n/)) {
     const f = line.split(";");
     if (f.length < 6 || !/^\d+$/.test(f[0].trim())) continue;
-    const d = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/.exec(f[5].trim());
-    const nav = Number(f[4]);
-    const v = { code: f[0].trim(), name: f[3].trim(), nav: nav > 0 ? nav : null, date: d ? `${d[3]}-${MON[d[2].toLowerCase()]}-${d[1]}` : null };
+    const d = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/.exec(f[f.length - 1].trim());
+    const nav = Number(f[f.length - 2]);
+    const name = f.slice(3, f.length - 2).map((x) => x.trim()).filter((x) => x && x !== "-").join(" - ");
+    const v = { code: f[0].trim(), name, nav: nav > 0 ? nav : null, date: d ? `${d[3]}-${MON[d[2].toLowerCase()]}-${d[1]}` : null };
     byCode.set(v.code, v);
     for (const isin of [f[1], f[2]]) if (/^IN[A-Z0-9]{10}$/.test(isin.trim())) byIsin.set(isin.trim(), v);
   }
@@ -91,12 +96,15 @@ async function latestAll(codes: string[]) {
     out.push(...await Promise.all(codes.slice(i, i + 4).map((c) =>
       latest(c).catch(() => latest(c)).catch(() => ({ code: c, nav: null } as Record<string, unknown>)))));
   }
-  const missing = out.filter((f) => !f.nav);
-  if (missing.length) {
-    const { byCode } = await getAmfi().catch(() => ({ byCode: new Map<string, AmfiRow>() }));
-    for (const f of missing) {
-      const a = byCode.get(String(f.code));
-      if (a?.nav) Object.assign(f, { name: f.name || a.name, nav: a.nav, nav_date: a.date, prev_nav: null, prev_date: null, source: "amfi" });
+  const { byCode } = await getAmfi().catch(() => ({ byCode: new Map<string, AmfiRow>() }));
+  for (const f of out) {
+    const a = byCode.get(String(f.code));
+    if (!a?.nav || !a.date) continue;
+    if (!f.nav) {
+      Object.assign(f, { name: f.name || a.name, nav: a.nav, nav_date: a.date, prev_nav: null, prev_date: null, source: "amfi" });
+    } else if (a.date > String(f.nav_date || "")) {
+      // AMFI already has a newer NAV: today's change is AMFI's NAV vs mfapi's latest.
+      Object.assign(f, { prev_nav: f.nav, prev_date: f.nav_date, nav: a.nav, nav_date: a.date, source: "amfi" });
     }
   }
   return out;
