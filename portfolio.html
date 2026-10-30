@@ -225,6 +225,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 </style>
 <link rel="stylesheet" href="/site-header.css">
 <script src="/site-header.js"></script>
+<script src="/refresh-stamp.js?v=1"></script>
 </head>
 <body>
 <div id="mpHeader"></div>
@@ -388,6 +389,8 @@ async function refreshLivePrices(){
  }
 }
 
+// Tapping the "Updated …" pill (refresh-stamp.js) refreshes prices and NAVs at once.
+window.mpRefreshNow=async()=>{if(!portfolio)return;await Promise.allSettled([loadPrices(),loadFunds()]);render()};
 function startLivePriceRefresh(){
  if(priceRefreshTimer)clearInterval(priceRefreshTimer);
  priceRefreshTimer=setInterval(refreshLivePrices,30000);
@@ -492,8 +495,10 @@ function render(){
  $('dayChange').className='value '+tone(dayChange);
  // Today's change for stocks and mutual funds separately.
  const dayPart=(col,label,list)=>{if(!list.length)return '';const d=list.reduce((a,x)=>a+(Number.isFinite(x.dayChange)?x.dayChange:0),0),base=list.reduce((a,x)=>a+(Number.isFinite(x.dayChange)&&x.current?x.current:0),0)-d;
-  return '<span><i style="background:'+col+'"></i>'+label+' today <b class="'+tone(d)+'">'+(base>0?signed(d)+' ('+pctTxt(d/base*100)+')':'—')+'</b></span>'};
- $('daySplit').innerHTML=dayPart('#6366f1','Stocks',h)+dayPart('#22c55e','Mutual funds',f);
+  return '<span><i style="background:'+col+'"></i>'+label+' <b class="'+tone(d)+'">'+(base>0?signed(d)+' ('+pctTxt(d/base*100)+')':'—')+'</b></span>'};
+ // Funds publish one NAV a day (in the evening), so their "today" is the move to the latest NAV date.
+ const navDay=f.map(x=>x.navDate).filter(Boolean).sort().pop();
+ $('daySplit').innerHTML=dayPart('#6366f1','Stocks today',h)+dayPart('#22c55e',navDay?'Mutual funds · NAV '+fmtDate(navDay):'Mutual funds today',f);
  $('pnl').textContent=signed(pnl);$('pnl').className='value '+tone(pnl);
  $('pnlPct').textContent=pctTxt(pct);$('pnlPct').className='value '+tone(pct);
  $('holdTotal').textContent=all.length;

@@ -3382,6 +3382,7 @@ input,select,textarea{min-width:0;}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 </style>
 <link rel="stylesheet" href="/home-overview.css?v=12">
+<script src="/refresh-stamp.js?v=1"></script>
 </head>
 <body>
 
@@ -9402,6 +9403,8 @@ setInterval(loadBreadth, REFRESH_MS * 5);
 setInterval(loadFiiDii, REFRESH_MS * 12);
 setInterval(loadHeatmap, REFRESH_MS * 2);
 setInterval(loadGlobalIndices, REFRESH_MS);
+// Tapping the "Updated …" pill (refresh-stamp.js) reloads the main live data at once.
+window.mpRefreshNow = () => Promise.allSettled([loadPrices(), loadIndices(), loadSectorIndices(), loadHeatmap(), loadGlobalIndices()]);
 
 // Close dropdown on outside click
 document.addEventListener('click', (e) => {
@@ -9415,8 +9418,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
-<script src="/portfolio-core.js?v=3"></script>
+<script src="/portfolio-core.js?v=4"></script>
 <script src="/my-ticker.js?v=2"></script>
-<script src="/home-overview.js?v=8"></script>
+<script src="/home-overview.js?v=9"></script>
 </body>
 </html>   

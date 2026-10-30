@@ -52,7 +52,7 @@
       const x = n[f.key] || {}, nav = num(x.nav), prev = num(x.prev_nav);
       const name = x.name || f.row.scheme_name || f.key;
       const current = nav ? f.qty * nav : 0;
-      return { kind: 'fund', id: f.key, name: String(name).split(/\s+-\s+/)[0], longName: name, category: x.category || '', qty: f.qty, cost: f.cost, price: nav, current,
+      return { kind: 'fund', id: f.key, name: String(name).split(/\s+-\s+/)[0], longName: name, category: x.category || '', navDate: x.nav_date || '', qty: f.qty, cost: f.cost, price: nav, current,
         day: nav && prev ? f.qty * (nav - prev) : 0, dayPct: nav && prev ? (nav - prev) / prev * 100 : null,
         pnl: current ? current - f.cost : 0, pct: current && f.cost ? (current - f.cost) / f.cost * 100 : null };
     });
