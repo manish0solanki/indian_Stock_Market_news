@@ -1,5 +1,7 @@
 // Writes the commentary paragraphs with Moonshot (Kimi), using only the supplied facts.
-// Needs MOONSHOT_API_KEY; the model is MOONSHOT_MODEL (default kimi-k2.6, comma-separate to add fallbacks).
+// Needs MOONSHOT_API_KEY; the model is MOONSHOT_MODEL (default kimi-k3, then kimi-k3.1-pro and kimi-k2.6 as fallbacks).
+// kimi-k3 was the fastest good writer in the Blog AI check (about 20s); all of these "think" first, so they
+// need a large max_tokens or the reasoning uses it all up and no text comes back.
 // Every number in the AI's text must match a number in the facts; otherwise the post falls
 // back to the plain-language paragraphs built from the data, so nothing invented gets published.
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -19,7 +21,7 @@ async function callMoonshot(key, model, prompt) {
       ],
       // kimi-k2.x models only accept temperature 1; extra tokens leave room for their reasoning.
       temperature: Number(process.env.MOONSHOT_TEMPERATURE || 1),
-      max_tokens: 3000,
+      max_tokens: Number(process.env.MOONSHOT_MAX_TOKENS || 12000),
     }),
   });
   const d = await res.json().catch(() => ({}));
@@ -29,7 +31,7 @@ async function callMoonshot(key, model, prompt) {
 function providers() {
   const list = [];
   if (process.env.MOONSHOT_API_KEY) {
-    for (const m of (process.env.MOONSHOT_MODEL || "kimi-k2.6").split(",")) list.push({ name: "moonshot:" + m.trim(), call: (p) => callMoonshot(process.env.MOONSHOT_API_KEY, m.trim(), p) });
+    for (const m of (process.env.MOONSHOT_MODEL || "kimi-k3,kimi-k3.1-pro,kimi-k2.6").split(",")) list.push({ name: "moonshot:" + m.trim(), call: (p) => callMoonshot(process.env.MOONSHOT_API_KEY, m.trim(), p) });
   }
   return list;
 }
