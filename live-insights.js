@@ -46,6 +46,7 @@
   function showBlogs() {
     if (mode === 'blog') return;
     mode = 'blog'; lastRun = '';
+    if (speech.state !== 'idle') stopSpeech();
     if (typeof loadLatestBlogSnapshots === 'function') loadLatestBlogSnapshots(); // pick up articles published since the page loaded
     live.hidden = true; grid.hidden = false;
     section.classList.remove('li-live');
@@ -54,11 +55,14 @@
     if (allLink) { allLink.textContent = 'View all articles →'; allLink.href = '/blog/'; }
   }
 
+  let lastRows = null, lastClosed = false;
   function render(rows, closed) {
+    lastRows = rows; lastClosed = closed;
     const runs = [];
     rows.forEach((r) => { let run = runs.find((x) => x.id === r.run_id); if (!run) runs.push(run = { id: r.run_id, at: r.created_at, items: [] }); run.items.push(r); });
     const latest = runs[0];
     latest.items.sort((a, b) => a.sort - b.sort);
+    latestBatch = latest;
     mode = 'live';
     section.classList.add('li-live');
     grid.hidden = true; live.hidden = false;
@@ -80,10 +84,10 @@
       .map((p) => { const v = Number(p.data?.nifty_pct); return `<span class="li-tick ${v >= 0 ? 'up' : 'down'}"><b>${esc(p.data?.at || hhmm(p.created_at))}</b>${Number.isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%' : '—'}</span>`; });
     live.innerHTML =
       (closed
-        ? `<div class="li-asof closed"><span>Market closed · final insights as of <b>${hhmm(latest.at)} IST</b></span><span class="li-next">Today's Daily Wrap will appear here once published</span></div>`
-        : `<div class="li-asof"><span class="li-dot" aria-hidden="true"></span><span>Insights as of <b>${hhmm(latest.at)} IST</b> <span class="li-age" data-at="${esc(latest.at)}">${ago(latest.at)}</span></span><span class="li-next">Next update around ${nextTxt}</span></div>`) +
-      `<div class="li-grid">${shown.map((r) => `
-        <article class="li-card li-${esc(r.tone)} li-k-${esc(r.kind)}">
+        ? `<div class="li-asof closed"><span>Market closed · final insights as of <b>${hhmm(latest.at)} IST</b></span><span class="li-next">Today's Daily Wrap will appear here once published</span>${listenControls()}</div>`
+        : `<div class="li-asof"><span class="li-dot" aria-hidden="true"></span><span>Insights as of <b>${hhmm(latest.at)} IST</b> <span class="li-age" data-at="${esc(latest.at)}">${ago(latest.at)}</span></span><span class="li-next">Next update around ${nextTxt}</span>${listenControls()}</div>`) +
+      `<div class="li-grid">${shown.map((r, i) => `
+        <article class="li-card li-${esc(r.tone)} li-k-${esc(r.kind)}${speech.state !== 'idle' && speech.card === i ? ' li-reading' : ''}" data-i="${i}">
           <div class="li-top"><span class="li-ico" aria-hidden="true">${ICON[r.kind] || '•'}</span><h3>${esc(r.title)}</h3></div>
           ${r.body ? `<p>${esc(r.body)}</p>` : ''}${chips(r)}
         </article>`).join('')}</div>` +
@@ -92,6 +96,73 @@
       '<div class="li-note">Generated automatically from live prices every 15 minutes. Information only, not investment advice.</div>';
     live.querySelector('.li-more')?.addEventListener('click', () => { expanded = !expanded; render(rows, closed); });
   }
+
+  /* ───────── Read aloud (browser speech engine, same as the blog's Listen button) ───────── */
+  const tts = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined' ? window.speechSynthesis : null;
+  let latestBatch = null;
+  // queue: [{ text, card }] where card is the insight's index in the batch (-1 for the intro).
+  const speech = { state: 'idle', queue: [], idx: 0, token: 0, card: -1 };
+  let voice = null;
+  const pickVoice = () => { const v = tts ? tts.getVoices() : []; voice = v.find((x) => /en[-_]IN/i.test(x.lang)) || v.find((x) => /^en[-_]GB/i.test(x.lang)) || v.find((x) => /^en/i.test(x.lang)) || null; };
+  if (tts) { pickVoice(); tts.addEventListener?.('voiceschanged', pickVoice); }
+  const readSpeed = () => { try { return Number(localStorage.getItem('mp-ra-speed')) || 1; } catch (_) { return 1; } };
+  // Figures as they should sound: ₹ -> rupees, −0.4% -> minus 0.4%, 3.0× -> 3.0 times, 14:56 IST -> 14:56.
+  const speakable = (t) => String(t || '').replace(/\s+/g, ' ').trim()
+    .replace(/₹\s?/g, 'rupees ').replace(/\bCr\b\.?/g, 'crore')
+    .replace(/(^|[\s(])[−-](?=\d)/g, '$1minus ').replace(/(^|[\s(])\+(?=\d)/g, '$1plus ')
+    .replace(/(\d)\s?[x×](?=\W|$)/g, '$1 times').replace(/\bvs\.?\b/gi, 'versus')
+    .replace(/advance\/decline/gi, 'advance decline ratio');
+  function listenControls() {
+    if (!tts) return '';
+    const label = speech.state === 'playing' ? '⏸ Pause' : speech.state === 'paused' ? '▶ Resume' : '🔊 Listen';
+    return `<span class="li-listen-wrap"><button type="button" class="li-listen" aria-label="Read the insights aloud">${label}</button>` +
+      (speech.state !== 'idle' ? '<button type="button" class="li-stop" aria-label="Stop reading">■</button>' : '') + '</span>';
+  }
+  function paintSpeech() {
+    const wrap = live.querySelector('.li-listen-wrap');
+    if (wrap) wrap.outerHTML = listenControls();
+    live.querySelectorAll('.li-card').forEach((c) => c.classList.toggle('li-reading', speech.state !== 'idle' && Number(c.dataset.i) === speech.card));
+  }
+  function speakNext(i) {
+    const my = ++speech.token;
+    if (i >= speech.queue.length) return stopSpeech();
+    speech.idx = i; speech.card = speech.queue[i].card;
+    paintSpeech();
+    const el = live.querySelector(`.li-card[data-i="${speech.card}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const u = new SpeechSynthesisUtterance(speakable(speech.queue[i].text));
+    if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-IN';
+    u.rate = readSpeed();
+    u.onend = () => { if (my === speech.token && speech.state === 'playing') speakNext(i + 1); };
+    u.onerror = (e) => { if (my === speech.token && e.error !== 'interrupted' && e.error !== 'canceled') stopSpeech(); };
+    tts.speak(u);
+  }
+  function stopSpeech() {
+    speech.token++;
+    if (tts) tts.cancel();
+    speech.state = 'idle'; speech.card = -1;
+    paintSpeech();
+  }
+  live.addEventListener('click', (e) => {
+    if (e.target.closest('.li-stop')) return stopSpeech();
+    if (!e.target.closest('.li-listen') || !latestBatch) return;
+    if (speech.state === 'playing') { tts.pause(); speech.state = 'paused'; return paintSpeech(); }
+    if (speech.state === 'paused') {
+      speech.state = 'playing'; tts.resume(); paintSpeech();
+      // Some mobile engines drop a paused utterance; restart the current card if resume does nothing.
+      return setTimeout(() => { if (speech.state === 'playing' && !tts.speaking) { tts.cancel(); speakNext(speech.idx); } }, 300);
+    }
+    // Snapshot of the batch on screen; a new batch arriving mid-read doesn't interrupt it.
+    const b = latestBatch;
+    speech.queue = [{ text: (lastClosed ? 'Market closed. Final market insights as of ' : 'Live market insights as of ') + hhmm(b.at) + '.', card: -1 }]
+      .concat(b.items.map((r, i) => ({ text: r.title + '. ' + (r.body || ''), card: i })));
+    tts.cancel();
+    speech.state = 'playing';
+    // On phones show every card, so the one being read can be highlighted.
+    if (matchMedia('(max-width: 560px)').matches && !expanded && b.items.length > 4 && lastRows) { expanded = true; render(lastRows, lastClosed); }
+    speakNext(0);
+  });
+  addEventListener('pagehide', () => { if (tts) tts.cancel(); });
 
   const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60e3)); return m < 1 ? '(just now)' : `(${m} min ago)`; };
   // Keep the "(n min ago)" text current between batches.
