@@ -7,6 +7,8 @@
 // Its open/closed state comes from the session clock (NSE IX's status endpoint can lag by a whole
 // session, e.g. still saying "Session 2 Market Closed - As on <yesterday>" while prices move).
 // GIFT Nifty is cached for 20 s so pages that refresh every 30 s see fresh prices; the index charts for 60 s.
+// NSE IX's rate feed is empty between sessions and all weekend, so each good reading is saved to
+// gift_nifty_last and that reading is returned (marked closed, with its time) while the feed is empty.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,6 +91,25 @@ function statusTime(txt: string): number | null {
   return mon < 0 ? null : Date.UTC(+m[3], mon, +m[2], +m[4], +m[5]) - 330 * 60e3;
 }
 let giftCache: { at: number; gift: Gift | null } | null = null;
+const DB = Deno.env.get("SUPABASE_URL") + "/rest/v1/gift_nifty_last";
+const DB_HEADERS = { apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "", Authorization: "Bearer " + (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""), "Content-Type": "application/json" };
+let savedAt = 0;
+async function saveGift(g: Gift) {
+  if (Date.now() - savedAt < 60e3) return; // at most once a minute
+  savedAt = Date.now();
+  await fetch(DB + "?on_conflict=id", { method: "POST", headers: { ...DB_HEADERS, Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ id: 1, data: g, updated_at: new Date().toISOString() }) }).catch(() => {});
+}
+async function lastGift(): Promise<Gift | null> {
+  try {
+    const r = await fetch(DB + "?id=eq.1&select=data,updated_at", { headers: DB_HEADERS });
+    const row = r.ok ? (await r.json())[0] : null;
+    if (!row?.data?.price) return null;
+    const clock = giftSession();
+    return { ...row.data, live: false, session: null, next_open: clock.next_open,
+      status: "Closed · last traded " + (row.data.as_of || "") + (clock.next_open ? " · opens " + clock.next_open : ""), last_session: true } as Gift;
+  } catch (_) { return null; }
+}
 const GIFT_CACHE_MS = 20_000;
 
 const NSEIX_HEADERS = { "User-Agent": "Mozilla/5.0", Accept: "application/json", Referer: "https://www.nseix.com/" };
@@ -102,7 +123,7 @@ async function fetchGift(): Promise<Gift | null> {
     // Rows are near-month first; take the first NIFTY index future that has a price.
     const row = (rate?.data || []).find((x: Record<string, unknown>) =>
       x.SYMBOL === "NIFTY" && x.INSTRUMENTTYPE === "FUTIDX" && num(String(x.LASTPRICE).replace(/,/g, "")) !== null);
-    if (!row) return null;
+    if (!row) return await lastGift(); // feed empty between sessions: last saved reading
     const price = num(String(row.LASTPRICE).replace(/,/g, ""))!;
     const change = num(row.DAYCHANGE_1) ?? num(String(row.DAYCHANGE).replace(/,/g, "")) ?? 0;
     const prev = price - change;
@@ -129,7 +150,7 @@ async function fetchGift(): Promise<Gift | null> {
       source_status: src,
     };
   } catch (_) {
-    return null;
+    return await lastGift();
   }
 }
 
@@ -142,7 +163,10 @@ Deno.serve(async (req) => {
     needSeries ? Promise.all(SYMBOLS.map(fetchSeries)) : null,
     needGift ? fetchGift() : giftCache!.gift,
   ]);
-  if (needGift && gift) giftCache = { at: Date.now(), gift };
+  if (needGift && gift) {
+    giftCache = { at: Date.now(), gift };
+    if (!(gift as any).last_session) saveGift(gift); // a live reading: keep it for when the feed goes empty
+  }
   let series = cache ? JSON.parse(cache.body) : {};
   if (fresh) {
     series = Object.fromEntries(fresh.map((s) => [s.symbol, s]));

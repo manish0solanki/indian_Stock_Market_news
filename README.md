@@ -81,11 +81,11 @@
 - Open interest / change-in-OI chart by strike, the chain table with ITM shading and the spot line, and a plain-English summary and glossary.
 - Data: the `option-chain` Edge Function (NSE's option-chain API, cached a minute). Refreshes every minute in market hours.
 
-### 🩺 Data Health (`admin-health.html`, admins only)
+### 🩺 Data Health (Admin Panel → Data health tab, `admin-health.js`, admins only)
 - One page that shows whether every data feed is working: Indian and global quotes, stock quotes and coverage, sector indices, daily price history, FII/DII, news, global headlines, crude, live insights, events, IPOs, the economic calendar schedule, the signals scanner, background job heartbeats and pg_cron failures (from `data_health()`).
 - Each check knows what to expect at that moment (strict in market hours, last session's data otherwise), so nights and weekends don't raise false alarms.
 - Live checks call each backend function from the browser (GIFT Nifty, option chain, index history, stock data, stock news, MF NAVs, global market data) and the published blog posts are checked against the expected dates.
-- Linked from the News Admin header and the admin account menu; re-checks every 2 minutes.
+- A tab in the Admin Panel (`admin-news.html#health`) with a badge counting problems; re-checks every 2 minutes. `admin-health.html` redirects there.
 
 ### 📅 Events Calendar (`events.html`)
 - **Economy events** alongside company events: RBI policy decisions, India CPI and GDP, the Union Budget, US Fed (FOMC) decisions and US CPI, with IST times, what each one is and how it tends to move Indian markets. Kept in `econ_events` (`supabase/econ-events.sql`); dates not read from the official calendar are marked "Expected date". Add new dates (e.g. the next RBI or Fed calendar) by extending that file and re-running it.
@@ -210,7 +210,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── stock-analysis.html      Technical / fundamental analysis
 ├── screener.html/.js         Stock screener
 ├── fno.html/.js              F&O option chain, PCR, max pain
-├── admin-health.html        Data health dashboard (admins only)
+├── admin-news.html, admin-health.js   Admin Panel: news moderation and the data health tab
 ├── events.html              Events calendar
 ├── ipo.html                 IPOs and GMP
 ├── crypto-signals.html, crypto-performance.js/.css, crypto-manager/   Crypto bot UI

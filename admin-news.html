@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#2E1F82">
-<title>MarketPulse — News Admin</title>
+<title>MarketPulse — Admin Panel</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--indigo:#2E1F82;--indigo-dark:#1B134F;--bg:#0F0F1A;--surface:#1A1A2E;--surface2:#222240;--border:#2A2A4A;--text:#E8E8F0;--muted:#A0A0B8;--dim:#6B6B8A;--green:#4ADE80;--red:#F87171;--yellow:#F5A623;--radius:10px}
@@ -15,6 +15,16 @@
 .notice{display:none;padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:12px}.notice.error{display:block;background:rgba(248,113,113,.12);color:var(--red)}.notice.ok{display:block;background:rgba(74,222,128,.12);color:var(--green)}
 .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px}th{position:static;background:var(--surface2);text-align:left;padding:11px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);border-bottom:1px solid var(--border);white-space:nowrap}td{padding:13px 10px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle}tbody tr:hover{background:rgba(255,255,255,.025)}tr:last-child td{border-bottom:0}.symbol{font:800 11px monospace;letter-spacing:.02em}.actions{min-width:180px}.headline{font-weight:700;line-height:1.35;max-width:430px}.sub{color:var(--muted);font-size:10px;margin-top:4px}.impact{font-size:10px;font-weight:800}.positive{color:var(--green)}.negative{color:var(--red)}.neutral{color:var(--yellow)}.badge{display:inline-block;padding:3px 7px;border-radius:20px;font-size:9px;font-weight:800;background:var(--bg);border:1px solid var(--border)}.badge.hidden{color:var(--red)}.badge.visible{color:var(--green)}.actions{display:flex;gap:6px;flex-wrap:nowrap}.actions .btn{padding:7px 10px}.headline{font-size:11px}.empty{text-align:center;padding:35px;color:var(--dim)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:15px;z-index:50}.modal-bg.open{display:flex}.modal{width:min(900px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 60px #000}.modal-head{position:sticky;top:0;background:var(--surface);display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--border);z-index:2}.modal-head h2{font-size:16px;margin:0}.form{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:13px}.field.full{grid-column:1/-1}.field label{display:block;color:var(--muted);font-size:10px;font-weight:700;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px;font-size:12px}.field textarea{min-height:80px;resize:vertical}.modal-foot{padding:13px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surface)}.check{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-top:7px}.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.login-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:25px}.login-card h1{margin:0 0 7px}.login-card p{color:var(--muted);font-size:12px;margin:0 0 18px}.login-card input{width:100%;margin:6px 0 10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:10px}.login-card button{width:100%;margin-top:6px}.hidden{display:none!important}@media(max-width:700px){.wrap{padding:13px}.header{align-items:flex-start;flex-direction:column}.form{grid-template-columns:1fr}.field.full{grid-column:auto}.search{min-width:180px}}
+.admin-tabs{display:flex;gap:4px;padding:0 22px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:58px;z-index:9;overflow-x:auto}
+.admin-tabs button{border:0;background:none;color:var(--muted);font-weight:700;font-size:13.5px;padding:12px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.admin-tabs button.on{color:var(--text);border-bottom-color:#818cf8}
+.tab-badge{min-width:18px;height:18px;padding:0 6px;border-radius:999px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff}
+.tab-badge.warn{background:var(--yellow);color:#1a1a1a}.tab-badge.ok{background:rgba(74,222,128,.18);color:var(--green)}
+@media(max-width:700px){
+ .top{height:auto;min-height:52px;padding:8px 12px;gap:8px}.top .brand{font-size:15px;white-space:nowrap}
+ .top-right{gap:6px}.top-right #userEmail{display:none}.top-right .btn{padding:6px 9px;font-size:11.5px}
+ .admin-tabs{top:52px;padding:0 8px}.admin-tabs button{padding:11px 10px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -33,15 +43,19 @@
 
 <div id="app" class="hidden">
 <header class="top">
-  <div class="brand"><span style="width:16px;height:16px;border-radius:3px;background:linear-gradient(135deg,#ffcf3d,#f59e0b);transform:rotate(45deg);flex:0 0 auto;display:inline-block;margin-right:10px;vertical-align:-2px"></span>MarketPulse · News Admin</div>
+  <div class="brand"><span style="width:16px;height:16px;border-radius:3px;background:linear-gradient(135deg,#ffcf3d,#f59e0b);transform:rotate(45deg);flex:0 0 auto;display:inline-block;margin-right:10px;vertical-align:-2px"></span>MarketPulse · Admin</div>
   <div class="top-right">
     <span id="userEmail" style="font-size:11px;color:#fff9"></span>
-    <a class="btn" href="/admin-health.html" style="text-decoration:none">🩺 Data health</a>
     <button class="btn" id="backBtn">← MarketPulse</button>
     <button class="btn" id="logoutBtn">Logout</button>
   </div>
 </header>
-<main class="wrap">
+<nav class="admin-tabs" role="tablist" aria-label="Admin sections">
+  <button type="button" class="on" data-admin-tab="news" role="tab" aria-selected="true">📰 News</button>
+  <button type="button" data-admin-tab="health" role="tab" aria-selected="false">🩺 Data health <span class="tab-badge" id="healthBadge" hidden></span></button>
+</nav>
+<main class="wrap" id="healthTab" hidden><div id="healthRoot"></div></main>
+<main class="wrap" id="newsTab">
   <div class="header">
     <div class="title"><h1>News Management</h1><p>Edit, hide, feature, correct symbols, or delete news articles.</p></div>
     <div class="stats">
@@ -89,6 +103,7 @@
   </div>
 </div>
 
+<script src="/admin-health.js?v=1"></script>
 <script>
 const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
 const SUPABASE_KEY="sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
@@ -118,8 +133,16 @@ async function save(){if(!current)return;$("saveEdit").disabled=true;const publi
 window.toggleVisible=async id=>{const x=all.find(a=>Number(a.id)===Number(id));if(!x)return;const {error}=await sb.from("news").update({is_visible:!x.is_visible,admin_updated_at:new Date().toISOString()}).eq("id",x.id);if(error){msg(error.message,"error");return}msg(x.is_visible?"Article hidden.":"Article is visible.");await load()}
 window.deleteNews=async id=>{const x=all.find(a=>Number(a.id)===Number(id));if(!x)return;if(!confirm("Delete this news article permanently? This cannot be undone."))return;const {error}=await sb.from("news").delete().eq("id",x.id);if(error){msg(error.message,"error");return}msg("Article deleted.");await load()}
 function closeEdit(){current=null;$("editBg").classList.remove("open")}
-async function start(){const {data}=await sb.auth.getSession();user=data.session?.user||null;if(user&&await checkAdmin()){ $("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await load()}}
-$("loginBtn").onclick=async()=>{const loginValue=$("email").value.trim(),password=$("password").value;const email=loginValue.toLowerCase()==="admin"?"admin@tradesutra.com":loginValue;if(!email||!password)return loginMsg("Enter email and password.");$("loginBtn").disabled=true;const {data,error}=await sb.auth.signInWithPassword({email,password});if(error){loginMsg(error.message);$("loginBtn").disabled=false;return}user=data.user;if(await checkAdmin()){$("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";await load()}$("loginBtn").disabled=false}
+/* Tabs: News (moderation) and Data health (/admin-health.js). #health opens the health tab. */
+let healthMounted=false;
+function healthCount(f,w){const b=$("healthBadge");b.hidden=false;b.className="tab-badge"+(f?"":w?" warn":" ok");b.textContent=f?f:w?w:"✓";b.title=f?f+" broken":w?w+" running late":"All systems normal"}
+function showTab(t){document.querySelectorAll("[data-admin-tab]").forEach(b=>{const on=b.dataset.adminTab===t;b.classList.toggle("on",on);b.setAttribute("aria-selected",on)});$("newsTab").hidden=t!=="news";$("healthTab").hidden=t!=="health";history.replaceState(null,"",t==="health"?"#health":location.pathname);if(t==="health"&&!healthMounted&&window.mpAdminHealth){healthMounted=true;window.mpAdminHealth.mount($("healthRoot"),sb,{onCount:healthCount})}}
+document.querySelector(".admin-tabs").addEventListener("click",e=>{const b=e.target.closest("[data-admin-tab]");if(b)showTab(b.dataset.adminTab)});
+async function start(){const {data}=await sb.auth.getSession();user=data.session?.user||null;if(user&&await checkAdmin()){ $("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";
+ // Run the health check once in the background so the tab badge shows problems even from the News tab.
+ if(location.hash==="#health")showTab("health");else if(window.mpAdminHealth){healthMounted=true;window.mpAdminHealth.mount($("healthRoot"),sb,{onCount:healthCount})}
+ await load()}}
+$("loginBtn").onclick=async()=>{const loginValue=$("email").value.trim(),password=$("password").value;const email=loginValue.toLowerCase()==="admin"?"admin@tradesutra.com":loginValue;if(!email||!password)return loginMsg("Enter email and password.");$("loginBtn").disabled=true;const {data,error}=await sb.auth.signInWithPassword({email,password});if(error){loginMsg(error.message);$("loginBtn").disabled=false;return}user=data.user;await start();$("loginBtn").disabled=false}
 $("logoutBtn").onclick=async()=>{await sb.auth.signOut();location.reload()}
 $("backBtn").onclick=()=>location.href="/"
 $("refresh").onclick=load
