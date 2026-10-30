@@ -171,4 +171,8 @@
   if (!document.querySelector('script[src*="link-viewer.js"]')) {
     var lv = document.createElement('script'); lv.src = '/link-viewer.js?v=1'; lv.defer = true; document.head.appendChild(lv);
   }
+  // Blog articles (/blog/<category>/<post>/) get a "Listen" button that reads the article aloud.
+  if (/^\/blog\/[^/]+\/[^/]+/.test(location.pathname) && !document.querySelector('script[src*="read-aloud.js"]')) {
+    var ra = document.createElement('script'); ra.src = '/blog/read-aloud.js?v=1'; ra.defer = true; document.head.appendChild(ra);
+  }
 })();
