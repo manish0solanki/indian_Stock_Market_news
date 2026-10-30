@@ -7,6 +7,12 @@ on:
       candidates:
         description: Comma-separated model ids to time (blank = defaults)
         required: false
+      max_tokens:
+        description: max_tokens per request (blank = 12000)
+        required: false
+      thinking:
+        description: "'disabled' to test only with thinking switched off"
+        required: false
 permissions:
   contents: read
 jobs:
@@ -22,4 +28,6 @@ jobs:
         env:
           MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
           CANDIDATES: ${{ inputs.candidates }}
+          MAX_TOKENS: ${{ inputs.max_tokens }}
+          THINKING: ${{ inputs.thinking }}
         run: node scripts/blog/ai-check.mjs
