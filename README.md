@@ -67,6 +67,11 @@
 ### 🔍 Stock Analysis (`stock-analysis.html`)
 - Interactive chart with RSI, MACD, Bollinger Bands, ADX, and support and resistance, plus fundamentals for any NSE stock.
 
+### 🧮 Stock Screener (`screener.html`)
+- Filters every NSE stock with a recent quote by **P/E, P/B, ROE, ROCE, market cap, dividend yield, 52-week high/low, volume spike, trend (50/200-day averages), today's move, sector and F&O**.
+- Ready-made screens: quality at a fair price, large caps in uptrend, near 52-week high/low, volume spikes, high dividend, value picks, today's gainers.
+- Data comes from one call to `stock_screener()` (`supabase/stock-screener.sql`); filtering and sorting run in the browser. Filters are kept in the URL, so a screen can be shared, and results download as CSV.
+
 ### 📅 Events Calendar (`events.html`)
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
 - **After results**, each company gets:
@@ -185,6 +190,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── cas-parser.js            CAS PDF statement parser
 ├── stock-signals.html/.js/.css   Stock signals and paper trading
 ├── stock-analysis.html      Technical / fundamental analysis
+├── screener.html/.js         Stock screener
 ├── events.html              Events calendar
 ├── ipo.html                 IPOs and GMP
 ├── crypto-signals.html, crypto-performance.js/.css, crypto-manager/   Crypto bot UI
@@ -217,6 +223,7 @@ The main tables:
 | Market data | `index_quotes`, `sector_index_quotes`, `stock_quotes`, `stocks`, `stock_swing_cache`, `market_quotes`, `fii_dii_daily`, `news`, `global_headlines`, `crude_feed` |
 | Insights | `live_insights` + `refresh_live_insights()` (`supabase/live-insights.sql`) |
 | Signals | `stock_signals`, `stock_signals_feed()`, `stock_signals_top()` (`supabase/stock-signals-top.sql`), `stock_paper_accounts`, `stock_paper_trades` |
+| Screener | `stock_screener()`, `mp_broad_sector()` (`supabase/stock-screener.sql`) |
 | Fundamentals | `stock_fundamentals_cache` (`supabase/stock-fundamentals-schema.sql`) |
 | Events / IPO | `market_events` (`events-schema.sql`), `ipos` (`ipo-schema.sql`) |
 | Users | `profiles` (users can only edit their name and photo), `portfolios`, `portfolio_transactions`, `portfolio_mf_transactions`, `watchlist`, `stock_alerts`, `user_ticker` |

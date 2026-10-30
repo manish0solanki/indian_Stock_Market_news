@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>Stock Screener: Filter NSE Stocks by P/E, ROE, Market Cap — MarketPulse</title>
+<meta name="description" content="Free NSE stock screener: filter every listed stock by P/E, P/B, ROE, ROCE, market cap, dividend yield, 52-week high/low, volume spikes, trend and sector.">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--radius:14px}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+button,input,select{font:inherit;color:inherit}
+.page{max-width:1320px;margin:0 auto;padding:22px clamp(12px,2.4vw,28px) 40px}
+.head{margin-bottom:14px}
+.head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.sub{font-size:13px;color:var(--muted)}
+.up{color:var(--green)}.down{color:var(--red)}.muted{color:var(--dim)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--accent2)}
+.chip.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.hint{font-size:12.5px;color:var(--muted);min-height:18px;margin:6px 2px 10px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+#filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld>span{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.fld input,.fld select{width:100%;padding:8px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13.5px;min-width:0}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--accent2)}
+.pair{display:flex;gap:6px}
+.fld.check{flex-direction:row;align-items:center;gap:8px;align-self:end;padding-bottom:8px;font-weight:600;font-size:13.5px;cursor:pointer}
+.fld.check input{width:auto}
+.fld.wide{grid-column:span 2}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+.bar .grp{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#count{font-size:14px;color:var(--muted)}#count b{color:var(--text)}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;color:var(--text)}
+.btn:hover{border-color:var(--accent2)}
+.btn.sel{padding:7px 10px}
+#toggleFilters{display:none}
+#fcount{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;font-size:11px;padding:0 7px;margin-left:4px}
+.tablewrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{position:sticky;top:0;background:var(--surface2);text-align:left;border-bottom:1px solid var(--border);padding:0;white-space:nowrap;z-index:1}
+th button{border:0;background:none;color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 10px;cursor:pointer;width:100%;text-align:inherit}
+th button:hover{color:var(--text)}
+th.r,td.r{text-align:right}
+td{padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle}
+tbody tr:hover{background:var(--hover)}
+td a{text-decoration:none;color:var(--text)}
+td small,.scard small{display:block;font-size:11.5px;color:var(--dim);max-width:260px;overflow:hidden;text-overflow:ellipsis}
+td.r small{margin-left:auto;text-align:right}
+.fno{font-size:9.5px;font-weight:800;color:var(--accent2);border:1px solid var(--accent2);border-radius:5px;padding:0 4px;margin-left:6px;vertical-align:2px}
+.r52{position:relative;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));min-width:90px;margin:4px 0 3px;opacity:.85}
+.r52 i{position:absolute;top:-3px;width:3px;height:11px;margin-left:-1.5px;border-radius:2px;background:var(--text)}
+.empty{text-align:center;color:var(--muted);padding:28px 10px!important;white-space:normal}
+#cards{display:none}
+.more{display:block;margin:12px auto 0}
+.asof{font-size:12px;color:var(--dim);margin-top:12px}
+.disc{font-size:12px;color:var(--dim);margin-top:6px}
+@media (max-width:760px){
+ #toggleFilters{display:inline-block}
+ #filters{display:none;grid-template-columns:1fr 1fr}
+ #filters.open{display:grid}
+ .fld.wide{grid-column:1/-1}
+ .filterpanel{padding:0;border:0;background:none}
+ #filters.open{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+ .presets{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+ .presets::-webkit-scrollbar{display:none}
+ .tablewrap{display:none}
+ #cards{display:grid;gap:10px}
+ .scard{display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-decoration:none;color:var(--text)}
+ .scard .top{display:flex;justify-content:space-between;gap:10px}
+ .scard .top>div{min-width:0}
+ .scard .px{text-align:right;flex:0 0 auto}
+ .scard .px small{max-width:none;font-weight:700}
+ .scard .px small.up{color:var(--green)}.scard .px small.down{color:var(--red)}
+ .scard .kv{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin:8px 0 4px}
+ .scard .kv b{color:var(--text)}
+ .scard .sec{font-size:11.5px;color:var(--dim);margin-top:4px}
+}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="/screener.js?v=1" defer></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <div class="head">
+  <h1>Stock screener</h1>
+  <div class="sub">Filter every NSE stock by valuation, quality, size, 52-week range, volume and trend. Pick a ready-made screen or set your own filters; tap a stock to open its analysis.</div>
+ </div>
+
+ <div class="chips presets" id="presets"></div>
+ <div class="hint" id="presetHint"></div>
+
+ <div class="panel filterpanel">
+  <form id="filters" onsubmit="return false" autocomplete="off">
+   <label class="fld wide"><span>Search</span><input id="f_q" type="search" placeholder="Symbol or company name"></label>
+   <label class="fld"><span>Sector</span><select id="f_sector"><option value="">All sectors</option></select></label>
+   <label class="fld"><span>Market cap</span><select id="f_cap">
+    <option value="">Any size</option><option value="large">Large (₹20,000 Cr+)</option><option value="mid">Mid (₹5,000–20,000 Cr)</option><option value="small">Small (₹500–5,000 Cr)</option><option value="micro">Micro (under ₹500 Cr)</option><option value="notmicro">₹1,000 Cr and above</option><option value="notmicro500">₹500 Cr and above</option></select></label>
+   <div class="fld"><span>P/E range</span><div class="pair"><input id="f_peMin" type="number" inputmode="decimal" min="0" step="any" placeholder="Min"><input id="f_peMax" type="number" inputmode="decimal" min="0" step="any" placeholder="Max"></div></div>
+   <label class="fld"><span>P/B at most</span><input id="f_pbMax" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 3"></label>
+   <label class="fld"><span>ROE at least (%)</span><input id="f_roeMin" type="number" inputmode="decimal" step="any" placeholder="e.g. 15"></label>
+   <label class="fld"><span>ROCE at least (%)</span><input id="f_roceMin" type="number" inputmode="decimal" step="any" placeholder="e.g. 15"></label>
+   <label class="fld"><span>Dividend yield at least (%)</span><input id="f_dyMin" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 2"></label>
+   <label class="fld"><span>52-week range</span><select id="f_w52">
+    <option value="">Anywhere</option><option value="newHigh">At 52-week high (within 1%)</option><option value="nearHigh">Near 52-week high (within 3%)</option><option value="nearLow">Near 52-week low (within 5%)</option><option value="newLow">At 52-week low (within 1%)</option><option value="far">30%+ below the high</option></select></label>
+   <label class="fld"><span>Volume vs 3-month average</span><select id="f_vol">
+    <option value="">Any volume</option><option value="1.5">1.5× or more</option><option value="2">2× or more</option><option value="3">3× or more</option></select></label>
+   <label class="fld"><span>Trend</span><select id="f_trend">
+    <option value="">Any trend</option><option value="above50">Above 50-day average</option><option value="above200">Above 200-day average</option><option value="aboveBoth">Above both averages</option><option value="below200">Below 200-day average</option><option value="golden">50-day above 200-day</option></select></label>
+   <label class="fld"><span>Today's move</span><select id="f_chg">
+    <option value="">Any move</option><option value="up">Up</option><option value="down">Down</option><option value="big">Moved 2%+ either way</option><option value="up3">Up 3%+</option><option value="down3">Down 3%+</option></select></label>
+   <label class="fld check"><input id="f_fno" type="checkbox"> In F&amp;O only</label>
+  </form>
+ </div>
+
+ <div class="bar">
+  <div class="grp"><span id="count">Loading stocks…</span></div>
+  <div class="grp">
+   <button class="btn" id="toggleFilters" type="button" aria-expanded="false" aria-controls="filters">Filters<span id="fcount" hidden></span></button>
+   <select class="btn sel" id="sortSel" aria-label="Sort by">
+    <option value="mcap:desc">Biggest first</option><option value="chg:desc">Top gainers</option><option value="chg:asc">Top losers</option><option value="pe:asc">Lowest P/E</option><option value="pb:asc">Lowest P/B</option><option value="roe:desc">Highest ROE</option><option value="roce:desc">Highest ROCE</option><option value="dy:desc">Highest dividend yield</option><option value="volr:desc">Biggest volume spike</option><option value="fromHigh:asc">Closest to 52-week high</option><option value="fromLow:asc">Closest to 52-week low</option><option value="sym:asc">Symbol A–Z</option></select>
+   <button class="btn" id="reset" type="button">Reset</button>
+   <button class="btn" id="csvBtn" type="button">Download CSV</button>
+  </div>
+ </div>
+
+ <div class="tablewrap"><table><thead id="thead"></thead><tbody id="tbody"><tr><td colspan="11" class="empty">Loading…</td></tr></tbody></table></div>
+ <div id="cards"></div>
+ <button class="btn more" id="more" type="button" hidden>Show more</button>
+
+ <div class="asof" id="asof"></div>
+ <div class="disc">Volume is compared with the 3-month average and scaled for the time of day during market hours. Fundamentals come from company filings and update less often than prices. For information only, not investment advice.</div>
+</main>
+</body>
+</html>
