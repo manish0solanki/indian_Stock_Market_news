@@ -83,6 +83,8 @@ export function unverifiedNumbers(text, facts) {
     if (/(Q|FY|H)$/i.test(before)) continue;            // Q2, FY27, H1
     if (x >= 2000 && x <= 2100 && !raw.includes(".")) continue; // years
     if (Number.isInteger(x) && x <= 10 && !m[2]) continue;      // "two sectors", list positions
+    // Index names, not figures: Nifty 50, Nifty Next 50, Nifty 500, Midcap 150, Smallcap 250, Sensex 30...
+    if (/(nifty|next|midcap|smallcap|largemidcap|sensex|bse|total market|microcap)\s*$/i.test(text.slice(Math.max(0, m.index - 16), m.index))) continue;
     // Indicator names, not figures: 20/50/100/200-day averages, 52-week high/low.
     if ([5, 10, 20, 50, 100, 200, 52].includes(x) && /^[\s-]*(day|week|dma|ema|sma)\b/i.test(text.slice(m.index + m[1].length, m.index + m[1].length + 8))) continue;
     const ok = known.some((k) => Math.abs(k - x) <= Math.max(0.011, Math.abs(k) * 0.005) || Math.abs(Math.round(k) - x) < 0.001 || Math.abs(Number(k.toFixed(1)) - x) < 0.001);
