@@ -651,3 +651,4 @@ body { background: var(--bg); padding-top: 0 !important; }
   .ts-card { scroll-snap-align: start; }
   .ts-grid:has(> .ts-card:only-child) { grid-auto-columns: 100%; }
 }
+.mp-gift-chg small { font-size: 10.5px; font-weight: 600; color: var(--text-muted); margin-left: 3px; }

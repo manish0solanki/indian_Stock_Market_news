@@ -124,7 +124,7 @@
     const add = (pts, good, text) => { score += pts; out.push([good, text]); };
     const g = gift && num(gift.change_percent);
     if (g !== null && g !== undefined) {
-      add(Math.max(-2, Math.min(2, g * 2)), g >= 0, `GIFT Nifty is ${g >= 0 ? 'up' : 'down'} ${Math.abs(g).toFixed(2)}%${gift.status ? ' (' + String(gift.status).toLowerCase() + ')' : ''}: the most direct pointer to the Nifty open.`);
+      add(Math.max(-2, Math.min(2, g * 2)), g >= 0, `GIFT Nifty is ${g >= 0 ? 'up' : 'down'} ${Math.abs(g).toFixed(2)}% ${giftLive() ? '(trading now)' : 'in its last session'}: the most direct pointer to the Nifty open.`);
     }
     const us = avg(['ES=F|world', 'NQ=F|world', 'YM=F|world']);
     if (us !== null) add(Math.max(-1.5, Math.min(1.5, us)), us >= 0, `US futures are ${us >= 0 ? 'up' : 'down'} ${Math.abs(us).toFixed(2)}% on average${Math.abs(us) >= 1 ? ' — a strong cue' : ''}.`);
@@ -141,13 +141,18 @@
     const label = score >= 1 ? ['Positive', 'up'] : score <= -1 ? ['Negative', 'down'] : ['Mixed', 'mixed'];
     return { score, label, out };
   }
+  const giftLive = () => gift && (typeof gift.live === 'boolean' ? gift.live : /open/i.test(gift.status || '') && !/clos/i.test(gift.status || ''));
+  // Home fetched a newer GIFT Nifty reading: show the same number here.
+  document.addEventListener('mp:gift', (e) => { if (e.detail?.from !== 'global' && e.detail?.gift) { gift = e.detail.gift; if (Object.keys(Q).length) render(); } });
   function giftTile() {
     if (!gift || num(gift.price) === null) return '';
     const pct = num(gift.change_percent);
-    const live = /open/i.test(gift.status || '') && !/clos/i.test(gift.status || '');
+    const live = giftLive();
+    const when = (String(gift.as_of || '').match(/\d{1,2}:\d{2}/) || [''])[0];
     return `<div class="gm-gift"><div class="gm-k">GIFT Nifty${gift.expiry ? ' · ' + esc(String(gift.expiry).split('-').slice(1).join(' ')) : ''}</div>
-      <div class="gm-v">${fmtPx(num(gift.price))}</div><div class="${tone(pct)}">${sgn(num(gift.change))} (${sgn(pct)}%)</div>
-      <div class="gm-st ${live ? 'on' : ''}"><i></i>${esc(gift.status || 'NSE IX')}</div></div>`;
+      <div class="gm-v">${fmtPx(num(gift.price))}</div><div class="${tone(pct)}">${sgn(num(gift.change))} (${sgn(pct)}%)${live ? '' : ' <small class="gm-muted">last session</small>'}</div>
+      <div class="gm-st ${live ? 'on' : ''}"><i></i>${live ? 'Live' + (gift.session ? ' · ' + esc(gift.session) : '') : 'Closed' + (gift.next_open ? ' · opens ' + esc(gift.next_open) : '')}</div>
+      ${when ? `<div class="gm-muted">NSE IX · as of ${esc(when)} IST</div>` : ''}</div>`;
   }
 
   function render() {
@@ -192,7 +197,7 @@
         wantHeads ? fetch(SB + '/rest/v1/rpc/global_headlines_feed', { method: 'POST', headers: H, body: JSON.stringify({ p_limit: 12 }) }).then((r) => r.ok ? r.json() : null).catch(() => null) : null,
       ]);
       if (gm && Array.isArray(gm.quotes)) { Q = {}; for (const q of gm.quotes) Q[q.symbol + '|' + q.grp] = q; updatedAt = gm.updated_at; }
-      if (sp) gift = sp.gift_nifty || null;
+      if (sp && sp.gift_nifty) { gift = sp.gift_nifty; document.dispatchEvent(new CustomEvent('mp:gift', { detail: { gift, from: 'global' } })); }
       if (hl) { heads = Array.isArray(hl) ? hl : (hl.articles || []); headsAt = Date.now(); }
       if (gm) lastLoad = Date.now();
       render();

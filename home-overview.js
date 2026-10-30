@@ -79,7 +79,7 @@
   function giftStrip(nifty) {
     if (!gift || !Number.isFinite(num(gift.price))) return '';
     const chg = num(gift.change), pct = num(gift.change_percent);
-    const live = /open/i.test(gift.status || '') && !/clos/i.test(gift.status || '');
+    const live = typeof gift.live === 'boolean' ? gift.live : /open/i.test(gift.status || '') && !/clos/i.test(gift.status || '');
     const spot = num(nifty?.price);
     const gap = Number.isFinite(spot) ? num(gift.price) - spot : NaN;
     const cue = Number.isFinite(gap) ? `<span class="mp-gift-cue" title="GIFT Nifty minus Nifty 50">${gap >= 0 ? 'Premium' : 'Discount'} ${signed(gap)} pts vs Nifty</span>` : '';
@@ -88,9 +88,9 @@
     return `<div class="mp-gift" title="${esc(gift.status || 'NSE IX')}">
       <span class="mp-gift-name"><i class="${live ? 'live' : ''}"></i>GIFT NIFTY</span>
       <span class="mp-gift-price">${fmt(num(gift.price))}</span>
-      <span class="mp-gift-chg ${tone(chg)}">${signed(chg)} (${signed(pct)}%)</span>
+      <span class="mp-gift-chg ${tone(chg)}" title="${live ? 'Change today' : 'Change in the last session'}">${signed(chg)} (${signed(pct)}%)${live ? '' : ' <small>last session</small>'}</span>
       ${cue}
-      <span class="mp-gift-note">NSE IX${exp ? ' · ' + esc(exp) + ' futures' : ''}${when ? ' · as of ' + esc(when) + ' IST' : ''}</span>
+      <span class="mp-gift-note">${live ? 'Live' : 'Closed' + (gift.next_open ? ', opens ' + esc(gift.next_open) : '')} · NSE IX${exp ? ' · ' + esc(exp) + ' futures' : ''}${when ? ' · as of ' + esc(when) + ' IST' : ''}</span>
     </div>`;
   }
   // India VIX: the market's expected 30-day volatility of Nifty ("fear gauge"). From the sparklines feed.
@@ -115,11 +115,16 @@
   let sparkAt = 0;
   async function loadSparks(force) {
     // Every minute while the market is open; every 5 minutes otherwise (GIFT Nifty trades outside market hours).
-    if (!force && (!homeVisible() || Date.now() - sparkAt < (marketOpen() ? 55e3 : 5 * 60e3))) return;
+    // GIFT Nifty trades outside Indian hours, so poll every 30 s while it is live too.
+    if (!force && (!homeVisible() || Date.now() - sparkAt < (marketOpen() || gift?.live ? 25e3 : 5 * 60e3))) return;
     try {
       const r = await fetch(SPARK_URL, { cache: 'no-store' });
       const d = await r.json();
-      if (d?.series) { sparks = d.series; gift = d.gift_nifty || gift; sparkAt = Date.now(); renderIndexCards(); }
+      if (d?.series) {
+        sparks = d.series; gift = d.gift_nifty || gift; sparkAt = Date.now(); renderIndexCards();
+        // The Global Market page shows the same GIFT Nifty: share the newest reading (global-market.js).
+        document.dispatchEvent(new CustomEvent('mp:gift', { detail: { gift, from: 'home' } }));
+      }
     } catch (e) { console.warn('[Index sparklines]', e); }
   }
 
@@ -448,5 +453,6 @@
   loadSparks(true);
   setInterval(() => loadMarket(false), 60e3);
   setInterval(() => loadSparks(false), 30e3);
+  document.addEventListener('mp:gift', (e) => { if (e.detail?.from !== 'home' && e.detail?.gift) { gift = e.detail.gift; renderIndexCards(); } });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadMarket(false); loadSparks(false); } });
 })();
