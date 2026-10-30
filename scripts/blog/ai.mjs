@@ -1,5 +1,6 @@
 // Writes the commentary paragraphs with Moonshot (Kimi), using only the supplied facts.
-// Needs MOONSHOT_API_KEY; the model is MOONSHOT_MODEL (default kimi-k3, then kimi-k3.1-pro and kimi-k2.6 as fallbacks).
+// Needs MOONSHOT_API_KEY; the model is MOONSHOT_MODEL (default kimi-k3.1-pro, then kimi-k2.6 and kimi-k3 as fallbacks:
+// with thinking off, k3.1-pro wrote the closest to the 200-260 word brief in about 12s and ~300 tokens).
 // Output is capped at MOONSHOT_MAX_TOKENS (default 500) per post. These models "think" before writing and
 // thinking counts against the cap, so it is switched off (Moonshot then requires temperature 0.6);
 // set MOONSHOT_THINKING=enabled to turn it back on (needs a much larger cap).
@@ -38,7 +39,7 @@ async function callMoonshot(key, model, prompt) {
 function providers() {
   const list = [];
   if (process.env.MOONSHOT_API_KEY) {
-    for (const m of (process.env.MOONSHOT_MODEL || "kimi-k3,kimi-k3.1-pro,kimi-k2.6").split(",")) list.push({ name: "moonshot:" + m.trim(), call: (p) => callMoonshot(process.env.MOONSHOT_API_KEY, m.trim(), p) });
+    for (const m of (process.env.MOONSHOT_MODEL || "kimi-k3.1-pro,kimi-k2.6,kimi-k3").split(",")) list.push({ name: "moonshot:" + m.trim(), call: (p) => callMoonshot(process.env.MOONSHOT_API_KEY, m.trim(), p) });
   }
   return list;
 }
