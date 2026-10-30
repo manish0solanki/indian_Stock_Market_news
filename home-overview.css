@@ -559,3 +559,31 @@ body { background: var(--bg); padding-top: 0 !important; }
   #industryStocksPanel .mp-table th:nth-child(2), #industryStocksPanel .mp-table td:nth-child(2),
   #industryStocksPanel .mp-table th:nth-child(n+5), #industryStocksPanel .mp-table td:nth-child(n+5) { display: none; }
 }
+
+/* ───────── Live market insights (live-insights.js) ───────── */
+.li-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--positive); margin-right: 8px; vertical-align: 1px; box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive) 60%, transparent); animation: liPulse 2s infinite; }
+@keyframes liPulse { 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.li-wrap[hidden], #latestBlogGrid[hidden] { display: none !important; }
+.li-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.li-card { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--text-muted); border-radius: var(--radius-md); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.li-card.li-positive { border-left-color: var(--positive); }
+.li-card.li-negative { border-left-color: var(--negative); }
+.li-card.li-mixed { border-left-color: #f59e0b; }
+.li-card.li-k-pulse { background: linear-gradient(135deg, color-mix(in srgb, var(--indigo-light) 14%, var(--surface)), var(--surface)); }
+.li-top { display: flex; align-items: flex-start; gap: 8px; }
+.li-ico { flex: 0 0 auto; font-size: 15px; line-height: 1.3; }
+.li-card h3 { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text); font-weight: 700; }
+.li-card p { margin: 0; font-size: 12px; line-height: 1.55; color: var(--text-secondary, var(--text-muted)); }
+.li-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.li-chips a { font: 600 10.5px var(--font-mono, monospace); padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border); color: var(--indigo-light); text-decoration: none; background: color-mix(in srgb, var(--indigo-light) 8%, transparent); }
+.li-chips a:hover { border-color: var(--indigo-light); }
+.li-more { margin-top: 10px; width: 100%; padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.li-trail { display: flex; align-items: center; gap: 6px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font-size: 11px; color: var(--text-muted); }
+.li-trail::-webkit-scrollbar { display: none; }
+.li-trail > span:first-child { font-weight: 700; margin-right: 4px; }
+.li-tick { flex: 0 0 auto; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); font-variant-numeric: tabular-nums; font-weight: 700; }
+.li-tick b { font-weight: 600; color: var(--text-muted); margin-right: 5px; }
+.li-tick.up { color: var(--positive); } .li-tick.down { color: var(--negative); }
+.li-note { margin-top: 8px; font-size: 10.5px; color: var(--text-muted); }
+@media (max-width: 1000px) { .li-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .li-grid { grid-template-columns: minmax(0, 1fr); } }

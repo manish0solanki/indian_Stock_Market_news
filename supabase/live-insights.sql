@@ -169,7 +169,7 @@ begin
     n_sort := n_sort + 1;
   end if;
 
-  -- 8. Trade signals generated in the last 30 minutes
+  -- 8. Active trade signals (the signals job re-stamps them every 5 minutes)
   with s as (select symbol, side, setup, score from stock_signals where generated_at > now() - interval '30 minutes' order by score desc limit 4)
   select (select count(*) from stock_signals where generated_at > now() - interval '30 minutes')::int as f1,
          (select string_agg(format('%s %s (%s, score %s)', symbol, lower(side), setup, score), '; ') from s) as f2,
@@ -177,7 +177,7 @@ begin
     into r;
   if r.f1 > 0 then
     insert into live_insights (run_id, session_date, sort, kind, tone, title, body, symbols) values (rid, d, n_sort, 'signals', 'neutral',
-      format('%s fresh trade signal%s', r.f1, case when r.f1 = 1 then '' else 's' end), r.f2 || '. See Stock Signals for entry, stop and targets.', coalesce(r.f3, '{}'));
+      format('%s active trade signal%s', r.f1, case when r.f1 = 1 then '' else 's' end), 'Top rated: ' || r.f2 || '. See Stock Signals for entry, stop and targets.', coalesce(r.f3, '{}'));
     n_sort := n_sort + 1;
   end if;
 
