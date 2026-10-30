@@ -9,6 +9,8 @@
 // GIFT Nifty is cached for 20 s so pages that refresh every 30 s see fresh prices; the index charts for 60 s.
 // NSE IX's rate feed is empty between sessions and all weekend, so each good reading is saved to
 // gift_nifty_last and that reading is returned (marked closed, with its time) while the feed is empty.
+// It is then corrected to the session's official close from NSE IX's bhavcopy (daily reports): the
+// last live reading can be minutes before the bell, and the bhavcopy has the true close.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,14 +102,79 @@ async function saveGift(g: Gift) {
   await fetch(DB + "?on_conflict=id", { method: "POST", headers: { ...DB_HEADERS, Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({ id: 1, data: g, updated_at: new Date().toISOString() }) }).catch(() => {});
 }
-async function lastGift(): Promise<Gift | null> {
+// Official close of the latest finished session from NSE IX's futures bhavcopy.
+// Session 1 (06:30–15:40) and Session 2 (16:35–02:45 next day) each publish one; the file's date is
+// the trading day the session belongs to. Session 2's change is measured from Session 1's close,
+// as NSE IX's live feed does.
+const MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+// "31-Oct-2026 02:45:00" or "30-Oct-2026" (IST) -> epoch ms
+function istMs(txt: string): number {
+  const m = String(txt || "").match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (!m) return 0;
+  return Date.UTC(+m[3], MON.indexOf(m[2].toUpperCase()), +m[1], +(m[4] || 0), +(m[5] || 0)) - 330 * 60e3;
+}
+let officialCheckedAt = 0;
+async function officialClose(expiry: string): Promise<(Gift & { official: string }) | null> {
+  const list = await fetch("https://www.nseix.com/api/daily-reports", { headers: NSEIX_HEADERS }).then((r) => r.ok ? r.json() : null);
+  const files: { file: string; session: number; date: string; fileurl: string }[] = [];
+  const walk = (x: any) => { if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === "object") { if (x.fileurl && /^Bhavcopy Futures$/i.test(String(x.file).trim())) files.push(x); else Object.values(x).forEach(walk); } };
+  walk(list?.data);
+  const when = (f: { date: string; session: number }) => istMs(f.date) + (f.session === 2 ? 1 : 0);
+  files.sort((a, b) => when(b) - when(a));
+  const latest = files[0];
+  if (!latest) return null;
+  const csv = async (url: string) => (await fetch(url, { headers: NSEIX_HEADERS })).text();
+  const rowFor = (text: string) => {
+    const want = "FUTIDXNIFTY" + String(expiry || "").toUpperCase();
+    const lines = text.split(/\r?\n/).filter((l) => /^FUTIDXNIFTY\d{2}-[A-Z]{3}-\d{4},/.test(l));
+    const line = lines.find((l) => l.startsWith(want + ",")) || lines[0];
+    if (!line) return null;
+    const c = line.split(",");
+    return { contract: c[0], prevSettle: num(c[1]), close: num(c[5]) || num(c[6]) };
+  };
+  const cur = rowFor(await csv(latest.fileurl));
+  if (!cur?.close) return null;
+  let base = cur.prevSettle;
+  if (latest.session === 2) {
+    const s1 = files.find((f) => f.date === latest.date && f.session === 1);
+    const r1 = s1 ? rowFor(await csv(s1.fileurl)) : null;
+    if (r1?.close) base = r1.close;
+  }
+  const [d, m, y] = latest.date.split("-");
+  const next = latest.session === 2 ? new Date(Date.UTC(+y, MON.indexOf(m.toUpperCase()), +d + 1)) : null;
+  const asOf = latest.session === 2 ? String(next!.getUTCDate()).padStart(2, "0") + "-" + MON[next!.getUTCMonth()][0] + MON[next!.getUTCMonth()].slice(1).toLowerCase() + "-" + next!.getUTCFullYear() + " 02:45:00" : latest.date + " 15:40:00";
+  const change = base ? Math.round((cur.close - base) * 100) / 100 : 0;
+  const exp = cur.contract.replace("FUTIDXNIFTY", "");
+  return {
+    price: cur.close, change, previous_close: base || cur.close, change_percent: base ? Math.round(change / base * 10000) / 100 : 0,
+    expiry: exp.slice(0, 3) + exp.slice(3, 4) + exp.slice(4, 6).toLowerCase() + exp.slice(6), as_of: asOf,
+    status: null, live: false, session: null, next_open: null, source_status: null, official: latest.date + "/S" + latest.session,
+  };
+}
+
+// Closed: the newest of the saved reading and what the feed still shows (it sometimes returns the
+// session's last trade, sometimes nothing), corrected to the official close once that is published.
+async function lastGift(feed: Gift | null = null): Promise<Gift | null> {
   try {
     const r = await fetch(DB + "?id=eq.1&select=data,updated_at", { headers: DB_HEADERS });
     const row = r.ok ? (await r.json())[0] : null;
-    if (!row?.data?.price) return null;
+    let data = row?.data || null;
+    if (feed && (!data || (!data.official && istMs(feed.as_of) > istMs(data.as_of || "")))) data = feed;
+    // Swap the last live reading for the session's official close once the bhavcopy is out
+    // (checked at most every 15 minutes while the feed is empty).
+    try {
+      const off = Date.now() - officialCheckedAt > 15 * 60e3 ? (officialCheckedAt = Date.now(), await officialClose(data?.expiry || "")) : null;
+      if (off && data?.official !== off.official && istMs(off.as_of) >= istMs(data?.as_of || "") - 60e3) {
+        officialCheckedAt = Date.now() + 6 * 3600e3; // the close won't change again this session
+        data = off;
+        await fetch(DB + "?on_conflict=id", { method: "POST", headers: { ...DB_HEADERS, Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify({ id: 1, data, updated_at: new Date().toISOString() }) }).catch(() => {});
+      }
+    } catch (_) { /* keep the saved reading */ }
+    if (!data?.price) return null;
     const clock = giftSession();
-    return { ...row.data, live: false, session: null, next_open: clock.next_open,
-      status: "Closed · last traded " + (row.data.as_of || "") + (clock.next_open ? " · opens " + clock.next_open : ""), last_session: true } as Gift;
+    return { ...data, live: false, session: null, next_open: clock.next_open,
+      status: (data.official ? "Closed · official close " : "Closed · last traded ") + (data.as_of || "") + (clock.next_open ? " · opens " + clock.next_open : ""), last_session: true } as Gift;
   } catch (_) { return null; }
 }
 const GIFT_CACHE_MS = 20_000;
@@ -136,7 +203,7 @@ async function fetchGift(): Promise<Gift | null> {
       const at = statusTime(src);
       if (at !== null && Date.now() - at < 20 * 60e3) live = false;
     }
-    return {
+    const reading: Gift = {
       price,
       change,
       previous_close: Math.round(prev * 100) / 100,
@@ -149,6 +216,7 @@ async function fetchGift(): Promise<Gift | null> {
       next_open: live ? null : clock.next_open,
       source_status: src,
     };
+    return live ? reading : await lastGift(reading); // closed: prefer the official close
   } catch (_) {
     return await lastGift();
   }
@@ -165,7 +233,7 @@ Deno.serve(async (req) => {
   ]);
   if (needGift && gift) {
     giftCache = { at: Date.now(), gift };
-    if (!(gift as any).last_session) saveGift(gift); // a live reading: keep it for when the feed goes empty
+    if (gift.live) saveGift(gift); // only readings taken while trading are kept for when the feed goes quiet
   }
   let series = cache ? JSON.parse(cache.body) : {};
   if (fresh) {
