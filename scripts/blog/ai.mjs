@@ -4,7 +4,8 @@
 // back to the plain-language paragraphs built from the data, so nothing invented gets published.
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RETRY_WAITS = [0, 8000, 20000]; // busy / rate-limited models usually recover within seconds
-const TIMEOUT_MS = 60000;            // never let one hung request stall the daily job
+// kimi-k2.x "thinking" models often need 60-120s; a hung request still can't stall the job for long.
+const TIMEOUT_MS = Number(process.env.MOONSHOT_TIMEOUT_MS || 150000);
 
 async function callMoonshot(key, model, prompt) {
   const res = await fetch("https://api.moonshot.ai/v1/chat/completions", {
@@ -41,7 +42,8 @@ async function generate(prompt) {
       const r = await prov.call(prompt).catch((e) => ({ ok: false, status: 0, error: e.message }));
       if (r.ok && r.text.trim()) return { model: prov.name, text: r.text };
       lastErr = new Error(`${prov.name}: ${r.error || (r.ok ? "empty response" : "HTTP " + r.status)}`);
-      if (r.ok || ![0, 429, 500, 502, 503].includes(r.status)) break; // not temporary: try the next model
+      // Busy / rate-limited: wait and retry. Timed out or any other error: try the next model.
+      if (r.ok || /abort|timeout/i.test(r.error || "") || ![0, 429, 500, 502, 503].includes(r.status)) break;
     }
   }
   throw lastErr;
@@ -89,8 +91,14 @@ export async function writeNarrative(post) {
     "Rules:",
     "- Use ONLY the facts in the JSON below. Do not add news, causes, forecasts, price targets or numbers that are not in it.",
     "- Every number you write must appear in the JSON (you may round to 1 or 2 decimals). Write rupee amounts as ₹ with Cr for crore.",
-    "- 3 short paragraphs, 170-230 words in total, plain text, no headings, no bullet points, no markdown.",
-    "- Neutral, factual tone. No investment advice and no words like 'buy', 'sell' or 'should' directed at the reader.",
+    "- 4 paragraphs, 240-320 words in total, plain text, no headings, no bullet points, no markdown.",
+    "Style (make it a story worth reading, not a list of numbers):",
+    "- Open with one sharp sentence that captures the day's main story, like a newspaper lead. Do not start with the date or 'Today'.",
+    "- Then explain what stood out and how the pieces connect, e.g. an index up while most stocks fell, or one sector carrying the market.",
+    "- Explain in plain words what the figures mean for an ordinary investor (what a breadth reading, a volume spike or a 52-week high signals).",
+    "- End with what to keep an eye on next, framed as things to watch in the data (levels, breadth, flows, sectors), not predictions.",
+    "- Vary sentence length, use strong precise verbs (rallied, slipped, shrugged off, extended), avoid filler like 'it is worth noting'.",
+    "- Neutral and factual, never hype. No investment advice and no words like 'buy', 'sell' or 'should' directed at the reader.",
     "",
     "FACTS:",
     JSON.stringify(post.facts),
