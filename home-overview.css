@@ -574,6 +574,7 @@ body { background: var(--bg); padding-top: 0 !important; }
 @keyframes liPulse { 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .li-wrap[hidden], #latestBlogGrid[hidden] { display: none !important; }
 .li-asof { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 10px; padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--text-muted); }
+.li-asof.closed { border-style: dashed; }
 .li-asof b { color: var(--text); font-variant-numeric: tabular-nums; }
 .li-asof .li-next { margin-left: auto; }
 @media (max-width: 560px) { .li-asof .li-next { margin-left: 0; } }

@@ -13,9 +13,23 @@
   const istNow = () => new Date(Date.now() + 330 * 60e3);
   const istDate = () => istNow().toISOString().slice(0, 10);
   const hhmm = (iso) => new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
-  function sessionOpen() {
+  // 'open' 09:15-15:30 IST on weekdays, 'closed' for the rest of a weekday after 15:30, else 'off'.
+  function sessionState() {
     const t = istNow(), d = t.getUTCDay(), m = t.getUTCHours() * 60 + t.getUTCMinutes();
-    return d > 0 && d < 6 && m >= 555 && m < 930;
+    if (d === 0 || d === 6 || m < 555) return 'off';
+    return m < 930 ? 'open' : 'closed';
+  }
+  // After the close the day's final insights stay up until today's Daily Wrap is published
+  // (the blog job runs a little after 15:30), so the section never falls back to yesterday's posts.
+  let wrapCheck = { at: 0, out: false };
+  async function todayWrapOut() {
+    if (wrapCheck.out || Date.now() - wrapCheck.at < 120e3) return wrapCheck.out;
+    try {
+      const posts = await (await fetch('/blog/posts.json?ts=' + Date.now(), { cache: 'no-store' })).json();
+      const day = istDate();
+      wrapCheck = { at: Date.now(), out: Array.isArray(posts) && posts.some((x) => x?.category === 'daily-wrap' && String(x.date || '').slice(0, 10) === day) };
+    } catch (_) { wrapCheck = { at: Date.now(), out: false }; }
+    return wrapCheck.out;
   }
 
   const title = section.querySelector('.latest-blog-title');
@@ -31,7 +45,8 @@
 
   function showBlogs() {
     if (mode === 'blog') return;
-    mode = 'blog';
+    mode = 'blog'; lastRun = '';
+    if (typeof loadLatestBlogSnapshots === 'function') loadLatestBlogSnapshots(); // pick up articles published since the page loaded
     live.hidden = true; grid.hidden = false;
     section.classList.remove('li-live');
     if (title) title.textContent = blogHead.title;
@@ -39,7 +54,7 @@
     if (allLink) { allLink.textContent = 'View all articles →'; allLink.href = '/blog/'; }
   }
 
-  function render(rows) {
+  function render(rows, closed) {
     const runs = [];
     rows.forEach((r) => { let run = runs.find((x) => x.id === r.run_id); if (!run) runs.push(run = { id: r.run_id, at: r.created_at, items: [] }); run.items.push(r); });
     const latest = runs[0];
@@ -47,11 +62,14 @@
     mode = 'live';
     section.classList.add('li-live');
     grid.hidden = true; live.hidden = false;
-    if (title) title.innerHTML = '<span class="li-dot" aria-hidden="true"></span>Live Market Insights';
+    section.classList.toggle('li-closed', !!closed);
+    if (title) title.innerHTML = closed ? "📊 Today's Market Insights" : '<span class="li-dot" aria-hidden="true"></span>Live Market Insights';
     // The job runs at :05, :20, :35 and :50 past each hour.
     const t = istNow(), m = t.getUTCMinutes(), nm = [5, 20, 35, 50].find((x) => x > m);
     const nextTxt = String((t.getUTCHours() + (nm === undefined ? 1 : 0)) % 24).padStart(2, '0') + ':' + String(nm ?? 5).padStart(2, '0');
-    if (subtitle) subtitle.textContent = `Updated ${hhmm(latest.at)} IST · next update around ${nextTxt} · switches to the day's articles after the close`;
+    if (subtitle) subtitle.textContent = closed
+      ? `Market closed · final insights as of ${hhmm(latest.at)} IST · today's articles replace these once published`
+      : `Updated ${hhmm(latest.at)} IST · next update around ${nextTxt} · switches to the day's articles after the close`;
     if (allLink) { allLink.textContent = 'Read articles →'; allLink.href = '/blog/'; }
 
     const phone = matchMedia('(max-width: 560px)').matches;
@@ -61,7 +79,9 @@
     const trail = runs.slice(0, 12).reverse().map((run) => run.items.find((x) => x.kind === 'pulse')).filter(Boolean)
       .map((p) => { const v = Number(p.data?.nifty_pct); return `<span class="li-tick ${v >= 0 ? 'up' : 'down'}"><b>${esc(p.data?.at || hhmm(p.created_at))}</b>${Number.isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%' : '—'}</span>`; });
     live.innerHTML =
-      `<div class="li-asof"><span class="li-dot" aria-hidden="true"></span><span>Insights as of <b>${hhmm(latest.at)} IST</b> <span class="li-age" data-at="${esc(latest.at)}">${ago(latest.at)}</span></span><span class="li-next">Next update around ${nextTxt}</span></div>` +
+      (closed
+        ? `<div class="li-asof closed"><span>Market closed · final insights as of <b>${hhmm(latest.at)} IST</b></span><span class="li-next">Today's Daily Wrap will appear here once published</span></div>`
+        : `<div class="li-asof"><span class="li-dot" aria-hidden="true"></span><span>Insights as of <b>${hhmm(latest.at)} IST</b> <span class="li-age" data-at="${esc(latest.at)}">${ago(latest.at)}</span></span><span class="li-next">Next update around ${nextTxt}</span></div>`) +
       `<div class="li-grid">${shown.map((r) => `
         <article class="li-card li-${esc(r.tone)} li-k-${esc(r.kind)}">
           <div class="li-top"><span class="li-ico" aria-hidden="true">${ICON[r.kind] || '•'}</span><h3>${esc(r.title)}</h3></div>
@@ -70,7 +90,7 @@
       (phone && latest.items.length > 4 ? `<button type="button" class="li-more">${expanded ? 'Show fewer' : `Show all ${latest.items.length} insights`}</button>` : '') +
       (trail.length > 1 ? `<div class="li-trail"><span>Nifty through the day</span>${trail.join('')}</div>` : '') +
       '<div class="li-note">Generated automatically from live prices every 15 minutes. Information only, not investment advice.</div>';
-    live.querySelector('.li-more')?.addEventListener('click', () => { expanded = !expanded; render(rows); });
+    live.querySelector('.li-more')?.addEventListener('click', () => { expanded = !expanded; render(rows, closed); });
   }
 
   const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60e3)); return m < 1 ? '(just now)' : `(${m} min ago)`; };
@@ -80,18 +100,21 @@
   let busy = false;
   async function refresh() {
     if (busy || document.hidden) return;
-    if (!sessionOpen()) return showBlogs();
+    const state = sessionState();
+    if (state === 'off') return showBlogs();
     busy = true;
     try {
+      if (state === 'closed' && await todayWrapOut()) return showBlogs();
       const { data, error } = await supabaseClient.from('live_insights')
         .select('run_id,created_at,sort,kind,tone,title,body,symbols,data')
         .eq('session_date', istDate()).order('created_at', { ascending: false }).limit(150);
       if (error) throw error;
       // Holidays write nothing; a batch older than 45 minutes means the job has stopped, so fall back.
-      if (!data?.length || Date.now() - Date.parse(data[0].created_at) > 45 * 60e3) return showBlogs();
-      if (data[0].run_id === lastRun && mode === 'live') return;
-      lastRun = data[0].run_id;
-      render(data);
+      if (!data?.length || (state === 'open' && Date.now() - Date.parse(data[0].created_at) > 45 * 60e3)) return showBlogs();
+      const key = data[0].run_id + state;
+      if (key === lastRun && mode === 'live') return;
+      lastRun = key;
+      render(data, state === 'closed');
     } catch (e) {
       console.warn('[Live insights]', e);
     } finally { busy = false; }
