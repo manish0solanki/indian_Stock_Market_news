@@ -4697,8 +4697,8 @@ async function loadWatchlist() {
       return `
         <tr data-watch-symbol="${symbol}">
           <td>
-            <div class="watchlist-symbol">${symbol}</div>
-            <div class="watchlist-company" title="${safeCompany}">${company}</div>
+            <div class="watchlist-symbol" data-sym="${escapeHtml(symbol)}">${symbol}</div>
+            <div class="watchlist-company" data-sym="${escapeHtml(symbol)}" title="${safeCompany}">${company}</div>
           </td>
           <td class="watchlist-price">${priceText}</td>
           <td class="watchlist-change ${changeClass}">${changeText}</td>
@@ -4961,7 +4961,7 @@ async function loadAlerts() {
       const status = triggered ? 'Triggered' : (row.is_active ? 'Active' : 'Paused');
       const statusClass = row.is_active && !triggered ? '' : ' off';
       return `<tr data-alert-id="${row.id}">
-        <td><div class="alert-symbol">${symbol}</div><div class="alert-company" title="${String(company).replace(/"/g,'&quot;')}">${company}</div></td>
+        <td><div class="alert-symbol" data-sym="${escapeHtml(symbol)}">${symbol}</div><div class="alert-company" data-sym="${escapeHtml(symbol)}" title="${String(company).replace(/"/g,'&quot;')}">${company}</div></td>
         <td class="alert-condition ${row.condition}">${row.condition === 'above' ? '▲ Above' : '▼ Below'}</td>
         <td class="alert-target">${targetText}</td>
         <td class="alert-current">${currentText}</td>
@@ -6903,7 +6903,7 @@ function renderSectorTable() {
     const price = hasPrice ? Number(s.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
     const changeStr = isValid ? (isUp ? '+' : '') + changeNum.toFixed(2) + '%' : '—';
     const promoStr = fmtPromoter(s.last_quarter_promoters);
-    return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.02}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top:0,behavior:'smooth'});"><td class="st-symbol">${s.symbol || '—'}${s.symbol && fnoSymbols.has(s.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</td><td class="st-name" title="${s.company_name || s.name || ''}">${s.company_name || s.name || '—'}</td><td>${hasPrice ? '₹' + price : '—'}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap ? fmtCapCr(s.market_cap) : '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
+    return `<tr style="animation: fadeInUp 0.3s ease-out ${i * 0.02}s both;" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top:0,behavior:'smooth'});"><td class="st-symbol"><span data-sym="${escapeHtml(s.symbol || '')}">${s.symbol || '—'}</span>${s.symbol && fnoSymbols.has(s.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</td><td class="st-name" title="${s.company_name || s.name || ''}"><span data-sym="${escapeHtml(s.symbol || '')}">${s.company_name || s.name || '—'}</span></td><td>${hasPrice ? '₹' + price : '—'}</td><td class="st-change ${isUp ? 'up' : (isValid ? 'down' : '')}">${changeStr}</td><td>${s.pe || '—'}</td><td>${s.market_cap ? fmtCapCr(s.market_cap) : '—'}</td><td class="st-promoters">${promoStr}</td></tr>`;
   }).join('');
 }
 
@@ -7123,7 +7123,7 @@ function renderNews() {
       ? `<button class="news-group-toggle" onclick="event.stopPropagation();toggleNewsGroup(this)">+ ${group.length - 2} more update${group.length - 2 > 1 ? 's' : ''}</button>`
       : '';
 
-    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.03}s"><div class="news-card-top"><div class="news-company-wrap">${latest.symbol ? `<span class="news-company news-company-clickable" data-symbol="${escapeHtml(latest.symbol)}">${escapeHtml(latest.company_name || 'Unknown')}</span>` : `<span class="news-company">${escapeHtml(latest.company_name || 'Unknown')}</span>`}${latest.symbol ? `<span class="news-symbol">${escapeHtml(latest.symbol)}</span>` : ''}${latest.symbol && fnoSymbols.has(latest.symbol.toUpperCase()) ? '<span class="fno-badge">F&O</span>' : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(latest.created_at)}</span></div><div class="news-entries">${entriesHtml}</div>${toggleHtml}</div>`;
+    html += `<div class="news-card ${impactClass(impact)}" style="animation-delay: ${i * 0.03}s"><div class="news-card-top"><div class="news-company-wrap">${latest.symbol ? `<span class="news-company news-company-clickable" data-sym="${escapeHtml(latest.symbol)}" data-symbol="${escapeHtml(latest.symbol)}">${escapeHtml(latest.company_name || 'Unknown')}</span>` : `<span class="news-company">${escapeHtml(latest.company_name || 'Unknown')}</span>`}${latest.symbol ? `<span class="news-symbol" data-sym="${escapeHtml(latest.symbol)}">${escapeHtml(latest.symbol)}</span>` : ''}${latest.symbol && fnoSymbols.has(latest.symbol.toUpperCase()) ? '<span class="fno-badge">F&O</span>' : ''}${priceHtml}${changeHtml}</div><span class="news-time">${fmtTime(latest.created_at)}</span></div><div class="news-entries">${entriesHtml}</div>${toggleHtml}</div>`;
   });
 
   feedEl.innerHTML = html;
@@ -7251,7 +7251,7 @@ function renderPrices(items) {
   const itemsHtml = items.map(p => {
     const up = Number(p.change_percent) >= 0;
     const change = Number(p.change || 0).toFixed(2);
-    return `<span class="ticker-item"><span class="ticker-symbol">${p.symbol}${p.symbol && fnoSymbols.has(p.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span></span>`;
+    return `<span class="ticker-item"><span class="ticker-symbol" data-sym="${escapeHtml(p.symbol || '')}">${p.symbol}${p.symbol && fnoSymbols.has(p.symbol.toUpperCase()) ? ' <span class="fno-badge">F&O</span>' : ''}</span><span class="ticker-price">₹${Number(p.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span><span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${change} (${Math.abs(Number(p.change_percent)).toFixed(2)}%)</span></span>`;
   }).join('');
   priceTicker.innerHTML = itemsHtml + itemsHtml;
   const duration = Math.max(items.length * 4, 20);
@@ -8585,8 +8585,8 @@ function renderCrudeOpportunities(data) {
       <article class="crude-opportunity-card ${isTriggered ? 'triggered' : 'ready-watch'}">
         <div class="crude-opportunity-top">
           <div class="crude-opportunity-stock">
-            <div class="crude-opportunity-symbol">${escapeHtml(item?.symbol || '—')}</div>
-            <div class="crude-opportunity-name">${escapeHtml(item?.name || '')}</div>
+            <div class="crude-opportunity-symbol" data-sym="${escapeHtml(item?.symbol || '')}">${escapeHtml(item?.symbol || '—')}</div>
+            <div class="crude-opportunity-name" data-sym="${escapeHtml(item?.symbol || '')}">${escapeHtml(item?.name || '')}</div>
           </div>
           <div class="crude-opportunity-badges">
             <span class="crude-opportunity-badge ${isLong ? 'long' : 'short'}">${escapeHtml(direction)}</span>
@@ -8696,7 +8696,7 @@ function renderIndustryPanel() {
   const decliners = industryData.reduce((t, x) => t + (x.down || 0), 0);
   if (badge) badge.textContent = `${advancers.toLocaleString('en-IN')} up · ${decliners.toLocaleString('en-IN')} down`;
   const fmtBW = b => (b && b.symbol && b.change_percent !== null && b.change_percent !== undefined)
-    ? `${b.symbol} <span class="${b.change_percent >= 0 ? 'up' : 'down'}">${b.change_percent >= 0 ? '+' : ''}${Number(b.change_percent).toFixed(2)}%</span>` : '—';
+    ? `<span data-sym="${escapeHtml(b.symbol)}">${b.symbol}</span> <span class="${b.change_percent >= 0 ? 'up' : 'down'}">${b.change_percent >= 0 ? '+' : ''}${Number(b.change_percent).toFixed(2)}%</span>` : '—';
   body.innerHTML = rows.slice(0, q ? 200 : 40).map(x => {
     const avg = x.avg_change;
     const up = (avg ?? 0) >= 0;
@@ -8734,8 +8734,8 @@ async function openIndustryStocks(name) {
       const valid = s.change_percent !== null && s.change_percent !== undefined && !isNaN(pct);
       const up = valid && pct >= 0;
       return `<tr style="cursor:pointer" onclick="document.getElementById('searchInput').value='${s.symbol}'; doSearch(); window.scrollTo({top:0,behavior:'smooth'});">
-        <td><b>${s.symbol}</b></td>
-        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(s.company_name || '').replace(/"/g, '&quot;')}">${s.company_name || '—'}</td>
+        <td><b data-sym="${escapeHtml(s.symbol)}">${s.symbol}</b></td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(s.company_name || '').replace(/"/g, '&quot;')}"><span data-sym="${escapeHtml(s.symbol)}">${s.company_name || '—'}</span></td>
         <td class="mono">${hasP ? '₹' + Number(s.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</td>
         <td class="mono ${up ? 'up' : (valid ? 'down' : '')}">${valid ? (up ? '+' : '') + pct.toFixed(2) + '%' : '—'}</td>
         <td class="mono">${s.market_cap ? fmtCapCr(s.market_cap) : '—'}</td>
@@ -9442,7 +9442,7 @@ if ('serviceWorker' in navigator) {
 <script src="/my-ticker.js?v=2"></script>
 <script src="/home-overview.js?v=10"></script>
 <script src="/live-insights.js?v=4"></script>
-<script src="/top-signals.js?v=1"></script>
+<script src="/top-signals.js?v=2"></script>
 <script src="/auth-extra.js?v=1"></script>
 </body>
 </html>   

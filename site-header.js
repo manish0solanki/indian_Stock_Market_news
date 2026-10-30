@@ -183,6 +183,18 @@
   if (!document.querySelector('script[src*="link-viewer.js"]')) {
     var lv = document.createElement('script'); lv.src = '/link-viewer.js?v=1'; lv.defer = true; document.head.appendChild(lv);
   }
+  // Any element with data-sym="SYMBOL" (a company name or symbol) opens that stock's analysis.
+  // Capture phase, so it wins over a row or card click handler around the name.
+  window.mpStockUrl = function (sym) { return '/stock-analysis.html?symbol=' + encodeURIComponent(String(sym).trim().toUpperCase()); };
+  document.addEventListener('click', function (e) {
+    var el = e.target && e.target.closest && e.target.closest('[data-sym]');
+    if (!el || !el.getAttribute('data-sym') || e.defaultPrevented) return;
+    e.preventDefault(); e.stopPropagation();
+    location.href = window.mpStockUrl(el.getAttribute('data-sym'));
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('[data-sym]:not(a)')) e.target.click();
+  });
   // Blog articles (/blog/<category>/<post>/) get a "Listen" button that reads the article aloud.
   if (/^\/blog\/[^/]+\/[^/]+/.test(location.pathname) && !document.querySelector('script[src*="read-aloud.js"]')) {
     var ra = document.createElement('script'); ra.src = '/blog/read-aloud.js?v=1'; ra.defer = true; document.head.appendChild(ra);

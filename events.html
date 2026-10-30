@@ -219,10 +219,10 @@ function renderStats(){
  const divs=inScope.filter(e=>e.kind==='dividend'&&e.event_date>=t&&e.event_date<=wk&&e.id.endsWith('-ex'));
  const mine=events.filter(e=>held.has(e.symbol)&&e.event_date>=t&&e.event_date<=addDays(t,30));
  $('stats').innerHTML=
-  '<div class="stat"><div class="l">Results this week</div><div class="v">'+thisWeek.length+'</div><div class="s">'+(thisWeek.length?thisWeek.slice(0,3).map(e=>esc(e.symbol)).join(', ')+(thisWeek.length>3?'…':''):'None scheduled')+'</div></div>'+
+  '<div class="stat"><div class="l">Results this week</div><div class="v">'+thisWeek.length+'</div><div class="s">'+(thisWeek.length?thisWeek.slice(0,3).map(e=>'<span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span>').join(', ')+(thisWeek.length>3?'…':''):'None scheduled')+'</div></div>'+
   '<div class="stat"><div class="l">Results out (3 weeks)</div><div class="v">'+out.length+'</div><div class="s"><span class="pos">'+c('positive')+' positive</span> · <span class="neg">'+c('negative')+' negative</span> · '+c('mixed')+' mixed</div></div>'+
-  '<div class="stat"><div class="l">Dividends going ex this week</div><div class="v">'+divs.length+'</div><div class="s">'+(divs.length?divs.slice(0,3).map(e=>esc(e.symbol)).join(', '):'None')+'</div></div>'+
-  '<div class="stat"><div class="l">Your portfolio, next 30 days</div><div class="v">'+(user?mine.length:'—')+'</div><div class="s">'+(user?(mine.length?mine.slice(0,3).map(e=>esc(e.symbol)+' '+fmtDay(e.event_date,{day:'numeric',month:'short'})).join(', '):'No events for your stocks'):'<a href="/?login=1">Log in</a> to see yours')+'</div></div>';
+  '<div class="stat"><div class="l">Dividends going ex this week</div><div class="v">'+divs.length+'</div><div class="s">'+(divs.length?divs.slice(0,3).map(e=>'<span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span>').join(', '):'None')+'</div></div>'+
+  '<div class="stat"><div class="l">Your portfolio, next 30 days</div><div class="v">'+(user?mine.length:'—')+'</div><div class="s">'+(user?(mine.length?mine.slice(0,3).map(e=>'<span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span> '+fmtDay(e.event_date,{day:'numeric',month:'short'})).join(', '):'No events for your stocks'):'<a href="/?login=1">Log in</a> to see yours')+'</div></div>';
 }
 
 /* ───────── Calendar ───────── */
@@ -259,7 +259,7 @@ function rowHtml(e){
  if(e.kind==='dividend'&&e.amount)tags.push('<span class="pill">'+inr(e.amount)+'/share</span>');
  if(held.has(e.symbol))tags.push('<span class="pill mine">In portfolio</span>');
  if(s)tags.push('<span class="pill sig '+(s.side==='BUY'?'pos':'neg')+'">'+(s.side==='BUY'?'Buy':'Sell')+' signal</span>');
- return '<button class="row" data-id="'+esc(e.id)+'"><span class="dot k-'+groupOf(e)+'"></span><span class="nm"><b>'+esc(e.symbol)+'</b> <span class="muted">· '+esc(KIND_LABEL[e.kind]||e.kind)+'</span><small>'+esc(e.company||'')+' — '+esc(e.title)+'</small></span><span class="tags">'+tags.join('')+'</span></button>';
+ return '<button class="row" data-id="'+esc(e.id)+'"><span class="dot k-'+groupOf(e)+'"></span><span class="nm"><b data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</b> <span class="muted">· '+esc(KIND_LABEL[e.kind]||e.kind)+'</span><small>'+esc(e.company||'')+' — '+esc(e.title)+'</small></span><span class="tags">'+tags.join('')+'</span></button>';
 }
 function renderList(){
  const t=istToday(),vis=events.filter(visible);
@@ -362,7 +362,7 @@ function detail(e){
  if(o&&o.filing&&o.filing.view)links.push('<a href="'+esc(o.filing.view)+'" target="_blank" rel="noopener">Read the filing on NSE ↗</a>');
  links.push('<a href="https://www.nseindia.com/companies-listing/corporate-filings-event-calendar" target="_blank" rel="noopener">NSE event calendar ↗</a>');
  body+='<div class="links">'+links.join('')+'</div><div class="disc">Facts from NSE filings and daily prices; the verdict and ideas are rule-based summaries, not advice.</div>';
- $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle">'+esc(e.symbol)+' · '+esc(KIND_LABEL[e.kind]||e.kind)+'</h2><div class="co">'+esc(e.company||'')+(held.has(e.symbol)?' · <span class="pill mine">In your portfolio</span>':'')+'</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody">'+body+'</div>';
+ $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle"><span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span> · '+esc(KIND_LABEL[e.kind]||e.kind)+'</h2><div class="co"><span data-sym="'+esc(e.symbol)+'">'+esc(e.company||'')+'</span>'+(held.has(e.symbol)?' · <span class="pill mine">In your portfolio</span>':'')+'</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody">'+body+'</div>';
  $('modalbg').classList.add('open');$('modalbg').setAttribute('aria-hidden','false');
  $('mClose').focus();
 }

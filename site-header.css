@@ -87,3 +87,7 @@
 .mph-foot a { color: var(--mph-muted) !important; text-decoration: none; font-weight: 600; }
 .mph-foot a:hover { color: var(--mph-text) !important; text-decoration: underline; }
 .mph-foot p { flex-basis: 100%; margin: 4px 0 0; font-size: 11.5px; }
+
+/* Company names and symbols that open the stock's analysis (data-sym, handled in site-header.js) */
+[data-sym] { cursor: pointer; }
+[data-sym]:hover { text-decoration: underline; text-underline-offset: 2px; }

@@ -20,7 +20,7 @@
     const buy = p.side === 'BUY';
     const why = (p.strengths || []).slice(0, 3).map((w) => `<span>${esc(w)}</span>`).join('');
     return `<a class="ts-card ${buy ? 'buy' : 'sell'}" href="${signalUrl(p)}">
-      <div class="ts-top"><div class="ts-id"><b>${esc(p.symbol)}</b><small>${esc(p.name)}</small></div>
+      <div class="ts-top"><div class="ts-id"><b data-sym="${esc(p.symbol)}">${esc(p.symbol)}</b><small data-sym="${esc(p.symbol)}">${esc(p.name)}</small></div>
         <div class="ts-px"><b>${price(p.ltp)}</b><small class="${num(p.change_percent) >= 0 ? 'up' : 'down'}">${pct(p.change_percent)}</small></div></div>
       <div class="ts-tags"><span class="ts-side ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span><span>${p.tf === 'intraday' ? 'Intraday' : 'Swing'}</span><span>${esc(p.setup)}</span></div>
       <div class="ts-lv"><div><span>Entry</span><b>${price(p.entry)}</b></div><div><span>Stop</span><b class="down">${price(p.stop)}</b></div><div><span>Target 1</span><b class="up">${price(p.target1)}</b></div></div>

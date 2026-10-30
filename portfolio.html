@@ -375,7 +375,7 @@ td small{display:block;color:var(--dim);font-size:11.5px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/stock-search.js?v=1"></script>
 <script src="/cas-parser.js?v=5"></script>
-<script src="/portfolio-returns.js?v=1"></script>
+<script src="/portfolio-returns.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
@@ -567,14 +567,14 @@ function render(){
  $('holdCount').textContent=h.length+' stock'+(h.length===1?'':'s')+' · '+f.length+' fund'+(f.length===1?'':'s');
  const priced=h.filter(x=>x.ltp);
  const best=priced.length?priced.reduce((a,x)=>x.pct>a.pct?x:a):null;
- $('holdBest').innerHTML=best?'Top performer: <b class="'+tone(best.pct)+'">'+esc(best.symbol)+' '+pctTxt(best.pct)+'</b>':'';
+ $('holdBest').innerHTML=best?'Top performer: <b class="'+tone(best.pct)+'"'+(best.code?'':' data-sym="'+esc(best.symbol)+'"')+'>'+esc(best.symbol)+' '+pctTxt(best.pct)+'</b>':'';
 
  const acts=x=>'<div class="rowacts"><button class="btn sm" onclick="manageHolding(\''+esc(x.symbol)+'\')">Edit</button><button class="btn sm danger" onclick="deleteHolding(\''+esc(x.symbol)+'\')">Delete</button></div>';
  const dayCell=x=>Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span><small class="'+tone(x.dayChange)+'">'+(Number.isFinite(x.dayPct)?pctTxt(x.dayPct):'')+'</small>':'<span class="muted">—</span>';
  const pnlCell=x=>x.current?'<span class="'+tone(x.pnl)+'">'+signed(x.pnl)+'</span><small><span class="chg '+tone(x.pct)+'">'+pctTxt(x.pct)+'</span></small>':'<span class="muted">—</span>';
  const emptyMsg='<b>No holdings yet</b>Add a transaction or import a CSV / Excel file from your broker.';
- $('holdings').innerHTML=h.length?h.map(x=>'<tr><td class="sym"><b>'+esc(x.symbol)+'</b><small>'+esc(x.exchange)+'</small></td><td class="r">'+x.qty.toLocaleString('en-IN')+'</td><td class="r">'+money(x.avg)+'</td><td class="r">'+(x.ltp?money(x.ltp):'—')+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.ltp?money(x.current):'—')+'</b><span class="wt">'+wtTxt(valueOf(x),cur)+'</span></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+emptyMsg+'</td></tr>';
- $('holdingsCards').innerHTML=h.length?h.map(x=>'<div class="hcard"><div class="row"><span class="sym">'+esc(x.symbol)+'</span><span class="big">'+(x.ltp?money(x.current):money(x.cost))+'</span></div><div class="row"><span class="meta">'+x.qty.toLocaleString('en-IN')+' × avg '+money(x.avg)+'</span><span class="meta">'+(x.ltp?'<span class="chg '+tone(x.pct)+'">'+signed(x.pnl)+' · '+pctTxt(x.pct)+'</span>':'—')+'</span></div><div class="row"><span class="meta">LTP '+(x.ltp?money(x.ltp):'—')+'</span><span class="meta">Today '+(Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span>':'—')+'</span></div>'+acts(x)+'</div>').join(''):'<div class="empty">'+emptyMsg+'</div>';
+ $('holdings').innerHTML=h.length?h.map(x=>'<tr><td class="sym"><b data-sym="'+esc(x.symbol)+'">'+esc(x.symbol)+'</b><small>'+esc(x.exchange)+'</small></td><td class="r">'+x.qty.toLocaleString('en-IN')+'</td><td class="r">'+money(x.avg)+'</td><td class="r">'+(x.ltp?money(x.ltp):'—')+'</td><td class="r">'+money(x.cost)+'</td><td class="r"><b>'+(x.ltp?money(x.current):'—')+'</b><span class="wt">'+wtTxt(valueOf(x),cur)+'</span></td><td class="r">'+dayCell(x)+'</td><td class="r">'+pnlCell(x)+'</td><td class="r">'+acts(x)+'</td></tr>').join(''):'<tr><td colspan="9" class="empty">'+emptyMsg+'</td></tr>';
+ $('holdingsCards').innerHTML=h.length?h.map(x=>'<div class="hcard"><div class="row"><span class="sym" data-sym="'+esc(x.symbol)+'">'+esc(x.symbol)+'</span><span class="big">'+(x.ltp?money(x.current):money(x.cost))+'</span></div><div class="row"><span class="meta">'+x.qty.toLocaleString('en-IN')+' × avg '+money(x.avg)+'</span><span class="meta">'+(x.ltp?'<span class="chg '+tone(x.pct)+'">'+signed(x.pnl)+' · '+pctTxt(x.pct)+'</span>':'—')+'</span></div><div class="row"><span class="meta">LTP '+(x.ltp?money(x.ltp):'—')+'</span><span class="meta">Today '+(Number.isFinite(x.dayChange)?'<span class="'+tone(x.dayChange)+'">'+signed(x.dayChange)+'</span>':'—')+'</span></div>'+acts(x)+'</div>').join(''):'<div class="empty">'+emptyMsg+'</div>';
 
  renderFunds(f,dayCell,pnlCell,x=>wtTxt(valueOf(x),cur));
 
@@ -590,8 +590,8 @@ function render(){
   ...mfTx.map(t=>({date:t.trade_date,type:t.transaction_type,name:fundShort(t.scheme_name),ex:'MF',qty:num(t.units),price:num(t.nav),charges:0,source:t.source,at:t.created_at}))]
   .sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.at).localeCompare(String(a.at))).slice(0,100);
  const qtyTxt=t=>t.ex==='MF'?t.qty.toLocaleString('en-IN',{maximumFractionDigits:3})+' units':t.qty.toLocaleString('en-IN');
- $('transactions').innerHTML=tx.length?tx.map(t=>'<tr><td>'+esc(t.date)+'</td><td><span class="chg '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span></td><td><b>'+esc(t.name)+'</b></td><td>'+esc(t.ex)+'</td><td class="r">'+qtyTxt(t)+'</td><td class="r">'+money(t.price)+'</td><td class="r">'+money(t.charges)+'</td><td class="muted">'+esc(t.source)+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">No transactions yet.</td></tr>';
- $('transactionsCards').innerHTML=tx.length?tx.map(t=>'<div class="tcard"><span class="type '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span><b>'+esc(t.name)+'</b><span>'+qtyTxt(t)+' × '+money(t.price)+'</span><small>'+esc(t.date)+' · '+esc(t.ex)+(t.charges?' · charges '+money(t.charges):'')+' · '+esc(t.source)+'</small></div>').join(''):'<div class="empty">No transactions yet.</div>';
+ $('transactions').innerHTML=tx.length?tx.map(t=>'<tr><td>'+esc(t.date)+'</td><td><span class="chg '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span></td><td><b'+(t.ex==='MF'?'':' data-sym="'+esc(t.name)+'"')+'>'+esc(t.name)+'</b></td><td>'+esc(t.ex)+'</td><td class="r">'+qtyTxt(t)+'</td><td class="r">'+money(t.price)+'</td><td class="r">'+money(t.charges)+'</td><td class="muted">'+esc(t.source)+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">No transactions yet.</td></tr>';
+ $('transactionsCards').innerHTML=tx.length?tx.map(t=>'<div class="tcard"><span class="type '+(t.type==='BUY'?'green':'red')+'">'+esc(t.type)+'</span><b'+(t.ex==='MF'?'':' data-sym="'+esc(t.name)+'"')+'>'+esc(t.name)+'</b><span>'+qtyTxt(t)+' × '+money(t.price)+'</span><small>'+esc(t.date)+' · '+esc(t.ex)+(t.charges?' · charges '+money(t.charges):'')+' · '+esc(t.source)+'</small></div>').join(''):'<div class="empty">No transactions yet.</div>';
 }
 
 /* ───────── Insights ───────── */

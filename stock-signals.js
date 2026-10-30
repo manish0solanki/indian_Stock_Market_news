@@ -197,7 +197,7 @@ function renderSignals() {
     const held = S.trades.some((t) => t.status === 'OPEN' && t.symbol === s.symbol);
     const rr2 = num(s.risk_per_share) ? Math.abs(s.target2 - s.entry) / s.risk_per_share : 0;
     return `<article class="scard" data-sig="${esc(s.symbol)}|${esc(s.tf)}">
-      <div class="srow"><div><div class="sym">${esc(s.symbol)}</div><div class="nm">${esc(s.name)}</div></div>
+      <div class="srow"><div><div class="sym" data-sym="${esc(s.symbol)}">${esc(s.symbol)}</div><div class="nm" data-sym="${esc(s.symbol)}">${esc(s.name)}</div></div>
         <div class="px"><div class="l">${L === null ? '—' : fmt(L)}</div><div class="c ${cls(c)}">${pct(c)}</div></div></div>
       <div class="tags"><span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span><span class="tag">${s.tf === 'intraday' ? 'Intraday' : 'Swing'}</span><span class="tag">${esc(s.setup)}</span>${z.label ? `<span class="tag ${z.cls}">${esc(z.label)}</span>` : ''}${held ? '<span class="tag warn">Holding</span>' : ''}</div>
       ${ladder({ stop: s.stop, entry: s.entry, t1: s.target1, t2: s.target2 }, L)}
@@ -213,7 +213,7 @@ const sigByKey = (k) => { const [sym, tf] = String(k).split('|'); return S.signa
 function openSignal(s) {
   const L = ltpOf(s.symbol, null), c = chgOf(s.symbol), z = zone(s, L), buy = s.side === 'BUY';
   const held = S.trades.some((t) => t.status === 'OPEN' && t.symbol === s.symbol);
-  openSheet(`<div class="hd"><div><h2>${esc(s.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span></h2><div class="sub">${esc(s.name)} · ${s.tf === 'intraday' ? 'Intraday' : 'Swing'} · ${esc(s.setup)}</div></div>
+  openSheet(`<div class="hd"><div><h2><span data-sym="${esc(s.symbol)}">${esc(s.symbol)}</span> <span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span></h2><div class="sub">${esc(s.name)} · ${s.tf === 'intraday' ? 'Intraday' : 'Swing'} · ${esc(s.setup)}</div></div>
       <button class="x" data-close aria-label="Close">×</button></div>
     <div class="srow" style="margin-top:10px"><div class="px" style="text-align:left"><div class="l" style="font-size:22px">${L === null ? '—' : inr(L)}</div><div class="c ${cls(c)}">${pct(c)} today</div></div><span class="score" style="--p:${Math.min(100, s.score)}%;width:46px;height:46px" data-s="${s.score}"></span></div>
     ${z.label ? `<div class="msg ${z.cls === 'buy' ? 'ok' : z.cls === 'sell' ? 'err' : 'warn'}">${esc(z.label)}</div>` : ''}
@@ -317,7 +317,7 @@ function renderPositions() {
   host.innerHTML = a.open.map((t) => {
     const m = posMetrics(t), buy = t.direction === 'BUY', c = chgOf(t.symbol), snap = t.signal_snapshot || {};
     return `<article class="scard" data-pos="${esc(t.id)}">
-      <div class="srow"><div><div class="sym">${esc(t.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></div>
+      <div class="srow"><div><div class="sym"><span data-sym="${esc(t.symbol)}">${esc(t.symbol)}</span> <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></div>
         <div class="nm">${fmt(m.qty, 0)} @ ${fmt(m.entry)} · ${t.timeframe === 'intraday' ? 'Intraday' : 'Swing'}${snap.target1_partial_filled ? ' · T1 booked' : ''}</div></div>
         <div class="px"><div class="l ${cls(m.net)}">${sinr(m.net)}</div><div class="c ${cls(m.net)}">${pct(m.netPct)}</div></div></div>
       ${ladder({ stop: num(t.stop_loss), entry: m.entry, t1: num(t.target_1), t2: num(t.target_2) }, m.px)}
@@ -327,7 +327,7 @@ function renderPositions() {
 }
 function openManage(t) {
   const m = posMetrics(t), buy = t.direction === 'BUY';
-  openSheet(`<div class="hd"><div><h2>${esc(t.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></h2><div class="sub">${fmt(m.qty, 0)} shares @ ${inr(m.entry)} · opened ${esc(ago(t.opened_at))}</div></div><button class="x" data-close aria-label="Close">×</button></div>
+  openSheet(`<div class="hd"><div><h2><span data-sym="${esc(t.symbol)}">${esc(t.symbol)}</span> <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></h2><div class="sub">${fmt(m.qty, 0)} shares @ ${inr(m.entry)} · opened ${esc(ago(t.opened_at))}</div></div><button class="x" data-close aria-label="Close">×</button></div>
     <div class="srow" style="margin:10px 0"><div><div class="l mono" style="font-size:22px;font-weight:700">${inr(m.px)}</div><div class="${cls(m.net)} mono" style="font-weight:700">${sinr(m.net)} (${pct(m.netPct)})</div></div></div>
     ${ladder({ stop: num(t.stop_loss), entry: m.entry, t1: num(t.target_1), t2: num(t.target_2) }, m.px)}
     <div class="grid3" style="margin-top:24px"><label class="field"><span>Stop loss</span><input id="ms" type="number" step="0.05" value="${t.stop_loss}"></label>
@@ -390,7 +390,7 @@ function renderHistory() {
     const p = pnl(t), snap = t.signal_snapshot || {}, buy = t.direction === 'BUY';
     const why = REASONS[snap.exit_reason] || snap.exit_reason || 'Closed';
     const qtyShow = num(snap.original_quantity) || num(t.quantity);
-    return `<article class="scard" style="cursor:default"><div class="srow"><div><div class="sym">${esc(t.symbol)} <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></div>
+    return `<article class="scard" style="cursor:default"><div class="srow"><div><div class="sym"><span data-sym="${esc(t.symbol)}">${esc(t.symbol)}</span> <span class="tag ${buy ? 'buy' : 'sell'}">${buy ? 'BUY' : 'SELL'}</span></div>
       <div class="nm">${fmt(qtyShow, 0)} · ${fmt(t.entry_price)} → ${fmt(t.exit_price)}</div></div><div class="px"><div class="l ${cls(p)}">${sinr(p)}</div><div class="c muted">${esc(why)}</div></div></div>
       <div class="tags"><span class="tag">${t.timeframe === 'intraday' ? 'Intraday' : 'Swing'}</span>${snap.target1_partial_filled ? '<span class="tag buy">T1 booked</span>' : ''}<span class="tag">${esc(new Date(t.closed_at || t.opened_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }))}</span></div></article>`;
   }).join('');
