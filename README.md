@@ -196,6 +196,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── auth-extra.js            Google and phone sign-in options
 ├── stock-search.js          Shared stock search
 ├── admin.html, admin-news.html   Admin tools
+├── privacy.html, terms.html, legal.css   Privacy Policy (DPDP Act 2023) and Terms of Use
 ├── blog/                    Generated posts, posts.json, sitemap.xml, read-aloud.js
 ├── scripts/blog/            Blog generator (Node): data, build, ai, render, generate, ai-check
 ├── supabase/                SQL schemas and functions (*.sql) + Edge Functions (functions/)

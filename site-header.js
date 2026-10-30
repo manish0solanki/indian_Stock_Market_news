@@ -88,6 +88,15 @@
     sheet.innerHTML = '<div class="mph-sheet-scrim"></div><div class="mph-sheet-panel" role="navigation" aria-label="Menu"><a class="mph-brand" href="/" target="_self"><i></i>MarketPulse</a>' + navHtml + '</div>';
     document.body.appendChild(sheet);
 
+    // Small footer with the legal links (Home has its own footer and doesn't use this header).
+    if (!document.querySelector('.mph-foot')) {
+      var foot = document.createElement('footer');
+      foot.className = 'mph-foot';
+      foot.innerHTML = '<a href="/privacy.html" target="_self">Privacy Policy</a><span>·</span><a href="/terms.html" target="_self">Terms of Use</a><span>·</span><a href="/#contact" target="_self">Contact</a>' +
+        '<p>MarketPulse is for information and education only. It is not investment advice, and signals are paper trading only.</p>';
+      document.body.appendChild(foot);
+    }
+
     var tabs = [['Home', '/', 'home', NAV[0][2]], ['Markets', '/#mpHeatmap', 'markets', null], ['News', '/#marketNews', 'news', null],
       ['Analysis', '/stock-analysis.html', 'analysis', NAV[2][2]], ['Portfolio', '/portfolio.html', 'portfolio', NAV[4][2]]];
     var bar = document.createElement('div');
