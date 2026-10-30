@@ -27,6 +27,7 @@
     ['Analysis', '/stock-analysis.html', function (p) { return p.indexOf('/stock-analysis') === 0; }],
     ['Screener', '/screener.html', function (p) { return p.indexOf('/screener') === 0; }],
     ['Signals', '/stock-signals.html', function (p) { return p.indexOf('/stock-signals') === 0; }],
+    ['F&O', '/fno.html', function (p) { return p.indexOf('/fno') === 0; }],
     ['Portfolio', '/portfolio.html', function (p) { return p.indexOf('/portfolio') === 0; }],
     ['IPO', '/ipo.html', function (p) { return p.indexOf('/ipo') === 0; }],
     ['Events', '/events.html', function (p) { return p.indexOf('/events') === 0; }],
@@ -98,8 +99,9 @@
       document.body.appendChild(foot);
     }
 
-    var tabs = [['Home', '/', 'home', NAV[0][2]], ['Markets', '/#mpHeatmap', 'markets', null], ['News', '/#marketNews', 'news', null],
-      ['Analysis', '/stock-analysis.html', 'analysis', NAV[2][2]], ['Portfolio', '/portfolio.html', 'portfolio', NAV[4][2]]];
+    var navTest = function (name) { for (var i = 0; i < NAV.length; i++) if (NAV[i][0] === name) return NAV[i][2]; return null; };
+    var tabs = [['Home', '/', 'home', navTest('Home')], ['Markets', '/#mpHeatmap', 'markets', null], ['News', '/#marketNews', 'news', null],
+      ['Analysis', '/stock-analysis.html', 'analysis', navTest('Analysis')], ['Portfolio', '/portfolio.html', 'portfolio', navTest('Portfolio')]];
     var bar = document.createElement('div');
     bar.className = 'mph-tabbar'; bar.setAttribute('role', 'navigation'); bar.setAttribute('aria-label', 'Quick navigation');
     bar.innerHTML = tabs.map(function (t) { return '<a href="' + t[1] + '" target="_self"' + (t[3] && t[3](path) ? ' aria-current="page"' : '') + '>' + svg(t[2]) + t[0] + '</a>'; }).join('');

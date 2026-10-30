@@ -72,6 +72,12 @@
 - Ready-made screens: quality at a fair price, large caps in uptrend, near 52-week high/low, volume spikes, high dividend, value picks, today's gainers.
 - Data comes from one call to `stock_screener()` (`supabase/stock-screener.sql`); filtering and sorting run in the browser. Filters are kept in the URL, so a screen can be shared, and results download as CSV.
 
+### ⇅ F&O Option Chain (`fno.html`)
+- Option chain for Nifty, Bank Nifty, Fin Nifty, Midcap Nifty, Nifty Next 50 and every F&O stock, any expiry.
+- Worked out for you: **PCR** (OI and volume), **max pain**, **support / resistance** (largest put OI at or below spot, largest call OI at or above it), **ATM IV** and the **expected move** (ATM straddle).
+- Open interest / change-in-OI chart by strike, the chain table with ITM shading and the spot line, and a plain-English summary and glossary.
+- Data: the `option-chain` Edge Function (NSE's option-chain API, cached a minute). Refreshes every minute in market hours.
+
 ### 📅 Events Calendar (`events.html`)
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
 - **After results**, each company gets:
@@ -162,6 +168,7 @@
 | `stock-fundamentals` | Last 8 quarterly results from NSE integrated-filing XBRL, cached 6 h |
 | `index-sparklines` | Intraday index paths, GIFT Nifty (NSE IX) and India VIX |
 | `mf-data` | Mutual fund NAVs |
+| `option-chain` | NSE option chain with PCR, max pain, support/resistance and expected move (`?symbol=NIFTY&expiry=03-Nov-2026`), cached a minute |
 | `events-refresh` | Events calendar and results analysis |
 | `ipo-refresh` | IPOs and GMP |
 | `news-refresh` | News collection |
@@ -191,6 +198,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── stock-signals.html/.js/.css   Stock signals and paper trading
 ├── stock-analysis.html      Technical / fundamental analysis
 ├── screener.html/.js         Stock screener
+├── fno.html/.js              F&O option chain, PCR, max pain
 ├── events.html              Events calendar
 ├── ipo.html                 IPOs and GMP
 ├── crypto-signals.html, crypto-performance.js/.css, crypto-manager/   Crypto bot UI

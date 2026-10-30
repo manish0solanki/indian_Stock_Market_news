@@ -54,7 +54,12 @@
 /* Phone tab bar */
 .mph-tabbar { display: none; }
 
-@media (max-width: 1180px) {
+@media (max-width: 1560px) {
+  .mph-nav { gap: 3px; }
+  .mph-nav a { padding: 7px 10px; font-size: 12.5px; }
+  .mph-search { flex-basis: 220px; }
+}
+@media (max-width: 1340px) {
   .mph-nav { display: none; }
   .mph-menu-btn { display: inline-flex; }
 }

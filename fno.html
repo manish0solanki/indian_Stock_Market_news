@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>Option Chain, PCR &amp; Max Pain: Nifty, Bank Nifty, F&amp;O Stocks — MarketPulse</title>
+<meta name="description" content="Live NSE option chain for Nifty, Bank Nifty and F&amp;O stocks with open interest, change in OI, put-call ratio, max pain, support, resistance and the expected move by expiry.">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--radius:14px}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+button,input,select{font:inherit;color:inherit}
+.page{max-width:1320px;margin:0 auto;padding:22px clamp(12px,2.4vw,28px) 40px}
+.head{margin-bottom:14px}
+.head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.sub{font-size:13px;color:var(--muted)}
+.up{color:var(--green)}.down{color:var(--red)}.muted{color:var(--dim)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--accent2)}
+.chip.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.inp{padding:7px 11px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13.5px}
+.inp:focus{outline:none;border-color:var(--accent2)}
+#stockForm{display:flex;gap:6px}
+#stockIn{width:190px}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;color:var(--text)}
+.btn:hover{border-color:var(--accent2)}
+.status{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted)}
+.titlebar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.titlebar h2{margin:0;font-size:19px;letter-spacing:-.3px}
+.titlebar .grp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.titlebar label{font-size:12px;color:var(--dim);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;min-width:0}
+.stat .l{font-size:10.5px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.stat .v{font-size:21px;font-weight:800;margin-top:2px;letter-spacing:-.4px;white-space:nowrap}
+.stat .s{font-size:12px;color:var(--muted)}
+.summary{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:10px;padding:10px 14px;font-size:13.5px;color:var(--text);margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;min-width:0}
+.card h3{margin:0;font-size:15px}
+.cardhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.seg{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
+.seg button{border:0;background:none;color:var(--muted);font-weight:700;font-size:12px;padding:5px 10px;border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin-bottom:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.lg-ce{background:var(--red)}.lg-pe{background:var(--green)}
+#chart{max-height:620px;overflow:auto}
+.brow{display:grid;grid-template-columns:1fr 78px 1fr;align-items:center;gap:6px;height:22px}
+.brow.atm .bk{color:var(--text);background:var(--hover);border-radius:6px}
+.bside{display:flex;align-items:center;gap:6px;height:100%;min-width:0}
+.bside.ce{justify-content:flex-end}
+.bside i{display:block;height:12px;border-radius:3px;min-width:1px}
+.bside.ce i{background:var(--red);opacity:.85}
+.bside.pe i{background:var(--green);opacity:.85}
+.bside i.neg{opacity:.35}
+.bval{font-size:10.5px;color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+.bk{text-align:center;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.1}
+.bk em{display:block;font-style:normal;font-size:9px;color:var(--amber);font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.spotline{position:relative;height:14px;margin:2px 0}
+.spotline::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--accent2)}
+.spotline span{position:relative;display:block;width:max-content;margin:0 auto;background:var(--surface);padding:0 8px;font-size:10.5px;font-weight:800;color:var(--accent2)}
+#tablewrap{max-height:660px;overflow:auto;border:1px solid var(--border);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+thead{position:sticky;top:0;z-index:2;background:var(--surface2)}
+thead th{background:var(--surface2);font-size:10.5px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;padding:7px 8px;white-space:nowrap;border-bottom:1px solid var(--border)}
+thead tr.side th{font-size:11.5px;color:var(--text)}
+th.r,td.r{text-align:right}
+td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td.k{text-align:center;font-weight:800;background:var(--surface2);border-left:1px solid var(--border);border-right:1px solid var(--border)}
+td.itm{background:rgba(243,201,105,.07)}
+tr.atm td{box-shadow:inset 0 1px 0 var(--accent2),inset 0 -1px 0 var(--accent2)}
+tr.atm td.k{color:var(--accent2)}
+td.px b{display:block;font-weight:700}
+td.px small{display:block;font-size:10.5px}
+td.oi{position:relative}
+.oibar{position:absolute;top:4px;bottom:4px;opacity:.16;border-radius:3px;pointer-events:none}
+td.ce.oi .oibar{right:0;background:var(--red)}
+td.pe.oi .oibar{left:0;background:var(--green)}
+td.pe.oi{text-align:left}
+tr.spotrow td{padding:0;border-bottom:0;height:16px;position:relative;background:none}
+tr.spotrow td::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--accent2)}
+tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;background:var(--surface);padding:0 8px;font-size:10.5px;font-weight:800;color:var(--accent2)}
+.totals{font-size:12px;color:var(--muted);margin-top:8px}
+.learn{margin-top:14px}
+.learn summary{cursor:pointer;font-weight:700;font-size:14px}
+.learn dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:8px 16px;margin:12px 0 0;font-size:13px}
+.learn dt{font-weight:700}
+.learn dd{margin:0;color:var(--muted)}
+.disc{font-size:12px;color:var(--dim);margin-top:12px}
+@media (max-width:1100px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}#chart{max-height:420px}}
+@media (max-width:760px){
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .stat .v{font-size:18px}
+ #idx{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}
+ #idx::-webkit-scrollbar{display:none}
+ #stockForm{width:100%}#stockIn{flex:1;width:auto;min-width:0}
+ .xs{display:none}
+ table{font-size:11.5px}
+ td,thead th{padding:6px 4px}
+ td.px small{font-size:10px}
+ .card{padding:10px}
+ #tablewrap{margin:0 -4px}
+ .brow{grid-template-columns:1fr 64px 1fr}
+ .learn dl{grid-template-columns:1fr}
+ .learn dd{margin-bottom:6px}
+}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="/fno.js?v=1" defer></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <div class="head">
+  <h1>F&amp;O: option chain</h1>
+  <div class="sub">Open interest, put-call ratio, max pain and the expected move for Nifty, Bank Nifty and every F&amp;O stock, from NSE. New to options? See “What these numbers mean” below.</div>
+ </div>
+
+ <div class="controls">
+  <div class="chips" id="idx"></div>
+  <form id="stockForm" autocomplete="off"><input class="inp" id="stockIn" list="fnoList" placeholder="F&amp;O stock, e.g. RELIANCE" aria-label="F&amp;O stock"><datalist id="fnoList"></datalist><button class="btn" type="submit">Go</button></form>
+ </div>
+
+ <div class="status" id="status">Loading the option chain…</div>
+
+ <div id="content" hidden>
+  <div class="titlebar">
+   <h2 id="title">Option chain</h2>
+   <div class="grp">
+    <label for="expiry">Expiry</label><select class="inp" id="expiry"></select>
+    <label for="range">Strikes</label><select class="inp" id="range"><option value="10">10 around ATM</option><option value="15">15 around ATM</option><option value="25">25 around ATM</option><option value="all">All strikes</option></select>
+   </div>
+  </div>
+  <section class="stats" id="stats"></section>
+  <div class="summary" id="summary"></div>
+
+  <div class="grid2">
+   <div class="card">
+    <div class="cardhead"><h3>Open interest by strike</h3><div class="seg" id="chartMode"><button type="button" class="on" data-m="oi">OI</button><button type="button" data-m="chg">Change in OI</button></div></div>
+    <div class="legend"><span><i class="lg-ce"></i>Calls (resistance)</span><span><i class="lg-pe"></i>Puts (support)</span></div>
+    <div id="chart"></div>
+   </div>
+   <div class="card">
+    <div class="cardhead"><h3>Option chain</h3><span class="muted" style="font-size:12px">Shaded = in the money</span></div>
+    <div id="tablewrap"><table>
+     <thead><tr class="side"><th colspan="5" class="r down">Calls</th><th></th><th colspan="5" class="up">Puts</th></tr>
+     <tr class="cols"><th class="r">OI</th><th class="r">Chg OI</th><th class="r xs">Volume</th><th class="r xs">IV</th><th class="r">LTP</th><th>Strike</th><th>LTP</th><th class="xs">IV</th><th class="xs">Volume</th><th>Chg OI</th><th>OI</th></tr></thead>
+     <tbody id="tbody"></tbody></table></div>
+    <div class="totals" id="totals"></div>
+   </div>
+  </div>
+ </div>
+
+ <details class="card learn">
+  <summary>What these numbers mean</summary>
+  <dl>
+   <dt>Open interest (OI)</dt><dd>The number of option contracts still open at a strike. Big call OI above the price often acts as a ceiling (call sellers defend it); big put OI below it often acts as a floor.</dd>
+   <dt>Change in OI</dt><dd>Contracts added (+) or closed (−) today. Fresh put writing below the price is read as support building; fresh call writing above it as resistance building.</dd>
+   <dt>PCR</dt><dd>Put-call ratio: total put OI ÷ total call OI. Above 1 means more puts are written, usually read as bullish; below 0.7 as bearish. Extreme values (above 1.5 or below 0.5) can mean the crowd is one-sided and a reversal is near.</dd>
+   <dt>Max pain</dt><dd>The expiry price at which option buyers together would lose the most (and sellers keep the most). Prices often drift towards it near expiry, but it is a tendency, not a target.</dd>
+   <dt>Support / resistance</dt><dd>The put strike at or below the price with the most OI, and the call strike at or above it with the most OI.</dd>
+   <dt>IV</dt><dd>Implied volatility: the yearly move the option price implies, in %. Higher IV means pricier options.</dd>
+   <dt>Expected move</dt><dd>The at-the-money call plus put price (the straddle). The market prices roughly this much movement, either way, by expiry.</dd>
+   <dt>ITM / ATM</dt><dd>In the money: calls below the price and puts above it (shaded). At the money: the strike nearest the price (outlined).</dd>
+  </dl>
+ </details>
+ <div class="disc">Data from NSE, refreshed every minute during market hours (NSE itself updates every few minutes). OI is in contracts. For information and learning only, not investment advice; options carry a high risk of loss.</div>
+</main>
+</body>
+</html>
