@@ -121,6 +121,7 @@ a{color:var(--blue)}
 #vExtra .xsig.buy{border-color:color-mix(in srgb,var(--green) 45%,var(--border))}#vExtra .xsig.sell{border-color:color-mix(in srgb,var(--red) 45%,var(--border))}
 #vExtra .xsig b.side{font-weight:800}#vExtra .xsig .lv{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0;font-size:12.5px}
 #vExtra .xsig .why{margin-top:6px;color:var(--muted);font-size:12.5px}#vExtra .xsig a{font-weight:700}
+#vLabel .vup{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;padding:2px 7px;border-radius:6px;border:1px solid currentColor;opacity:.85;margin-left:6px}
 #vExtra .xwarn{margin-top:10px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--gold) 14%,transparent);font-size:12.5px;line-height:1.5}
 #verdict.buy::before{background:var(--green)}#verdict.sell::before{background:var(--red)}#verdict.wait::before{background:var(--gold)}
 .vtop{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
@@ -645,6 +646,26 @@ function decide(t) {
    20-day breakout and fires as soon as one appears; the verdict above waits until trend and
    momentum agree. Showing both, and why they differ, avoids "BUY there, WAIT here" confusion. */
 let feedCache = null;
+// Strong scanner setups upgrade a WAIT verdict: still tradable under the Top Signals rules
+// (price between stop and target 1, room left to the target, stop within 6%, ₹1,000 Cr+) and a
+// scanner score of 90+. They never turn a SELL verdict into BUY or the other way round.
+const STRONG_SCORE = 90;
+let strongCache = null;
+async function strongSetups() {
+ if (strongCache && Date.now() - strongCache.at < 3 * 60e3) return strongCache.map;
+ if (!sb) return {};
+ const {data} = await sb.rpc('stock_signals_top', {p_limit: 200, p_min_quality: 0});
+ const map = {};
+ for (const x of (data && data.picks) || []) if (num(x.score) >= STRONG_SCORE) map[String(x.symbol).toUpperCase()] = x;
+ strongCache = {at: Date.now(), map};
+ return map;
+}
+function upgradeDecision(d, pick) {
+ if (!pick || d.label !== 'WAIT' || d.upgraded) return d;
+ const side = pick.side === 'SELL' ? 'SELL' : 'BUY';
+ return {...d, label: side, upgraded: {from: 'WAIT', pick},
+  reason: `Upgraded to ${side} by a strong Stock Signals setup (${pick.setup || 'trade setup'}, score ${pick.score}) that is still tradable. On its own the trend score is ${d.score}/100: ${d.reason.charAt(0).toLowerCase() + d.reason.slice(1)}`};
+}
 async function scannerSignals(sym) {
  if (!sb) return [];
  if (!feedCache || Date.now() - feedCache.at > 3 * 60e3) {
@@ -661,14 +682,18 @@ async function upcomingResults(sym) {
 }
 async function renderVerdictExtras() {
  const host = $('vExtra'); if (!host || !current) return;
- const sym = current.sym, d = current.decision;
+ const sym = current.sym;
  host.innerHTML = '';
- const [sigs, res] = await Promise.all([scannerSignals(sym).catch(() => []), upcomingResults(sym).catch(() => null)]);
+ const [sigs, res, strong] = await Promise.all([scannerSignals(sym).catch(() => []), upcomingResults(sym).catch(() => null), strongSetups().catch(() => ({}))]);
  if (!current || current.sym !== sym) return;
+ const up = upgradeDecision(current.decision, strong[sym]);
+ if (up !== current.decision) { current.decision = up; renderAll(); return; } // renders the upgraded verdict, then comes back here
+ const d = current.decision;
  let html = '';
  for (const g of sigs) {
   const buy = g.side === 'BUY', tf = g.tf === 'intraday' ? 'Intraday' : 'Swing';
   const agree = (buy && d.label === 'BUY') || (!buy && d.label === 'SELL');
+  const upgradedHere = d.upgraded && d.upgraded.pick && d.upgraded.pick.tf === g.tf;
   let why = '';
   if (!agree) {
    const against = d.checks.filter(c => c.c === (buy ? 'negative' : 'positive')).map(c => c.text.replace(/ \(.*\)$/, ''));
@@ -677,7 +702,7 @@ async function renderVerdictExtras() {
   html += `<div class="xsig ${buy ? 'buy' : 'sell'}"><div><span class="sub">STOCK SIGNALS SCANNER · ${tf.toUpperCase()}</span></div>
    <div><b class="side ${buy ? 'positive' : 'negative'}">${buy ? '▲ BUY' : '▼ SELL'}</b> · ${esc(g.setup || '')} <span class="sub">· score ${esc(g.score)}${g.bar_date ? ' · ' + esc(g.bar_date) : ''}</span></div>
    <div class="lv"><span>Entry <b>${rs(num(g.entry))}</b></span><span>Stop <b class="negative">${rs(num(g.stop))}</b></span><span>Target 1 <b class="positive">${rs(num(g.target1))}</b></span>${num(g.target2) ? `<span>Target 2 <b class="positive">${rs(num(g.target2))}</b></span>` : ''}</div>
-   ${agree ? '<div class="why">The scanner and the verdict agree.</div>' : why}
+   ${upgradedHere ? `<div class="why">This setup is strong (score ${esc(g.score)}, still tradable), so it upgraded the verdict from WAIT. The trend checks above have not all confirmed yet, so size it smaller and respect the stop.</div>` : agree ? '<div class="why">The scanner and the verdict agree.</div>' : why}
    <div style="margin-top:4px"><a href="/stock-signals.html?sig=${encodeURIComponent(sym + '|' + g.tf)}">Open in Stock Signals →</a></div></div>`;
  }
  if (res) {
@@ -832,7 +857,7 @@ function renderAll() {
  $('perf').innerHTML = Object.entries(t.returns).map(([k, v]) => `<div><small>${k}</small><strong class="${cls(v)}">${pct(v, 1)}</strong></div>`).join('');
  // Verdict
  const v = $('verdict'); v.className = 'panel ' + d.label.toLowerCase();
- $('vLabel').textContent = d.label; $('vLabel').className = 'vlabel ' + (d.label === 'BUY' ? 'positive' : d.label === 'SELL' ? 'negative' : 'warn');
+ $('vLabel').innerHTML = esc(d.label) + (d.upgraded ? ' <span class="vup" title="Upgraded from WAIT by a strong Stock Signals setup">via scanner</span>' : ''); $('vLabel').className = 'vlabel ' + (d.label === 'BUY' ? 'positive' : d.label === 'SELL' ? 'negative' : 'warn');
  $('vScore').textContent = d.score + '/100'; $('vGauge').style.left = d.score + '%';
  $('vReason').textContent = d.reason;
  $('vChecks').innerHTML = d.checks.map(c => `<li><b class="${c.c}">${esc(c.s)}</b><span>${esc(c.text)}</span></li>`).join('');
@@ -1113,10 +1138,15 @@ async function runAI(id, keyOverride) {
 /* ───────── Nifty 50 scan ───────── */
 async function pool(items, size, fn) { const q = items.slice(); await Promise.all(Array.from({length: Math.min(size, q.length)}, async () => { while (q.length) await fn(q.shift()); })); }
 function renderPicks(host, list) {
- host.innerHTML = list.length ? '<table class="table"><thead><tr><th>Symbol</th><th>Company</th><th>Score</th><th>Price</th><th>1M</th></tr></thead><tbody>' + list.map(x => `<tr><td><button class="linkbtn" data-go="${esc(x.symbol)}" data-name="${esc(x.name)}">${esc(x.symbol)}</button></td><td class="sub">${esc(x.name)}</td><td class="v">${x.score}</td><td class="v">${rs(x.price)}</td><td class="v ${cls(x.r1m)}">${pct(x.r1m, 1)}</td></tr>`).join('') + '</tbody></table>' : '<div class="sub" style="padding:14px">No stocks meet these conditions right now.</div>';
+ host.innerHTML = list.length ? '<table class="table"><thead><tr><th>Symbol</th><th>Company</th><th>Score</th><th>Price</th><th>1M</th></tr></thead><tbody>' + list.map(x => `<tr><td><button class="linkbtn" data-go="${esc(x.symbol)}" data-name="${esc(x.name)}">${esc(x.symbol)}</button>${x.viaScanner ? ' <span class="sub" title="Upgraded from WAIT by a strong Stock Signals setup">· scanner</span>' : ''}</td><td class="sub">${esc(x.name)}</td><td class="v">${x.score}</td><td class="v">${rs(x.price)}</td><td class="v ${cls(x.r1m)}">${pct(x.r1m, 1)}</td></tr>`).join('') + '</tbody></table>' : '<div class="sub" style="padding:14px">No stocks meet these conditions right now.</div>';
 }
+let lastPicks = null;
 function showPicks(cache) {
- const p = cache.picks;
+ lastPicks = cache;
+ // Strong scanner setups upgrade WAIT here too, so the lists match the single-stock verdict.
+ const strong = strongCache ? strongCache.map : {};
+ const p = cache.picks.map(x => strong[x.symbol] && x.signal === 'WAIT' ? {...x, signal: strong[x.symbol].side === 'SELL' ? 'SELL' : 'BUY', viaScanner: true} : x);
+ if (!strongCache) strongSetups().then(() => { if (lastPicks) showPicks(lastPicks); }).catch(() => {});
  renderPicks($('buyPicks'), p.filter(x => x.signal === 'BUY').sort((a, b) => b.score - a.score).slice(0, 10));
  renderPicks($('sellPicks'), p.filter(x => x.signal === 'SELL').sort((a, b) => a.score - b.score).slice(0, 10));
  $('picksUpdated').textContent = 'Updated ' + timeAgo(cache.at) + ' · ' + p.length + ' stocks scanned';

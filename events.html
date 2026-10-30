@@ -368,7 +368,7 @@ function signalBlock(e){
   html+='<div class="signal '+(buy?'buy':'sell')+'"><b class="'+(buy?'pos':'neg')+'">'+(buy?'▲ BUY':'▼ SELL')+'</b> · '+esc(s.setup||'Swing setup')+' <span class="muted">· score '+esc(s.score)+' · '+esc(s.bar_date||'')+'</span>'+
    '<div class="lv"><div><span>Entry</span><b>'+inr(s.entry)+'</b></div><div><span>Stop</span><b class="neg">'+inr(s.stop)+'</b></div><div><span>Target 1</span><b class="pos">'+inr(s.target1)+'</b></div><div><span>Target 2</span><b class="pos">'+inr(s.target2)+'</b></div></div>'+
    (Array.isArray(s.reasons)&&s.reasons.length?'<div class="muted" style="font-size:12.5px">'+s.reasons.map(esc).join(' · ')+'</div>':'')+
-   '<div class="muted" style="font-size:12px;margin-top:4px">The scanner fires when a setup appears. The Stock Analysis verdict waits for trend and momentum to agree, so it can still say WAIT; it explains the difference.</div></div>';
+   '<div class="muted" style="font-size:12px;margin-top:4px">The scanner fires when a setup appears. Stock Analysis shows the same signal; a strong setup (score 90+ and still tradable) upgrades its verdict from WAIT, otherwise it explains why it is still waiting.</div></div>';
   let adv;
   if(e.kind==='results'&&upcoming&&days<=5)adv=['warn','⚠️ Results are due '+(days===0?'today':days===1?'tomorrow':'in '+days+' days')+'. Prices often gap on results, which can jump straight past the stop. Many traders wait until the numbers are out, or trade a smaller size.'];
   else if(v&&!v.early){
