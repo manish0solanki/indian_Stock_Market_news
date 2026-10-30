@@ -1,0 +1,25 @@
+# Manual diagnostic: which Moonshot models the blog's API key can use, and how fast they answer.
+# Publishes nothing. Run from Actions -> "Blog AI check" -> Run workflow.
+name: Blog AI check
+on:
+  workflow_dispatch:
+    inputs:
+      candidates:
+        description: Comma-separated model ids to time (blank = defaults)
+        required: false
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check Moonshot models
+        env:
+          MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+          CANDIDATES: ${{ inputs.candidates }}
+        run: node scripts/blog/ai-check.mjs
