@@ -1,5 +1,67 @@
 [
   {
+    "slug": "vedpower-stock-spotlight-30-oct-2026",
+    "title": "Vedanta Power Surges 14.7% on 14.8x Volume, Reclaims 50-Day Average",
+    "excerpt": "Vedanta Power (VEDPOWER) rose 14.72% to ₹33.13 on volume 14.8 times its three-month average.",
+    "category": "stock-spotlight",
+    "date": "2026-10-30T18:21:31+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "VEDPOWER",
+      "Vedanta Power"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-it-jumps-2-32-percent-as-large-caps-lead-the-rally",
+    "title": "Nifty IT Jumps 2.32% as Large Caps Lead the Rally",
+    "excerpt": "The Nifty IT index rallied 2.32% to 32,606.9 on 30 Oct 2026, even as most technology stocks in the wider market declined. The index gained 740.5 points from its previous close of 31,866.4, but the headline masked a sharp divide between heavyweight companies and the rest of the in",
+    "category": "sector-analysis",
+    "date": "2026-10-30T18:21:31+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty IT",
+      "Sector Analysis",
+      "IT",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-30-oct-2026",
+    "title": "Nifty 50 Daily Wrap — 30 Oct 2026: Gains 0.51%",
+    "excerpt": "A technology-led rally lifted the Nifty 50 by 0.51% to 23,053.1, even as the broader market sank under a wave of declines. The index added 116.35 points, but the Sensex’s 0.42% gain masked a much weaker session beyond the large caps: across the NSE, 1,996 stocks fell against just",
+    "category": "daily-wrap",
+    "date": "2026-10-30T18:21:31+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-selling-resumes-with-943-60-cr-outflow-as-dii-buying-extends-to-second-straight-session",
     "title": "FII Selling Resumes with ₹943.60 Cr Outflow as DII Buying Extends to Second Straight Session",
     "excerpt": "FIIs were net sellers of ₹943.60 Cr and DIIs net buyers of ₹1,924.41 Cr on 29 Oct 2026, a combined net inflow of ₹980.81 Cr.",
