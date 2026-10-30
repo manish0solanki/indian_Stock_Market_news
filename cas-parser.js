@@ -74,10 +74,20 @@
         if (asOn) period = { from: null, to: isoDate(asOn[1]) };
       }
 
-      const im = /ISIN\s*:?\s*(IN[A-Z0-9]{10})/i.exec(line) || /I\s*S\s*I\s*N\s*:?\s*((?:[A-Z0-9]\s*){12})/.exec(line);
+      let im = /ISIN\s*:?\s*(IN[A-Z0-9]{10})/i.exec(line) || /I\s*S\s*I\s*N\s*:?\s*((?:[A-Z0-9]\s*){12})/.exec(line);
+      // The PDF can wrap the header so "ISIN:" ends the line and the code starts the next one.
+      if (!im && /\bISIN\s*:?\s*$/i.test(line)) {
+        const nx = /^\s*(IN[A-Z0-9]{10})\b/.exec(lines[i + 1] || '');
+        if (nx) { im = { index: line.search(/\bISIN/i), 1: nx[1] }; i++; }
+      }
       if (im) {
         let name = line.slice(0, im.index).replace(/[-\s]+$/, '').trim();
-        if (!name && i > 0) name = lines[i - 1].trim();
+        // A long scheme name wraps: the header starts with the scheme code ("H22-HDFC ...") on the line
+        // above, and this line only holds the end ("Fund) - Direct Plan - Growth - ISIN: ...").
+        const prev = i > 0 ? lines[i - 1].replace(/\s+/g, ' ').trim() : '';
+        const structural = /Folio|PAN\b|KYC|Opening Unit|Closing Unit|Unit Balance|NAV on|Market Value|Cost Value|Registrar|ISIN|Mutual Fund\s*$|^\d{2}-[A-Za-z]{3}-\d{4}|^Page\b|^Date\b/i;
+        if ((!name || !/^[A-Z0-9]{2,15}-\S/.test(name)) && prev && !structural.test(prev) && /^[A-Z0-9]{2,15}-\S/.test(prev)) name = (prev + ' ' + name).trim();
+        else if (!name) name = prev;
         name = name.replace(/^[A-Z0-9]{2,15}-(?=\S)/, '').replace(/\s*-\s*$/, '').trim();
         const isin = im[1].replace(/\s+/g, '').toUpperCase();
         if (!/^IN[A-Z0-9]{10}$/.test(isin)) continue;
@@ -90,6 +100,15 @@
       if (!cur) continue;
 
       let m;
+      // A second scheme block whose header wasn't recognised must not be added to the fund before it:
+      // park it under an unidentified entry (skipped on import) instead of overwriting that fund.
+      if (/Opening Unit Balance/i.test(line) && cur.part.closing !== null && !String(cur.isin).startsWith('UNKNOWN')) {
+        const key = 'UNKNOWN-' + funds.size;
+        funds.set(key, { isin: key, name: lines[i - 1] ? lines[i - 1].replace(/\s+/g, ' ').trim() : '', amc: amc.name, folios: [], txs: [], opening: 0, closing: null, cost: null, nav: null, navDate: null, value: null, unidentified: true });
+        cur = funds.get(key);
+        cur.part = { folio, opening: 0, closing: null, cost: null };
+        cur.folios.push(cur.part);
+      }
       if ((m = /Opening Unit Balance\s*:?\s*(\(?-?[\d,]+\.?\d*\)?)/i.exec(line))) cur.part.opening = parseNumber(m[1]);
       if ((m = /Closing Unit Balance\s*:?\s*(\(?-?[\d,]+\.?\d*\)?)/i.exec(line))) cur.part.closing = parseNumber(m[1]);
       if ((m = /Cost Value\s*:?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+\.?\d*)/i.exec(line))) cur.part.cost = parseNumber(m[1]);
@@ -129,7 +148,7 @@
       return {
         isin: f.isin, name: tidyName(f.name), amc: f.amc, kind: f.kind || 'detailed', folios: parts.map((p) => p.folio).filter(Boolean),
         txs: f.txs, closing, cost, opening, nav: f.nav, navDate: f.navDate, value: sum('value') || null,
-        mode: complete ? 'transactions' : closing ? 'snapshot' : 'skip', net,
+        mode: f.unidentified ? 'skip' : complete ? 'transactions' : closing ? 'snapshot' : 'skip', net, unidentified: !!f.unidentified,
       };
     }).map((f) => ({ ...f, period }));
   }
