@@ -92,6 +92,7 @@
   - **Phone story image:** 1080×1920 PNG for WhatsApp status and Instagram stories.
   - **PDF report:** 11-page A4, with a cover and market note, the picks at a glance with a valuation table, two stocks per page (reasons, risks, data, target maths), and how we pick.
   - **Share:** on phones that support it, sends the story image straight to an app.
+  - **Branding:** every download carries the MarketPulse logo (the favicon's indigo tile and gold diamond, redrawn as vector art): a "Picked by MarketPulse" badge, a sign-off panel with the live track-record address, and "MarketPulse" as the PDF author. The PDF links back to the picks page from every footer.
 - Runs daily at 08:41 IST from pg_cron; admins can also run it from Data health → Run now. Educational, not investment advice (disclaimer on the page).
 
 ### ⇅ F&O Option Chain (`fno.html`)

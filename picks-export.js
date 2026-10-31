@@ -15,6 +15,7 @@
   };
   const CAPS = [['large', 'LARGE CAP'], ['mid', 'MID CAP'], ['small', 'SMALL CAP']];
   const SITE = (location.host || 'marketpulse') + '/picks.html';
+  const BRAND_INK = '#1e1b4b';
   const DISC = 'Educational information, not investment advice. MarketPulse is not a SEBI-registered investment adviser or research analyst.';
   const METHOD = [
     ['Size buckets', 'Ranked by market cap as SEBI does: top 100 large caps, next 150 mid caps, the rest small caps (₹3,000 Cr and above, with enough daily trading to buy and sell easily).'],
@@ -87,14 +88,14 @@
     ctx.fillStyle = 'rgba(120,40,0,.35)'; for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; ctx.beginPath(); ctx.arc(x + Math.cos(a) * r * 0.55, y + Math.sin(a) * r * 0.55, r * 0.18, 0, 7); ctx.fill(); }
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.3, 0, 7); ctx.fill();
   }
-  function garland(ctx, W, s) {
+  function garland(ctx, W, s, strands) {
     const cols = ['#f59e0b', '#fb923c', '#facc15', '#ea580c'];
     const r = 9 * s, span = W / 4;
     for (let x = 0, i = 0; x <= W; x += r * 1.55, i++) {
       const t = (x % span) / span, y = 6 * s + Math.sin(t * Math.PI) * 34 * s;
       marigold(ctx, x, y, r, cols[i % cols.length]);
     }
-    for (let k = 0; k <= 4; k++) {
+    for (let k = 0; k <= 4 && strands !== false; k++) {
       if (k === 2) continue; // keep the centre clear for the title
       const x = k * span; let y = 10 * s;
       const len = (k % 2 ? 6 : 9);
@@ -171,7 +172,7 @@
       });
       ctx.globalAlpha = 1;
     }
-    if (theme === 'diwali' && opts.garland !== false) garland(ctx, w, s);
+    if (theme === 'diwali' && opts.garland !== false) garland(ctx, w, s, opts.strands);
     for (let k = 0; k < (opts.sparkles ?? 26); k++) sparkle(ctx, rnd() * w, rnd() * h * 0.9, (4 + rnd() * 9) * s, k % 3 ? T.gold[0] : T.acc, 0.35 + rnd() * 0.5);
     if (theme === 'diwali' && opts.diyas) {
       const n = opts.diyas, y = h - 26 * s;
@@ -188,11 +189,53 @@
     ctx.fillStyle = '#fff'; font(ctx, 800, Math.round(size * 0.38)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(letters, x + size / 2, y + size / 2 + 1); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
-  function brand(ctx, x, y, size, color) {
-    ctx.save(); ctx.translate(x + size * 0.5, y + size * 0.5); ctx.rotate(Math.PI / 4);
-    const g = ctx.createLinearGradient(-size / 2, -size / 2, size / 2, size / 2); g.addColorStop(0, '#fbbf24'); g.addColorStop(1, '#f97316');
-    ctx.fillStyle = g; rr(ctx, -size * 0.36, -size * 0.36, size * 0.72, size * 0.72, size * 0.12); ctx.fill(); ctx.restore();
-    ctx.fillStyle = color; font(ctx, 800, Math.round(size * 0.82)); ctx.fillText('MarketPulse', x + size * 1.15, y + size * 0.8);
+  // The MarketPulse logo (same as favicon-96x96.png): indigo tile, gold diamond, indigo centre dot. Vector, so
+  // it stays sharp at any size.
+  function logo(ctx, x, y, S) {
+    ctx.save();
+    ctx.fillStyle = '#2e1f82'; rr(ctx, x, y, S, S, S * 0.21); ctx.fill();
+    const cx = x + S / 2, cy = y + S / 2, d = S * 0.335;
+    const g = ctx.createLinearGradient(cx, cy - d, cx, cy + d); g.addColorStop(0, '#fcd34d'); g.addColorStop(1, '#f5a623');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(cx, cy - d); ctx.lineTo(cx + d, cy); ctx.lineTo(cx, cy + d); ctx.lineTo(cx - d, cy); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2e1f82'; ctx.beginPath(); ctx.arc(cx, cy, S * 0.062, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  function wordFont(ctx, S) { font(ctx, 800, Math.round(S * 0.66)); if ('letterSpacing' in ctx) ctx.letterSpacing = (-S * 0.015) + 'px'; }
+  function brandWidth(ctx, S) { wordFont(ctx, S); const w = S * 1.28 + ctx.measureText('MarketPulse').width; if ('letterSpacing' in ctx) ctx.letterSpacing = '0px'; return w; }
+  // Logo + wordmark; y is the top. Returns the width drawn.
+  function brand(ctx, x, y, S, color) {
+    logo(ctx, x, y, S);
+    const w = brandWidth(ctx, S);
+    ctx.fillStyle = color; wordFont(ctx, S); ctx.textBaseline = 'middle'; ctx.fillText('MarketPulse', x + S * 1.28, y + S / 2 + S * 0.03);
+    ctx.textBaseline = 'alphabetic'; if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    return w;
+  }
+  // A white badge carrying the brand, with an optional small caption above the wordmark ("PICKED BY").
+  function badge(ctx, x, y, S, caption, align) {
+    const padX = S * 0.42, w = brandWidth(ctx, S) + padX * 2, h = S * 1.5;
+    if (align === 'center') x -= w / 2; else if (align === 'right') x -= w;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = S * 0.5; ctx.shadowOffsetY = S * 0.08;
+    ctx.fillStyle = 'rgba(255,255,255,.96)'; rr(ctx, x, y, w, h, h / 2); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = Math.max(1.5, S * 0.05); rr(ctx, x + 1, y + 1, w - 2, h - 2, h / 2); ctx.stroke();
+    brand(ctx, x + padX, y + (h - S) / 2, S, BRAND_INK);
+    if (caption) {
+      font(ctx, 800, Math.round(S * 0.24)); const cw = ctx.measureText(caption).width + S * 0.5;
+      ctx.fillStyle = '#2e1f82'; rr(ctx, x + w / 2 - cw / 2, y - S * 0.2, cw, S * 0.36, S * 0.18); ctx.fill();
+      ctx.fillStyle = '#fcd34d'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(caption, x + w / 2, y - S * 0.02); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    }
+    return { x, y, w, h };
+  }
+  // Closing sign-off: logo, "Picked & tracked by MarketPulse", the address. Returns its box.
+  function signoff(ctx, x, y, w, h, S, dark) {
+    ctx.save(); ctx.fillStyle = dark ? 'rgba(10,8,40,.62)' : '#ffffff'; rr(ctx, x, y, w, h, Math.min(24, h / 4)); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 2; rr(ctx, x + 1, y + 1, w - 2, h - 2, Math.min(24, h / 4)); ctx.stroke();
+    const ly = y + (h - S) / 2;
+    logo(ctx, x + S * 0.45, ly, S);
+    const tx = x + S * 1.75;
+    ctx.fillStyle = dark ? '#fff' : BRAND_INK; wordFont(ctx, S * 0.78); ctx.fillText('MarketPulse', tx, ly + S * 0.5); if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    ctx.fillStyle = dark ? '#fcd34d' : '#b45309'; font(ctx, 700, Math.round(S * 0.3)); ctx.fillText('Picked & tracked by MarketPulse · live track record at', tx, ly + S * 0.86);
+    ctx.fillStyle = dark ? '#fff' : '#2e1f82'; font(ctx, 800, Math.round(S * 0.34)); ctx.fillText(SITE, tx, ly + S * 1.24);
+    return { x: tx, y: ly + S * 0.95, w: Math.min(w - (tx - x) - 20, ctx.measureText(SITE).width), h: S * 0.42 };
   }
   function upBadge(ctx, x, y, w, h, up) {
     const g = ctx.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, '#15803d'); g.addColorStop(1, '#22c55e');
@@ -259,7 +302,8 @@
     const [c, ctx] = canvas(W, H);
     festive(ctx, T, o.theme, W, H, 1, { diyas: 9, seed: 11 });
     ctx.textAlign = 'center';
-    ctx.fillStyle = T.gold[0]; font(ctx, 800, 16); ctx.fillText('M A R K E T P U L S E   ·   ' + o.name.toUpperCase().split('').join(' ') + '   P I C K S', W / 2, 92);
+    ctx.textAlign = 'left'; badge(ctx, 50, 58, 40, 'PICKED BY'); ctx.textAlign = 'center';
+    ctx.fillStyle = T.gold[0]; font(ctx, 800, 16); ctx.fillText(o.name.toUpperCase().split('').join(' ') + '   P I C K S   B Y   M A R K E T P U L S E', W / 2, 92);
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 18;
     ctx.fillStyle = goldFill(ctx, T, 100, 175); font(ctx, 800, 76, SERIF); ctx.fillText(o.title, W / 2, 168); ctx.restore();
     ctx.fillStyle = '#fff'; font(ctx, 600, 22);
@@ -271,11 +315,13 @@
       pill(ctx, T, label, lx, y, lw, rowH, true);
       (D.picks || []).filter((p) => p.cap === cap).slice(0, 5).forEach((p, i) => card(ctx, T, p, cx0 + i * (cw + 16), y, cw, rowH, 1, { track: true }));
     });
-    const fy = top + 3 * rowH + 2 * gap + 40;
-    ctx.fillStyle = 'rgba(0,0,0,.35)'; rr(ctx, 46, fy - 22, W - 92, 50, 12); ctx.fill();
-    brand(ctx, 64, fy - 12, 26, '#fff');
-    ctx.fillStyle = 'rgba(255,255,255,.85)'; font(ctx, 500, 14); ctx.textAlign = 'right';
-    ctx.fillText(`${SITE}  ·  Prices as of ${dt(D.as_of || new Date())}  ·  ${DISC}`, W - 64, fy + 8);
+    const fy = top + 3 * rowH + 2 * gap + 12;
+    ctx.fillStyle = 'rgba(10,8,40,.62)'; rr(ctx, 46, fy, W - 92, 74, 16); ctx.fill();
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 2; rr(ctx, 47, fy + 1, W - 94, 72, 15); ctx.stroke();
+    brand(ctx, 66, fy + 15, 44, '#fff');
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fcd34d'; font(ctx, 800, 18); ctx.fillText(`Picked & tracked by MarketPulse  ·  live track record at ${SITE}`, W - 66, fy + 32);
+    ctx.fillStyle = 'rgba(255,255,255,.82)'; font(ctx, 500, 13); ctx.fillText(`Prices as of ${dt(D.as_of || new Date())}  ·  ${DISC}`, W - 66, fy + 56);
     ctx.textAlign = 'left';
     return c;
   }
@@ -286,7 +332,7 @@
     const [c, ctx] = canvas(W, H);
     festive(ctx, T, o.theme, W, H, 1.25, { diyas: 6, seed: 5, bursts: [[0.12, 0.1, 110], [0.88, 0.09, 120], [0.08, 0.95, 70], [0.92, 0.96, 80]] });
     ctx.textAlign = 'center';
-    ctx.fillStyle = T.gold[0]; font(ctx, 800, 22); ctx.fillText('M A R K E T P U L S E', W / 2, 150);
+    ctx.textAlign = 'left'; badge(ctx, W / 2, 92, 50, 'PICKED BY', 'center'); ctx.textAlign = 'center';
     const words = o.title.split(' '), yr = /^\d{4}$/.test(words[words.length - 1]) ? words.pop() : '';
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 20;
     ctx.fillStyle = goldFill(ctx, T, 160, 330); font(ctx, 800, 96, SERIF);
@@ -314,11 +360,10 @@
       });
       y += rows.length * rowH + 12 + 20;
     });
-    const fy = Math.max(y + 4, H - 214);
-    ctx.fillStyle = 'rgba(0,0,0,.42)'; rr(ctx, x0, fy, pw, 104, 18); ctx.fill();
-    brand(ctx, x0 + 22, fy + 16, 30, '#fff');
-    ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; font(ctx, 700, 18); ctx.fillText(SITE, x0 + pw - 22, fy + 40); ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(255,255,255,.82)'; font(ctx, 500, 15); wrap(ctx, DISC + ' Published ' + dt(o.published_at) + '.', x0 + 22, fy + 72, pw - 44, 20, 2);
+    const fy = Math.max(y + 2, H - 226);
+    signoff(ctx, x0, fy, pw, 106, 60, true);
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; font(ctx, 500, 14); ctx.textAlign = 'center';
+    wrap(ctx, DISC + ' Published ' + dt(o.published_at) + '.', W / 2, fy + 128, pw - 40, 19, 2); ctx.textAlign = 'left';
     return c;
   }
 
@@ -331,16 +376,22 @@
     ctx.strokeStyle = T.acc + '55'; ctx.lineWidth = 3; rr(ctx, 24, 24, PW - 48, PH - 48, 26); ctx.stroke();
     if (band) {
       ctx.save(); rr(ctx, 24, 24, PW - 48, 200, 26); ctx.clip(); ctx.translate(24, 24);
-      festive(ctx, T, o.theme, PW - 48, 200, 0.8, { garland: true, sparkles: 14, seed: n * 13, bursts: [[0.06, 0.5, 60], [0.94, 0.45, 70]] });
+      festive(ctx, T, o.theme, PW - 48, 200, 0.8, { garland: true, strands: false, sparkles: 14, seed: n * 13, bursts: [[0.06, 0.5, 60], [0.94, 0.45, 70]] });
       ctx.restore();
+      badge(ctx, PW - M, 110, 40, 'PICKED BY', 'right');
       ctx.fillStyle = T.gold[0]; font(ctx, 800, 15); ctx.fillText((o.title + (o.subtitle ? '  ·  ' + o.subtitle : '')).toUpperCase(), M, 120);
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 12; ctx.fillStyle = goldFill(ctx, T, 130, 190); font(ctx, 800, 50, SERIF); ctx.fillText(band, M, 182); ctx.restore();
     }
-    // footer
-    ctx.fillStyle = T.acc + '66'; ctx.fillRect(M, PH - 104, PW - 2 * M, 2);
-    brand(ctx, M, PH - 88, 22, T.ink);
-    ctx.fillStyle = '#7b6a5d'; font(ctx, 500, 14); ctx.textAlign = 'right'; ctx.fillText(`${SITE}  ·  Page ${n} of ${total}`, PW - M, PH - 70);
-    ctx.textAlign = 'left'; font(ctx, 500, 13); ctx.fillText(fit(ctx, DISC, PW - 2 * M), M, PH - 46);
+    // footer: logo + wordmark, the live address (clickable in the PDF) and the page number
+    ctx.fillStyle = T.acc + '66'; ctx.fillRect(M, PH - 108, PW - 2 * M, 2);
+    brand(ctx, M, PH - 92, 30, BRAND_INK);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#7b6a5d'; font(ctx, 600, 14); const pg = `Page ${n} of ${total}`; ctx.fillText(pg, PW - M, PH - 70);
+    const pgW = ctx.measureText(pg).width;
+    ctx.fillStyle = '#2e1f82'; font(ctx, 800, 15); const lbl = SITE + '   ·   '; ctx.fillText(lbl, PW - M - pgW, PH - 70);
+    const lw = ctx.measureText(SITE).width, lx = PW - M - pgW - ctx.measureText(lbl).width;
+    c._links = [{ x: lx, y: PH - 88, w: lw, h: 26 }];
+    ctx.textAlign = 'left'; ctx.fillStyle = '#7b6a5d'; font(ctx, 500, 13); ctx.fillText(fit(ctx, DISC, PW - 2 * M), M, PH - 46);
     return [c, ctx];
   }
   function heading(ctx, T, text, x, y) { ctx.fillStyle = T.pill[0]; font(ctx, 800, 17); ctx.fillText(text.toUpperCase().split('').join(String.fromCharCode(8202)), x, y); ctx.fillStyle = T.acc; ctx.fillRect(x, y + 9, 54, 3); }
@@ -353,7 +404,7 @@
     festive(ctx, T, o.theme, PW - 48, fh, 1.2, { diyas: 7, seed: 3, sparkles: 34 });
     ctx.restore();
     ctx.textAlign = 'center';
-    ctx.fillStyle = T.gold[0]; font(ctx, 800, 20); ctx.fillText('M A R K E T P U L S E', PW / 2, 330);
+    ctx.textAlign = 'left'; badge(ctx, PW / 2, 240, 64, 'A MARKETPULSE REPORT', 'center'); ctx.textAlign = 'center';
     const words = o.title.split(' '), yr = /^\d{4}$/.test(words[words.length - 1]) ? words.pop() : '';
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 22; ctx.fillStyle = goldFill(ctx, T, 340, 600);
     font(ctx, 800, 118, SERIF); ctx.fillText(fit(ctx, words.join(' '), PW - 160), PW / 2, 470);
@@ -510,34 +561,44 @@
     ctx.fillStyle = '#fff4e5'; rr(ctx, M, y, PW - 2 * M, dh, 18); ctx.fill(); ctx.strokeStyle = T.acc; ctx.lineWidth = 2; rr(ctx, M, y, PW - 2 * M, dh, 18); ctx.stroke();
     ctx.fillStyle = T.pill[0]; font(ctx, 800, 18); ctx.fillText('IMPORTANT', M + 24, y + 38);
     ctx.fillStyle = '#4a3b30'; font(ctx, 400, 17); y = wrap(ctx, disc, M + 24, y + 70, PW - 2 * M - 48, 26) + 40;
-    ctx.textAlign = 'center'; ctx.fillStyle = T.pill[0]; font(ctx, 800, 30, SERIF); ctx.fillText(T.greet, PW / 2, Math.min(y + 60, PH - 160));
+    ctx.textAlign = 'center'; ctx.fillStyle = T.pill[0]; font(ctx, 800, 30, SERIF); ctx.fillText(T.greet, PW / 2, y + 30);
     ctx.textAlign = 'left';
+    const sy = Math.min(y + 70, PH - 300);
+    const box = signoff(ctx, M, sy, PW - 2 * M, 170, 96, false);
+    c._links = (c._links || []).concat([box, { x: M, y: sy, w: PW - 2 * M, h: 170 }]);
     return c;
   }
 
   /* ───────── minimal PDF writer: one JPEG per A4 page ───────── */
   function b64bytes(dataUrl) { const s = atob(dataUrl.split(',')[1]); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
-  function makePdf(pages, title) {
-    const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
+  function makePdf(pages, title, url) {
+    const enc = new TextEncoder(), parts = [], offs = []; let len = 0, next = 1;
     const push = (x) => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
     const obj = (id, fn) => { offs[id] = len; push(id + ' 0 obj\n'); fn(); push('\nendobj\n'); };
+    const esc = (t) => String(t).replace(/[^\x20-\x7E]/g, '').replace(/[()\\]/g, '');
     push('%PDF-1.4\n'); push(new Uint8Array([37, 226, 227, 207, 211, 10]));
-    const n = pages.length, total = 3 + n * 3;
-    obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>'));
-    obj(2, () => push(`<< /Type /Pages /Kids [${pages.map((_, i) => (4 + i * 3) + ' 0 R').join(' ')}] /Count ${n} >>`));
-    const safe = String(title).replace(/[^\x20-\x7E]/g, '').replace(/[()\\]/g, '');
-    obj(3, () => push(`<< /Title (${safe}) /Producer (MarketPulse) /Creator (MarketPulse picks.html) >>`));
+    // object ids: catalog, pages, info, then per page: page, contents, image, link annotations
+    const CAT = next++, PAGES = next++, INFO = next++;
+    const ids = pages.map((pg) => ({ p: next++, cs: next++, im: next++, an: (pg.links || []).map(() => next++) }));
+    const total = next - 1, kx = 595.28 / PW, ky = 841.89 / PH;
+    obj(CAT, () => push(`<< /Type /Catalog /Pages ${PAGES} 0 R >>`));
+    obj(PAGES, () => push(`<< /Type /Pages /Kids [${ids.map((d) => d.p + ' 0 R').join(' ')}] /Count ${pages.length} >>`));
+    obj(INFO, () => push(`<< /Title (${esc(title)}) /Author (MarketPulse) /Subject (${esc(url)}) /Producer (MarketPulse) /Creator (MarketPulse picks.html) >>`));
     pages.forEach((pg, i) => {
-      const p = 4 + i * 3, cs = 5 + i * 3, im = 6 + i * 3;
-      const stream = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
-      obj(p, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${cs} 0 R >>`));
-      obj(cs, () => push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`));
-      obj(im, () => { push(`<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.data.length} >>\nstream\n`); push(pg.data); push('\nendstream'); });
+      const d = ids[i], stream = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+      const annots = d.an.length ? ` /Annots [${d.an.map((a) => a + ' 0 R').join(' ')}]` : '';
+      obj(d.p, () => push(`<< /Type /Page /Parent ${PAGES} 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 ${d.im} 0 R >> >> /Contents ${d.cs} 0 R${annots} >>`));
+      obj(d.cs, () => push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`));
+      obj(d.im, () => { push(`<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.data.length} >>\nstream\n`); push(pg.data); push('\nendstream'); });
+      (pg.links || []).forEach((l, k) => {
+        const r = [l.x * kx, 841.89 - (l.y + l.h) * ky, (l.x + l.w) * kx, 841.89 - l.y * ky].map((v) => v.toFixed(2)).join(' ');
+        obj(d.an[k], () => push(`<< /Type /Annot /Subtype /Link /Rect [${r}] /Border [0 0 0] /A << /S /URI /URI (${esc(url)}) >> >>`));
+      });
     });
     const xref = len;
     let x = `xref\n0 ${total + 1}\n0000000000 65535 f \n`;
     for (let i = 1; i <= total; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
-    push(x + `trailer\n<< /Size ${total + 1} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    push(x + `trailer\n<< /Size ${total + 1} /Root ${CAT} 0 R /Info ${INFO} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
     return new Blob(parts, { type: 'application/pdf' });
   }
   function report(D) {
@@ -547,7 +608,8 @@
     const canvases = [coverPage(D, total), overviewPage(D, total)];
     pairs.forEach((pair, i) => canvases.push(detailPage(D, pair, 3 + i, total)));
     canvases.push(methodPage(D, total, total));
-    return makePdf(canvases.map((c) => ({ w: c.width, h: c.height, data: b64bytes(c.toDataURL('image/jpeg', 0.88)) })), D.occasion.title + ' - MarketPulse');
+    const url = (location.origin && location.origin !== 'null' ? location.origin : 'https://' + location.host) + '/picks.html?o=' + encodeURIComponent(D.occasion.slug || '');
+    return makePdf(canvases.map((c) => ({ w: c.width, h: c.height, links: c._links, data: b64bytes(c.toDataURL('image/jpeg', 0.88)) })), D.occasion.title + ' - MarketPulse', url);
   }
 
   /* ───────── entry point ───────── */

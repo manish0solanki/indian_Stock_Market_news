@@ -216,7 +216,7 @@
   function loadExporter() {
     if (window.MPPicksExport) return Promise.resolve(window.MPPicksExport);
     return exporter || (exporter = new Promise((res, rej) => {
-      const s = document.createElement('script'); s.src = '/picks-export.js?v=1';
+      const s = document.createElement('script'); s.src = '/picks-export.js?v=2';
       s.onload = () => res(window.MPPicksExport); s.onerror = () => { exporter = null; rej(new Error('Could not load the download tool')); };
       document.head.appendChild(s);
     }));
