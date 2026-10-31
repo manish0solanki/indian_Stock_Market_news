@@ -27,7 +27,7 @@
 .ah-grp h2{margin:0 0 7px;font-size:14.5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .ah-grp h2 span{font-size:12px;color:var(--ah-dim);font-weight:600}
 .ah-rows{background:var(--ah-surface);border:1px solid var(--ah-border);border-radius:12px;overflow:hidden}
-.ah-row{display:grid;grid-template-columns:88px minmax(0,1.2fr) minmax(0,2fr) 150px;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--ah-border)}
+.ah-row{display:grid;grid-template-columns:88px minmax(0,1.2fr) minmax(0,2fr) 150px 112px;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--ah-border)}
 .ah-row:first-child{border-top:0}
 .ah-row.fail{background:linear-gradient(90deg,var(--failbg),transparent 45%)}.ah-row.warn{background:linear-gradient(90deg,var(--warnbg),transparent 45%)}
 .ah-nm{font-weight:700;font-size:13.5px;line-height:1.35}
@@ -39,13 +39,19 @@
 .ah-pill i{width:7px;height:7px;border-radius:50%;background:currentColor}
 .ah-pill.ok{color:var(--ok);background:var(--okbg)}.ah-pill.warn{color:var(--warn);background:var(--warnbg)}.ah-pill.fail{color:var(--fail);background:var(--failbg)}
 .ah-pill.idle,.ah-pill.info{color:var(--idle);background:rgba(139,143,163,.14)}.ah-pill.wait{color:#818cf8;background:rgba(129,140,248,.14)}
+.ah-act{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:0}
+.ah-run{border:1px solid var(--ah-border);background:transparent;color:var(--ah-text);border-radius:8px;padding:5px 10px;font-weight:700;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap}
+.ah-run:hover{border-color:#818cf8}.ah-run:disabled{opacity:.6;cursor:default}
+.ah-runmsg{font-size:11px;color:var(--ah-dim);text-align:right;max-width:260px;overflow-wrap:anywhere;line-height:1.35}
+.ah-runmsg.ok{color:var(--ok)}.ah-runmsg.fail{color:var(--fail)}
 .ah-note{font-size:12px;color:var(--ah-dim);line-height:1.6;margin-top:14px}
 .ah-empty{padding:18px;text-align:center;color:var(--ah-muted)}
 @media(max-width:900px){
  .ah-hero{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
  .ah-overall{grid-column:1/-1}
  .ah-num{padding:8px 10px;text-align:center}.ah-num .ah-v{font-size:20px}.ah-num .ah-l{font-size:9.5px;letter-spacing:.03em}
- .ah-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nm pill" "dt dt" "last last";gap:4px 10px;padding:11px 12px}
+ .ah-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nm pill" "dt dt" "last act";gap:4px 10px;padding:11px 12px}
+ .ah-row>.ah-act{grid-area:act;justify-self:end;align-items:flex-end}
  .ah-row>.ah-pill{grid-area:pill;align-self:start}.ah-row>.ah-name{grid-area:nm}.ah-row>.ah-dt{grid-area:dt}.ah-row>.ah-last{grid-area:last;text-align:left}
  .ah-last small{display:inline;margin-left:6px}
  .ah-stamp{width:100%;margin-left:0}
@@ -111,7 +117,7 @@ const ORDER = { fail: 0, warn: 1, wait: 2, ok: 3, idle: 4, info: 5 };
       return [['Daily Wrap', 'daily-wrap', 1050], ['Sector Analysis', 'sector-analysis', 1050], ['Stock Spotlight', 'stock-spotlight', 1050], ['FII / DII post', 'fiidii-flows', 1260]].map(([nm, cat, due]) => {
         const have = (latest[cat] || '').slice(0, 10), w = want(due);
         const status = !have ? 'fail' : !w || have >= w ? 'ok' : have >= prevOf(w) ? 'warn' : 'fail';
-        return { group: 'Blog (published site)', name: nm, status, detail: (have ? 'Latest post ' + have : 'No posts') + (w ? ' · expected ' + w : ''), last: latest[cat] || null };
+        return { group: 'Blog (published site)', name: nm, job: cat === 'fiidii-flows' ? 'blog-fiidii' : 'blog-market-posts', status, detail: (have ? 'Latest post ' + have : 'No posts') + (w ? ' · expected ' + w : ''), last: latest[cat] || null };
       });
     } catch (e) { return [{ group: 'Blog (published site)', name: 'posts.json', status: 'fail', detail: 'Could not read /blog/posts.json: ' + e.message }]; }
   }
@@ -138,7 +144,8 @@ const ORDER = { fail: 0, warn: 1, wait: 2, ok: 3, idle: 4, info: 5 };
         <div class="ah-row ${c.status}"><span class="ah-pill ${c.status}"><i></i>${LABEL[c.status] || c.status}</span>
           <div class="ah-name"><div class="ah-nm">${esc(c.name)}</div>${c.expect ? `<div class="ah-ex">${esc(c.expect)}</div>` : ''}</div>
           <div class="ah-dt">${esc(c.detail || '')}</div>
-          <div class="ah-last">${c.last ? esc(ago(c.last)) + `<small>${esc(ist(c.last))}</small>` : ''}</div></div>`).join('')}</div></section>`;
+          <div class="ah-last">${c.last ? esc(ago(c.last)) + `<small>${esc(ist(c.last))}</small>` : ''}</div>
+          <div class="ah-act">${c.job ? runCell(c.job) : ''}</div></div>`).join('')}</div></section>`;
     }).join('') || '<div class="ah-card ah-empty">No problems right now. 🎉</div>';
     q('stamp').textContent = db ? 'Checked ' + new Date(db.checked_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Kolkata' }) + ' IST' : '';
   }
@@ -159,6 +166,48 @@ const ORDER = { fail: 0, warn: 1, wait: 2, ok: 3, idle: 4, info: 5 };
     busy = false; q('refresh').disabled = false;
   }
 
+  /* ───────── Run now: start the scheduled job that feeds a check (admin_run_job()) ───────── */
+  const runs = {}; // job -> { state: 'running' | 'ok' | 'fail', msg }
+  function runCell(job) {
+    const r = runs[job];
+    return `<button class="ah-run" type="button" data-run="${esc(job)}" ${r && r.state === 'running' ? 'disabled' : ''} title="Run ${esc(job)} now">${r && r.state === 'running' ? 'Running…' : '▶ Run now'}</button>` +
+      (r && r.msg ? `<span class="ah-runmsg ${r.state === 'running' ? '' : r.state}">${esc(r.msg)}</span>` : '');
+  }
+  // A short, readable summary of a function's JSON reply.
+  function summarise(body) {
+    try {
+      const d = JSON.parse(body);
+      if (d.skipped) return 'Skipped: ' + d.skipped;
+      if (d.error) return 'Error: ' + d.error;
+      const parts = Object.entries(d).filter(([, v]) => ['number', 'string', 'boolean'].includes(typeof v)).slice(0, 4).map(([k, v]) => k + ' ' + v);
+      return parts.join(' · ') || 'Done';
+    } catch (_) { return String(body || 'Done').slice(0, 120); }
+  }
+  async function runJob(job) {
+    if (runs[job] && runs[job].state === 'running') return;
+    runs[job] = { state: 'running', msg: 'Started…' }; render();
+    try {
+      const { data, error } = await sb.rpc('admin_run_job', { p_job: job });
+      if (error) throw error;
+      if (!data.request_id) { runs[job] = { state: 'ok', msg: 'Done: ' + (data.result || 'finished') }; }
+      else {
+        // HTTP job: wait for the function's reply (up to ~2 minutes).
+        let res = null;
+        for (let i = 0; i < 60 && !res; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const { data: d } = await sb.rpc('admin_job_result', { p_request_id: data.request_id });
+          if (d && d.done) res = d;
+          else { runs[job].msg = 'Running… ' + (i + 1) * 2 + ' s'; render(); }
+        }
+        if (!res) runs[job] = { state: 'fail', msg: 'Still running after 2 minutes; check again shortly.' };
+        else if (res.timed_out || res.error || !(res.status >= 200 && res.status < 300)) runs[job] = { state: 'fail', msg: 'Failed: ' + (res.error || (res.timed_out ? 'timed out' : 'HTTP ' + res.status + ' ' + summarise(res.body))) };
+        else runs[job] = { state: 'ok', msg: 'Done · ' + summarise(res.body) };
+      }
+    } catch (e) { runs[job] = { state: 'fail', msg: e.message || String(e) }; }
+    render();
+    setTimeout(check, 1500); // re-check health with the fresh data
+  }
+
   function mount(host, client, opts = {}) {
     sb = client; onCount = opts.onCount || null;
     if (!root) {
@@ -168,11 +217,13 @@ const ORDER = { fail: 0, warn: 1, wait: 2, ok: 3, idle: 4, info: 5 };
         <div class="ah-bar"><div class="ah-seg"><button class="on" data-filter="all" type="button">All checks</button><button data-filter="problems" type="button">Problems only</button></div>
           <button class="ah-btn" data-ah="refresh" type="button">↻ Re-check</button><span class="ah-stamp" data-ah="stamp"></span></div>
         <div data-ah="groups"></div>
-        <p class="ah-note">Database checks compare each feed's newest data with what should exist right now: live feeds are strict during NSE hours (Mon–Fri 09:15–15:30 IST) and only need the last session's data otherwise, so nights and weekends don't raise false alarms. Exchange holidays aren't known, so on a holiday market-hours feeds can show as late. Live checks call each backend function from this browser. Re-checks every 2 minutes while this tab is open.</p>`;
+        <p class="ah-note">Database checks compare each feed's newest data with what should exist right now: live feeds are strict during NSE hours (Mon–Fri 09:15–15:30 IST) and only need the last session's data otherwise, so nights and weekends don't raise false alarms. Exchange holidays aren't known, so on a holiday market-hours feeds can show as late. Live checks call each backend function from this browser. Re-checks every 2 minutes while this tab is open. ▶ Run now starts the job that feeds a check straight away (skipping its usual throttles); trading bots and clean-up jobs can't be run from here.</p>`;
       root.addEventListener('click', (e) => {
         const b = e.target.closest('[data-filter]');
         if (b) { filter = b.dataset.filter; root.querySelectorAll('[data-filter]').forEach((x) => x.classList.toggle('on', x === b)); render(); }
         if (e.target.closest('[data-ah="refresh"]')) check();
+        const run = e.target.closest('[data-run]');
+        if (run) runJob(run.dataset.run);
       });
       timer = setInterval(() => { if (!document.hidden && root.offsetParent) check(); }, 120e3);
     }

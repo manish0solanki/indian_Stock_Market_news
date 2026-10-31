@@ -20,7 +20,7 @@ language sql stable as $$
     'detail', case when d is null then 'No data at all' else note || ' · have ' || to_char(d, 'DD Mon') || ', expected ' || to_char(want, 'DD Mon') end,
     'expect', 'Data for ' || to_char(want, 'DD Mon'))
 $$;
-create or replace function public.data_health() returns jsonb
+create or replace function public.data_health_checks() returns jsonb
 language plpgsql stable security definer set search_path = public, cron as $$
 declare
   ist timestamp := now() at time zone 'Asia/Kolkata';
@@ -129,6 +129,32 @@ begin
     'ist', to_char(ist, 'Dy DD Mon, HH24:MI'), 'checks', checks);
 end $$;
 
+
+-- What the admin page calls: the checks above plus, for each, the scheduled job that refreshes it
+-- (the panel's "Run now" button, see supabase/admin-run-job.sql).
+create or replace function public.data_health() returns jsonb
+language plpgsql stable security definer set search_path = public, cron as $$
+declare h jsonb := public.data_health_checks(); checks jsonb := h->'checks';
+begin
+  -- Which scheduled job refreshes each check, for the panel's "Run now" button (admin_run_job()).
+  select coalesce(jsonb_agg(c || coalesce((select jsonb_build_object('job', j) from (values
+      ('Indian indices', 'index-refresh'), ('Global markets', 'index-refresh-global-30s'), ('Stock quote', 'sector-refresh'),
+      ('Sector indices', 'sector-refresh'), ('Market quotes', 'sector-refresh'), ('Daily price history', 'stock-signals-refresh'),
+      ('FII / DII', 'feeds-refresh'), ('Market news', 'news-refresh'), ('Global headlines', 'feeds-refresh'), ('Crude oil', 'crude-refresh'),
+      ('Live insights', 'live-insights'), ('Events calendar', 'events-refresh'), ('IPOs', 'ipo-refresh'),
+      ('Stock Signals scanner', 'stock-signals-refresh'), ('Stock master', 'stocks-sync')) m(prefix, j)
+    where c->>'group' not in ('Background jobs', 'Scheduler') and c->>'name' like m.prefix || '%' limit 1),
+    (select jsonb_build_object('job', j) from (values ('crude', 'crude-refresh'), ('feeds', 'feeds-refresh'), ('index', 'index-refresh'),
+      ('index-fast', 'index-refresh-global-30s'), ('sector', 'sector-refresh'), ('stock-signals', 'stock-signals-refresh')) m(k, j)
+     where c->>'group' = 'Background jobs' and c->>'name' = m.k),
+    case when c->>'group' = 'Scheduler' and (c->>'name') = any (admin_runnable_jobs()) then jsonb_build_object('job', c->>'name') end,
+    '{}'::jsonb) order by ord), '[]'::jsonb)
+  into checks from jsonb_array_elements(checks) with ordinality x(c, ord);
+
+  return jsonb_set(h, '{checks}', checks);
+end $$;
+
+revoke all on function public.data_health_checks() from public, anon, authenticated;
 revoke all on function public.data_health() from public, anon;
 grant execute on function public.data_health() to authenticated;
 revoke all on function public.mp_health_age(text, text, timestamptz, int, int, text) from public, anon;

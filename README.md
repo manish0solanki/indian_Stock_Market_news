@@ -86,6 +86,7 @@
 - One page that shows whether every data feed is working: Indian and global quotes, stock quotes and coverage, sector indices, daily price history, FII/DII, news, global headlines, crude, live insights, events, IPOs, the economic calendar schedule, the signals scanner, background job heartbeats and pg_cron failures (from `data_health()`).
 - Each check knows what to expect at that moment (strict in market hours, last session's data otherwise), so nights and weekends don't raise false alarms.
 - Live checks call each backend function from the browser (GIFT Nifty, option chain, index history, stock data, stock news, MF NAVs, global market data) and the published blog posts are checked against the expected dates.
+- **▶ Run now** on each check that is backed by a background job re-runs that job straight away (`admin_run_job()` in `supabase/admin-run-job.sql`). Manual runs pass `force=1` so they skip the "refreshed recently" / market-hours throttles, the reply is shown under the button, and the checks are re-run afterwards. Only allowlisted data jobs can be run (trading bots and clean-up jobs are excluded), at most once per 30 seconds; the cron secret never leaves the database and each run is logged in `admin_job_runs`.
 - A tab in the Admin Panel (`admin-news.html#health`) with a badge counting problems; re-checks every 2 minutes. `admin-health.html` redirects there.
 
 ### 📅 Events Calendar (`events.html`)
