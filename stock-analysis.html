@@ -176,6 +176,35 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 .picks-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .picks-grid h4{margin:0 0 8px;font-size:13px}
 .picks-grid .table{min-width:420px}
+.all-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.all-tabs{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:10px}
+.all-tabs button{border:0;background:none;color:#9eafca;font-weight:750;font-size:12.5px;padding:6px 11px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.all-tabs button.on{background:#4f46e5;color:#fff}
+.all-tabs button b{font-weight:800;opacity:.85;margin-left:3px}
+.all-q{flex:1 1 200px;min-width:0;padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--text)}
+.all-sort{display:flex;gap:6px;align-items:center}
+.all-sort select{padding:7px 9px;border-radius:9px;border:1px solid var(--line);background:#111b2e;color:var(--text)}
+.all-table th button{background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;cursor:pointer;white-space:nowrap}
+.all-table th button.on{color:#c7d2ff}
+.all-table td.v,.all-table th.v{text-align:right;font-variant-numeric:tabular-nums}
+.all-table tbody tr{cursor:pointer}.all-table tbody tr:hover{background:#17243a}
+.sig{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:999px}
+.sig.BUY{color:var(--green);background:#22d69a1f}.sig.SELL{color:var(--red);background:#ff61781f}.sig.WAIT{color:var(--gold);background:#f3c9691f}
+.scorebar{display:inline-block;width:46px;height:5px;border-radius:3px;background:#233149;vertical-align:middle;margin-left:6px;overflow:hidden}
+.scorebar i{display:block;height:100%;border-radius:3px}
+.all-cards{display:none}
+@media(max-width:760px){
+ .all-wrap{display:none}.all-cards{display:grid;gap:8px}
+ .all-sort{width:100%}.all-sort select{flex:1}
+ .all-tabs{width:100%;overflow-x:auto}.all-tabs button{flex:1}
+ .acard{border:1px solid var(--line);border-radius:12px;padding:11px 12px;cursor:pointer}
+ .acard .atop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+ .acard .atop>div:last-child{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+ .acard .atop b{font-size:14.5px}.acard small{display:block;color:#8ea0bd;font-size:11.5px}
+ .acard .kv{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px;font-size:12px;color:#9eafca}
+ .acard .kv b{color:var(--text);font-variant-numeric:tabular-nums}
+}
+[data-theme="light"] .all-table tbody tr:hover{background:#eef0f6}[data-theme="light"] .all-sort select{background:#fff}
 .linkbtn{background:none;border:0;padding:0;color:var(--text);font-weight:700;text-decoration:underline;text-decoration-color:#4a5d86;text-underline-offset:3px}
 .linkbtn:hover{color:#a9b9ff}
 
@@ -376,13 +405,29 @@ details.settings summary{cursor:pointer;color:var(--muted)}
  <section class="panel" id="scan">
   <div class="panel-head">
    <div><h2>Nifty 50 technical scan</h2><div class="sub">The same rules as above, run across Nifty 50 stocks. Click a symbol to analyse it.</div></div>
-   <div class="tools"><span id="picksUpdated" class="sub">Not scanned yet</span><button id="refreshPicks" class="btn ghost sm" type="button">Rescan</button></div>
+   <div class="tools"><span id="picksUpdated" class="sub">Not scanned yet</span><button id="refreshPicks" class="btn ghost sm" type="button">Rescan</button><button id="openAll" class="btn sm" type="button">View all signals →</button></div>
   </div>
   <div class="picks-grid">
    <div><h4 class="positive">Strongest setups (BUY)</h4><div class="tablewrap" id="buyPicks"><div class="skel" style="height:120px"></div></div></div>
    <div><h4 class="negative">Weakest setups (SELL)</h4><div class="tablewrap" id="sellPicks"><div class="skel" style="height:120px"></div></div></div>
   </div>
   <div class="note">Rescans automatically every 30 minutes while the page is open. Data can be delayed.</div>
+ </section>
+
+ <section class="panel" id="allSignals" hidden>
+  <div class="panel-head">
+   <div><h2>All signals</h2><div class="sub" id="allSub">The same BUY / WAIT / SELL rules, run across the ~220 stocks the signals scanner follows (Nifty 50 and other liquid NSE stocks), on daily closes.</div></div>
+   <div class="tools"><button id="closeAll" class="btn ghost sm" type="button">Close</button></div>
+  </div>
+  <div class="all-bar">
+   <div class="all-tabs" id="allTabs" role="tablist"></div>
+   <input id="allQ" class="all-q" type="search" placeholder="Search symbol, company or sector" aria-label="Search">
+   <div class="all-sort"><label for="allSort" class="sub">Sort</label>
+    <select id="allSort"><option value="score">Score</option><option value="sym">Symbol (A–Z)</option><option value="name">Company (A–Z)</option><option value="signal">Signal</option><option value="price">Price</option><option value="chg">Last day %</option><option value="r1m">1 month %</option><option value="r3m">3 months %</option><option value="rsi">RSI</option><option value="mcap">Market cap</option><option value="sector">Sector (A–Z)</option></select>
+    <button id="allDir" class="btn ghost sm" type="button" aria-label="Sort direction">↓ High to low</button></div>
+  </div>
+  <div id="allBody"><div class="skel" style="height:180px"></div></div>
+  <div class="note" id="allNote"></div>
  </section>
 
  <section class="panel">
@@ -1211,6 +1256,92 @@ async function refreshPicks(force = false) {
  const c = {at: Date.now(), picks}; store.set('mp_sa_scan', c); showPicks(c);
 }
 $('refreshPicks').onclick = () => refreshPicks(true);
+
+/* ───────── All signals: the verdict rules across the scanner's ~220 stocks ─────────
+   Daily bars come from analysis_scan_bars() (stock_swing_cache, end-of-day). Results are kept for
+   30 minutes in this browser; strong scanner setups upgrade WAIT exactly as on the single-stock view. */
+let allRows = null, allAt = 0, allTab = 'ALL', allSort = 'score', allDir = 'desc', allLoading = false;
+const SIG_ORDER = {BUY: 3, WAIT: 2, SELL: 1};
+async function loadAll(force) {
+ const cached = store.get('mp_sa_all', null);
+ if (!force && cached?.rows?.length && Date.now() - cached.at < 30 * 60000) { allRows = cached.rows; allAt = cached.at; return; }
+ if (!sb) throw new Error('Data service unavailable');
+ const {data, error} = await sb.rpc('analysis_scan_bars');
+ if (error) throw error;
+ const rows = [];
+ for (const x of data?.stocks || []) {
+  try {
+   const D = String(x.d || '').split(','), H = String(x.h || '').split(','), Lo = String(x.l || '').split(','), C = String(x.c || '').split(','), V = String(x.v || '').split(',');
+   const bars = D.map((d, i) => ({time: d.slice(0, 4) + '-' + d.slice(4, 6) + '-' + d.slice(6, 8), high: +H[i], low: +Lo[i], close: +C[i], open: +C[i], volume: +V[i]}))
+    .filter(b => b.close > 0).map(b => ({...b, ts: Date.parse(b.time + 'T10:00:00Z')}));
+   if (bars.length < 50) continue;
+   const t = technical(bars), d = decide(t);
+   rows.push({symbol: x.s, name: x.n, sector: x.sec || '', mcap: num(x.mc), price: t.last.close, chg: t.change, r1m: t.returns['1M'], r3m: t.returns['3M'],
+    rsi: t.rsi, trend: t.trend, score: d.score, signal: d.label, date: t.last.time});
+  } catch {}
+ }
+ allRows = rows; allAt = Date.now();
+ store.set('mp_sa_all', {at: allAt, rows});
+}
+function allList() {
+ const strong = strongCache ? strongCache.map : {};
+ let list = allRows.map(r => strong[r.symbol] && r.signal === 'WAIT' ? {...r, signal: strong[r.symbol].side === 'SELL' ? 'SELL' : 'BUY', viaScanner: true} : r);
+ const counts = {ALL: list.length, BUY: 0, SELL: 0, WAIT: 0}; list.forEach(r => counts[r.signal]++);
+ const q = $('allQ').value.trim().toLowerCase();
+ if (allTab !== 'ALL') list = list.filter(r => r.signal === allTab);
+ if (q) list = list.filter(r => (r.symbol + ' ' + r.name + ' ' + r.sector).toLowerCase().includes(q));
+ const key = {sym: r => r.symbol, name: r => r.name, sector: r => r.sector, signal: r => SIG_ORDER[r.signal] * 1000 + r.score}[allSort] || (r => r[allSort]);
+ const dir = allDir === 'asc' ? 1 : -1;
+ list.sort((a, b) => {
+  const x = key(a), y = key(b);
+  if (x == null || (typeof x === 'number' && !Number.isFinite(x))) return 1;
+  if (y == null || (typeof y === 'number' && !Number.isFinite(y))) return -1;
+  return (typeof x === 'string' ? x.localeCompare(y) : x - y) * dir;
+ });
+ return {list, counts};
+}
+const TEXT_SORT = ['sym', 'name', 'sector'];
+function dirLabel() { return TEXT_SORT.includes(allSort) ? (allDir === 'asc' ? '↑ A to Z' : '↓ Z to A') : (allDir === 'asc' ? '↑ Low to high' : '↓ High to low'); }
+function drawAll() {
+ if (!allRows) return;
+ const {list, counts} = allList();
+ $('allTabs').innerHTML = [['ALL', 'All'], ['BUY', 'Buy'], ['SELL', 'Sell'], ['WAIT', 'Wait']].map(([k, l]) => `<button type="button" data-all-tab="${k}" class="${allTab === k ? 'on' : ''}">${l}<b>${counts[k]}</b></button>`).join('');
+ $('allSort').value = allSort; $('allDir').textContent = dirLabel();
+ const scoreBar = s => `<span class="scorebar"><i style="width:${s}%;background:${s >= 60 ? 'var(--green)' : s <= 40 ? 'var(--red)' : 'var(--gold)'}"></i></span>`;
+ const cr = v => Number.isFinite(v) ? (v >= 1e5 ? '₹' + fmt(v / 1e5, 2) + ' L Cr' : '₹' + Math.round(v).toLocaleString('en-IN') + ' Cr') : '—';
+ const th = (k, l, v) => `<th class="${v ? 'v' : ''}"><button type="button" data-all-sort="${k}" class="${allSort === k ? 'on' : ''}">${l}${allSort === k ? (allDir === 'asc' ? ' ▲' : ' ▼') : ''}</button></th>`;
+ const sig = r => `<span class="sig ${r.signal}">${r.signal}</span>${r.viaScanner ? ' <span class="sub" title="Upgraded from WAIT by a strong Stock Signals setup">scanner</span>' : ''}`;
+ if (!list.length) { $('allBody').innerHTML = '<div class="sub" style="padding:16px">No stocks match.</div>'; return; }
+ $('allBody').innerHTML = `<div class="tablewrap all-wrap"><table class="table all-table"><thead><tr>${th('sym', 'Stock')}${th('signal', 'Signal')}${th('score', 'Score', 1)}${th('price', 'Price', 1)}${th('chg', 'Last day', 1)}${th('r1m', '1M', 1)}${th('r3m', '3M', 1)}${th('rsi', 'RSI', 1)}${th('sector', 'Sector')}${th('mcap', 'Market cap', 1)}</tr></thead><tbody>` +
+  list.map(r => `<tr data-go="${esc(r.symbol)}" data-name="${esc(r.name)}"><td><b>${esc(r.symbol)}</b><div class="sub">${esc(r.name)}</div></td><td>${sig(r)}</td><td class="v">${r.score}${scoreBar(r.score)}</td><td class="v">${rs(r.price)}</td><td class="v ${cls(r.chg)}">${pct(r.chg, 1)}</td><td class="v ${cls(r.r1m)}">${pct(r.r1m, 1)}</td><td class="v ${cls(r.r3m)}">${pct(r.r3m, 1)}</td><td class="v">${fmt(r.rsi, 0)}</td><td class="sub">${esc(r.sector)}</td><td class="v">${cr(r.mcap)}</td></tr>`).join('') + '</tbody></table></div>' +
+  `<div class="all-cards">${list.map(r => `<div class="acard" data-go="${esc(r.symbol)}" data-name="${esc(r.name)}"><div class="atop"><div><b>${esc(r.symbol)}</b><small>${esc(r.name)}</small></div><div style="text-align:right">${sig(r)}<small>Score <b style="color:var(--text)">${r.score}</b>${scoreBar(r.score)}</small></div></div>
+   <div class="kv"><span>Price <b>${rs(r.price)}</b></span><span>Day <b class="${cls(r.chg)}">${pct(r.chg, 1)}</b></span><span>1M <b class="${cls(r.r1m)}">${pct(r.r1m, 1)}</b></span><span>3M <b class="${cls(r.r3m)}">${pct(r.r3m, 1)}</b></span><span>RSI <b>${fmt(r.rsi, 0)}</b></span><span>${esc(r.sector)}</span></div></div>`).join('')}</div>`;
+ const last = allRows.map(r => r.date).sort().pop();
+ $('allNote').textContent = `${allRows.length} stocks · daily closes up to ${last ? new Date(last + 'T00:00:00Z').toLocaleDateString('en-IN', {day: 'numeric', month: 'short', timeZone: 'UTC'}) : '—'} · computed ${timeAgo(allAt)}. Tap a stock for its full analysis. Rule-based signals, not advice.`;
+}
+async function openAll(force) {
+ $('allSignals').hidden = false;
+ $('allSignals').scrollIntoView({behavior: 'smooth', block: 'start'});
+ if (allLoading) return;
+ allLoading = true;
+ if (!allRows || force) $('allBody').innerHTML = '<div class="sub" style="padding:16px">Running the rules across ~220 stocks…</div>';
+ try { await Promise.all([loadAll(force), strongSetups().catch(() => {})]); drawAll(); }
+ catch (e) { $('allBody').innerHTML = '<div class="sub" style="padding:16px">Could not load the list right now. Please try again shortly.</div>'; console.warn('[All signals]', e); }
+ finally { allLoading = false; }
+}
+$('openAll').onclick = () => openAll(false);
+$('closeAll').onclick = () => { $('allSignals').hidden = true; $('scan').scrollIntoView({behavior: 'smooth', block: 'start'}); };
+$('allTabs').addEventListener('click', e => { const b = e.target.closest('[data-all-tab]'); if (b) { allTab = b.dataset.allTab; drawAll(); } });
+$('allBody').addEventListener('click', e => {
+ const b = e.target.closest('[data-all-sort]'); if (!b) return;
+ e.stopPropagation();
+ const k = b.dataset.allSort;
+ if (allSort === k) allDir = allDir === 'asc' ? 'desc' : 'asc'; else { allSort = k; allDir = TEXT_SORT.includes(k) ? 'asc' : 'desc'; }
+ drawAll();
+}, true);
+$('allSort').onchange = () => { allSort = $('allSort').value; allDir = TEXT_SORT.includes(allSort) ? 'asc' : 'desc'; drawAll(); };
+$('allDir').onclick = () => { allDir = allDir === 'asc' ? 'desc' : 'asc'; drawAll(); };
+let allQt; $('allQ').addEventListener('input', () => { clearTimeout(allQt); allQt = setTimeout(drawAll, 120); });
 
 /* ───────── Boot ───────── */
 syncChartControls();

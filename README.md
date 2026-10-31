@@ -69,6 +69,7 @@
 
 ### 🔍 Stock Analysis (`stock-analysis.html`)
 - Interactive chart with RSI, MACD, Bollinger Bands, ADX, and support and resistance, plus fundamentals for any NSE stock.
+- **All signals** list: the same BUY / WAIT / SELL rules run across the ~220 stocks the signals scanner follows (daily bars from `analysis_scan_bars()`, `supabase/analysis-scan.sql`), with Buy / Sell / Wait tabs, search, and sorting by score, signal, symbol or company (A–Z), price, day / 1-month / 3-month change, RSI, sector or market cap, either direction. Strong scanner setups upgrade WAIT as on the single-stock view.
 
 ### 🧮 Stock Screener (`screener.html`)
 - Filters every NSE stock with a recent quote by **P/E, P/B, ROE, ROCE, market cap, dividend yield, 52-week high/low, volume spike, trend (50/200-day averages), today's move, sector and F&O**.
