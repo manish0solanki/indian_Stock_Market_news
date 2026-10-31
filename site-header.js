@@ -26,6 +26,7 @@
     ['Sectors', '/#sectors', function () { return false; }],
     ['Analysis', '/stock-analysis.html', function (p) { return p.indexOf('/stock-analysis') === 0; }],
     ['Screener', '/screener.html', function (p) { return p.indexOf('/screener') === 0; }],
+    ['Picks', '/picks.html', function (p) { return p.indexOf('/picks') === 0; }],
     ['Signals', '/stock-signals.html', function (p) { return p.indexOf('/stock-signals') === 0; }],
     ['F&O', '/fno.html', function (p) { return p.indexOf('/fno') === 0; }],
     ['Portfolio', '/portfolio.html', function (p) { return p.indexOf('/portfolio') === 0; }],

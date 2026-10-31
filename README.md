@@ -76,6 +76,19 @@
 - Ready-made screens: quality at a fair price, large caps in uptrend, near 52-week high/low, volume spikes, high dividend, value picks, today's gainers.
 - Data comes from one call to `stock_screener()` (`supabase/stock-screener.sql`); filtering and sorting run in the browser. Filters are kept in the URL, so a screen can be shared, and results download as CSV.
 
+### ✨ Festive Picks (`picks.html`)
+- **5 large-cap, 5 mid-cap and 5 small-cap stocks for the next 12 months**, published for each occasion: Diwali, New Year, Holi, Akshaya Tritiya, Independence Day (dates in `pick_occasions`, `supabase/festive-picks.sql`; add or move occasions there).
+- Picked by the `festive-picks` Edge Function from our own data:
+  - quality (ROE/ROCE);
+  - value against the stock's own industry P/E;
+  - a healthy trend (no falling knives);
+  - liquidity;
+  - the latest quarterly results from NSE filings (shrinking or loss-making businesses are dropped; half-year figures and growth off a loss are detected rather than taken at face value);
+  - one stock per sector per size bucket.
+- Each pick has a 12-month model target (forward EPS × fair P/E), the reasons, the key risks and the target maths. There is also a market note, a valuation table and a festive banner themed per occasion.
+- **Live track record:** return since the pick for each stock and the basket against the Nifty 50, plus targets hit. Published picks are locked, never re-picked. Earlier occasions stay in the tabs, and upcoming ones show a countdown.
+- Runs daily at 08:41 IST from pg_cron; admins can also run it from Data health → Run now. Educational, not investment advice (disclaimer on the page).
+
 ### ⇅ F&O Option Chain (`fno.html`)
 - Option chain for Nifty, Bank Nifty, Fin Nifty, Midcap Nifty, Nifty Next 50 and every F&O stock, any expiry.
 - Worked out for you: **PCR** (OI and volume), **max pain**, **support / resistance** (largest put OI at or below spot, largest call OI at or above it), **ATM IV** and the **expected move** (ATM straddle).
@@ -167,6 +180,7 @@
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |
 | `stocks-sync` | 03:11 and 13:11 | Stock master list |
+| `festive-picks` | 03:11 daily | Publishes an occasion's picks on its publish date and marks targets hit |
 | `crypto-bot`, `crypto-monitor` | every minute | Crypto paper-trading bot and position monitor |
 | `blog-market-posts` (+ backup) | 10:09 (11:39) Mon–Fri | Dispatches the Daily Wrap, Sector and Spotlight posts |
 | `blog-fiidii` (+ retry, backup) | 13:49 (15:19, 16:45) Mon–Fri | Dispatches the FII/DII post once NSE publishes flows |
@@ -183,6 +197,7 @@
 | `stock-news` | Per-stock headlines (Google News) and NSE filings for the stock card's News tab (`?symbol=POWERGRID&name=...`), cached 15 min |
 | `option-chain` | NSE option chain with PCR, max pain, support/resistance and expected move (`?symbol=NIFTY&expiry=03-Nov-2026`), cached a minute |
 | `events-refresh` | Events calendar and results analysis |
+| `festive-picks` | Festive picks: screens, reads results, picks 15 stocks with targets, reasons and risks (`?occasion=diwali-2026`, `?dry=1` to preview) |
 | `ipo-refresh` | IPOs and GMP |
 | `news-refresh` | News collection |
 | `index-refresh`, `sector-refresh`, `stocks-sync` | Market data collection |
@@ -211,6 +226,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── stock-signals.html/.js/.css   Stock signals and paper trading
 ├── stock-analysis.html      Technical / fundamental analysis
 ├── screener.html/.js         Stock screener
+├── picks.html/.js            Festive picks (Diwali, New Year, Holi...) with track record
 ├── fno.html/.js              F&O option chain, PCR, max pain
 ├── admin-news.html, admin-health.js   Admin Panel: news moderation and the data health tab
 ├── events.html              Events calendar

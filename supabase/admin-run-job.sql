@@ -17,7 +17,7 @@ create or replace function public.admin_runnable_jobs() returns text[]
 language sql immutable as $$
   select array['index-refresh', 'index-refresh-global-30s', 'sector-refresh', 'stock-signals-refresh', 'feeds-refresh',
                'news-refresh', 'crude-refresh', 'events-refresh', 'ipo-refresh', 'live-insights', 'stocks-sync',
-               'blog-market-posts', 'blog-fiidii']
+               'blog-market-posts', 'blog-fiidii', 'festive-picks']
 $$;
 
 create or replace function public.admin_run_job(p_job text) returns jsonb

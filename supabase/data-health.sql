@@ -145,7 +145,8 @@ begin
       ('Stock Signals scanner', 'stock-signals-refresh'), ('Stock master', 'stocks-sync')) m(prefix, j)
     where c->>'group' not in ('Background jobs', 'Scheduler') and c->>'name' like m.prefix || '%' limit 1),
     (select jsonb_build_object('job', j) from (values ('crude', 'crude-refresh'), ('feeds', 'feeds-refresh'), ('index', 'index-refresh'),
-      ('index-fast', 'index-refresh-global-30s'), ('sector', 'sector-refresh'), ('stock-signals', 'stock-signals-refresh')) m(k, j)
+      ('index-fast', 'index-refresh-global-30s'), ('sector', 'sector-refresh'), ('stock-signals', 'stock-signals-refresh'),
+      ('festive-picks', 'festive-picks')) m(k, j)
      where c->>'group' = 'Background jobs' and c->>'name' = m.k),
     case when c->>'group' = 'Scheduler' and (c->>'name') = any (admin_runnable_jobs()) then jsonb_build_object('job', c->>'name') end,
     '{}'::jsonb) order by ord), '[]'::jsonb)
