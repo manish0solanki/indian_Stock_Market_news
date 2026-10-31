@@ -308,6 +308,9 @@ MOONSHOT_API_KEY=… node scripts/blog/generate.mjs --posts=wrap,sector,spotligh
 ## 🚀 Setup and deployment
 
 1. **Frontend:** import the repo in Vercel as a static site, with no build command. Every push to `main` deploys.
+   - The repo is **private**. That's fine for Vercel, but on the Hobby plan Vercel only deploys commits whose author is the account owner. If a push doesn't show up on the site, check Vercel → Deployments for a "blocked" deployment.
+   - The blog token (`GIT_HUB_ACCESS`) must keep the `repo` scope so it can reach the private repo.
+   - Private repos get 2,000 free GitHub Actions minutes a month; the blog workflow uses far less.
 2. **Supabase:**
    - Create a project and run the SQL files in `supabase/`.
    - Deploy the Edge Functions in `supabase/functions/` with `supabase functions deploy <name>`.
