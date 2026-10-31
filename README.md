@@ -87,6 +87,11 @@
   - one stock per sector per size bucket.
 - Each pick has a 12-month model target (forward EPS × fair P/E), the reasons, the key risks and the target maths. There is also a market note, a valuation table and a festive banner themed per occasion.
 - **Live track record:** return since the pick for each stock and the basket against the Nifty 50, plus targets hit. Published picks are locked, never re-picked. Earlier occasions stay in the tabs, and upcoming ones show a countdown.
+- **⬇ Download** (on the banner), drawn in the browser by `picks-export.js` with no libraries; each design follows the occasion's theme (diyas and marigolds, fireworks, Holi colours, gold coins, the tricolour):
+  - **Poster image:** 1600×1000 PNG of all 15 picks.
+  - **Phone story image:** 1080×1920 PNG for WhatsApp status and Instagram stories.
+  - **PDF report:** 11-page A4, with a cover and market note, the picks at a glance with a valuation table, two stocks per page (reasons, risks, data, target maths), and how we pick.
+  - **Share:** on phones that support it, sends the story image straight to an app.
 - Runs daily at 08:41 IST from pg_cron; admins can also run it from Data health → Run now. Educational, not investment advice (disclaimer on the page).
 
 ### ⇅ F&O Option Chain (`fno.html`)
@@ -227,6 +232,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── stock-analysis.html      Technical / fundamental analysis
 ├── screener.html/.js         Stock screener
 ├── picks.html/.js            Festive picks (Diwali, New Year, Holi...) with track record
+├── picks-export.js          Festive picks downloads: poster/story PNG and PDF report
 ├── fno.html/.js              F&O option chain, PCR, max pain
 ├── admin-news.html, admin-health.js   Admin Panel: news moderation and the data health tab
 ├── events.html              Events calendar

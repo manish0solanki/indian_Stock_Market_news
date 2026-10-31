@@ -56,9 +56,16 @@
     if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
   }
 
-  function hero(o, extra) {
+  const DL = `<div class="dl"><button type="button" class="dlbtn" id="dlBtn" aria-haspopup="true" aria-expanded="false">⬇ Download</button>
+    <div class="dlmenu" id="dlMenu" role="menu" hidden>
+      <button type="button" role="menuitem" data-dl="poster"><b>🖼️ Poster image</b><small>Wide PNG of all 15 picks, great for sharing</small></button>
+      <button type="button" role="menuitem" data-dl="story"><b>📱 Phone story image</b><small>Tall PNG for WhatsApp status &amp; Instagram stories</small></button>
+      <button type="button" role="menuitem" data-dl="pdf"><b>📄 PDF report</b><small>Cover, market note, every stock's reasons, risks &amp; target</small></button>
+      <button type="button" role="menuitem" data-dl="share" class="dlshare" hidden><b>📤 Share image…</b><small>Send the story image straight to an app</small></button>
+    </div></div>`;
+  function hero(o, extra, withDl) {
     const th = THEME[o.theme] || THEME.diwali;
-    return `<section class="hero">
+    return `<section class="hero">${withDl ? DL : ''}
       <div class="eyebrow">MarketPulse ${esc(o.name)} picks</div>
       <h1>${esc(o.title)}</h1>
       <div class="sub">${esc(o.subtitle || '')}</div>
@@ -171,7 +178,7 @@
     const note = (o.market_note && o.market_note.lines) || [];
     const days = Math.floor((Date.now() - new Date(o.published_at)) / 864e5);
 
-    let h = hero(o, `<span>📅 Published ${dt(o.published_at)}</span><span>⏳ ${o.horizon_months}-month view</span><span>📊 ${picks.length} stocks · large, mid &amp; small cap</span>${num(o.nifty_at_pick) ? `<span>Nifty at pick ${n1(o.nifty_at_pick, 0)}</span>` : ''}`);
+    let h = hero(o, `<span>📅 Published ${dt(o.published_at)}</span><span>⏳ ${o.horizon_months}-month view</span><span>📊 ${picks.length} stocks · large, mid &amp; small cap</span>${num(o.nifty_at_pick) ? `<span>Nifty at pick ${n1(o.nifty_at_pick, 0)}</span>` : ''}`, true);
     h += `<section class="score">
       <div class="s"><span>Basket since pick</span><b class="${cls(avg)}">${sp(avg)}</b><small>equal-weight, ${days < 1 ? 'today' : days + (days === 1 ? ' day' : ' days')}</small></div>
       <div class="s"><span>Nifty 50 since pick</span><b class="${cls(nret)}">${sp(nret)}</b><small>${avg !== null && nret !== null ? (avg >= nret ? 'Picks ahead by ' : 'Picks behind by ') + Math.abs(avg - nret).toFixed(1) + ' pts' : '&nbsp;'}</small></div>
@@ -204,7 +211,44 @@
     }
   }
 
-  document.addEventListener('click', (e) => {
+  // Downloads: picks-export.js is loaded the first time it's needed.
+  let exporter = null;
+  function loadExporter() {
+    if (window.MPPicksExport) return Promise.resolve(window.MPPicksExport);
+    return exporter || (exporter = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = '/picks-export.js?v=1';
+      s.onload = () => res(window.MPPicksExport); s.onerror = () => { exporter = null; rej(new Error('Could not load the download tool')); };
+      document.head.appendChild(s);
+    }));
+  }
+  function toast(msg, ms) {
+    let t = $('mpToast');
+    if (!t) { t = document.createElement('div'); t.id = 'mpToast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.textContent = msg; t.classList.add('on'); clearTimeout(t._h);
+    if (ms) t._h = setTimeout(() => t.classList.remove('on'), ms);
+  }
+  function menu(open) {
+    const m = $('dlMenu'), b = $('dlBtn'); if (!m || !b) return;
+    m.hidden = !open; b.setAttribute('aria-expanded', String(open));
+    if (open) { const sh = m.querySelector('.dlshare'); if (sh) sh.hidden = !(navigator.canShare && window.File && matchMedia('(pointer:coarse)').matches); }
+  }
+  document.addEventListener('click', async (e) => {
+    if (e.target.closest('#dlBtn')) { menu($('dlMenu').hidden); return; }
+    const d = e.target.closest('[data-dl]');
+    if (d) {
+      menu(false);
+      const label = { poster: 'poster image', story: 'story image', pdf: 'PDF report', share: 'image' }[d.dataset.dl];
+      toast(`Preparing your ${label}…`);
+      try {
+        const ex = await loadExporter();
+        await ex.run(d.dataset.dl, D);
+        toast(d.dataset.dl === 'share' ? 'Ready to share ✨' : `Downloaded the ${label} ✨`, 2500);
+      } catch (err) {
+        toast(err && err.name === 'AbortError' ? 'Share cancelled' : `Couldn't create the ${label}: ${err.message}`, 4000);
+      }
+      return;
+    }
+    if (!e.target.closest('#dlMenu')) menu(false);
     const t = e.target.closest('[data-slug]');
     if (t) { e.preventDefault(); go(t.dataset.slug, true); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     if (e.target.closest('a')) return;
@@ -215,6 +259,7 @@
     }
   });
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') menu(false);
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-open]')) { e.preventDefault(); e.target.click(); }
   });
   window.addEventListener('popstate', () => go(new URLSearchParams(location.search).get('o'), false));
