@@ -80,6 +80,7 @@
         '<div class="mph-right">' +
           '<div class="mph-search" role="search">' + svg('search', 16) + '<input id="mphSearch" type="search" placeholder="Search stocks…" autocomplete="off" aria-label="Search stocks"><div class="mph-results" id="mphResults" hidden></div></div>' +
           '<button class="mph-ico mph-search-btn" id="mphSearchBtn" type="button" aria-label="Search stocks">' + svg('search', 18) + '</button>' +
+          '<div class="mph-bell" data-mp-bell></div>' +
           acct +
           '<button class="mph-ico" id="mphTheme" type="button"></button>' +
         '</div>' +
@@ -112,6 +113,9 @@
 
     applyTheme(storedTheme());
     wire(header, sheet);
+    // notifications bell (notify.js)
+    if (window.MPNotify) window.MPNotify.mount();
+    else if (!document.querySelector('script[src^="/notify.js"]')) { var ns = document.createElement('script'); ns.src = '/notify.js?v=1'; ns.defer = true; document.head.appendChild(ns); }
   }
 
   function wire(header, sheet) {

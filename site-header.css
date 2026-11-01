@@ -98,3 +98,15 @@
 [data-sym] { cursor: pointer; }
 [data-sym]:hover { text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 340px) { .mph-brand i { width: 13px; height: 13px; } }
+
+/* notifications bell slot (notify.js fills it) */
+.mph-bell { display: flex; flex: 0 0 auto; }
+/* narrow phones: make room for the notifications bell */
+@media (max-width: 420px) {
+  .mph-in { gap: 6px; padding: 8px 10px; }
+  .mph-right { gap: 5px; }
+  .mph-ico, .mph-acct { min-width: 34px; height: 34px; padding: 0 7px; }
+  .mph-login { height: 34px; padding: 0 11px; }
+  .mph-brand { font-size: 17px; gap: 8px; }
+  .mph-bell .mpn-btn { width: 34px; height: 34px; }
+}

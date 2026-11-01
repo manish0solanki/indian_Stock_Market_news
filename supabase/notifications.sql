@@ -23,6 +23,10 @@ create index if not exists site_notifications_created_idx on public.site_notific
 alter table public.site_notifications enable row level security;
 revoke all on public.site_notifications from anon, authenticated;
 
+-- ₹ amounts: whole rupees from ₹1,000 up, paise below.
+create or replace function public.mp_inr(v numeric) returns text language sql immutable as $$
+  select case when v is null then '—' when abs(v) >= 1000 then '₹' || to_char(round(v), 'FM99,99,99,990') else '₹' || to_char(v, 'FM99,990.00') end $$;
+
 create or replace function public.mp_capture_notifications() returns int
 language plpgsql security definer set search_path = public as $$
 declare
@@ -34,9 +38,9 @@ begin
   insert into site_notifications (key, kind, icon, title, body, url, created_at)
   select 'sig:' || (p->>'symbol') || ':' || (p->>'side') || ':' || coalesce(s.bar_date, today::text), 'signal',
          case when p->>'side' = 'BUY' then '📈' else '📉' end,
-         'Strong ' || (p->>'side') || ' setup: ' || coalesce(p->>'name', p->>'symbol'),
-         initcap(coalesce(p->>'tf', 'swing')) || ' · ' || coalesce(p->>'setup', 'signal') || ' · entry ₹' || to_char((p->>'entry')::numeric, fmt)
-           || ', target ₹' || to_char((p->>'target1')::numeric, fmt) || ', stop ₹' || to_char((p->>'stop')::numeric, fmt),
+         'Strong ' || (p->>'side') || ' setup: ' || regexp_replace(coalesce(p->>'name', p->>'symbol'), '\s+(Limited|Ltd\.?)$', '', 'i'),
+         initcap(coalesce(p->>'tf', 'swing')) || ' · ' || coalesce(p->>'setup', 'signal') || ' · entry ' || mp_inr((p->>'entry')::numeric)
+           || ', target ' || mp_inr((p->>'target1')::numeric) || ', stop ' || mp_inr((p->>'stop')::numeric),
          '/stock-signals.html', now()
     from jsonb_array_elements(coalesce(stock_signals_top(6, 120)->'picks', '[]'::jsonb)) p
     left join stock_signals s on s.symbol = p->>'symbol' and s.side = p->>'side' and s.tf = p->>'tf'
@@ -66,7 +70,7 @@ begin
   insert into site_notifications (key, kind, icon, title, body, url)
   select 'hit:' || f.occasion || ':' || f.symbol, 'target', '🎯',
          regexp_replace(coalesce(f.company_name, f.symbol), '\s+(Limited|Ltd\.?)$', '', 'i') || ' hit its ' || o.title || ' target',
-         'Picked at ₹' || to_char(f.pick_price, fmt) || ', target ₹' || to_char(f.target_price, fmt) || ' reached on ' || to_char(f.target_hit_on, 'DD Mon') || '.',
+         'Picked at ' || mp_inr(f.pick_price) || ', target ' || mp_inr(f.target_price) || ' reached on ' || to_char(f.target_hit_on, 'DD Mon') || '.',
          '/picks.html?o=' || f.occasion
     from festive_picks f join pick_occasions o on o.slug = f.occasion
    where f.target_hit_on is not null and f.target_hit_on >= today - 7
@@ -75,7 +79,7 @@ begin
 
   -- IPOs opening or listing today
   insert into site_notifications (key, kind, icon, title, body, url)
-  select 'ipo-open:' || i.symbol || ':' || i.open_date, 'ipo', '🆕', 'IPO opens today: ' || i.company,
+  select 'ipo-open:' || i.symbol || ':' || i.open_date, 'ipo', '🆕', 'IPO opens today: ' || regexp_replace(i.company, '\s+(Limited|Ltd\.?)$', '', 'i'),
          coalesce('Price band ₹' || to_char(i.price_low, 'FM99,990') || '–' || to_char(i.price_high, 'FM99,990') || ' · ', '')
            || coalesce('closes ' || to_char(i.close_date, 'DD Mon'), '') || coalesce(' · ' || i.segment, ''),
          '/ipo.html'
@@ -83,7 +87,7 @@ begin
   on conflict (key) do nothing;
   get diagnostics k = row_count; n := n + k;
   insert into site_notifications (key, kind, icon, title, body, url)
-  select 'ipo-list:' || i.symbol || ':' || i.listing_date, 'ipo', '🔔', i.company || ' lists today',
+  select 'ipo-list:' || i.symbol || ':' || i.listing_date, 'ipo', '🔔', regexp_replace(i.company, '\s+(Limited|Ltd\.?)$', '', 'i') || ' lists today',
          coalesce('Issue price ₹' || to_char(coalesce(i.issue_price, i.price_high), 'FM99,990') || '. ', '') || 'See subscription and grey-market data.',
          '/ipo.html'
     from ipos i where i.listing_date = today

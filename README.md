@@ -101,6 +101,17 @@
   - **Branding:** every download carries the MarketPulse logo (the favicon's indigo tile and gold diamond, redrawn as vector art): a "Picked by MarketPulse" badge, a sign-off panel with the live track-record address, and "MarketPulse" as the PDF author. The PDF links back to the picks page from every footer.
 - Runs daily at 08:41 IST from pg_cron; admins can also run it from Data health → Run now. Educational, not investment advice (disclaimer on the page).
 
+### 🔔 Notifications bell (every page, `notify.js`)
+- A bell in the header with a red badge counting what's new since you last opened it (remembered per device, no sign-in needed). It covers:
+  - festive picks published, and a reminder the day before they go out;
+  - **strong trade signals**, the same high-quality, tradable setups as Home's top signals;
+  - festive picks reaching their targets;
+  - IPOs opening or listing today;
+  - site updates and new features.
+- The panel has filters for Picks, Signals, IPOs and Updates, plus "Mark all as read". If something new arrives while a page is open, a small pop-up appears.
+- Data: `site_notifications` (`supabase/notifications.sql`), filled every 5 minutes by `mp_capture_notifications()` (pg_cron job `notifications-capture`; each event is recorded once) and read through `site_notifications_feed()`.
+- Admins post an announcement with `admin_post_notification(title, body, url, icon)`.
+
 ### ⇅ F&O Option Chain (`fno.html`)
 - Option chain for Nifty, Bank Nifty, Fin Nifty, Midcap Nifty, Nifty Next 50 and every F&O stock, any expiry.
 - Worked out for you: **PCR** (OI and volume), **max pain**, **support / resistance** (largest put OI at or below spot, largest call OI at or above it), **ATM IV** and the **expected move** (ATM straddle).
@@ -192,6 +203,7 @@
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |
 | `stocks-sync` | 03:11 and 13:11 | Stock master list |
+| `notifications-capture` | every 5 min | Records new strong signals, picks, targets hit and IPO days for the 🔔 bell |
 | `festive-picks` | 03:11 daily | Publishes an occasion's picks on its publish date and marks targets hit |
 | `crypto-bot`, `crypto-monitor` | every minute | Crypto paper-trading bot and position monitor |
 | `blog-market-posts` (+ backup) | 10:09 (11:39) Mon–Fri | Dispatches the Daily Wrap, Sector and Spotlight posts |
@@ -239,6 +251,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── stock-analysis.html      Technical / fundamental analysis
 ├── screener.html/.js         Stock screener
 ├── picks.html/.js            Festive picks (Diwali, New Year, Holi...) with track record
+├── notify.js                Notifications bell in the header (all pages)
 ├── picks-export.js          Festive picks downloads: poster/story PNG and PDF report
 ├── fno.html/.js              F&O option chain, PCR, max pain
 ├── admin-news.html, admin-health.js   Admin Panel: news moderation and the data health tab
