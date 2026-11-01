@@ -87,6 +87,12 @@
   - one stock per sector per size bucket.
 - Each pick has a 12-month model target (forward EPS × fair P/E), the reasons, the key risks and the target maths. There is also a market note, a valuation table and a festive banner themed per occasion.
 - **Live track record:** return since the pick for each stock and the basket against the Nifty 50, plus targets hit. Published picks are locked, never re-picked. Earlier occasions stay in the tabs, and upcoming ones show a countdown.
+- **💰 Investment calculator:**
+  - Enter an amount (or tap ₹25k to ₹10 L) and choose a split: equal in each stock, Balanced 60/25/15, Conservative 75/20/5 or Aggressive 40/30/30 across large, mid and small caps. Size groups can be left out.
+  - It works out whole shares of each stock at live prices and spends the leftover one share at a time on the most under-weight stock.
+  - A stock whose single share is too expensive for its slice is skipped, and its money goes to the same size group so the split holds. The page says how much you'd need to hold all 15.
+  - Shows the amount invested, cash left, value at targets, estimated charges and the split by size.
+  - Copy the order list or download it as CSV. The amount and split are remembered on the device.
 - **⬇ Download** (on the banner), drawn in the browser by `picks-export.js` with no libraries; each design follows the occasion's theme (diyas and marigolds, fireworks, Holi colours, gold coins, the tricolour):
   - **Poster image:** 1600×1000 PNG of all 15 picks.
   - **Phone story image:** 1080×1920 PNG for WhatsApp status and Instagram stories.

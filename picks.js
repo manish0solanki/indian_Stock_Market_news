@@ -149,6 +149,154 @@
   </ol>
   <p class="disc">Picks are generated automatically from public data on the publish date and are never changed afterwards, so the track record above is honest. MarketPulse is not a SEBI-registered investment adviser or research analyst; this is educational information, not a recommendation to buy or sell. Markets carry risk — do your own research or consult a registered adviser, and invest only what you can hold for the long term.</p></section>`;
 
+
+  /* ───────── Investment calculator: amount -> whole shares per pick ───────── */
+  const MIXES = {
+    equal: { label: 'Equal in each stock', w: null, hint: 'The same amount in every pick.' },
+    balanced: { label: 'Balanced (60 / 25 / 15)', w: { large: 0.6, mid: 0.25, small: 0.15 }, hint: '60% large, 25% mid, 15% small caps: steadier, the usual choice for long-term money.' },
+    safe: { label: 'Conservative (75 / 20 / 5)', w: { large: 0.75, mid: 0.2, small: 0.05 }, hint: 'Mostly large caps; smaller swings, slower growth.' },
+    bold: { label: 'Aggressive (40 / 30 / 30)', w: { large: 0.4, mid: 0.3, small: 0.3 }, hint: 'More mid and small caps; higher potential and bigger swings.' },
+  };
+  const CHARGES = 0.0012; // approx. STT 0.1% + stamp duty 0.015% + exchange/SEBI fees + GST on a delivery buy; brokerage extra
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const CALC = { amount: +(store.get('mpCalcAmt') || 100000), mix: store.get('mpCalcMix') || 'balanced', caps: { large: true, mid: true, small: true } };
+  if (!MIXES[CALC.mix]) CALC.mix = 'balanced';
+  const priceOf = (p) => num(p.price) || num(p.pick_price);
+  const inr0 = (v) => '₹' + Math.round(v).toLocaleString('en-IN');
+
+  // Weights per stock from the mix and the chosen buckets (weights of a left-out bucket are shared out).
+  function weights(picks) {
+    const use = picks.filter((p) => CALC.caps[p.cap] && priceOf(p));
+    const mix = MIXES[CALC.mix].w;
+    if (!mix) return use.map((p) => [p, 1 / use.length]);
+    const caps = [...new Set(use.map((p) => p.cap))];
+    const tot = caps.reduce((a, c) => a + mix[c], 0) || 1;
+    return use.map((p) => [p, mix[p.cap] / tot / use.filter((x) => x.cap === p.cap).length]);
+  }
+  // Whole shares: buy down to each stock's share, then spend what's left one share at a time on the most
+  // under-weight stock that still fits (never more than 1.5x its share).
+  function allocate(picks, amount) {
+    const rows = weights(picks).map(([p, w]) => ({ p, w, w0: w, price: priceOf(p), goal: amount * w, qty: 0 }));
+    // A stock whose single share costs more than 1.5x its slice is skipped, and its slice goes to the other
+    // picks of the same size, so the large / mid / small split you chose holds.
+    for (;;) {
+      const live = rows.filter((r) => !r.dropped);
+      const bad = live.filter((r) => r.price > r.goal * 1.5).sort((a, b) => b.price / b.goal - a.price / a.goal)
+        .find((r) => live.some((x) => x !== r && x.p.cap === r.p.cap));
+      if (!bad) break;
+      const peers = live.filter((x) => x !== bad && x.p.cap === bad.p.cap);
+      peers.forEach((x) => { x.w += bad.w / peers.length; x.goal = amount * x.w; });
+      bad.dropped = true; bad.w = 0; bad.goal = 0;
+    }
+    rows.forEach((r) => { r.qty = r.dropped ? 0 : Math.floor(r.goal / r.price); });
+    let left = amount - rows.reduce((a, r) => a + r.qty * r.price, 0);
+    for (let guard = 0; guard < 5000; guard++) {
+      let best = null, gap = -Infinity;
+      for (const r of rows) {
+        if (r.dropped || r.price > left || (r.qty + 1) * r.price > r.goal * 1.5) continue;
+        const g = (r.goal - r.qty * r.price) / r.goal;
+        if (g > gap) { gap = g; best = r; }
+      }
+      if (!best) break;
+      best.qty++; left -= best.price;
+    }
+    rows.forEach((r) => { r.cost = r.qty * r.price; r.atTarget = r.qty * num(r.p.target_price); });
+    const invested = rows.reduce((a, r) => a + r.cost, 0);
+    const minAll = rows.length ? Math.max(...rows.map((r) => r.price / r.w0)) : 0; // to own at least one share of each
+    return { rows, invested, left: amount - invested, target: rows.reduce((a, r) => a + r.atTarget, 0), minAll };
+  }
+
+  function calcPanel() {
+    return `<section class="panel calc" id="calc"><h2>💰 Investment calculator</h2>
+      <p class="muted" style="margin:-4px 0 12px;font-size:13px">Enter how much you want to invest. We split it across the picks and work out how many shares of each to buy at today's prices.</p>
+      <div class="cform">
+        <label class="cfld"><span>Amount to invest</span><div class="camt"><b>₹</b><input id="calcAmt" type="text" inputmode="numeric" autocomplete="off" value="${Math.round(CALC.amount).toLocaleString('en-IN')}" aria-label="Amount to invest in rupees"></div></label>
+        <div class="cfld"><span>Quick pick</span><div class="cchips">${[25000, 50000, 100000, 250000, 500000, 1000000].map((v) => `<button type="button" class="cchip" data-amt="${v}">${v >= 100000 ? '₹' + v / 100000 + ' L' : '₹' + v / 1000 + 'k'}</button>`).join('')}</div></div>
+        <label class="cfld"><span>How to split it</span><select id="calcMix">${Object.entries(MIXES).map(([k, m]) => `<option value="${k}"${k === CALC.mix ? ' selected' : ''}>${m.label}</option>`).join('')}</select></label>
+        <div class="cfld"><span>Include</span><div class="cchips">${CAPS.map(([c, l]) => `<label class="ccheck"><input type="checkbox" data-cap="${c}"${CALC.caps[c] ? ' checked' : ''}> ${l}</label>`).join('')}</div></div>
+      </div>
+      <div class="chint" id="calcHint"></div>
+      <div id="calcOut"></div>
+    </section>`;
+  }
+  function calcRender() {
+    const out = $('calcOut'); if (!out || !D) return;
+    $('calcHint').textContent = MIXES[CALC.mix].hint;
+    const A = CALC.amount;
+    out._plan = null;
+    if (!(A > 0)) { out.innerHTML = '<div class="cempty">Enter an amount to see the plan.</div>'; return; }
+    if (!Object.values(CALC.caps).some(Boolean)) { out.innerHTML = '<div class="cempty">Pick at least one of large, mid or small caps.</div>'; return; }
+    const R = allocate(D.picks || [], A);
+    const bought = R.rows.filter((r) => r.qty > 0), skipped = R.rows.filter((r) => r.qty === 0);
+    if (!bought.length) { out.innerHTML = `<div class="cempty">${inr0(A)} isn't enough for one share of these picks. Try ${inr0(Math.min(...R.rows.map((r) => r.price)) * 2)} or more.</div>`; return; }
+    const charges = R.invested * CHARGES, gain = R.target - R.invested;
+    const byCap = CAPS.map(([c, l]) => [l, bought.filter((r) => r.p.cap === c).reduce((a, r) => a + r.cost, 0)]).filter((x) => x[1] > 0);
+    const capCol = { 'Large cap': 'var(--t2)', 'Mid cap': 'var(--t3)', 'Small cap': '#16a34a' };
+    let h = `<div class="csum">
+      <div><span>You invest</span><b>${inr0(R.invested)}</b><small>in ${bought.length} stock${bought.length > 1 ? 's' : ''}</small></div>
+      <div><span>Cash left over</span><b>${inr0(R.left)}</b><small>${(R.left / A * 100).toFixed(1)}% of your amount</small></div>
+      <div><span>Value at targets</span><b class="up">${inr0(R.target)}</b><small>${sp(gain / R.invested * 100)} · ${inr0(gain)} potential gain</small></div>
+      <div><span>Est. charges</span><b>${inr0(charges)}</b><small>STT, stamp duty &amp; fees; brokerage extra</small></div>
+    </div>
+    <div class="cbar" role="img" aria-label="Split by company size">${byCap.map(([l, v]) => `<i style="width:${v / R.invested * 100}%;background:${capCol[l]}" title="${l}: ${(v / R.invested * 100).toFixed(0)}%"></i>`).join('')}</div>
+    <div class="clegend">${byCap.map(([l, v]) => `<span><i style="background:${capCol[l]}"></i>${l} ${(v / R.invested * 100).toFixed(0)}% · ${inr0(v)}</span>`).join('')}</div>
+    <div class="tablewrap"><table class="ctable"><thead><tr><th>Stock</th><th>Price now</th><th>Buy</th><th>Amount</th><th>Weight</th><th>Target</th><th>Value at target</th></tr></thead><tbody>`;
+    for (const [c, l] of CAPS) {
+      const rows = R.rows.filter((r) => r.p.cap === c);
+      if (!rows.length) continue;
+      h += `<tr class="cap"><td colspan="7">${l}</td></tr>`;
+      for (const r of rows) {
+        h += `<tr class="${r.qty ? '' : 'skip'}"><td><a href="/stock-analysis.html?symbol=${encodeURIComponent(r.p.symbol)}" data-sym="${esc(r.p.symbol)}">${esc(short(r.p.name))}</a><small>${esc(r.p.symbol)}</small></td>
+          <td>${rs(r.price)}</td><td class="qty">${r.qty ? `<b>${r.qty}</b> share${r.qty > 1 ? 's' : ''}` : '<span class="muted">—</span>'}</td>
+          <td>${r.qty ? inr0(r.cost) : '<span class="muted">skip</span>'}</td><td>${r.qty ? (r.cost / R.invested * 100).toFixed(1) + '%' : '—'}</td>
+          <td>${rs(r.p.target_price)}</td><td class="up">${r.qty ? inr0(r.atTarget) : '—'}</td></tr>`;
+      }
+    }
+    h += `</tbody><tfoot><tr><td>Total</td><td></td><td>${bought.reduce((a, r) => a + r.qty, 0)} shares</td><td>${inr0(R.invested)}</td><td>100%</td><td></td><td class="up">${inr0(R.target)}</td></tr></tfoot></table></div>`;
+    // phone: compact cards
+    h += `<div class="ccards">${R.rows.filter((r) => r.qty).map((r) => `<div class="ccard"><div><b>${esc(short(r.p.name))}</b><small>${esc(r.p.symbol)} · ${rs(r.price)}</small></div><div class="cr"><span>${r.qty} share${r.qty > 1 ? 's' : ''}</span><small><b class="amt">${inr0(r.cost)}</b> · ${(r.cost / R.invested * 100).toFixed(1)}% · target ${rs(r.p.target_price)}</small></div></div>`).join('')}
+      <div class="ccard tot"><div><b>Total</b><small>${bought.reduce((a, r) => a + r.qty, 0)} shares</small></div><div class="cr"><b>${inr0(R.invested)}</b><small class="up">${inr0(R.target)} at targets</small></div></div></div>`;
+    const notes = [];
+    if (skipped.length) notes.push(`Skipped at this amount: ${skipped.map((r) => `${esc(short(r.p.name))} (${rs(r.price)} a share)`).join(', ')}. To hold all ${R.rows.length} in this split, invest about ${inr0(Math.ceil(R.minAll / 1000) * 1000)} or more.`);
+    notes.push('Prices are live and change through the day; use limit orders near these prices. For stocks trading below their 200-day average, consider buying in two or three parts over a few weeks.');
+    notes.push('Potential gain assumes every stock reaches its 12-month model target, which is not guaranteed. Educational only, not investment advice.');
+    h += `<ul class="cnotes">${notes.map((n) => `<li>${n}</li>`).join('')}</ul>
+      <div class="cact"><button type="button" class="btn2" id="calcCopy">📋 Copy order list</button><button type="button" class="btn2" id="calcCsv">⬇ Download as CSV</button></div>`;
+    out.innerHTML = h;
+    out._plan = R;
+  }
+  function planText(R) {
+    const lines = [`${D.occasion.title} — MarketPulse investment plan (${inr0(CALC.amount)}, ${MIXES[CALC.mix].label})`, ''];
+    R.rows.filter((r) => r.qty).forEach((r) => lines.push(`${r.p.symbol.padEnd(12)} ${String(r.qty).padStart(5)} shares  @ ~${rs(r.price)}  = ${inr0(r.cost)}`));
+    lines.push('', `Total ${inr0(R.invested)} · cash left ${inr0(R.left)} · value at targets ${inr0(R.target)}`, `${location.origin}/picks.html?o=${D.selected}`);
+    return lines.join('\n');
+  }
+  function planCsv(R) {
+    const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = [['Symbol', 'Company', 'Size', 'Price now', 'Shares', 'Amount', 'Weight %', 'Target', 'Value at target']];
+    R.rows.filter((r) => r.qty).forEach((r) => rows.push([r.p.symbol, short(r.p.name), r.p.cap, r.price, r.qty, Math.round(r.cost), (r.cost / R.invested * 100).toFixed(1), r.p.target_price, Math.round(r.atTarget)]));
+    rows.push(['TOTAL', '', '', '', R.rows.reduce((a, r) => a + r.qty, 0), Math.round(R.invested), '100', '', Math.round(R.target)]);
+    return rows.map((r) => r.map(q).join(',')).join('\n');
+  }
+  function calcInput(raw) {
+    const v = +String(raw).replace(/[^\d.]/g, '');
+    CALC.amount = isFinite(v) ? Math.min(v, 1e10) : 0;
+    store.set('mpCalcAmt', String(CALC.amount));
+    calcRender();
+  }
+  document.addEventListener('input', (e) => {
+    if (e.target.id === 'calcAmt') {
+      const el = e.target, digits = el.value.replace(/[^\d]/g, '');
+      calcInput(digits);
+      const formatted = digits ? (+digits).toLocaleString('en-IN') : '';
+      if (el.value !== formatted) { el.value = formatted; el.setSelectionRange(formatted.length, formatted.length); }
+    }
+  });
+  document.addEventListener('change', (e) => {
+    if (e.target.id === 'calcMix') { CALC.mix = e.target.value; store.set('mpCalcMix', CALC.mix); calcRender(); }
+    if (e.target.dataset && e.target.dataset.cap) { CALC.caps[e.target.dataset.cap] = e.target.checked; calcRender(); }
+  });
+
   function render() {
     const o = D.occasion;
     const occs = D.occasions || [];
@@ -193,10 +341,12 @@
       h += `<div class="bucket"><div class="blabel">${label}</div><div class="cards">${rows.map(card).join('')}</div></div>`;
     }
     h += `<p class="muted" style="margin:4px 0 0;font-size:12px">Tap a card for the reasons, risks and how the target is set. Prices are live; the track record uses the price on the publish date.</p></section>`;
+    h += calcPanel();
     h += `<section class="panel"><h2>Valuation snapshot</h2>${table(picks)}</section>`;
     h += `<section><h2 style="font-size:17px;margin:4px 0 10px">Stock by stock</h2>${picks.map(detail).join('')}</section>`;
     h += METHOD;
     $('view').innerHTML = h;
+    calcRender();
   }
 
   async function go(slug, push) {
@@ -233,6 +383,19 @@
     if (open) { const sh = m.querySelector('.dlshare'); if (sh) sh.hidden = !(navigator.canShare && window.File && matchMedia('(pointer:coarse)').matches); }
   }
   document.addEventListener('click', async (e) => {
+    const amt = e.target.closest('[data-amt]');
+    if (amt) { const v = +amt.dataset.amt; $('calcAmt').value = v.toLocaleString('en-IN'); calcInput(v); return; }
+    if (e.target.closest('#calcCopy')) {
+      const R = $('calcOut')._plan; if (!R) return;
+      try { await navigator.clipboard.writeText(planText(R)); toast('Order list copied ✨', 2200); } catch (err) { toast('Copy failed — try the CSV instead', 3000); }
+      return;
+    }
+    if (e.target.closest('#calcCsv')) {
+      const R = $('calcOut')._plan; if (!R) return;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([planCsv(R)], { type: 'text/csv' }));
+      a.download = `marketpulse-${D.selected}-plan-${Math.round(CALC.amount)}.csv`; document.body.appendChild(a); a.click(); a.remove();
+      return;
+    }
     if (e.target.closest('#dlBtn')) { menu($('dlMenu').hidden); return; }
     const d = e.target.closest('[data-dl]');
     if (d) {
@@ -264,5 +427,5 @@
   });
   window.addEventListener('popstate', () => go(new URLSearchParams(location.search).get('o'), false));
   go(new URLSearchParams(location.search).get('o'), false);
-  setInterval(() => { if (!document.hidden && D && D.occasion) go(D.selected, false); }, 120000);
+  setInterval(() => { if (!document.hidden && D && D.occasion && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#calc'))) go(D.selected, false); }, 120000);
 })();
