@@ -34,6 +34,13 @@ a{color:var(--blue)}
 .search{display:flex;gap:9px;padding:10px;background:linear-gradient(135deg,#121f35,#0e1728);border:1px solid #2a3a57;border-radius:16px}
 .search input{flex:1;min-width:0;height:46px;padding:0 14px;background:#080f1d;border:1px solid #2b3c5b;border-radius:10px;outline:none;font-size:15px}
 .search input:focus{border-color:#7c76ff;box-shadow:0 0 0 3px #7465ff22}
+.sfield{position:relative;flex:1;min-width:0;display:flex}
+.sfield input{padding-right:46px}
+.sfield input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
+.sclear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:1px solid #2b3c5b;background:#16223a;color:#c8d3ea;font:700 14px/1 Inter,system-ui,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.sclear[hidden]{display:none}
+.sclear:hover{background:#7c76ff;border-color:#7c76ff;color:#fff}
+[data-theme="light"] .sclear{background:#eef0f6;border-color:var(--line);color:var(--text)}
 .suggest{position:absolute;left:10px;right:10px;top:calc(100% - 4px);z-index:15;background:#0f1a2d;border:1px solid #34496c;border-radius:12px;box-shadow:0 16px 40px #0008;overflow:hidden;max-height:360px;overflow-y:auto}
 .suggest button{display:flex;justify-content:space-between;gap:10px;width:100%;padding:11px 14px;background:none;border:0;border-bottom:1px solid var(--line2);text-align:left}
 .suggest button:last-child{border-bottom:0}
@@ -234,7 +241,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
  #indicators td:nth-child(4),#indTable th:nth-child(4){display:none}
 }
 @media(max-width:480px){
- .search{flex-wrap:wrap}.search .btn{width:100%}
+ .search{flex-wrap:wrap}.search .btn{width:100%}.sfield{flex:1 1 100%}
  .chips .lbl{min-width:0;width:100%}
  .grid,.plan{gap:7px}.metric{padding:10px}.metric strong{font-size:15px}
  .perf{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.perf div{padding:8px 4px}.perf strong{font-size:13px}
@@ -285,7 +292,10 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 
  <div class="searchbox">
   <form class="search" id="searchForm" autocomplete="off">
-   <input id="search" type="search" placeholder="Search company or NSE symbol, e.g. RELIANCE, TCS, HDFC Bank" aria-label="Search stock" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false" spellcheck="false">
+   <div class="sfield">
+    <input id="search" type="search" placeholder="Search company or NSE symbol, e.g. RELIANCE, TCS, HDFC Bank" aria-label="Search stock" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false" spellcheck="false">
+    <button id="clearSearch" class="sclear" type="button" aria-label="Clear search and start over" title="Clear (Esc)" hidden>✕</button>
+   </div>
    <button id="analyze" class="btn" type="submit">Analyze</button>
   </form>
   <div id="suggestions" class="suggest hide" role="listbox"></div>
@@ -309,6 +319,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
      <span id="liveDot" class="live">Delayed</span>
      <button id="watchBtn" class="btn ghost sm" type="button">☆ Watch</button>
      <button id="shareBtn" class="btn ghost sm" type="button">Share</button>
+     <button id="quoteClear" class="btn ghost sm" type="button" title="Clear and search another stock">✕ Clear</button>
     </div>
    </div>
    <div class="ranges">
@@ -853,12 +864,38 @@ input.addEventListener('input', () => {
  }, 250);
 });
 input.addEventListener('keydown', e => {
+ // Esc: first closes the suggestions, then clears the page back to its start
+ if (e.key === 'Escape') {
+  if (!box.classList.contains('hide')) closeSuggest();
+  else if (input.value || current) { e.preventDefault(); clearAnalysis(); }
+  return;
+ }
  if (box.classList.contains('hide') || !sugg.length) return;
  if (e.key === 'ArrowDown') { e.preventDefault(); suggIdx = (suggIdx + 1) % sugg.length; renderSuggest(); }
  else if (e.key === 'ArrowUp') { e.preventDefault(); suggIdx = (suggIdx - 1 + sugg.length) % sugg.length; renderSuggest(); }
- else if (e.key === 'Escape') closeSuggest();
 });
 document.addEventListener('click', e => { if (!e.target.closest('.searchbox')) closeSuggest(); });
+// Clear: back to the page's starting view (no stock open, empty search, no ?symbol= in the address).
+const clearBtn = $('clearSearch');
+function syncClear() { clearBtn.hidden = !(input.value.trim() || current); }
+function clearAnalysis() {
+ runId++; // drop any analysis still loading
+ clearInterval(liveTimer); liveTimer = null;
+ current = null;
+ input.value = ''; closeSuggest();
+ $('results').classList.add('hide');
+ $('analyze').disabled = false;
+ setStatus('Search a stock, or pick one below, to begin.');
+ try { const u = new URL(location.href); u.searchParams.delete('symbol'); u.hash = ''; history.replaceState(null, '', u); } catch {}
+ document.title = 'Stock Analysis | MarketPulse';
+ syncClear();
+ window.scrollTo({top: 0, behavior: 'smooth'});
+ input.focus();
+}
+clearBtn.addEventListener('click', clearAnalysis);
+$('quoteClear').addEventListener('click', clearAnalysis);
+input.addEventListener('input', syncClear);
+
 $('searchForm').addEventListener('submit', e => {
  e.preventDefault();
  const pick = suggIdx >= 0 ? sugg[suggIdx] : null;
@@ -888,7 +925,7 @@ async function analyze(sym, hintName) {
   if (ql > 0) t.lo52 = Math.min(ql, t.last.low);
   const name = quote.company_name || quote.name || hintName || NIFTY50[sym] || sym;
   current = {sym, name, quote, t, decision: decide(t)};
-  pushRecent(sym); renderChips();
+  pushRecent(sym); renderChips(); syncClear();
   try { const u = new URL(location.href); u.searchParams.set('symbol', sym); history.replaceState(null, '', u); } catch {}
   document.title = sym + ' Analysis | MarketPulse';
   setStatus('');
