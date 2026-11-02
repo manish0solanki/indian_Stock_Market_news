@@ -1295,13 +1295,14 @@ async function refreshPicks(force = false) {
 $('refreshPicks').onclick = () => refreshPicks(true);
 
 /* ───────── All signals: the verdict rules across the scanner's ~220 stocks ─────────
-   Daily bars come from analysis_scan_bars() (stock_swing_cache, end-of-day). Results are kept for
-   30 minutes in this browser; strong scanner setups upgrade WAIT exactly as on the single-stock view. */
+   Daily bars come from analysis_scan_bars() (stock_swing_cache, plus today's candle from the live quote, as on
+   the single-stock view). Results are kept for 5 minutes in this browser and refreshed while the list is open;
+   strong scanner setups upgrade WAIT exactly as on the single-stock view. */
 let allRows = null, allAt = 0, allTab = 'ALL', allSort = 'score', allDir = 'desc', allLoading = false;
 const SIG_ORDER = {BUY: 3, WAIT: 2, SELL: 1};
 async function loadAll(force) {
- const cached = store.get('mp_sa_all', null);
- if (!force && cached?.rows?.length && Date.now() - cached.at < 30 * 60000) { allRows = cached.rows; allAt = cached.at; return; }
+ const cached = store.get('mp_sa_all2', null);
+ if (!force && cached?.rows?.length && Date.now() - cached.at < 5 * 60000) { allRows = cached.rows; allAt = cached.at; return; }
  if (!sb) throw new Error('Data service unavailable');
  const {data, error} = await sb.rpc('analysis_scan_bars');
  if (error) throw error;
@@ -1318,7 +1319,7 @@ async function loadAll(force) {
   } catch {}
  }
  allRows = rows; allAt = Date.now();
- store.set('mp_sa_all', {at: allAt, rows});
+ store.set('mp_sa_all2', {at: allAt, rows});
 }
 function allList() {
  const strong = strongCache ? strongCache.map : {};
@@ -1354,19 +1355,21 @@ function drawAll() {
   `<div class="all-cards">${list.map(r => `<div class="acard" data-go="${esc(r.symbol)}" data-name="${esc(r.name)}"><div class="atop"><div><b>${esc(r.symbol)}</b><small>${esc(r.name)}</small></div><div style="text-align:right">${sig(r)}<small>Score <b style="color:var(--text)">${r.score}</b>${scoreBar(r.score)}</small></div></div>
    <div class="kv"><span>Price <b>${rs(r.price)}</b></span><span>Day <b class="${cls(r.chg)}">${pct(r.chg, 1)}</b></span><span>1M <b class="${cls(r.r1m)}">${pct(r.r1m, 1)}</b></span><span>3M <b class="${cls(r.r3m)}">${pct(r.r3m, 1)}</b></span><span>RSI <b>${fmt(r.rsi, 0)}</b></span><span>${esc(r.sector)}</span></div></div>`).join('')}</div>`;
  const last = allRows.map(r => r.date).sort().pop();
- $('allNote').textContent = `${allRows.length} stocks · daily closes up to ${last ? new Date(last + 'T00:00:00Z').toLocaleDateString('en-IN', {day: 'numeric', month: 'short', timeZone: 'UTC'}) : '—'} · computed ${timeAgo(allAt)}. Tap a stock for its full analysis. Rule-based signals, not advice.`;
+ $('allNote').textContent = `${allRows.length} stocks · prices up to ${last ? new Date(last + 'T00:00:00Z').toLocaleDateString('en-IN', {day: 'numeric', month: 'short', timeZone: 'UTC'}) : '—'} (today's live price included in market hours) · computed ${timeAgo(allAt)}, refreshes every 5 min. Tap a stock for its full analysis. Rule-based signals, not advice.`;
 }
-async function openAll(force) {
+async function openAll(force, quiet) {
  $('allSignals').hidden = false;
- $('allSignals').scrollIntoView({behavior: 'smooth', block: 'start'});
+ if (!quiet) $('allSignals').scrollIntoView({behavior: 'smooth', block: 'start'});
  if (allLoading) return;
  allLoading = true;
- if (!allRows || force) $('allBody').innerHTML = '<div class="sub" style="padding:16px">Running the rules across ~220 stocks…</div>';
+ if (!allRows || (force && !quiet)) $('allBody').innerHTML = '<div class="sub" style="padding:16px">Running the rules across ~220 stocks…</div>';
  try { await Promise.all([loadAll(force), strongSetups().catch(() => {})]); drawAll(); }
  catch (e) { $('allBody').innerHTML = '<div class="sub" style="padding:16px">Could not load the list right now. Please try again shortly.</div>'; console.warn('[All signals]', e); }
  finally { allLoading = false; }
 }
 $('openAll').onclick = () => openAll(false);
+// keep the open list in step with live prices
+setInterval(() => { if (!document.hidden && !$('allSignals').hidden && !allLoading) openAll(true, true).catch(() => {}); }, 5 * 60000);
 $('closeAll').onclick = () => { $('allSignals').hidden = true; $('scan').scrollIntoView({behavior: 'smooth', block: 'start'}); };
 $('allTabs').addEventListener('click', e => { const b = e.target.closest('[data-all-tab]'); if (b) { allTab = b.dataset.allTab; drawAll(); } });
 $('allBody').addEventListener('click', e => {
