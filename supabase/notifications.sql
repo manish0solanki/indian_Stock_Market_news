@@ -134,7 +134,7 @@ returns jsonb language sql stable security definer set search_path = public as $
   with base as (
     select n.*,
            case when n.kind = 'signal' then exists (
-             select 1 from stock_signals s
+             select 1 from signals_active s
               where s.symbol = split_part(n.key, ':', 2) and s.side = split_part(n.key, ':', 3)
                 and s.tf = lower(split_part(n.body, ' ', 1))) end as active
       from site_notifications n

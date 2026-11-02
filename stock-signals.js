@@ -27,7 +27,8 @@ const S = {
   indices: [],
   status: null,
   tab: 'signals',
-  f: { tf: 'all', side: 'all', sort: 'score', q: '', hist: 'all' },
+  f: { tf: 'all', side: 'all', sort: 'score', q: '', hist: 'all', hkind: 'signals', htf: 'all', hout: 'all' },
+  sigHist: null, sigHistAt: 0,
   loaded: { feed: 0, trades: 0 },
 };
 
@@ -45,6 +46,18 @@ function marketState(ms) {
 function dur(sec) { sec = Math.max(0, Math.round(sec)); const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60); return d ? d + 'd ' + h + 'h' : h ? h + 'h ' + m + 'm' : m + 'm'; }
 function ago(iso) { if (!iso) return '—'; const s = (Date.now() + S.srvOffset - new Date(iso).getTime()) / 1000; if (s < 5) return 'just now'; if (s < 90) return Math.round(s) + 's ago'; if (s < 5400) return Math.round(s / 60) + ' min ago'; if (s < 172800) return Math.round(s / 3600) + ' h ago'; return Math.round(s / 86400) + ' d ago'; }
 const nowMs = () => Date.now() + S.srvOffset;
+// "1:39 pm" today, "Mon 9 Nov, 3:30 pm" otherwise (IST)
+function when(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso), o = { timeZone: 'Asia/Kolkata' };
+  const t = d.toLocaleTimeString('en-IN', { ...o, hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?([ap])\.?m\.?/i, ' $1m');
+  const day = (x) => x.toLocaleDateString('en-CA', o);
+  if (day(d) === day(new Date(nowMs()))) return t;
+  return d.toLocaleDateString('en-IN', { ...o, weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + t;
+}
+function left(iso) { const s = (new Date(iso).getTime() - nowMs()) / 1000; return s <= 0 ? 'expiring' : dur(s) + ' left'; }
+// result since the signal was issued, in the signal's direction
+const sinceIssue = (s, L) => (L === null || L === undefined || !(s.entry > 0) ? null : (s.side === 'BUY' ? 1 : -1) * (L / s.entry - 1) * 100);
 
 /* ===================== toast / sheet ===================== */
 let toastTimer = null;
@@ -201,6 +214,7 @@ function renderSignals() {
         <div class="px"><div class="l">${L === null ? '—' : fmt(L)}</div><div class="c ${cls(c)}">${pct(c)}</div></div></div>
       <div class="tags"><span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span><span class="tag">${s.tf === 'intraday' ? 'Intraday' : 'Swing'}</span><span class="tag">${esc(s.setup)}</span>${z.label ? `<span class="tag ${z.cls}">${esc(z.label)}</span>` : ''}${held ? '<span class="tag warn">Holding</span>' : ''}</div>
       ${ladder({ stop: s.stop, entry: s.entry, t1: s.target1, t2: s.target2 }, L)}
+      ${s.issued_at ? `<div class="sigtime"><span>🕒 Issued <b>${esc(when(s.issued_at))}</b></span><span>⏳ Expires <b>${esc(when(s.expires_at))}</b> <em>${esc(left(s.expires_at))}</em></span>${sinceIssue(s, L) !== null ? `<span>Since issue <b class="${cls(sinceIssue(s, L))}">${pct(sinceIssue(s, L))}</b></span>` : ''}</div>` : ''}
       <div class="srow2"><div class="metrics"><span>Risk <b>${fmt(s.risk_pct, 2)}%</b></span><span>Reward <b>${fmt(rr2, 1)}R</b></span><span>Vol <b>${fmt(s.vol_ratio, 1)}×</b></span><span>RSI <b>${fmt(s.rsi, 0)}</b></span></div>
         <div style="display:flex;gap:8px;align-items:center"><span class="score" style="--p:${Math.min(100, s.score)}%" data-s="${s.score}"></span>
         <button class="btn small ${buy ? 'buy' : 'sell'}" data-order="${esc(s.symbol)}|${esc(s.tf)}" ${z.tradable && !held ? '' : 'disabled'}>${buy ? 'Buy' : 'Sell'}</button></div></div>
@@ -223,9 +237,10 @@ function openSignal(s) {
       <div>Signal entry</div><div>${inr(s.entry)}</div><div>Stop loss</div><div class="down">${inr(s.stop)} (${fmt(s.risk_pct, 2)}%)</div>
       <div>Target 1 (1.5R)</div><div class="up">${inr(s.target1)}</div><div>Target 2 (2R)</div><div class="up">${inr(s.target2)}</div>
       <div>RSI / ATR</div><div>${fmt(s.rsi, 0)} / ${fmt(s.atr, 2)}</div><div>${s.tf === 'intraday' ? 'EMA 9 / 21' : 'EMA 20 / 50'}</div><div>${fmt(s.ema_fast, 1)} / ${fmt(s.ema_slow, 1)}</div>
-      <div>Volume vs average</div><div>${fmt(s.vol_ratio, 2)}×</div><div>Signal time</div><div>${esc(ago(s.generated_at))}</div></div>
+      <div>Volume vs average</div><div>${fmt(s.vol_ratio, 2)}×</div><div>Issued</div><div>${esc(when(s.issued_at || s.generated_at))}</div>
+      ${s.expires_at ? `<div>Expires</div><div>${esc(when(s.expires_at))} · ${esc(left(s.expires_at))}</div><div>Since issue</div><div class="${cls(sinceIssue(s, L))}">${pct(sinceIssue(s, L))}</div>` : ''}</div>
     <ul class="reasons">${(s.reasons || []).map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
-    <p class="hint">Target 1 books half the position; stops and targets fill at their exact level (server-checked every minute). Intraday trades are squared off at 15:20 IST.</p>
+    <p class="hint">This signal's entry, stop and targets are fixed when it is issued and never change. It closes at the first of stop, target 1 or its expiry; a later setup in the same stock is a new signal (see History → Signal record). For paper trades: target 1 books half the position; stops and targets fill at their exact level (server-checked every minute). Intraday trades are squared off at 15:20 IST.</p>
     <button class="btn block ${buy ? 'buy' : 'sell'}" id="sigOrderBtn" ${z.tradable && !held ? '' : 'disabled'}>${held ? 'Already holding' : (buy ? 'Buy' : 'Sell')} ${held ? '' : esc(s.symbol)}</button>`);
   const b = $('sigOrderBtn'); if (b) b.addEventListener('click', () => openOrder(s));
 }
@@ -362,7 +377,45 @@ async function exitTrade(t) {
   Object.assign(t, data[0]); closeSheet(); toast('Exited ' + t.symbol + ' @ ' + fmt(m.px) + ' · ' + sinr(net)); renderAll();
 }
 
-/* ===================== HISTORY tab ===================== */
+/* ===================== HISTORY tab: signal record ===================== */
+async function loadSigHistory(force) {
+  if (!force && S.sigHist && Date.now() - S.sigHistAt < 60000) return;
+  const { data, error } = await sb.rpc('signal_history', { p_tf: null, p_days: 90, p_limit: 400 });
+  if (error) { console.warn('signal_history', error); return; }
+  S.sigHist = data; S.sigHistAt = Date.now();
+}
+const OUT = { target: ['🎯 Target hit', 'buy'], stop: ['🛑 Stop hit', 'sell'], expired: ['⏱ Expired', ''] };
+function renderSigHistory() {
+  const H = S.sigHist;
+  const host = $('sigHistList'), sum = $('sigHistSummary');
+  if (!H) { host.innerHTML = '<div class="empty">Loading the signal record…</div>'; sum.innerHTML = ''; return; }
+  const st = (H.stats || {})[S.f.htf === 'all' ? 'all' : S.f.htf] || { n: 0 };
+  const wr = st.n ? Math.round(st.wins / st.n * 100) : 0;
+  sum.innerHTML = `<div class="stat big"><b>Win rate</b><div class="v ${st.n ? (wr >= 50 ? 'up' : 'down') : ''}">${st.n ? wr + '%' : '—'}</div></div>
+    <div class="stat"><b>Signals closed</b><div class="v">${st.n || 0}</div></div>
+    <div class="stat"><b>Avg result</b><div class="v ${cls(st.avg_r)}">${st.n ? (st.avg_r >= 0 ? '+' : '') + fmt(st.avg_r, 2) + 'R' : '—'}</div></div>
+    <div class="stat"><b>🎯 / 🛑 / ⏱</b><div class="v">${st.targets || 0} / ${st.stops || 0} / ${st.expired || 0}</div></div>
+    <div class="stat"><b>Active now</b><div class="v">${H.active || 0}</div></div>`;
+  let list = (H.items || []).filter((x) => (S.f.htf === 'all' || x.tf === S.f.htf) && (S.f.hout === 'all' || x.status === S.f.hout));
+  $('sigHistNote').textContent = `Every signal is recorded when issued and closes at its stop, target 1 or expiry. Last 90 days${H.since ? ' · tracking since ' + new Date(H.since).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}. Results are from the signal's own levels, before costs.`;
+  if (!list.length) { host.innerHTML = `<div class="empty"><b>No closed signals yet</b><br>${(H.items || []).length ? 'Nothing matches these filters.' : 'Signals appear here once they hit their target or stop, or expire.'}</div>`; return; }
+  host.innerHTML = list.map((x) => {
+    const buy = x.side === 'BUY', o = OUT[x.status] || [x.status, ''];
+    return `<article class="scard" style="cursor:default"><div class="srow"><div><div class="sym"><span data-sym="${esc(x.symbol)}">${esc(x.symbol)}</span> <span class="tag ${buy ? 'buy' : 'sell'}">${x.side}</span></div>
+      <div class="nm">${esc(x.name || '')}</div></div>
+      <div class="px"><div class="l ${cls(x.result_pct)}">${pct(x.result_pct)}</div><div class="c ${cls(x.result_r)}">${x.result_r === null || x.result_r === undefined ? '' : (x.result_r >= 0 ? '+' : '') + fmt(x.result_r, 2) + 'R'}</div></div></div>
+      <div class="tags"><span class="tag ${o[1]}">${o[0]}</span>${x.hit_t2 ? '<span class="tag buy">T2 reached</span>' : ''}<span class="tag">${x.tf === 'intraday' ? 'Intraday' : 'Swing'}</span><span class="tag">${esc(x.setup || '')}</span></div>
+      <div class="kv hk"><div>Entry → exit</div><div>${fmt(x.entry)} → <b>${fmt(x.exit_price)}</b></div><div>Stop · T1 · T2</div><div>${fmt(x.stop)} · ${fmt(x.target1)} · ${fmt(x.target2)}</div>
+      <div>Issued</div><div>${esc(when(x.issued_at))}</div><div>Closed</div><div>${esc(when(x.closed_at))}</div></div></article>`;
+  }).join('');
+}
+function renderHistoryTab() {
+  const sig = S.f.hkind === 'signals';
+  $('sigHist').hidden = !sig; $('myHist').hidden = sig;
+  if (sig) renderSigHistory(); else renderHistory();
+}
+
+/* ===================== HISTORY tab: my paper trades ===================== */
 const REASONS = { STOP_LOSS: 'Stop loss', TARGET_1: 'Target 1', TARGET_2: 'Target 2', SQUARE_OFF: 'Square-off', MANUAL_EXIT: 'Manual exit', MANUAL_MARKET_EXIT: 'Manual exit', EOD: 'End of day' };
 function renderHistory() {
   const a = acctNumbers();
@@ -446,13 +499,14 @@ function renderIndexStrip() {
 function renderMarket() { const m = marketState(nowMs()); $('marketText').textContent = m.text; $('marketChip').classList.toggle('open', m.open); }
 function renderAll() {
   renderMarket(); renderIndexStrip();
-  renderSignals(); renderPositions(); renderHistory(); renderAccount();
+  renderSignals(); renderPositions(); renderHistoryTab(); renderAccount();
 }
 function setTab(tab) {
   S.tab = tab;
   document.querySelectorAll('.tab').forEach((el) => el.classList.toggle('active', el.id === 'tab-' + tab));
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   window.scrollTo({ top: 0 });
+  if (tab === 'history' && S.f.hkind === 'signals') { renderSigHistory(); loadSigHistory(false).then(renderSigHistory); }
 }
 function seg(id, key, after) {
   $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.f[key] = b.dataset.v; $(id).querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); after(); });
@@ -460,6 +514,8 @@ function seg(id, key, after) {
 function wire() {
   document.querySelectorAll('#tabbar button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
   seg('tfSeg', 'tf', renderSignals); seg('sideSeg', 'side', renderSignals); seg('histSeg', 'hist', renderHistory);
+  seg('histKind', 'hkind', () => { renderHistoryTab(); if (S.f.hkind === 'signals') loadSigHistory(false).then(renderSigHistory); });
+  seg('sigHistTf', 'htf', renderSigHistory); seg('sigHistOut', 'hout', renderSigHistory);
   $('sortSel').addEventListener('change', (e) => { S.f.sort = e.target.value; renderSignals(); });
   $('searchBox').addEventListener('input', (e) => { S.f.q = e.target.value; renderSignals(); });
   $('backdrop').addEventListener('click', closeSheet);
@@ -510,7 +566,7 @@ async function init() {
   }
   // live refresh: server prices update every ~3 min; the clocks tick every second
   setInterval(() => { if (!document.hidden) refresh(false); }, 20000);
-  setInterval(() => { renderMarket(); if (S.tab === 'signals') $('signalNote') && renderSignals(); }, 30000);
+  setInterval(() => { renderMarket(); if (S.tab === 'signals') $('signalNote') && renderSignals(); if (S.tab === 'history' && S.f.hkind === 'signals') loadSigHistory(false).then(renderSigHistory); }, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - S.loaded.feed > 10000) refresh(false); });
   sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') location.reload(); });
 }

@@ -67,6 +67,14 @@
   - Only signals with quality ≥ 120 are shown.
 - Requires sign-in. Links like `/stock-signals.html?sig=SYMBOL|swing` open a signal directly.
 
+- **Signals are fixed once issued** (`supabase/signal-log.sql`):
+  - The scanner rewrites `stock_signals` every 5 minutes. `signal_log_sync()` (pg_cron `signal-log-sync`, every minute) issues each new setup into `signal_log` with frozen entry, stop and targets.
+  - Each signal gets an expiry: intraday at 15:20 IST the same day; swing at the close of the 5th trading day.
+  - It is tracked on live prices and closes at the first of stop, target 1 or expiry. If stop and target are hit in the same check, the stop counts.
+  - A later setup in the same stock is a new signal.
+  - The Signals page, Home's top signals, Analysis and the bell all read the active signals, which show their issue time, expiry and result since issue.
+- **History → Signal record** (`signal_history()`): every closed signal with its outcome (target, stop, expired), result in % and R, win rate and average R, filterable by swing or intraday and by outcome. "My paper trades" keeps your own trade history.
+
 ### 🔍 Stock Analysis (`stock-analysis.html`)
 - Interactive chart with RSI, MACD, Bollinger Bands, ADX, and support and resistance, plus fundamentals for any NSE stock.
 - **All signals** list: the same BUY / WAIT / SELL rules run across the ~220 stocks the signals scanner follows (daily bars from `analysis_scan_bars()`, `supabase/analysis-scan.sql`), with Buy / Sell / Wait tabs, search, and sorting by score, signal, symbol or company (A–Z), price, day / 1-month / 3-month change, RSI, sector or market cap, either direction. Strong scanner setups upgrade WAIT as on the single-stock view.
@@ -203,6 +211,7 @@
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |
 | `stocks-sync` | 03:11 and 13:11 | Stock master list |
+| `signal-log-sync` | every minute | Issues new signals into `signal_log` (frozen levels, expiry) and closes them at stop, target or expiry |
 | `notifications-capture` | every 5 min | Records new strong signals, picks, targets hit and IPO days for the 🔔 bell |
 | `festive-picks` | 03:11 daily | Publishes an occasion's picks on its publish date and marks targets hit |
 | `crypto-bot`, `crypto-monitor` | every minute | Crypto paper-trading bot and position monitor |

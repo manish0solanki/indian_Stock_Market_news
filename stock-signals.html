@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#2E1F82">
 <title>Stock Signals · MarketPulse</title>
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="stylesheet" href="stock-signals.css?v=2">
+<link rel="stylesheet" href="stock-signals.css?v=3">
 <link rel="stylesheet" href="/site-header.css">
 <script src="/site-header.js"></script>
 <style>/* Shared header sits above; this bar is now the page title and scrolls normally. */.appbar{position:static!important;padding-top:10px!important}.appbar [hidden]{display:none!important}</style>
@@ -67,12 +67,24 @@
 
   <!-- ============ HISTORY ============ -->
   <section class="tab" id="tab-history" aria-label="History">
-    <div class="summary" id="histSummary"></div>
-    <div class="card" id="equityCard"></div>
-    <div class="toolbar">
-      <div class="seg" id="histSeg"><button data-v="all" class="on">All</button><button data-v="win">Wins</button><button data-v="loss">Losses</button></div>
+    <div class="toolbar"><div class="seg" id="histKind"><button data-v="signals" class="on">Signal record</button><button data-v="mine">My paper trades</button></div></div>
+    <div id="sigHist">
+      <div class="summary" id="sigHistSummary"></div>
+      <div class="toolbar">
+        <div class="seg" id="sigHistTf"><button data-v="all" class="on">All</button><button data-v="swing">Swing</button><button data-v="intraday">Intraday</button></div>
+        <div class="seg" id="sigHistOut"><button data-v="all" class="on">All</button><button data-v="target">🎯 Target</button><button data-v="stop">🛑 Stop</button><button data-v="expired">⏱ Expired</button></div>
+      </div>
+      <div class="note" id="sigHistNote"></div>
+      <div id="sigHistList" class="list"></div>
     </div>
-    <div id="histList" class="list"></div>
+    <div id="myHist" hidden>
+      <div class="summary" id="histSummary"></div>
+      <div class="card" id="equityCard"></div>
+      <div class="toolbar">
+        <div class="seg" id="histSeg"><button data-v="all" class="on">All</button><button data-v="win">Wins</button><button data-v="loss">Losses</button></div>
+      </div>
+      <div id="histList" class="list"></div>
+    </div>
   </section>
 
   <!-- ============ ACCOUNT ============ -->
@@ -101,6 +113,6 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="stock-signals.js?v=6"></script>
+<script src="stock-signals.js?v=7"></script>
 </body>
 </html>
