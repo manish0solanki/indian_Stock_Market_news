@@ -26,16 +26,65 @@
     london: ['London', 'Europe/London', '08:00', '16:30'], frankfurt: ['Frankfurt', 'Europe/Berlin', '09:00', '17:30'],
     paris: ['Paris', 'Europe/Paris', '09:00', '17:30'], newyork: ['New York', 'America/New_York', '09:30', '16:00'],
   };
-  const CLOCK = ['tokyo', 'hk', 'shanghai', 'singapore', 'india', 'london', 'frankfurt', 'newyork'];
-  function local(zone) {
-    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: zone, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+  // Market clock tiles, in the order they open (IST).
+  const CLOCK = ['sydney', 'tokyo', 'seoul', 'shanghai', 'hk', 'singapore', 'india', 'frankfurt', 'london', 'newyork'];
+  function local(zone, at) {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: zone, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(at || new Date()).map((x) => [x.type, x.value]));
     return { wd: p.weekday, hm: p.hour + ':' + p.minute };
+  }
+  // Minutes the zone is ahead of UTC at instant t (handles daylight saving).
+  function offsetMin(zone, t) {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(t)).map((x) => [x.type, x.value]));
+    return Math.round((Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute) - Math.floor(t / 60e3) * 60e3) / 60e3);
+  }
+  // UTC instant of a wall-clock time in a zone.
+  function zoned(zone, y, mo, d, hm) {
+    const [h, mi] = hm.split(':').map(Number), guess = Date.UTC(y, mo, d, h, mi);
+    let t = guess - offsetMin(zone, guess) * 60e3;
+    t = guess - offsetMin(zone, t) * 60e3;
+    return t;
+  }
+  // The current or next weekday session: { open, start, end } as epoch ms (holidays not known).
+  function session(key, now = Date.now()) {
+    const e = EX[key];
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: e[1], year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
+    for (let i = 0; i < 8; i++) {
+      const day = new Date(Date.UTC(+p.year, +p.month - 1, +p.day + i));
+      const wd = day.getUTCDay(); if (wd === 0 || wd === 6) continue;
+      const start = zoned(e[1], day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), e[2]);
+      const end = zoned(e[1], day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), e[3]);
+      if (now < end) return { open: now >= start, start, end };
+    }
+    return null;
+  }
+  const istFmt = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true });
+  const istDay = (t) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(t));
+  const istWd = (t) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', weekday: 'short' }).format(new Date(t));
+  const ist = (t) => istFmt.format(new Date(t)).replace(/\s?([ap])\.?m\.?$/i, (_, a) => ' ' + a.toLowerCase() + 'm');
+  // "5:30 am", "tomorrow 5:30 am" or "Mon 5:30 am" (IST)
+  function istWhen(t, now = Date.now()) {
+    const d = istDay(t);
+    if (d === istDay(now)) return ist(t);
+    if (d === istDay(now + 864e5)) return 'tomorrow ' + ist(t);
+    return istWd(t) + ' ' + ist(t);
+  }
+  function until(t, now = Date.now()) {
+    const m = Math.max(1, Math.ceil((t - now) / 60e3));
+    if (m < 60) return m + 'm';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ' + String(m % 60).padStart(2, '0') + 'm';
+    return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
   }
   function exStatus(key) {
     const e = EX[key]; if (!e) return null;
     const { wd, hm } = local(e[1]);
-    const open = !['Sat', 'Sun'].includes(wd) && hm >= e[2] && hm < e[3];
-    return { name: e[0], open, time: hm, wd, hours: e[2] + '–' + e[3] };
+    const s = session(key), now = Date.now();
+    const open = !!s && s.open;
+    const next = !s ? '' : open ? 'Closes in ' + until(s.end, now) : 'Opens in ' + until(s.start, now);
+    const at = !s ? '' : open ? ist(s.end) + ' IST' : istWhen(s.start, now) + ' IST';
+    // today's (or the next) session in IST, e.g. "5:30 am – 12:00 pm IST"
+    const istHours = s ? ist(s.start) + ' – ' + ist(s.end) + ' IST' : '';
+    return { name: e[0], open, time: hm, wd, hours: e[2] + '–' + e[3], next, at, istHours, s };
   }
   const roundClock = (kind) => {
     const ny = local('America/New_York');
@@ -100,7 +149,7 @@
   function status(key) {
     const m = META[key]; if (!m) return '';
     let s;
-    if (m[2]) { const x = exStatus(m[2]); s = { open: x.open, label: (x.open ? 'Open' : 'Closed') + ' · ' + x.name + ' ' + x.time }; }
+    if (m[2]) { const x = exStatus(m[2]); s = { open: x.open, label: x.open ? 'Open · ' + x.name + ' closes ' + x.at + ' (in ' + until(x.s.end) + ')' : 'Closed · ' + x.name + ' opens ' + x.at + ' (in ' + until(x.s.start) + ')' }; }
     else s = roundClock(m[1] === 'crypto' ? 'crypto' : m[1] === 'fx' || m[1] === 'rate' ? 'fx' : 'fut');
     return `<span class="gm-st ${s.open ? 'on' : ''}"><i></i>${esc(s.label)}</span>`;
   }
@@ -155,11 +204,21 @@
       ${when ? `<div class="gm-muted">NSE IX · as of ${esc(when)} IST</div>` : ''}</div>`;
   }
 
+  function clockHtml() {
+    const list = CLOCK.map((k) => ({ k, s: exStatus(k) }));
+    // the next exchange to open gets a highlight
+    const soon = list.filter((x) => !x.s.open && x.s.s).sort((a, b) => a.s.s.start - b.s.s.start)[0];
+    return list.map(({ k, s }) => `<div class="gm-ex ${s.open ? 'on' : ''} ${soon && soon.k === k ? 'soon' : ''}" title="${esc(s.name)}: weekdays ${esc(s.hours)} local time (${esc(s.istHours)}). Local time now ${esc(s.wd)} ${esc(s.time)}. Exchange holidays are not shown.">
+      <b>${esc(s.name)}</b>
+      <em>${esc(s.next)}</em>
+      <span>${s.open ? 'until ' : ''}${esc(s.at.replace(/ IST$/, ''))}</span>
+      <span class="gm-ex-h">${esc(s.istHours.replace(/ IST$/, ''))}</span></div>`).join('');
+  }
+  function tickClock() { const el = $('gmClock'); if (el && visible()) el.innerHTML = clockHtml(); }
   function render() {
     const host = $('gmRoot'); if (!host) return;
     if (!Object.keys(Q).length) { host.innerHTML = '<div class="mp-panel gm-empty">Global market data is not available right now. Please try again in a few minutes.</div>'; return; }
     const c = cues();
-    const clock = CLOCK.map((k) => { const s = exStatus(k); return `<div class="gm-ex ${s.open ? 'on' : ''}" title="Weekday session ${esc(s.hours)} local time (holidays not shown)"><b>${esc(s.name)}</b><span>${esc(s.time)} · ${s.open ? 'Open' : 'Closed'}</span></div>`; }).join('');
     host.innerHTML = `
       <div class="mp-panel gm-read">
         <div class="gm-read-main">
@@ -170,7 +229,7 @@
         </div>
         ${giftTile()}
       </div>
-      <div class="mp-panel gm-clock-wrap"><div class="mp-panel-title"><span>Market clock</span><span class="gm-muted">Local time at each exchange</span></div><div class="gm-clock">${clock}</div></div>
+      <div class="mp-panel gm-clock-wrap"><div class="mp-panel-title"><span>Market clock</span><span class="gm-muted">Opening and closing times in IST · holidays not shown</span></div><div class="gm-clock" id="gmClock">${clockHtml()}</div></div>
       <div class="gm-grid">
         ${GROUPS.map(([id, title, icon, keys]) => {
           const rows = keys.map(row).join('');
@@ -216,7 +275,7 @@
       if (!$('gmRoot')) return;
       if (!Object.keys(Q).length) $('gmRoot').innerHTML = '<div class="mp-panel gm-empty">Loading global markets…</div>';
       load();
-      if (!timer) timer = setInterval(() => { cycle(); if (visible() && Date.now() - lastLoad >= EVERY - 500) load(); }, 1000);
+      if (!timer) timer = setInterval(() => { cycle(); if (new Date().getSeconds() % 15 === 0) tickClock(); if (visible() && Date.now() - lastLoad >= EVERY - 500) load(); }, 1000);
       cycle();
     },
     refresh: () => load(),
