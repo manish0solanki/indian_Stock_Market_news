@@ -1,5 +1,67 @@
 [
   {
+    "slug": "iti-stock-spotlight-2-nov-2026",
+    "title": "ITI Surges 20.0% on 74.4x Volume, Reclaims 50-Day Average",
+    "excerpt": "ITI shares hit the 20% upper circuit on Monday, closing at ₹259.14 against the previous close of ₹215.95 in a session dominated by heavy trading interest.",
+    "category": "stock-spotlight",
+    "date": "2026-11-02T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "ITI",
+      "ITI"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-oil-and-gas-surges-5-95-percent-as-27-of-34-stocks-advance",
+    "title": "Nifty Oil & Gas Surges 5.95% as 27 of 34 Stocks Advance",
+    "excerpt": "The Nifty Oil & Gas index surged 5.95% on 2 Nov 2026, with heavyweight Reliance Industries leading the charge. The index closed at 10916.3, up 613.05 points from the previous close of 10303.25, marking a strong session for the sector.",
+    "category": "sector-analysis",
+    "date": "2026-11-02T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Oil & Gas",
+      "Sector Analysis",
+      "Oil & Gas",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-2-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 2 Nov 2026: Gains 1.68%",
+    "excerpt": "The Nifty 50 surged 387.7 points, or 1.68%, to close at 23440.8, powered overwhelmingly by a single stock. Reliance Industries soared 11.6% to ₹1300, doing much of the heavy lifting for the index. The Sensex climbed 1.87% to 75850.54, while the Nifty Midcap 50 added 1.24% to 1671",
+    "category": "daily-wrap",
+    "date": "2026-11-02T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fiis-return-to-net-buying-with-3-598-54-cr-inflow-as-diis-turn-sellers",
     "title": "FIIs Return to Net Buying with ₹3,598.54 Cr Inflow as DIIs Turn Sellers",
     "excerpt": "Foreign investors swung back to buying Indian shares on 30 Oct 2026, while domestic institutions moved the other way.",
