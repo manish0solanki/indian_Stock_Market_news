@@ -36,7 +36,7 @@ declare
 begin
   -- strong tradable signals (same list as Home's top signals)
   insert into site_notifications (key, kind, icon, title, body, url, created_at)
-  select 'sig:' || (p->>'symbol') || ':' || (p->>'side') || ':' || coalesce(s.bar_date, today::text), 'signal',
+  select 'sig:' || (p->>'symbol') || ':' || (p->>'side') || ':' || coalesce(p->>'tf', 'swing') || ':' || coalesce(s.bar_date, today::text), 'signal',
          case when p->>'side' = 'BUY' then '📈' else '📉' end,
          'Strong ' || (p->>'side') || ' setup: ' || regexp_replace(coalesce(p->>'name', p->>'symbol'), '\s+(Limited|Ltd\.?)$', '', 'i'),
          initcap(coalesce(p->>'tf', 'swing')) || ' · ' || coalesce(p->>'setup', 'signal') || ' · entry ' || mp_inr((p->>'entry')::numeric)
@@ -44,6 +44,11 @@ begin
          '/stock-signals.html', now()
     from jsonb_array_elements(coalesce(stock_signals_top(6, 120)->'picks', '[]'::jsonb)) p
     left join stock_signals s on s.symbol = p->>'symbol' and s.side = p->>'side' and s.tf = p->>'tf'
+   -- the same stock and direction notifies once per day (intraday) or once in 5 days (swing)
+   where not exists (select 1 from site_notifications n where n.kind = 'signal'
+                       and n.key like 'sig:' || (p->>'symbol') || ':' || (p->>'side') || ':%'
+                       and n.body like initcap(coalesce(p->>'tf', 'swing')) || ' %'
+                       and n.created_at > now() - case when p->>'tf' = 'intraday' then interval '12 hours' else interval '5 days' end)
   on conflict (key) do nothing;
   get diagnostics k = row_count; n := n + k;
 
@@ -102,15 +107,20 @@ revoke all on function public.mp_capture_notifications() from public, anon, auth
 -- Public feed: announcements and picks for 30 days, signals for 3 days, everything else for 14.
 create or replace function public.site_notifications_feed(p_limit int default 30)
 returns jsonb language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('now', now(), 'items', coalesce(jsonb_agg(jsonb_build_object(
-    'id', id, 'kind', kind, 'icon', icon, 'title', title, 'body', body, 'url', url, 'at', created_at
-  ) order by created_at desc, id desc), '[]'::jsonb))
-  from (
+  with base as (
     select * from site_notifications
      where created_at > now() - case kind when 'signal' then interval '3 days' when 'update' then interval '30 days'
                                          when 'picks' then interval '30 days' else interval '14 days' end
+  ), intraday as (   -- intraday setups go stale fast: only the latest three from the last 30 minutes
+    select id from base where kind = 'signal' and body like 'Intraday %' and created_at > now() - interval '30 minutes'
+     order by created_at desc limit 3
+  ), keep as (
+    select * from base where not (kind = 'signal' and body like 'Intraday %') or id in (select id from intraday)
      order by created_at desc, id desc limit greatest(1, least(p_limit, 60))
-  ) t;
+  )
+  select jsonb_build_object('now', now(), 'items', coalesce(jsonb_agg(jsonb_build_object(
+    'id', id, 'kind', kind, 'icon', icon, 'title', title, 'body', body, 'url', url, 'at', created_at
+  ) order by created_at desc, id desc), '[]'::jsonb)) from keep;
 $$;
 grant execute on function public.site_notifications_feed(int) to anon, authenticated;
 
