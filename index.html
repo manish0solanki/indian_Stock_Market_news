@@ -3407,6 +3407,20 @@ input,select,textarea{min-width:0;}
 }
 </style>
 <link rel="stylesheet" href="/global-market.css?v=1">
+<style>
+/* Account menu: every item the same size, border and alignment */
+#accountMenu{min-width:230px}
+#accountMenu .account-email{padding:4px 4px 9px;margin-bottom:2px;border-bottom:1px solid var(--border);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#accountMenu > button{display:flex!important;align-items:center;gap:9px;width:100%;min-height:38px;margin:6px 0 0!important;padding:8px 12px!important;
+  border:1px solid var(--border)!important;border-radius:10px!important;background:var(--bg)!important;color:var(--text)!important;
+  font:600 13px/1.2 var(--font-body)!important;text-align:left;cursor:pointer;box-shadow:none!important}
+#accountMenu > button:hover{background:var(--surface-hover)!important;border-color:var(--accent,#6366f1)!important}
+#accountMenu > #adminPanelButton{color:#a5b4fc!important;border-color:color-mix(in srgb,#f59e0b 55%,var(--border))!important}
+#accountMenu > #logoutButton{margin-top:10px!important;position:relative;color:#fca5a5!important}
+#accountMenu > #logoutButton::before{content:"";position:absolute;left:0;right:0;top:-6px;border-top:1px solid var(--border)}
+[data-theme=light] #accountMenu > #adminPanelButton{color:#4338ca!important}
+[data-theme=light] #accountMenu > #logoutButton{color:#b91c1c!important}
+</style>
 <script src="/refresh-stamp.js?v=2"></script>
 <script src="/link-viewer.js?v=1" defer></script>
 <script src="/notify.js?v=3" defer></script>
@@ -3464,11 +3478,11 @@ input,select,textarea{min-width:0;}
         <div class="account-email" id="accountEmail">—</div>
         <button class="profile-menu-button" id="profileButton" type="button">👤 My Profile</button>
         <button class="portfolio-menu-button" id="portfolioMenuButton" type="button">📊 My Portfolio</button>
-        <a class="portfolio-menu-button" href="/money.html" target="_self" style="display:block;text-decoration:none;color:inherit">💰 My Money</a>
+        <button class="money-menu-button" id="moneyMenuButton" type="button">💰 My Money</button>
         <button class="watchlist-menu-button" id="watchlistButton" type="button">⭐ My Watchlist</button>
         <button class="alert-menu-button" id="alertButton" type="button">🔔 My Alerts</button>
         <button class="admin-menu-button" id="adminPanelButton" type="button" style="display:none;">🛡️ Admin Panel</button>
-        <button id="logoutButton" type="button">Log out</button>
+        <button id="logoutButton" type="button">↩ Log out</button>
       </div>
     </div>
     <button class="settings-toggle" id="settingsToggle" title="Configure API endpoints" type="button" style="display:none;">⚙️</button>
@@ -5723,6 +5737,7 @@ adminPanelButton.addEventListener('click', openAdminModal);
 adminRefreshButton.addEventListener('click', loadAdminUsers);
 profileButton.addEventListener('click', openProfileModal);
 portfolioMenuButton.addEventListener('click', () => { window.location.href='/portfolio.html'; });
+document.getElementById('moneyMenuButton').addEventListener('click', () => { window.location.href='/money.html'; });
 profileClose.addEventListener('click', closeProfileModal);
 profileCancel.addEventListener('click', closeProfileModal);
 profileSave.addEventListener('click', saveProfile);
