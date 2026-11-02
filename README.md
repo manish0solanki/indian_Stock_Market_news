@@ -57,11 +57,17 @@
 - **Month view:** income, plus a planned vs actual budget per category. Each bar has a pace marker showing where spending would be at an even rate through the month, with on-track, ahead-of-pace, over and unplanned flags. Copy last month's plan in one tap.
 - **Key numbers:** planned spend, spent so far, left to spend (with a "safe per day" figure), and amount saved with savings rate. Investment categories are tracked separately from spending.
 - **Insights:** overspent categories, a month-end projection at the current pace, spending with no plan, bills due soon or overdue, and goal set-asides.
+- **💼 Income from many sources:** salary, rent received, freelance, business, dividends, interest, pension, bonus, gift, refund or other.
+  - Recurring income (amount and pay day) shows in every month as *expected* until marked **✓ Received**, at the actual amount and date. You can skip a month, change it from now on, or stop it.
+  - One-off income (a bonus, a gift) belongs to just that month.
+  - The headline shows received vs expected, and savings use income received, or expected when nothing has arrived yet.
+  - An insight flags expected income that hasn't arrived.
+  - Tables: `pf_income_sources` and `pf_incomes`. The earlier single monthly income was moved over automatically.
 - **Quick add:** amount, category chips, date, payment method, note, and a ⭐ Major expense flag. Major expenses get their own yearly list.
 - **Bills & EMIs:** due day, paid, due-soon or overdue status, and Mark paid (records the expense, undoable).
 - **Major expenses & goals:** target, date, saved so far, the monthly set-aside needed, and "Mark bought" (records it as a major expense).
 - **Charts and records:** a donut of where the money went, a 6-month planned vs spent chart (tap a month to open it, with a table view), and a searchable transaction list you can edit, filter by category and export to CSV.
-- **Data:** `supabase/money.sql` (`pf_categories`, `pf_months`, `pf_budgets`, `pf_transactions`, `pf_bills`, `pf_goals`). Every table has row level security on `user_id = auth.uid()`, so each user sees only their own data. Signed-out visitors see a login invitation.
+- **Data:** `supabase/money.sql` (`pf_categories`, `pf_income_sources`, `pf_incomes`, `pf_budgets`, `pf_transactions`, `pf_bills`, `pf_goals`; `pf_months` is legacy). Every table has row level security on `user_id = auth.uid()`, so each user sees only their own data. Signed-out visitors see a login invitation.
 
 ### 📈 Stock Signals (`stock-signals.html`)
 - **Swing and intraday technical setups** (20-day breakout, trend pullback, bear trend pullback) across ~220 NSE stocks, refreshed every 5 minutes.

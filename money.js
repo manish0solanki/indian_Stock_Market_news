@@ -21,9 +21,14 @@
     ['Shopping', '🛍️'], ['EMIs & Loans', '💳'], ['Health & Insurance', '🏥'], ['Education', '🎓'], ['Entertainment', '🎬'],
     ['Travel', '✈️'], ['Gifts & Festivals', '🎁'], ['Investments & SIP', '📈', 'saving'], ['Other', '🧾'],
   ];
+  // income kinds: [kind, label, icon, recurring by default]
+  const INCOME_KINDS = [['salary', 'Salary', '💼', true], ['rent', 'Rent received', '🏠', true], ['freelance', 'Freelance', '🧑‍💻', false], ['business', 'Business', '🏪', true],
+    ['dividend', 'Dividends', '💹', false], ['interest', 'Interest', '🏦', false], ['pension', 'Pension', '👴', true], ['bonus', 'Bonus', '🎉', false], ['gift', 'Gift', '🎁', false],
+    ['refund', 'Refund / cashback', '↩️', false], ['other', 'Other income', '💰', false]];
+  const RECURRING_KINDS = ['salary', 'rent', 'business', 'freelance', 'interest', 'dividend', 'pension', 'other'];
   const EMOJIS = ['🏠', '🛒', '🍽️', '🚗', '⛽', '💡', '📱', '🌐', '🛍️', '👕', '💳', '🏥', '💊', '🎓', '📚', '🎬', '🎮', '✈️', '🏖️', '🎁', '🪔', '💍', '👶', '🐶', '🏋️', '💇', '🧹', '🔧', '🚌', '🚕', '📈', '🏦', '🛡️', '🧾', '☕', '🍕', '💻', '🚙', '🏍️', '🎯'];
 
-  const S = { user: null, month: null, cats: [], budgets: {}, income: 0, txns: [], bills: [], goals: [], majors: [], trend: null, txQ: '', txCat: '', editTx: null };
+  const S = { user: null, month: null, cats: [], budgets: {}, income: 0, incomes: [], sources: [], incExpected: 0, incReceived: 0, txns: [], bills: [], goals: [], majors: [], trend: null, txQ: '', txCat: '', editTx: null };
 
   /* ───────── dates (IST) ───────── */
   const todayIST = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
@@ -75,20 +80,22 @@
   async function loadMonth() {
     const m = S.month, end = monthEnd(m), from6 = addMonths(m, -5);
     const yearStart = m.slice(0, 4) + '-01-01';
-    const [b, mo, tx, bills, goals, majors, t6, b6, i6] = await Promise.all([
+    const [b, inc, tx, bills, goals, majors, t6, b6, i6, src] = await Promise.all([
       sb.from('pf_budgets').select('category_id,planned').eq('month', m),
-      sb.from('pf_months').select('income').eq('month', m).maybeSingle(),
+      sb.from('pf_incomes').select('*').eq('month', m).order('created_at'),
       sb.from('pf_transactions').select('*').gte('txn_date', m).lte('txn_date', end).order('txn_date', { ascending: false }).order('created_at', { ascending: false }),
       sb.from('pf_bills').select('*').eq('active', true).order('due_day'),
       sb.from('pf_goals').select('*').neq('status', 'dropped').order('target_date', { ascending: true, nullsFirst: false }),
       sb.from('pf_transactions').select('id,txn_date,amount,category_id,note,goal_id').eq('is_major', true).gte('txn_date', yearStart).order('txn_date', { ascending: false }).limit(60),
       sb.from('pf_transactions').select('txn_date,amount,category_id').gte('txn_date', from6).lte('txn_date', end).limit(5000),
       sb.from('pf_budgets').select('month,planned,category_id').gte('month', from6).lte('month', m),
-      sb.from('pf_months').select('month,income').gte('month', from6).lte('month', m),
+      sb.from('pf_incomes').select('month,planned,received,source_id').gte('month', from6).lte('month', m),
+      sb.from('pf_income_sources').select('*').order('created_at'),
     ]);
-    for (const r of [b, tx, bills, goals, majors, t6, b6, i6]) if (r.error) throw r.error;
+    for (const r of [b, inc, tx, bills, goals, majors, t6, b6, i6, src]) if (r.error) throw r.error;
     S.budgets = {}; (b.data || []).forEach((x) => { S.budgets[x.category_id] = num(x.planned); });
-    S.income = num(mo.data && mo.data.income);
+    S.sources = src.data || [];
+    buildIncomes(inc.data || []);
     S.txns = tx.data || []; S.bills = bills.data || []; S.goals = goals.data || []; S.majors = majors.data || [];
     const saving = new Set(S.cats.filter((c) => c.kind === 'saving').map((c) => c.id));
     const months = Array.from({ length: 6 }, (_, i) => addMonths(from6, i));
@@ -96,8 +103,28 @@
       m: mm,
       planned: (b6.data || []).filter((x) => x.month === mm && !saving.has(x.category_id)).reduce((a, x) => a + num(x.planned), 0),
       actual: (t6.data || []).filter((x) => monthOf(x.txn_date) === mm && !saving.has(x.category_id)).reduce((a, x) => a + num(x.amount), 0),
-      income: num(((i6.data || []).find((x) => x.month === mm) || {}).income),
+      income: incomeFor(mm, (i6.data || []).filter((x) => x.month === mm)),
     }));
+  }
+  // A recurring source shows in every month from when it was added (and while active) as "expected", until a row
+  // for that month records it (received, a different amount, or skipped with 0).
+  function sourceApplies(src, m) { return src.active && monthOf(src.created_at.slice(0, 10)) <= m; }
+  function buildIncomes(rows) {
+    const list = rows.map((r) => ({ ...r, planned: num(r.planned), received: r.received === null ? null : num(r.received), src: S.sources.find((x) => x.id === r.source_id) }));
+    for (const src of S.sources) if (sourceApplies(src, S.month) && !rows.some((r) => r.source_id === src.id))
+      list.push({ virtual: true, source_id: src.id, src, name: src.name, icon: src.icon, kind: src.kind, planned: num(src.amount), received: null, received_on: null });
+    const day = (x) => (x.src ? x.src.pay_day : 40);
+    S.incomes = list.sort((a, b) => day(a) - day(b) || b.planned - a.planned);
+    S.incExpected = list.reduce((a, x) => a + num(x.planned), 0);
+    S.incReceived = list.reduce((a, x) => a + num(x.received), 0);
+    // effective income for savings maths: what has arrived, or what is expected when nothing is marked yet
+    S.income = S.incReceived > 0 ? S.incReceived : S.incExpected;
+  }
+  // monthly income for the trend: received where recorded, else expected (rows + recurring sources)
+  function incomeFor(m, rows) {
+    let v = rows.reduce((a, x) => a + (x.received === null ? num(x.planned) : num(x.received)), 0);
+    for (const src of S.sources) if (sourceApplies(src, m) && !rows.some((r) => r.source_id === src.id)) v += num(src.amount);
+    return v;
   }
   async function reload() { try { await loadMonth(); render(); } catch (e) { toast('Could not load: ' + (e.message || e), true); } }
 
@@ -119,7 +146,7 @@
     $('monthLbl').textContent = mLabel(S.month);
     $('thisM').hidden = isCurrent();
     const T = totals();
-    renderKpis(T); renderInsights(T); renderBudget(T); renderFormCats(); renderDonut(T); renderBills(); renderGoals(); renderTrend(); renderTx();
+    renderKpis(T); renderIncome(); renderInsights(T); renderBudget(T); renderFormCats(); renderDonut(T); renderBills(); renderGoals(); renderTrend(); renderTx();
     if (!$('fDate').value || monthOf($('fDate').value) !== S.month) $('fDate').value = isCurrent() ? todayIST() : (S.month > todayIST() ? S.month : monthEnd(S.month));
   }
 
@@ -128,19 +155,132 @@
     const dLeft = isCurrent() ? daysIn(S.month) - +todayIST().slice(8, 10) + 1 : 0;
     const saved = S.income - T.spent, rate = S.income > 0 ? saved / S.income * 100 : null;
     $('kpis').innerHTML = `
-      <div class="kpi hero-k"><span>Income this month</span><div id="incomeBox"><b>${S.income ? inr(S.income) : '—'}</b></div>
-        <small>${S.income ? `Plan leaves ${inr(S.income - T.planned - T.plannedSave)} unallocated` : 'Add your income to see your savings'} · <button type="button" class="edit" id="editIncome">${S.income ? 'Edit' : 'Add income'}</button></small></div>
+      <div class="kpi hero-k"><span>Income this month</span><b>${S.incExpected || S.incReceived ? inr(S.incReceived) : '—'}${S.incExpected ? `<em style="font-style:normal;font-size:13px;color:var(--muted);font-weight:600"> of ${inr(Math.max(S.incExpected, S.incReceived))}</em>` : ''}</b>
+        <small>${S.incExpected || S.incReceived ? `received from ${S.incomes.filter((x) => x.received > 0).length} of ${S.incomes.filter((x) => x.planned > 0 || x.received > 0).length} source${S.incomes.length === 1 ? '' : 's'}${T.planned ? ` · plan leaves ${inr(Math.max(S.incExpected, S.incReceived) - T.planned - T.plannedSave)} free` : ''}` : 'Add salary, rent and other income'} · <button type="button" class="edit" id="editIncome">${S.incomes.length ? 'Manage' : 'Add income'}</button></small></div>
       <div class="kpi"><span>Planned spend</span><b>${inr(T.planned)}</b><small>${T.plannedSave ? inr(T.plannedSave) + ' planned to invest' : 'across ' + visibleCats().filter((c) => S.budgets[c.id]).length + ' categories'}</small></div>
       <div class="kpi"><span>Spent so far</span><b class="${T.planned && T.spent > T.planned ? 'down' : ''}">${inr(T.spent)}</b><small>${T.planned ? pctS(T.spent / T.planned * 100) + ' of plan' : 'no plan yet'}${p > 0 && p < 1 ? ` · ${pctS(p * 100)} of month gone` : ''}</small></div>
       <div class="kpi"><span>${left >= 0 ? 'Left to spend' : 'Over plan'}</span><b class="${left >= 0 ? 'up' : 'down'}">${inr(Math.abs(left))}</b><small>${isCurrent() && left > 0 && dLeft > 0 ? `≈ ${inr(left / dLeft)} a day for ${dLeft} day${dLeft > 1 ? 's' : ''}` : left < 0 ? 'beyond this month\'s plan' : T.planned ? 'of this month\'s plan' : 'set a plan below'}</small></div>
-      <div class="kpi"><span>Saved</span><b class="${rate === null ? '' : saved >= 0 ? 'up' : 'down'}">${rate === null ? '—' : inr(saved)}</b><small>${rate === null ? 'needs your income' : pctS(rate) + ' savings rate'}${T.invested ? ' · ' + inr(T.invested) + ' invested' : ''}</small></div>`;
-    $('editIncome').onclick = () => {
-      $('incomeBox').innerHTML = `<input id="incomeIn" type="text" inputmode="numeric" value="${S.income || ''}" placeholder="e.g. 85000" aria-label="Income this month">`;
-      const i = $('incomeIn'); i.focus(); i.select();
-      const save = async () => { const v = amt(i.value); if (v === S.income) { renderKpis(totals()); return; } if (await run(sb.from('pf_months').upsert({ month: S.month, income: v, updated_at: new Date().toISOString() }), 'Income saved')) { S.income = v; render(); } };
-      i.addEventListener('keydown', (e) => { if (e.key === 'Enter') i.blur(); if (e.key === 'Escape') { i.value = S.income; i.blur(); } });
-      i.addEventListener('blur', save, { once: true });
+      <div class="kpi"><span>Saved</span><b class="${rate === null ? '' : saved >= 0 ? 'up' : 'down'}">${rate === null ? '—' : inr(saved)}</b><small>${rate === null ? 'needs your income' : pctS(rate) + ' savings rate' + (S.incReceived > 0 ? '' : ' (on expected income)')}${T.invested ? ' · ' + inr(T.invested) + ' invested' : ''}</small></div>`;
+    $('editIncome').onclick = () => { if (!S.incomes.length) incomeSheet(null); else $('incomePanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  }
+
+  /* income panel */
+  function renderIncome() {
+    const list = S.incomes;
+    $('incSum').innerHTML = list.length ? `<b>${inr(S.incReceived)}</b> received of <b>${inr(S.incExpected)}</b> expected` : '';
+    if (!list.length) { $('incomes').innerHTML = '<div class="empty">Add your salary, rent received, freelance or business income, dividends and anything else. Recurring income shows up every month as expected until you mark it received.</div>'; return; }
+    const d = isCurrent() ? +todayIST().slice(8, 10) : (S.month < monthOf(todayIST()) ? 99 : 0);
+    $('incomes').innerHTML = list.map((x, i) => {
+      const skipped = !x.virtual && x.planned === 0 && x.received === null;
+      const got = x.received !== null && x.received > 0;
+      const pay = x.src ? Math.min(x.src.pay_day, daysIn(S.month)) : null;
+      let st;
+      if (skipped) st = '<span class="pill" style="background:var(--surface2);color:var(--dim)">Skipped</span>';
+      else if (got) st = `<span class="pill paid">✓ ${x.received_on ? dShort(x.received_on) : 'Received'}</span>`;
+      else if (pay !== null && pay < d) st = '<span class="pill late">Not received yet</span>';
+      else if (pay !== null) st = `<span class="pill due">Expected ${pay === d ? 'today' : dShort(S.month.slice(0, 8) + String(pay).padStart(2, '0'))}</span>`;
+      else st = '<span class="pill due">Expected</span>';
+      const diff = got && x.planned && Math.abs(x.received - x.planned) >= 1 ? ` <small class="${x.received >= x.planned ? 'up' : 'down'}">(${x.received >= x.planned ? '+' : '−'}${inr(Math.abs(x.received - x.planned))})</small>` : '';
+      const kind = (INCOME_KINDS.find((k) => k[0] === x.kind) || [, 'Other'])[1];
+      return `<div class="inc${skipped ? ' skip' : ''}"><div class="ic">${esc(x.icon)}</div>
+        <div class="tx"><b>${esc(x.name)}</b><small>${esc(kind)}${x.src ? ` · monthly on the ${x.src.pay_day}${ord(x.src.pay_day)}` : ' · this month only'}${x.note ? ' · ' + esc(x.note) : ''}</small></div>
+        <div class="iv"><b>${inr(got ? x.received : x.planned)}</b>${diff}<div>${st}</div></div>
+        <div class="ia">${!got && !skipped ? `<button type="button" class="btn sm ok" data-recv="${i}">✓ Received</button>` : ''}<button type="button" class="btn sm" data-editinc="${i}" aria-label="Edit ${esc(x.name)}">✎</button></div></div>`;
+    }).join('');
+  }
+  const ord = (n) => (n % 100 > 10 && n % 100 < 14) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th');
+  function kindChips(sel) { return `<div class="cchips" id="kindChips" style="flex-wrap:wrap">${INCOME_KINDS.map(([k, l, ic]) => `<button type="button" class="cchip${k === sel ? ' on' : ''}" data-kind="${k}">${ic} ${l}</button>`).join('')}</div>`; }
+  // add a new income (recurring source, or a one-off for this month)
+  function incomeSheet() {
+    const def = INCOME_KINDS[0];
+    openSheet(`<h3>Add income</h3>
+      <div class="fld"><span>Type</span></div>${kindChips(def[0])}
+      <label class="fld" style="margin:6px 0 8px"><span>Name</span><input id="sName" maxlength="60" value="${def[1]}" placeholder="e.g. Salary – Infosys, Flat 302 rent"></label>
+      <div class="amt"><b>₹</b><input id="sAmt" inputmode="decimal" placeholder="Amount"></div>
+      <label class="check"><input type="checkbox" id="sRec" checked> Repeats every month</label>
+      <div class="frow"><label class="fld" id="dayBox"><span>Comes on day</span><input id="sDay" type="number" min="1" max="31" value="1"></label>
+      <label class="fld" id="dateBox" hidden><span>Date</span><input id="sDate" type="date" value="${isCurrent() ? todayIST() : S.month}"></label>
+      <label class="fld"><span>Note</span><input id="sNote" maxlength="200" placeholder="optional"></label></div>
+      <label class="check"><input type="checkbox" id="sGot"> Already received this month</label>
+      <div class="formacts"><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn pri" id="sOk">Add income</button></div>`);
+    let kind = def[0];
+    const sync = () => { const rec = $('sRec').checked; $('dayBox').hidden = !rec; $('dateBox').hidden = rec; };
+    $('kindChips').onclick = (e) => {
+      const b = e.target.closest('[data-kind]'); if (!b) return;
+      const k = INCOME_KINDS.find((x) => x[0] === b.dataset.kind), prev = INCOME_KINDS.find((x) => x[0] === kind);
+      if (!$('sName').value.trim() || $('sName').value === prev[1]) $('sName').value = k[1];
+      kind = k[0]; $('sRec').checked = k[3] && RECURRING_KINDS.includes(kind); $('sRec').disabled = !RECURRING_KINDS.includes(kind);
+      $('kindChips').querySelectorAll('.cchip').forEach((x) => x.classList.toggle('on', x === b)); sync();
     };
+    $('sRec').onchange = sync;
+    $('sAmt').addEventListener('input', (e) => { const d = e.target.value.replace(/[^\d.]/g, ''); const [i, f] = d.split('.'); const v = (i ? (+i).toLocaleString('en-IN') : '') + (f !== undefined ? '.' + f.slice(0, 2) : ''); if (e.target.value !== v) e.target.value = v; });
+    $('sOk').onclick = async () => {
+      const name = $('sName').value.trim(), amount = amt($('sAmt').value), note = $('sNote').value.trim() || null, got = $('sGot').checked;
+      if (!name || !(amount > 0)) { toast('Enter a name and an amount', true); return; }
+      const icon = (INCOME_KINDS.find((x) => x[0] === kind) || [])[2] || '💰';
+      if ($('sRec').checked) {
+        const day = Math.min(31, Math.max(1, +$('sDay').value || 1));
+        const { data, error } = await sb.from('pf_income_sources').insert({ name, icon, kind, amount, pay_day: day }).select('*').single();
+        if (error) { toast(error.message, true); return; }
+        // backdate so it shows from the month being viewed
+        if (monthOf(data.created_at.slice(0, 10)) > S.month) await sb.from('pf_income_sources').update({ created_at: S.month + 'T00:00:00Z' }).eq('id', data.id);
+        if (got || note) { const r = await sb.from('pf_incomes').insert({ month: S.month, source_id: data.id, name, icon, kind, planned: amount, received: got ? amount : null, received_on: got ? (isCurrent() ? todayIST() : S.month.slice(0, 8) + String(Math.min(day, daysIn(S.month))).padStart(2, '0')) : null, note }); if (r.error) { toast(r.error.message, true); return; } }
+      } else {
+        const date = $('sDate').value || S.month;
+        const r = await sb.from('pf_incomes').insert({ month: monthOf(date), name, icon, kind, planned: amount, received: got ? amount : null, received_on: got ? date : null, note });
+        if (r.error) { toast(r.error.message, true); return; }
+      }
+      toast(`${name} added`); closeSheet(); await reload();
+    };
+  }
+  // mark received (amount may differ from expected)
+  function receiveSheet(x) {
+    const date = isCurrent() ? todayIST() : S.month.slice(0, 8) + String(Math.min(x.src ? x.src.pay_day : 1, daysIn(S.month))).padStart(2, '0');
+    openSheet(`<h3>${esc(x.icon)} ${esc(x.name)} received</h3><p class="muted" style="margin:-6px 0 10px;font-size:13px">Expected ${inr(x.planned)}</p>
+      <div class="amt"><b>₹</b><input id="sAmt" inputmode="decimal" value="${Math.round(x.planned) || ''}"></div>
+      <label class="fld" style="margin-bottom:10px"><span>Received on</span><input id="sDate" type="date" value="${date}"></label>
+      <div class="formacts"><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn pri" id="sOk">Mark received</button></div>`);
+    $('sOk').onclick = async () => {
+      const v = amt($('sAmt').value); if (!(v > 0)) { toast('Enter the amount received', true); return; }
+      const row = { received: v, received_on: $('sDate').value || date };
+      const ok = x.virtual ? await run(sb.from('pf_incomes').insert({ month: S.month, source_id: x.source_id, name: x.name, icon: x.icon, kind: x.kind, planned: x.planned, ...row }), `${x.name}: ${inr(v)} received`)
+        : await run(sb.from('pf_incomes').update(row).eq('id', x.id), `${x.name}: ${inr(v)} received`);
+      if (ok) { closeSheet(); await reload(); }
+    };
+  }
+  // edit this month's line; recurring sources can also be changed or stopped
+  function editIncomeSheet(x) {
+    const src = x.src;
+    openSheet(`<h3>${esc(x.icon)} ${esc(x.name)}</h3>
+      <div class="frow"><label class="fld"><span>Expected this month (₹)</span><input id="sPlan" inputmode="decimal" value="${Math.round(x.planned)}"></label>
+      <label class="fld"><span>Received (₹)</span><input id="sGot" inputmode="decimal" value="${x.received === null ? '' : Math.round(x.received)}" placeholder="not yet"></label></div>
+      <div class="frow"><label class="fld"><span>Received on</span><input id="sDate" type="date" value="${x.received_on || ''}"></label>
+      <label class="fld"><span>Note</span><input id="sNote" maxlength="200" value="${esc(x.note || '')}"></label></div>
+      ${src ? `<div class="subhead" style="margin-top:6px">Every month</div>
+      <div class="frow"><label class="fld"><span>Usual amount (₹)</span><input id="sSrcAmt" inputmode="decimal" value="${Math.round(src.amount)}"></label>
+      <label class="fld"><span>Comes on day</span><input id="sSrcDay" type="number" min="1" max="31" value="${src.pay_day}"></label></div>
+      <label class="fld" style="margin-bottom:8px"><span>Name</span><input id="sSrcName" maxlength="60" value="${esc(src.name)}"></label>` : ''}
+      <div class="formacts" style="flex-wrap:wrap">${src ? `<button type="button" class="btn" id="sSkip">Not this month</button><button type="button" class="btn del" id="sStop">Stop it</button>` : `<button type="button" class="btn del" id="sDel">Delete</button>`}
+        <button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn pri" id="sOk">Save</button></div>`);
+    const monthRow = async (patch) => x.virtual
+      ? sb.from('pf_incomes').insert({ month: S.month, source_id: x.source_id, name: x.name, icon: x.icon, kind: x.kind, planned: x.planned, ...patch })
+      : sb.from('pf_incomes').update(patch).eq('id', x.id);
+    $('sOk').onclick = async () => {
+      const gotTxt = $('sGot').value.trim();
+      const patch = { planned: amt($('sPlan').value), received: gotTxt === '' ? null : amt(gotTxt), received_on: gotTxt === '' ? null : ($('sDate').value || (isCurrent() ? todayIST() : S.month)), note: $('sNote').value.trim() || null };
+      if (src) {
+        const sp = { amount: amt($('sSrcAmt').value) || src.amount, pay_day: Math.min(31, Math.max(1, +$('sSrcDay').value || src.pay_day)), name: $('sSrcName').value.trim() || src.name };
+        if (sp.amount !== num(src.amount) || sp.pay_day !== src.pay_day || sp.name !== src.name) { if (!(await run(sb.from('pf_income_sources').update(sp).eq('id', src.id)))) return; if (!x.virtual && sp.name !== src.name) patch.name = sp.name; }
+        // a virtual line only needs a row when this month differs from the usual
+        if (x.virtual && patch.received === null && !patch.note && patch.planned === num(src.amount)) { closeSheet(); toast('Saved'); await reload(); return; }
+        if (x.virtual) patch.planned = patch.planned || sp.amount;
+      }
+      if (await run(monthRow(patch), 'Saved')) { closeSheet(); await reload(); }
+    };
+    if (src) {
+      $('sSkip').onclick = async () => { if (await run(monthRow({ planned: 0, received: null, received_on: null }), `${x.name} skipped for ${mLabel(S.month)}`)) { closeSheet(); await reload(); } };
+      $('sStop').onclick = async () => { if (confirm(`Stop ${src.name} from next month? Past months keep their records.`) && await run(sb.from('pf_income_sources').update({ active: false }).eq('id', src.id), `${src.name} stopped`)) { closeSheet(); await reload(); } };
+    } else $('sDel').onclick = async () => { if (confirm(`Delete ${x.name}?`) && await run(sb.from('pf_incomes').delete().eq('id', x.id), 'Deleted')) { closeSheet(); await reload(); } };
   }
 
   function renderInsights(T) {
@@ -165,6 +305,12 @@
       const late = S.bills.filter((b) => !billPaid(b) && b.due_day < d);
       if (late.length) out.push(['⏰', `Not marked paid yet: ${late.slice(0, 3).map((b) => esc(b.name)).join(', ')}.`, 'bad']);
     }
+    if (isCurrent()) {
+      const d = +todayIST().slice(8, 10);
+      const late = S.incomes.filter((x) => x.src && (x.received === null || x.received === 0) && x.planned > 0 && Math.min(x.src.pay_day, daysIn(S.month)) < d - 1);
+      if (late.length) out.push(['💼', `Not marked received yet: ${late.slice(0, 2).map((x) => `${esc(x.name)} (${inr(x.planned)})`).join(', ')}.`, 'warnb']);
+    }
+    if (!S.incomes.length && (T.spent || T.planned)) out.push(['💼', 'Add your income (salary, rent and more) to see what you save each month.', '']);
     const g = S.goals.filter((x) => x.status === 'planned' && x.target_date).map((x) => [x, goalMonthly(x)]).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])[0];
     if (g) out.push(['🎯', `Set aside ${inr(g[1])} a month to cover ${g[0].icon} ${esc(g[0].title)} by ${mLabel(monthOf(g[0].target_date))}.`, '']);
     if (S.income && T.spent && !out.some((x) => x[2] === 'bad')) { const r = (S.income - T.spent) / S.income * 100; if (r >= 30) out.push(['🌱', `You're saving ${pctS(r)} of your income this month. Nice!`, 'good']); }
@@ -363,12 +509,11 @@
   function renderTrendLocal() { const x = (S.trend || []).find((t) => t.m === S.month); if (x) { x.planned = visibleCats().filter((c) => c.kind !== 'saving').reduce((a, c) => a + num(S.budgets[c.id]), 0); renderTrend(); } }
   async function copyPlan() {
     const prev = addMonths(S.month, -1);
-    const [b, mo] = await Promise.all([sb.from('pf_budgets').select('category_id,planned').eq('month', prev), sb.from('pf_months').select('income').eq('month', prev).maybeSingle()]);
+    const [b] = await Promise.all([sb.from('pf_budgets').select('category_id,planned').eq('month', prev)]);
     if (b.error) { toast(b.error.message, true); return; }
     const rows = (b.data || []).filter((x) => !(S.budgets[x.category_id] > 0)).map((x) => ({ month: S.month, category_id: x.category_id, planned: x.planned }));
-    if (!rows.length && !(mo.data && mo.data.income && !S.income)) { toast(b.data && b.data.length ? 'This month already has those plans' : 'Nothing planned in ' + mLabel(prev), true); return; }
+    if (!rows.length) { toast(b.data && b.data.length ? 'This month already has those plans' : 'Nothing planned in ' + mLabel(prev), true); return; }
     if (rows.length && !(await run(sb.from('pf_budgets').upsert(rows)))) return;
-    if (mo.data && num(mo.data.income) && !S.income) await sb.from('pf_months').upsert({ month: S.month, income: mo.data.income, updated_at: new Date().toISOString() });
     toast(`Copied ${rows.length} plan${rows.length === 1 ? '' : 's'} from ${mLabel(prev)}`);
     await reload();
   }
@@ -462,6 +607,7 @@
     $('copyPlan').onclick = copyPlan;
     $('addCat').onclick = () => catSheet(null);
     $('addBill').onclick = () => billSheet(null);
+    $('addIncome').onclick = () => incomeSheet();
     $('addGoal').onclick = () => goalSheet(null);
     $('csv').onclick = exportCsv;
     $('txQ').addEventListener('input', (e) => { S.txQ = e.target.value; renderTx(); });
@@ -487,6 +633,8 @@
         return;
       }
       const un = e.target.closest('[data-unpay]'); if (un) { if (await run(sb.from('pf_transactions').delete().eq('id', un.dataset.unpay), 'Payment undone')) await reload(); return; }
+      const rv = e.target.closest('[data-recv]'); if (rv) { receiveSheet(S.incomes[+rv.dataset.recv]); return; }
+      const ei = e.target.closest('[data-editinc]'); if (ei) { editIncomeSheet(S.incomes[+ei.dataset.editinc]); return; }
       const eb = e.target.closest('[data-editbill]'); if (eb) { billSheet(S.bills.find((x) => x.id === eb.dataset.editbill)); return; }
       const eg = e.target.closest('[data-editgoal]'); if (eg) { goalSheet(S.goals.find((x) => x.id === eg.dataset.editgoal)); return; }
       const sv = e.target.closest('[data-save]'); if (sv) { saveSheet(S.goals.find((x) => x.id === sv.dataset.save)); return; }

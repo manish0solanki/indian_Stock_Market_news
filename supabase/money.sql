@@ -96,3 +96,52 @@ do $$ declare t text; begin
     execute format('grant select, insert, update, delete on public.%I to authenticated', t);
   end loop;
 end $$;
+
+-- ───────── Multiple incomes ─────────
+--   pf_income_sources  recurring income (salary, rent received, pension, SIP payouts...): amount and pay day;
+--                      each month it shows as "expected" until marked received
+--   pf_incomes         one row per source per month once touched (expected / received / date), plus one-off
+--                      income for a month (bonus, gift, refund) with no source
+create table if not exists public.pf_income_sources (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 60),
+  icon text not null default '💼' check (char_length(icon) <= 8),
+  kind text not null default 'other' check (kind in ('salary', 'rent', 'business', 'freelance', 'interest', 'dividend', 'pension', 'other')),
+  amount numeric(14, 2) not null check (amount > 0),
+  pay_day int not null default 1 check (pay_day between 1 and 31),
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.pf_incomes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  month date not null check (extract(day from month) = 1),
+  source_id uuid references public.pf_income_sources (id) on delete set null,
+  name text not null check (char_length(name) between 1 and 60),
+  icon text not null default '💼' check (char_length(icon) <= 8),
+  kind text not null default 'other' check (kind in ('salary', 'rent', 'business', 'freelance', 'interest', 'dividend', 'pension', 'bonus', 'gift', 'refund', 'other')),
+  planned numeric(14, 2) not null default 0 check (planned >= 0),
+  received numeric(14, 2) check (received >= 0),
+  received_on date,
+  note text check (char_length(note) <= 200),
+  created_at timestamptz not null default now(),
+  unique (user_id, month, source_id)
+);
+create index if not exists pf_incomes_user_month on public.pf_incomes (user_id, month);
+create index if not exists pf_incomes_source on public.pf_incomes (source_id);
+create index if not exists pf_income_sources_user on public.pf_income_sources (user_id);
+do $$ declare t text; begin
+  foreach t in array array['pf_income_sources', 'pf_incomes'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "own rows" on public.%I', t);
+    execute format('create policy "own rows" on public.%I for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))', t);
+    execute format('revoke all on public.%I from anon', t);
+    execute format('grant select, insert, update, delete on public.%I to authenticated', t);
+  end loop;
+end $$;
+-- the single monthly income entered before becomes a received one-off "Income" line for that month
+insert into public.pf_incomes (user_id, month, name, icon, kind, planned, received, received_on)
+select m.user_id, m.month, 'Income', '💼', 'other', m.income, m.income, m.month
+  from public.pf_months m
+ where m.income > 0 and not exists (select 1 from public.pf_incomes i where i.user_id = m.user_id and i.month = m.month);
