@@ -23,6 +23,15 @@ create index if not exists site_notifications_created_idx on public.site_notific
 alter table public.site_notifications enable row level security;
 revoke all on public.site_notifications from anon, authenticated;
 
+-- When each strong signal was first and last seen by the capture job (intraday ones must persist to notify).
+create table if not exists public.signal_seen (
+  sym text not null, side text not null, tf text not null,
+  first_seen timestamptz not null default now(), last_seen timestamptz not null default now(),
+  primary key (sym, side, tf)
+);
+alter table public.signal_seen enable row level security;
+revoke all on public.signal_seen from anon, authenticated;
+
 -- ₹ amounts: whole rupees from ₹1,000 up, paise below.
 create or replace function public.mp_inr(v numeric) returns text language sql immutable as $$
   select case when v is null then '—' when abs(v) >= 1000 then '₹' || to_char(round(v), 'FM99,99,99,990') else '₹' || to_char(v, 'FM99,990.00') end $$;
@@ -34,21 +43,36 @@ declare
   today date := (now() at time zone 'Asia/Kolkata')::date;
   fmt text := 'FM99,99,99,990.00';
 begin
-  -- strong tradable signals (same list as Home's top signals)
-  insert into site_notifications (key, kind, icon, title, body, url, created_at)
-  select 'sig:' || (p->>'symbol') || ':' || (p->>'side') || ':' || coalesce(p->>'tf', 'swing') || ':' || coalesce(s.bar_date, today::text), 'signal',
-         case when p->>'side' = 'BUY' then '📈' else '📉' end,
-         'Strong ' || (p->>'side') || ' setup: ' || regexp_replace(coalesce(p->>'name', p->>'symbol'), '\s+(Limited|Ltd\.?)$', '', 'i'),
-         initcap(coalesce(p->>'tf', 'swing')) || ' · ' || coalesce(p->>'setup', 'signal') || ' · entry ' || mp_inr((p->>'entry')::numeric)
-           || ', target ' || mp_inr((p->>'target1')::numeric) || ', stop ' || mp_inr((p->>'stop')::numeric),
-         '/stock-signals.html', now()
+  -- strong tradable signals (same list as Home's top signals). Intraday setups flicker in and out of the
+  -- 5-minute scan, so one must be seen in two scans in a row before it notifies; swing ones notify at once.
+  -- The link opens that signal on the Signals page.
+  create temp table if not exists _sig_now (sym text, side text, tf text, bar text, p jsonb) on commit drop;
+  truncate _sig_now;
+  insert into _sig_now
+  select p->>'symbol', p->>'side', coalesce(p->>'tf', 'swing'), coalesce(s.bar_date, today::text), p
     from jsonb_array_elements(coalesce(stock_signals_top(6, 120)->'picks', '[]'::jsonb)) p
-    left join stock_signals s on s.symbol = p->>'symbol' and s.side = p->>'side' and s.tf = p->>'tf'
-   -- the same stock and direction notifies once per day (intraday) or once in 5 days (swing)
-   where not exists (select 1 from site_notifications n where n.kind = 'signal'
-                       and n.key like 'sig:' || (p->>'symbol') || ':' || (p->>'side') || ':%'
-                       and n.body like initcap(coalesce(p->>'tf', 'swing')) || ' %'
-                       and n.created_at > now() - case when p->>'tf' = 'intraday' then interval '12 hours' else interval '5 days' end)
+    left join stock_signals s on s.symbol = p->>'symbol' and s.side = p->>'side' and s.tf = p->>'tf';
+  insert into signal_seen (sym, side, tf, first_seen, last_seen)
+  select sym, side, tf, now(), now() from _sig_now
+  on conflict (sym, side, tf) do update
+    set first_seen = case when signal_seen.last_seen < now() - interval '8 minutes' then now() else signal_seen.first_seen end,
+        last_seen = now();
+  delete from signal_seen where last_seen < now() - interval '2 days';
+
+  insert into site_notifications (key, kind, icon, title, body, url, created_at)
+  select 'sig:' || c.sym || ':' || c.side || ':' || c.tf || ':' || c.bar, 'signal',
+         case when c.side = 'BUY' then '📈' else '📉' end,
+         'Strong ' || c.side || ' setup: ' || regexp_replace(coalesce(c.p->>'name', c.sym), '\s+(Limited|Ltd\.?)$', '', 'i'),
+         initcap(c.tf) || ' · ' || coalesce(c.p->>'setup', 'signal') || ' · entry ' || mp_inr((c.p->>'entry')::numeric)
+           || ', target ' || mp_inr((c.p->>'target1')::numeric) || ', stop ' || mp_inr((c.p->>'stop')::numeric),
+         '/stock-signals.html?sig=' || c.sym || '%7C' || c.tf, now()
+    from _sig_now c join signal_seen g on g.sym = c.sym and g.side = c.side and g.tf = c.tf
+   where (c.tf <> 'intraday' or g.first_seen <= now() - interval '4 minutes')
+     -- the same stock and direction notifies once per day (intraday) or once in 5 days (swing)
+     and not exists (select 1 from site_notifications n where n.kind = 'signal'
+                       and n.key like 'sig:' || c.sym || ':' || c.side || ':%'
+                       and n.body like initcap(c.tf) || ' %'
+                       and n.created_at > now() - case when c.tf = 'intraday' then interval '12 hours' else interval '5 days' end)
   on conflict (key) do nothing;
   get diagnostics k = row_count; n := n + k;
 
@@ -108,18 +132,23 @@ revoke all on function public.mp_capture_notifications() from public, anon, auth
 create or replace function public.site_notifications_feed(p_limit int default 30)
 returns jsonb language sql stable security definer set search_path = public as $$
   with base as (
-    select * from site_notifications
-     where created_at > now() - case kind when 'signal' then interval '3 days' when 'update' then interval '30 days'
-                                         when 'picks' then interval '30 days' else interval '14 days' end
-  ), intraday as (   -- intraday setups go stale fast: only the latest three from the last 30 minutes
-    select id from base where kind = 'signal' and body like 'Intraday %' and created_at > now() - interval '30 minutes'
+    select n.*,
+           case when n.kind = 'signal' then exists (
+             select 1 from stock_signals s
+              where s.symbol = split_part(n.key, ':', 2) and s.side = split_part(n.key, ':', 3)
+                and s.tf = lower(split_part(n.body, ' ', 1))) end as active
+      from site_notifications n
+     where n.created_at > now() - case n.kind when 'signal' then interval '3 days' when 'update' then interval '30 days'
+                                           when 'picks' then interval '30 days' else interval '14 days' end
+  ), intraday as (   -- intraday setups go stale fast: only live ones, the latest three from the last 30 minutes
+    select id from base where kind = 'signal' and body like 'Intraday %' and active and created_at > now() - interval '30 minutes'
      order by created_at desc limit 3
   ), keep as (
     select * from base where not (kind = 'signal' and body like 'Intraday %') or id in (select id from intraday)
      order by created_at desc, id desc limit greatest(1, least(p_limit, 60))
   )
   select jsonb_build_object('now', now(), 'items', coalesce(jsonb_agg(jsonb_build_object(
-    'id', id, 'kind', kind, 'icon', icon, 'title', title, 'body', body, 'url', url, 'at', created_at
+    'id', id, 'kind', kind, 'icon', icon, 'title', title, 'body', body, 'url', url, 'at', created_at, 'active', active
   ) order by created_at desc, id desc), '[]'::jsonb)) from keep;
 $$;
 grant execute on function public.site_notifications_feed(int) to anon, authenticated;

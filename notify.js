@@ -50,6 +50,8 @@
 .mpn-tx b{display:block;font-size:13.5px;font-weight:700;line-height:1.3}
 .mpn-tx p{margin:2px 0 0;font-size:12.5px;color:var(--mpn-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .mpn-tx small{display:block;font-size:11px;color:var(--mpn-dim);margin-top:3px}
+.mpn-item.off{opacity:.55}
+.mpn-off{font-style:normal;font-weight:700;color:#f59e0b}
 .mpn-dot{position:absolute;right:12px;top:14px;width:8px;height:8px;border-radius:50%;background:#ef4444}
 .mpn-empty{padding:36px 16px;text-align:center;color:var(--mpn-muted)}
 .mpn-foot{flex:0 0 auto;padding:8px 14px;font-size:11px;color:var(--mpn-dim);border-top:1px solid var(--mpn-line)}
@@ -72,7 +74,7 @@
     if (v) return ms(v);
     return Date.now() - 3 * 864e5; // first visit: the last three days count as new
   }
-  const unread = () => items.filter((n) => ms(n.at) > seen());
+  const unread = () => items.filter((n) => ms(n.at) > seen() && n.active !== false);
 
   async function fetchFeed(force) {
     if (!force) {
@@ -108,11 +110,12 @@
     const shown = items.filter((n) => tab === 'all' || n.kind === tab || (tab === 'picks' && n.kind === 'target'));
     if (!shown.length) return `<div class="mpn-empty">${items.length ? 'Nothing here in the last few days.' : 'No notifications yet.<br>New picks, strong signals and updates will show up here.'}</div>`;
     return shown.map((n) => {
-      const isNew = ms(n.at) > cut;
+      const off = n.active === false;  // a signal the scanner has since dropped
+      const isNew = ms(n.at) > cut && !off;
       const tag = n.url ? 'a' : 'div';
-      return `<${tag} class="mpn-item k-${esc(n.kind)}${isNew ? ' new' : ''}"${n.url ? ` href="${esc(n.url)}" target="_self"` : ''}>
+      return `<${tag} class="mpn-item k-${esc(n.kind)}${isNew ? ' new' : ''}${off ? ' off' : ''}"${n.url ? ` href="${esc(n.url)}" target="_self"` : ''}>
         <span class="mpn-ic" aria-hidden="true">${esc(n.icon || '🔔')}</span>
-        <span class="mpn-tx"><b>${esc(n.title)}</b>${n.body ? `<p>${esc(n.body)}</p>` : ''}<small>${ago(n.at)}</small></span>${isNew ? '<span class="mpn-dot" aria-label="new"></span>' : ''}</${tag}>`;
+        <span class="mpn-tx"><b>${esc(n.title)}</b>${n.body ? `<p>${esc(n.body)}</p>` : ''}<small>${ago(n.at)}${off ? ' · <em class="mpn-off">No longer active</em>' : ''}</small></span>${isNew ? '<span class="mpn-dot" aria-label="new"></span>' : ''}</${tag}>`;
     }).join('');
   }
   function counts() { const c = {}; items.forEach((n) => { const k = n.kind === 'target' ? 'picks' : n.kind; c[k] = (c[k] || 0) + 1; }); c.all = items.length; return c; }

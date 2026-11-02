@@ -115,7 +115,7 @@
     wire(header, sheet);
     // notifications bell (notify.js)
     if (window.MPNotify) window.MPNotify.mount();
-    else if (!document.querySelector('script[src^="/notify.js"]')) { var ns = document.createElement('script'); ns.src = '/notify.js?v=2'; ns.defer = true; document.head.appendChild(ns); }
+    else if (!document.querySelector('script[src^="/notify.js"]')) { var ns = document.createElement('script'); ns.src = '/notify.js?v=3'; ns.defer = true; document.head.appendChild(ns); }
   }
 
   function wire(header, sheet) {

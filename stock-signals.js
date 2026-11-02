@@ -498,7 +498,16 @@ async function init() {
   await refresh(true);
   // ?sig=SYMBOL|tf (from Home's Top Signals) opens that signal's details.
   const deep = new URLSearchParams(location.search).get('sig');
-  if (deep) { const s = sigByKey(deep) || S.signals.find((x) => x.symbol === deep.split('|')[0]); if (s) openSignal(s); history.replaceState(null, '', location.pathname); }
+  if (deep) {
+    const s = sigByKey(deep) || S.signals.find((x) => x.symbol === deep.split('|')[0]);
+    if (s) openSignal(s);
+    else {
+      const [sym, tf] = deep.split('|');
+      toast(`The ${tf === 'intraday' ? 'intraday ' : ''}${sym} setup has expired: setups change as prices move. These are the live ones.`);
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').className = 'toast'; }, 7000);
+    }
+    history.replaceState(null, '', location.pathname);
+  }
   // live refresh: server prices update every ~3 min; the clocks tick every second
   setInterval(() => { if (!document.hidden) refresh(false); }, 20000);
   setInterval(() => { renderMarket(); if (S.tab === 'signals') $('signalNote') && renderSignals(); }, 30000);
