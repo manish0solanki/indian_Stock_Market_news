@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>Money: Budget, Expenses &amp; Goals — MarketPulse</title>
+<meta name="description" content="Your private money manager on MarketPulse: plan each month, track expenses against the plan, never miss a bill or EMI, and save up for big purchases.">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--radius:14px;
+ --plan:#5b6585;--actual:#3987e5;--track:#1a2440}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207;--plan:#a9afc4;--actual:#2a78d6;--track:#eceef5}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent2)}
+.page{max-width:1280px;margin:0 auto;padding:18px clamp(12px,2.4vw,28px) 90px}
+.up{color:var(--green)}.down{color:var(--red)}.warn{color:var(--amber)}.muted{color:var(--dim)}
+
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.hero h1{margin:0;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.hero p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.monthnav{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px}
+.monthnav b{min-width:136px;text-align:center;font-size:15px}
+.monthnav button{border:0;background:none;border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:18px;color:var(--muted)}
+.monthnav button:hover{background:var(--hover);color:var(--text)}
+.monthnav .now{width:auto;padding:0 10px;font-size:12px;font-weight:700;border:1px solid var(--border)}
+
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;min-width:0}
+.kpi span{display:block;font-size:10.5px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.kpi b{display:block;font-size:22px;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi small{display:block;font-size:12px;color:var(--muted)}
+.kpi.hero-k{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface))}
+.kpi .edit{border:0;background:none;color:var(--accent2);font-size:11.5px;font-weight:700;cursor:pointer;padding:0}
+.kpi input{width:100%;font-size:20px;font-weight:800;background:var(--surface2);border:1px solid var(--accent2);border-radius:8px;padding:2px 8px}
+
+.insights{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}
+.insights::-webkit-scrollbar{display:none}
+.ins{flex:0 0 auto;max-width:420px;display:flex;gap:9px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:12px;padding:9px 12px;font-size:13px}
+.ins.bad{border-left-color:var(--red)}.ins.good{border-left-color:var(--green)}.ins.warnb{border-left-color:var(--amber)}
+.ins i{font-style:normal;font-size:16px}
+
+.grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;min-width:0}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.panel h2{margin:0;font-size:16px;letter-spacing:-.2px}
+.ph .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--border);background:var(--surface2);border-radius:9px;padding:6px 11px;font-weight:700;font-size:12.5px;cursor:pointer;color:var(--text)}
+.btn:hover{border-color:var(--accent2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ok{background:color-mix(in srgb,var(--green) 18%,transparent);border-color:color-mix(in srgb,var(--green) 50%,transparent);color:var(--green)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.del{color:var(--red)}
+
+/* budget rows */
+.brow{display:grid;grid-template-columns:minmax(0,1.4fr) 108px minmax(0,1.6fr);gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--border)}
+.brow:last-child{border-bottom:0}
+.bname{display:flex;gap:8px;align-items:center;min-width:0;cursor:pointer}
+.bname .ic{flex:0 0 30px;height:30px;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;position:relative}
+.bname .ic::after{content:"";position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:var(--sw,transparent);box-shadow:0 0 0 2px var(--surface)}
+.bname b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bname small{display:block;font-size:11.5px;color:var(--dim)}
+.plan{display:flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 7px}
+.plan span{color:var(--dim);font-size:12px}
+.plan input{width:100%;min-width:0;border:0;background:none;padding:6px 0;font-weight:700;font-size:13px;text-align:right;outline:none}
+.plan:focus-within{border-color:var(--accent2)}
+.bbar{min-width:0}
+.btop{display:flex;justify-content:space-between;gap:6px;font-size:12px;margin-bottom:4px}
+.btop b{font-size:13px}
+.track{position:relative;height:8px;border-radius:4px;background:var(--track)}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--actual)}
+.fill.over{background:var(--red)}
+.fill.near{background:var(--amber)}
+.pace{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.55;border-radius:1px}
+.ecat{border:0;background:none;color:var(--accent2);font-size:11.5px;font-weight:600;cursor:pointer;padding:0}
+.bfoot{font-size:11.5px;margin-top:3px;color:var(--muted)}
+.btotal{display:flex;justify-content:space-between;font-weight:800;padding:10px 2px 2px;border-top:2px solid var(--border);margin-top:4px}
+
+/* add form */
+.amt{display:flex;align-items:center;gap:6px;border:2px solid var(--accent2);border-radius:12px;background:var(--surface2);padding:4px 12px;margin-bottom:10px}
+.amt b{font-size:24px;color:var(--accent2)}
+.amt input{flex:1;min-width:0;border:0;background:none;font-size:26px;font-weight:800;outline:none;padding:4px 0}
+.cchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:thin}
+.cchip{flex:0 0 auto;border:1px solid var(--border);background:var(--surface2);border-radius:999px;padding:5px 10px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.cchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.fld{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fld>span{font-size:10.5px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.fld input,.fld select,.fld textarea{width:100%;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);font-size:13.5px}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--accent2)}
+.check{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;cursor:pointer;margin:2px 0 10px}
+.formacts{display:flex;gap:8px;justify-content:flex-end}
+
+/* donut + trend */
+.donutwrap{display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px;align-items:center}
+.legend{display:flex;flex-direction:column;gap:5px;font-size:12.5px;min-width:0}
+.legend div{display:grid;grid-template-columns:12px minmax(0,1fr) auto auto;gap:7px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:3px}
+.legend span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend b{font-weight:700}
+.legend em{font-style:normal;color:var(--dim);min-width:34px;text-align:right}
+.chartlegend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.chartlegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+svg text{fill:var(--dim);font:11px Inter,system-ui,sans-serif}
+.tip{position:fixed;z-index:50;pointer-events:none;background:#111827;color:#fff;border:1px solid #374151;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);max-width:240px}
+.tip b{font-size:12.5px}
+
+/* bills, goals, majors */
+.item{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item .ic{flex:0 0 34px;height:34px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:17px}
+.item .tx{flex:1;min-width:0}
+.item .tx b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .tx small{display:block;font-size:12px;color:var(--muted)}
+.item .rt{text-align:right;flex:0 0 auto;display:flex;gap:8px;align-items:center}
+.item .rt b{font-size:13.5px}
+.pill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700}
+.pill.paid{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+.pill.due{background:color-mix(in srgb,var(--amber) 16%,transparent);color:var(--amber)}
+.pill.late{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
+.pill.major{background:color-mix(in srgb,var(--accent2) 18%,transparent);color:var(--accent2)}
+.subhead{font-size:11px;font-weight:800;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;margin:14px 2px 4px}
+.goal{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--surface2)}
+.goal .gt{display:flex;gap:10px;align-items:center}
+.goal .gt .ic{flex:0 0 38px;height:38px;border-radius:11px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:19px}
+.goal .gt div{flex:1;min-width:0}
+.goal .gt b{display:block;font-size:14px}
+.goal .gt small{color:var(--muted);font-size:12px}
+.goal .gamt{text-align:right}
+.goal .gamt b{font-size:15px}
+.goal .track{margin:10px 0 6px;height:10px;border-radius:5px}
+.goal .fill{background:var(--green);border-radius:5px}
+.goal .gfoot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+.goal .gfoot .acts{display:flex;gap:6px}
+.empty{color:var(--muted);text-align:center;padding:18px 8px;font-size:13px}
+
+/* transactions */
+.txday{font-size:11px;font-weight:800;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;margin:12px 2px 2px}
+.tx{cursor:pointer}
+.item.tx:hover{background:var(--hover);border-radius:10px}
+.txfilters{display:flex;gap:6px;flex-wrap:wrap}
+.txfilters input,.txfilters select{padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);font-size:12.5px;min-width:0}
+
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.sheet .scrim{position:absolute;inset:0;background:rgba(3,6,18,.62)}
+.sheet .sbox{position:relative;width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.sheet h3{margin:0 0 12px;font-size:17px}
+.emojis{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.emojis button{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-size:17px}
+.emojis button.on{border-color:var(--accent2);background:color-mix(in srgb,var(--accent) 25%,var(--surface2))}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#111827;color:#fff;border:1px solid #374151;border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:300;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.err{border-color:var(--red)}
+.fab{display:none}
+
+/* gate */
+.gate{max-width:640px;margin:30px auto;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:30px 22px}
+.gate h2{margin:6px 0 6px;font-size:22px}
+.gate ul{text-align:left;max-width:420px;margin:14px auto;color:var(--muted);padding-left:20px}
+.gate li{margin-bottom:5px}
+.loading{padding:60px 0;text-align:center;color:var(--muted)}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.donutwrap{grid-template-columns:150px minmax(0,1fr)}}
+@media (max-width:620px){
+ .kpis{grid-template-columns:1fr 1fr}
+ .grid2.top{display:flex;flex-direction:column}
+ .grid2.top .col{order:-1}
+ .kpis .kpi:first-child{grid-column:1/-1}
+ .brow{grid-template-columns:minmax(0,1fr) 96px;row-gap:6px}
+ .bbar{grid-column:1/-1}
+ .hero{align-items:stretch}.monthnav{width:100%;justify-content:space-between}
+ .donutwrap{grid-template-columns:minmax(0,1fr)}
+ .donutwrap svg{max-width:200px;margin:0 auto;display:block}
+ .fab{display:flex;position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:120;border:0;border-radius:999px;background:var(--accent);color:#fff;font-weight:800;padding:12px 18px;box-shadow:0 10px 26px rgba(79,70,229,.5);cursor:pointer}
+}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/money.js?v=2" defer></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <section class="hero">
+  <div><h1>💰 Money</h1><p>Plan your month, track every rupee against the plan, and get ready for the big expenses. Private to your account.</p></div>
+  <div class="monthnav" id="monthNav" hidden><button type="button" id="prevM" aria-label="Previous month">‹</button><b id="monthLbl">—</b><button type="button" id="nextM" aria-label="Next month">›</button><button type="button" class="now" id="thisM">This month</button></div>
+ </section>
+
+ <div id="loading" class="loading">Loading your money…</div>
+
+ <section class="gate" id="gate" hidden>
+  <div style="font-size:42px">💰</div>
+  <h2>Your private money manager</h2>
+  <p class="muted">Log in to plan and track your money. Everything you add is visible only to you.</p>
+  <ul>
+   <li>Set a monthly plan for each category and see planned vs actual, with a pace marker for the month</li>
+   <li>Add expenses in seconds, flag the major ones</li>
+   <li>Track bills, EMIs and subscriptions so nothing is missed</li>
+   <li>Save up for big purchases with a monthly set-aside target</li>
+  </ul>
+  <a class="btn pri" href="/?login=1" target="_self" style="display:inline-block;padding:10px 22px;text-decoration:none">Log in to start</a>
+ </section>
+
+ <div id="app" hidden>
+  <section class="kpis" id="kpis"></section>
+  <section class="insights" id="insights" aria-label="Insights"></section>
+
+  <div class="grid2 top">
+   <section class="panel" id="budgetPanel">
+    <div class="ph"><h2>Planned vs actual</h2><div class="acts"><button type="button" class="btn" id="copyPlan">⧉ Copy last month's plan</button><button type="button" class="btn" id="addCat">+ Category</button></div></div>
+    <div id="budgetList"></div>
+   </section>
+   <div class="col">
+    <section class="panel" id="addPanel">
+     <h2 style="margin-bottom:10px">Add an expense</h2>
+     <form id="addForm" autocomplete="off">
+      <div class="amt"><b>₹</b><input id="fAmt" type="text" inputmode="decimal" placeholder="0" aria-label="Amount"></div>
+      <div class="cchips" id="fCats" role="radiogroup" aria-label="Category"></div>
+      <div class="frow">
+       <label class="fld"><span>Date</span><input id="fDate" type="date"></label>
+       <label class="fld"><span>Paid by</span><select id="fMethod"><option>UPI</option><option>Card</option><option>Cash</option><option>Net banking</option><option>Auto-debit</option><option>Other</option></select></label>
+      </div>
+      <label class="fld" style="margin-bottom:8px"><span>Note</span><input id="fNote" type="text" maxlength="200" placeholder="e.g. Diwali shopping, petrol, dinner"></label>
+      <label class="check"><input id="fMajor" type="checkbox"> ⭐ Major expense <span class="muted" style="font-weight:500">(big one-off, tracked separately)</span></label>
+      <input type="hidden" id="fGoal"><input type="hidden" id="fBill">
+      <div class="formacts"><button type="button" class="btn" id="fReset" hidden>Cancel</button><button type="submit" class="btn pri" id="fSave">Add expense</button></div>
+     </form>
+    </section>
+    <section class="panel">
+     <div class="ph"><h2>Where it went</h2><span class="muted" id="donutSub" style="font-size:12px"></span></div>
+     <div id="donut"></div>
+    </section>
+   </div>
+  </div>
+
+  <div class="grid2">
+   <section class="panel">
+    <div class="ph"><h2>Bills &amp; EMIs</h2><div class="acts"><span class="muted" id="billSum" style="font-size:12px"></span><button type="button" class="btn" id="addBill">+ Bill</button></div></div>
+    <div id="bills"></div>
+   </section>
+   <section class="panel">
+    <div class="ph"><h2>Major expenses &amp; goals</h2><button type="button" class="btn" id="addGoal">+ Goal</button></div>
+    <div id="goals"></div>
+    <div id="majors"></div>
+   </section>
+  </div>
+
+  <section class="panel" style="margin-bottom:12px">
+   <div class="ph"><h2>Last 6 months</h2><span class="muted" style="font-size:12px">Tap a month to open it</span></div>
+   <div id="trend"></div>
+  </section>
+
+  <section class="panel">
+   <div class="ph"><h2>Transactions</h2><div class="txfilters"><input id="txQ" type="search" placeholder="Search note or amount" aria-label="Search transactions"><select id="txCat" aria-label="Filter by category"></select><button type="button" class="btn" id="csv">⬇ CSV</button></div></div>
+   <div id="txList"></div>
+  </section>
+ </div>
+</main>
+<button type="button" class="fab" id="fab" hidden>＋ Add expense</button>
+<div class="sheet" id="sheet" hidden><div class="scrim" data-close></div><div class="sbox" role="dialog" aria-modal="true" id="sbox"></div></div>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" role="status"></div>
+</body>
+</html>

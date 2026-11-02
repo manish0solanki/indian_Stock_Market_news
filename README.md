@@ -53,6 +53,16 @@
 - **Mutual funds**, entered by hand or imported from a **CAS statement** (CAMS / KFintech PDF, parsed in the browser by `cas-parser.js`). Live NAVs come from the `mf-data` function.
 - Day change and P&L per holding, a stocks vs funds split, allocation, and insights (asset mix, best and worst, concentration).
 
+### 💰 Money (`money.html`, `money.js`): personal finance manager, private to each login
+- **Month view:** income, plus a planned vs actual budget per category. Each bar has a pace marker showing where spending would be at an even rate through the month, with on-track, ahead-of-pace, over and unplanned flags. Copy last month's plan in one tap.
+- **Key numbers:** planned spend, spent so far, left to spend (with a "safe per day" figure), and amount saved with savings rate. Investment categories are tracked separately from spending.
+- **Insights:** overspent categories, a month-end projection at the current pace, spending with no plan, bills due soon or overdue, and goal set-asides.
+- **Quick add:** amount, category chips, date, payment method, note, and a ⭐ Major expense flag. Major expenses get their own yearly list.
+- **Bills & EMIs:** due day, paid, due-soon or overdue status, and Mark paid (records the expense, undoable).
+- **Major expenses & goals:** target, date, saved so far, the monthly set-aside needed, and "Mark bought" (records it as a major expense).
+- **Charts and records:** a donut of where the money went, a 6-month planned vs spent chart (tap a month to open it, with a table view), and a searchable transaction list you can edit, filter by category and export to CSV.
+- **Data:** `supabase/money.sql` (`pf_categories`, `pf_months`, `pf_budgets`, `pf_transactions`, `pf_bills`, `pf_goals`). Every table has row level security on `user_id = auth.uid()`, so each user sees only their own data. Signed-out visitors see a login invitation.
+
 ### 📈 Stock Signals (`stock-signals.html`)
 - **Swing and intraday technical setups** (20-day breakout, trend pullback, bear trend pullback) across ~220 NSE stocks, refreshed every 5 minutes.
 - Each signal shows entry, stop, targets (1.5R / 2R), RSI, volume and the reasons it fired.
@@ -259,6 +269,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── stock-signals.html/.js/.css   Stock signals and paper trading
 ├── stock-analysis.html      Technical / fundamental analysis
 ├── screener.html/.js         Stock screener
+├── money.html/.js            Money: budget, expenses, bills, goals (per user)
 ├── picks.html/.js            Festive picks (Diwali, New Year, Holi...) with track record
 ├── notify.js                Notifications bell in the header (all pages)
 ├── picks-export.js          Festive picks downloads: poster/story PNG and PDF report

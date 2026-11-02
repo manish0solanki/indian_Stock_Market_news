@@ -30,6 +30,7 @@
     ['Signals', '/stock-signals.html', function (p) { return p.indexOf('/stock-signals') === 0; }],
     ['F&O', '/fno.html', function (p) { return p.indexOf('/fno') === 0; }],
     ['Portfolio', '/portfolio.html', function (p) { return p.indexOf('/portfolio') === 0; }],
+    ['Money', '/money.html', function (p) { return p.indexOf('/money') === 0; }],
     ['IPO', '/ipo.html', function (p) { return p.indexOf('/ipo') === 0; }],
     ['Events', '/events.html', function (p) { return p.indexOf('/events') === 0; }],
     ['Crypto', '/crypto-signals.html', function (p) { return p.indexOf('/crypto-signals') === 0; }],
@@ -66,7 +67,7 @@
     var acct = user
       ? '<div class="mph-rel"><button class="mph-acct" id="mphAcct" type="button" aria-haspopup="true" aria-expanded="false"><b>' + esc(((user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || user.email || 'U').charAt(0).toUpperCase()) + '</b><span>Account</span></button>' +
         '<div class="mph-pop" id="mphAcctMenu" hidden><div class="mph-email">' + esc(who) + '</div>' +
-        '<a href="/my-ticker.html" target="_self">✎ My Ticker</a><a href="/portfolio.html" target="_self">📊 My Portfolio</a><a href="/stock-signals.html" target="_self">📈 Stock Signals</a><a href="/" target="_self">🏠 Dashboard</a>' +
+        '<a href="/my-ticker.html" target="_self">✎ My Ticker</a><a href="/portfolio.html" target="_self">📊 My Portfolio</a><a href="/money.html" target="_self">💰 My Money</a><a href="/stock-signals.html" target="_self">📈 Stock Signals</a><a href="/" target="_self">🏠 Dashboard</a>' +
         '<button type="button" id="mphLogout">↩ Log out</button></div></div>'
       : '<a class="mph-login" href="/?login=1" target="_self">Login</a>';
     // Plain <div>s with roles: some pages style the header/nav tags globally.

@@ -110,3 +110,15 @@
   .mph-brand { font-size: 17px; gap: 8px; }
   .mph-bell .mpn-btn { width: 34px; height: 34px; }
 }
+
+/* Mid-width desktops (nav visible but tight): the search box becomes a button that drops the box down,
+   so every nav item fits without hidden sideways scrolling. */
+@media (min-width: 1341px) and (max-width: 1720px) {
+  .mph-search { display: none; position: absolute; right: 16px; top: calc(100% + 6px); width: 340px; flex: none; z-index: 5; }
+  .mph.mph-search-open .mph-search { display: block; }
+  .mph-search input { height: 42px; background: var(--mph-bg); box-shadow: 0 12px 30px rgba(0, 0, 0, .35); }
+  .mph-search-btn { display: inline-flex; }
+  .mph.mph-search-open .mph-search-btn { background: var(--mph-accent); border-color: var(--mph-accent); color: #fff !important; }
+  .mph-acct span { display: none; }
+  .mph-acct { padding: 0 6px; }
+}
