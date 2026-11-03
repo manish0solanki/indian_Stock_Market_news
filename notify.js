@@ -5,8 +5,8 @@
    the feed is re-checked every 3 minutes, and anything new pops up as a small toast. */
 (function () {
   if (window.MPNotify) return;
-  const URL_ = 'https://fzazdrzlemmkqngvpzxj.supabase.co/rest/v1/rpc/site_notifications_feed';
-  const KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  const URL_ = window.MP_CONFIG.supabaseUrl + '/rest/v1/rpc/site_notifications_feed';
+  const KEY = window.MP_CONFIG.supabaseKey;
   const SEEN = 'mpNotifSeen', CACHE = 'mpNotifCache';
   const KINDS = [['all', 'All'], ['picks', 'Picks'], ['signal', 'Signals'], ['ipo', 'IPOs'], ['update', 'Updates']];
   const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };

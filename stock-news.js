@@ -5,7 +5,7 @@
      2. Latest headlines from Google News, last 14 days       } stock-news Edge Function,
      3. The company's NSE filings (results, dividends, orders) } cached 15 min */
 (function () {
-  const FN = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-news';
+  const FN = window.MP_CONFIG.fn('stock-news');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const safeUrl = (u) => { try { const x = new URL(String(u)); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch (_) { return ''; } };
   const ago = (iso) => {

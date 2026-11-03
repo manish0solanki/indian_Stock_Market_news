@@ -3,7 +3,7 @@
    (supabase/data-health.sql); live checks call each backend function from this browser and read the
    published blog posts. window.mpAdminHealth.mount(host, supabaseClient, { onCount }) */
 (function () {
-  const SB_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co', KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  const SB_URL = window.MP_CONFIG.supabaseUrl, KEY = window.MP_CONFIG.supabaseKey;
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let root = null, sb = null, onCount = null, timer = null;
   const css = document.createElement('style');

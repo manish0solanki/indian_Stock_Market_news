@@ -8,7 +8,7 @@
   'use strict';
   if (typeof supabaseClient === 'undefined') return;
 
-  const SPARK_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/index-sparklines';
+  const SPARK_URL = window.MP_CONFIG.fn('index-sparklines');
   const CARD_INDICES = ['^NSEI', '^NSEBANK', '^BSESN', 'BSE-BANK.BO', '^NSEMDCP50', 'NIFTY_FIN_SERVICE.NS'];
   const NIFTY50 = ['ADANIENT','ADANIPORTS','APOLLOHOSP','ASIANPAINT','AXISBANK','BAJAJ-AUTO','BAJFINANCE','BAJAJFINSV','BEL','BHARTIARTL',
     'CIPLA','COALINDIA','DRREDDY','EICHERMOT','ETERNAL','GRASIM','HCLTECH','HDFCBANK','HDFCLIFE','HINDALCO','HINDUNILVR','ICICIBANK',

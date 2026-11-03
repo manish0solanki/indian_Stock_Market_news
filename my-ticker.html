@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/site-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a0f1e">
@@ -153,8 +154,8 @@ button{font:inherit}
 <script src="/portfolio-core.js?v=2"></script>
 <script src="/my-ticker.js?v=2"></script>
 <script>
-const sb=window.supabase.createClient('https://fzazdrzlemmkqngvpzxj.supabase.co','sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq');
-const SEARCH_URL='https://marketpulse-cache.manish0solanki20078.workers.dev/stock-search';
+const sb=window.supabase.createClient(MP_CONFIG.supabaseUrl,MP_CONFIG.supabaseKey);
+const SEARCH_URL=MP_CONFIG.apiBase+'/stock-search';
 const T=window.mpMyTicker,esc=T.esc,$=id=>document.getElementById(id);
 const QUICK=['RELIANCE','HDFCBANK','ICICIBANK','INFY','TCS','SBIN','BHARTIARTL','ITC','LT','KOTAKBANK','AXISBANK','TATAMOTORS','MARUTI','SUNPHARMA','ADANIENT'];
 let user=null,prefs={symbols:[],show_portfolio:true,hidden:[]},data={held:[],quotes:{},items:[]},busy=false,names={};

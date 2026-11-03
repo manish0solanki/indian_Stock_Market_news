@@ -5,8 +5,8 @@
    (the quotes themselves are refreshed every 30 s by index-refresh?fast=1), and drives the
    "Updated … · next in …" pill (refresh-stamp.js) while the page is showing. */
 (function () {
-  const SB = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-  const KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  const SB = window.MP_CONFIG.supabaseUrl;
+  const KEY = window.MP_CONFIG.supabaseKey;
   const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

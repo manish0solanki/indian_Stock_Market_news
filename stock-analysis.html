@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head>
+<script src="/site-config.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stock Analysis | MarketPulse</title>
 <meta name="description" content="Free technical and fundamental analysis for NSE stocks: interactive chart, RSI, MACD, Bollinger Bands, ADX, support and resistance, pivots, fundamentals and related news.">
 <meta name="theme-color" content="#080e1a">
@@ -473,9 +474,9 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 <script>
 (() => {
 'use strict';
-const API_BASE = (() => { try { return localStorage.getItem('mp_api_base') || ''; } catch { return ''; } })() || 'https://marketpulse-cache.manish0solanki20078.workers.dev';
-const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+const API_BASE = (() => { try { return localStorage.getItem('mp_api_base') || ''; } catch { return ''; } })() || MP_CONFIG.apiBase;
+const SUPABASE_URL = MP_CONFIG.supabaseUrl;
+const SUPABASE_ANON_KEY = MP_CONFIG.supabaseKey;
 // stock-signal-data returns the same quote + fundamentals as stock-data but with
 // ~180 days of daily candles; stock-data only returns the last 14 days.
 const HISTORY_DATA_URL = SUPABASE_URL + '/functions/v1/stock-signal-data';

@@ -2,8 +2,8 @@
    from festive_picks_page() (supabase/festive-picks.sql), with live prices and the track record since the pick.
    ?o=<slug> selects an occasion. Picks are made by the festive-picks Edge Function. */
 (function () {
-  const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-  const KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  const SUPABASE_URL = window.MP_CONFIG.supabaseUrl;
+  const KEY = window.MP_CONFIG.supabaseKey;
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const num = (v) => (v === null || v === undefined || v === '' || !isFinite(+v) ? null : +v);

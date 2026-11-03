@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/site-config.js"></script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#2E1F82"><title>MarketPulse — Sectors</title>
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -30,7 +31,7 @@ main{max-width:1400px;margin:auto;padding:28px 24px 50px}.kicker{font-size:10px;
 <section class="panel span"><div class="head"><span id="stockTitle">Sector Constituents</span><span id="stockBadge" class="badge">SELECT A SECTOR</span></div><div class="stock-tools"><input id="search" class="search" placeholder="Search symbol or company…"><div class="filters"><button class="filter active" data-f="all">All</button><button class="filter" data-f="positive">Bull</button><button class="filter" data-f="negative">Bear</button><button class="filter" data-f="neutral">Flat</button></div></div><div class="wrap"><table class="table"><thead><tr><th>Symbol</th><th>Company</th><th>Price</th><th>Chg%</th><th>P/E</th><th>Market Cap</th><th>Promoters</th></tr></thead><tbody id="stocks"><tr><td colspan="7" class="empty">Choose a sector to inspect its constituents.</td></tr></tbody></table></div><div id="stockSummary" class="summary"></div></section>
 </div></main>
 <script>
-const API_BASE="https://marketpulse-cache.manish0solanki20078.workers.dev";
+const API_BASE=MP_CONFIG.apiBase;
 const sectorIndices=API_BASE+"/sector-indices",sectorList=API_BASE+"/sector-list",sectorStocks=API_BASE+"/sector-stocks",heatmap=API_BASE+"/heatmap-data";
 let indices=[],names=[],stocks=[],selected="",filter="all",query="";
 const $=id=>document.getElementById(id);

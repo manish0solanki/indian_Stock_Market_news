@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/site-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#2E1F82">
@@ -106,8 +107,8 @@
 
 <script src="/admin-health.js?v=2"></script>
 <script>
-const SUPABASE_URL="https://fzazdrzlemmkqngvpzxj.supabase.co";
-const SUPABASE_KEY="sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
+const SUPABASE_URL=MP_CONFIG.supabaseUrl;
+const SUPABASE_KEY=MP_CONFIG.supabaseKey;
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let user=null,current=null,all=[];
 

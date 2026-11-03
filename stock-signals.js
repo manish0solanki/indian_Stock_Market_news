@@ -5,8 +5,8 @@
 (function () {
 'use strict';
 
-const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+const SUPABASE_URL = window.MP_CONFIG.supabaseUrl;
+const SUPABASE_KEY = window.MP_CONFIG.supabaseKey;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $ = (id) => document.getElementById(id);

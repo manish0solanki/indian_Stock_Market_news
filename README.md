@@ -385,6 +385,10 @@ MOONSHOT_API_KEY=… node scripts/blog/generate.mjs --posts=wrap,sector,spotligh
 
 ## 🔐 Configuration and secrets
 
+**Backend addresses live in one file: `site-config.js`.** It holds the Supabase project URL, the publishable key, the legacy anon key (Crypto page only) and the Cloudflare Worker address, and derives the auth storage key and Edge Function URLs from them. Every page loads it first in `<head>`, every script reads `window.MP_CONFIG`, and the blog generator imports it (`SUPABASE_URL` / `SUPABASE_ANON_KEY` env vars still override). To move the site to another Supabase project or Worker, edit that file and redeploy; nothing else in the front end changes. `config.json` is now empty (it used to repeat the Worker address and carried an unused NewsAPI key).
+
+The backend itself still names the project in a few places that a new project recreates anyway: scheduled jobs in `supabase/events-schema.sql`, `global-market.sql`, `festive-picks.sql` and `blog-dispatch.sql`, plus jobs created directly in the database.
+
 | Secret | Where | Used by |
 |---|---|---|
 | `MOONSHOT_API_KEY` | GitHub Actions secret | Blog AI text and the AI check |

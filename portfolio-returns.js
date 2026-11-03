@@ -11,7 +11,7 @@
      Other funds bought from 1 Apr 2023 are taxed at your slab rate; earlier ones are long term after 24 months.
      Estimates only: no grandfathering (pre-2018), STT, surcharge or cess, and not tax advice. */
 (function () {
-  const HISTORY_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/index-history?index=NIFTY50';
+  const HISTORY_URL = window.MP_CONFIG.fn('index-history') + '?index=NIFTY50';
   const DAY = 864e5;
   const n = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

@@ -5,7 +5,7 @@
    window.mpPortfolio.heldSymbols(sb, user) -> symbols of the stocks currently held.
    The last summary is kept in localStorage per user so the card can show it instantly. */
 (function () {
-  const MF_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/mf-data';
+  const MF_URL = window.MP_CONFIG.fn('mf-data');
   const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
   const clean = (s) => String(s || '').trim().toUpperCase();
   const byDate = (a, b) => String(a.trade_date).localeCompare(String(b.trade_date)) || String(a.created_at).localeCompare(String(b.created_at));

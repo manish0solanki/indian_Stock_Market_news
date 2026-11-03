@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/site-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2E1F82">
@@ -4462,9 +4463,9 @@ input,select,textarea{min-width:0;}
 //  SUPABASE AUTH
 // ═══════════════════════════════════════════════════════════════
 
-const SUPABASE_URL = "https://fzazdrzlemmkqngvpzxj.supabase.co";
+const SUPABASE_URL = MP_CONFIG.supabaseUrl;
 
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
+const SUPABASE_PUBLISHABLE_KEY = MP_CONFIG.supabaseKey;
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
@@ -5855,7 +5856,7 @@ logoutButton.addEventListener('click', async () => {
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════════════
-const DEFAULT_API_BASE = "https://marketpulse-cache.manish0solanki20078.workers.dev";
+const DEFAULT_API_BASE = MP_CONFIG.apiBase;
 
 let API_BASE = DEFAULT_API_BASE;
 let NEWSAPI_KEY = "";
@@ -5888,7 +5889,7 @@ const STOCK_DETAIL_URL = () => API_BASE + "/stock-detail";
 
 /* ─── On-Demand Stock Detail ─── */
 const STOCK_DATA_FUNCTION_URL =
-  'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-data';
+  MP_CONFIG.fn('stock-data');
 
 // days: how much daily history to include (the function returns 14 days unless asked; the search card asks for a year).
 async function fetchStockDetailFromSupabase(symbol, days) {
@@ -5974,9 +5975,7 @@ window.fetch = async function(...args) {
       : (args[0]?.url || '');
 
   const isWorker =
-    reqUrl.includes(
-      'marketpulse-cache.manish0solanki20078.workers.dev'
-    );
+    reqUrl.includes(MP_CONFIG.apiHost);
 
 
   // Prevent browser from caching Worker responses

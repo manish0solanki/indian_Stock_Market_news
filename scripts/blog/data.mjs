@@ -1,7 +1,10 @@
 // Reads market data from Supabase's public REST API (same public key the website uses;
 // every table/RPC read here is already publicly readable by the site).
-export const SUPABASE_URL = process.env.SUPABASE_URL || "https://fzazdrzlemmkqngvpzxj.supabase.co";
-const KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq";
+// Addresses come from the site's single settings file (site-config.js); env vars can override them.
+import "../../site-config.js";
+const CFG = globalThis.MP_CONFIG;
+export const SUPABASE_URL = process.env.SUPABASE_URL || CFG.supabaseUrl;
+const KEY = process.env.SUPABASE_ANON_KEY || CFG.supabaseKey;
 
 export const NIFTY50 = ["ADANIENT", "ADANIPORTS", "APOLLOHOSP", "ASIANPAINT", "AXISBANK", "BAJAJ-AUTO", "BAJFINANCE", "BAJAJFINSV", "BEL", "BHARTIARTL",
   "CIPLA", "COALINDIA", "DRREDDY", "EICHERMOT", "ETERNAL", "GRASIM", "HCLTECH", "HDFCBANK", "HDFCLIFE", "HINDALCO", "HINDUNILVR", "ICICIBANK",

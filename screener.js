@@ -1,8 +1,8 @@
 /* Stock screener: every NSE stock with a recent quote from stock_screener() (Supabase), filtered and
    sorted in the browser. Filters live in the URL (shareable) and are remembered on this device. */
 (function () {
-  const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-  const KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  const SUPABASE_URL = window.MP_CONFIG.supabaseUrl;
+  const KEY = window.MP_CONFIG.supabaseKey;
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (v, d = 2) => v === null || v === undefined ? '—' : Number(v).toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/site-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>CryptoSignal Tracker — TEST MODE</title>
@@ -1216,8 +1217,8 @@ body > header{position:relative!important;top:auto!important}
    Use the SAME Supabase project as MarketPulse.
    Use the browser-safe anon/publishable key, NOT the service-role key.
 */
-const SUPABASE_URL = "https://fzazdrzlemmkqngvpzxj.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6YXpkcnpsZW1ta3FuZ3ZwenhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMzc2MzEsImV4cCI6MjEwNDgxMzYzMX0.LNeR5_h0n2Y-hA2GD9e_tle3Euz1esB0Vr3_-ZtEYAk";
+const SUPABASE_URL = MP_CONFIG.supabaseUrl;
+const SUPABASE_ANON_KEY = MP_CONFIG.supabaseLegacyAnonKey;
 
 let supabaseClient = null;
 let currentUser = null;

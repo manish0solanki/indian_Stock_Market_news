@@ -3,8 +3,8 @@
    Month view: income, planned vs actual per category (with a pace marker), quick add, bills & EMIs, major expenses
    and goals, a donut of where the money went, a 6-month trend and the transaction list. */
 (function () {
-  const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-  const KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  const SUPABASE_URL = window.MP_CONFIG.supabaseUrl;
+  const KEY = window.MP_CONFIG.supabaseKey;
   const sb = window.supabase.createClient(SUPABASE_URL, KEY);
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

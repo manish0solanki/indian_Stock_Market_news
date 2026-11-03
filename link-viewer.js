@@ -6,7 +6,7 @@
    The check is done by the frame-check edge function and remembered per site for the session. */
 (function () {
   if (window.mpLinkViewer) return;
-  const CHECK_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/frame-check?url=';
+  const CHECK_URL = window.MP_CONFIG.fn('frame-check') + '?url=';
   const verdicts = new Map();
   try { Object.entries(JSON.parse(sessionStorage.getItem('mp-frame-ok') || '{}')).forEach(([k, v]) => verdicts.set(k, v)); } catch (_) {}
   const remember = (host, ok) => { verdicts.set(host, ok); try { sessionStorage.setItem('mp-frame-ok', JSON.stringify(Object.fromEntries(verdicts))); } catch (_) {} };

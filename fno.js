@@ -1,8 +1,8 @@
 /* F&O page: option chain, open interest, PCR, max pain and expected move for NSE indices and F&O stocks.
    Data: the option-chain Edge Function (NSE, cached a minute). Symbol and expiry live in the URL. */
 (function () {
-  const SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-  const KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  const SUPABASE_URL = window.MP_CONFIG.supabaseUrl;
+  const KEY = window.MP_CONFIG.supabaseKey;
   const INDICES = [['NIFTY', 'Nifty 50'], ['BANKNIFTY', 'Bank Nifty'], ['FINNIFTY', 'Fin Nifty'], ['MIDCPNIFTY', 'Midcap Nifty'], ['NIFTYNXT50', 'Nifty Next 50']];
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

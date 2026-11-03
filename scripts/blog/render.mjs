@@ -53,6 +53,7 @@ export function renderPost(post, narrative, publishedIso, aiSource) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/site-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(post.title)} — MarketPulse</title>

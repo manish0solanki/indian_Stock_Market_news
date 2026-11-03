@@ -6,10 +6,10 @@
 (function () {
   'use strict';
   var THEME_KEY = 'marketpulse-theme';
-  var AUTH_KEY = 'sb-fzazdrzlemmkqngvpzxj-auth-token'; // where supabase-js keeps the session
-  var SEARCH_API = 'https://marketpulse-cache.manish0solanki20078.workers.dev/stock-search';
-  var SUPABASE_URL = 'https://fzazdrzlemmkqngvpzxj.supabase.co';
-  var SUPABASE_KEY = 'sb_publishable_PXXly0ZAeBTmXXG7KbPYoA_RB8HqVZq';
+  var AUTH_KEY = window.MP_CONFIG.authStorageKey; // where supabase-js keeps the session
+  var SEARCH_API = window.MP_CONFIG.apiBase + '/stock-search';
+  var SUPABASE_URL = window.MP_CONFIG.supabaseUrl;
+  var SUPABASE_KEY = window.MP_CONFIG.supabaseKey;
 
   function storedTheme() { try { return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; } }
   function applyTheme(t) {
