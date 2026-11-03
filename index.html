@@ -5914,6 +5914,14 @@ async function fetchStockDetailFromSupabase(symbol, days) {
     throw new Error(data?.error || 'Stock data unavailable');
   }
 
+  // Promoter holding comes from the stocks table (NSE shareholding); the price feed doesn't carry it.
+  if (data.promoters_latest == null && typeof supabaseClient !== 'undefined' && supabaseClient) {
+    try {
+      const { data: st } = await supabaseClient.from('stocks').select('promoters_latest,promoters_previous,promoters_change').eq('symbol', cleanSymbol).maybeSingle();
+      if (st) Object.assign(data, st);
+    } catch (_) {}
+  }
+
   return {
     ...data,
     name: data.company_name,
@@ -6203,6 +6211,13 @@ function fmtPromoter(v, isChange = false) {
   if (isNaN(n)) return v;
   const pct = isChange ? n : n * 100;
   return pct.toFixed(2) + '%';
+}
+// Quarter-on-quarter move in promoter holding, in percentage points (holdings are stored as fractions).
+function fmtPromoterPts(latest, prev) {
+  if (latest === null || latest === undefined || latest === '' || prev === null || prev === undefined || prev === '') return '—';
+  const d = Math.round((Number(latest) - Number(prev)) * 10000) / 100;
+  if (!Number.isFinite(d)) return '—';
+  return (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(2) + ' pts';
 }
 function fmtPct(n) {
   if (n === undefined || n === null || n === '') return '—';
@@ -7783,7 +7798,7 @@ function renderStockDetail(stock) {
     { label: 'Div Yield', value: Number.isFinite(divYieldPct) ? divYieldPct.toFixed(2) + '%' : '—' },
     { label: 'Promoters (Latest)', value: fmtPromoter(stock.promoters_latest ?? stock.last_quarter_promoters), cls: 'promoters' },
     { label: 'Promoters (Prev)', value: fmtPromoter(stock.promoters_previous ?? stock.previous_quarter_promoters), cls: 'promoters' },
-    { label: 'Promoters Chg', value: fmtPromoter(stock.promoters_change, true), cls: 'promoters' }
+    { label: 'Promoters Chg', value: fmtPromoterPts(stock.promoters_latest ?? stock.last_quarter_promoters, stock.promoters_previous ?? stock.previous_quarter_promoters), cls: 'promoters' }
   ];
 
   sdMetrics.innerHTML = metrics.map(m =>
