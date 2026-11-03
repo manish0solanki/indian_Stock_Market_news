@@ -25,6 +25,7 @@
     sydney: ['Sydney', 'Australia/Sydney', '10:00', '16:00'], india: ['India (NSE)', 'Asia/Kolkata', '09:15', '15:30'],
     london: ['London', 'Europe/London', '08:00', '16:30'], frankfurt: ['Frankfurt', 'Europe/Berlin', '09:00', '17:30'],
     paris: ['Paris', 'Europe/Paris', '09:00', '17:30'], newyork: ['New York', 'America/New_York', '09:30', '16:00'],
+    mcx: ['MCX', 'Asia/Kolkata', '09:00', '23:30'],
   };
   // Market clock tiles, in the order they open (IST).
   const CLOCK = ['sydney', 'tokyo', 'seoul', 'shanghai', 'hk', 'singapore', 'india', 'frankfurt', 'london', 'newyork'];
@@ -88,10 +89,26 @@
   }
   const roundClock = (kind) => {
     const ny = local('America/New_York');
-    if (kind === 'crypto') return { open: true, label: 'Trades 24/7' };
+    if (kind === 'crypto') return { open: true, label: 'Open · 24/7' };
     const weekend = (ny.wd === 'Sat') || (ny.wd === 'Sun' && ny.hm < '18:00') || (ny.wd === 'Fri' && ny.hm >= '17:00');
-    return weekend ? { open: false, label: 'Closed for the weekend' } : { open: true, label: kind === 'fx' ? 'Trades 24 h on weekdays' : 'Trades nearly 24 h' };
+    return weekend ? { open: false, label: 'Closed for the weekend' } : { open: true, label: kind === 'fx' ? 'Open · 24 h on weekdays' : 'Open · trades ~24 h' };
   };
+
+  // Indian import duty on gold and silver bars (%), used for the ₹ estimates. Update when the Budget changes it.
+  const DUTY = 15, GST = 3, OZ = 31.1034768;
+  // Gold / silver in ₹ from the dollar price and USD/INR: % change and the 5-day trend combine both.
+  function inrMetal(src, grams) {
+    const m = Q[src], fx = Q['INR=X|world'];
+    const p = num(m?.price), r = num(fx?.price); if (p === null || r === null) return null;
+    const parity = p * r * grams / OZ, price = parity * (1 + DUTY / 100);
+    const pm = num(m.change_percent), pf = num(fx.change_percent);
+    const pct = pm === null ? null : ((1 + pm / 100) * (1 + (pf || 0) / 100) - 1) * 100;
+    const a = (m.spark || []).map(Number), b = (fx.spark || []).map(Number), n = Math.min(a.length, b.length);
+    const spark = n >= 2 ? Array.from({ length: n }, (_, i) => a[a.length - n + i] * b[b.length - n + i]) : [];
+    const rs = (v) => '₹' + Math.round(v).toLocaleString('en-IN');
+    return { price, change: pct === null ? null : price - price / (1 + pct / 100), change_percent: pct, spark, market_time: m.market_time, inr: true,
+      note: `With ${GST}% GST ${rs(price * (1 + GST / 100))} · without duty ${rs(parity)}` };
+  }
 
   // What each quote is and why an Indian investor watches it. kind: index | fut | fx | rate | vol | cmd | crypto
   const META = {
@@ -121,6 +138,8 @@
     'BZ=F|world': ['Brent crude ($/bbl)', 'cmd', null, 'India imports most of its oil: higher crude hurts the rupee, inflation, OMCs, paints and airlines.'],
     'CL=F|world': ['WTI crude ($/bbl)', 'cmd', null, 'US crude benchmark.'],
     'NG=F|world': ['Natural gas ($/MMBtu)', 'cmd', null, 'Input cost for gas utilities, fertilisers and city gas companies.'],
+    'GOLDINR|calc': ['Gold in India (₹/10 g)', 'cmd', 'mcx', `24K. Estimate: international gold price × USD/INR, plus ${DUTY}% import duty. Not an MCX quote; jewellers add 3% GST and making charges.`],
+    'SILVERINR|calc': ['Silver in India (₹/kg)', 'cmd', 'mcx', `Estimate: international silver price × USD/INR, plus ${DUTY}% import duty. Not an MCX quote; add 3% GST for retail.`],
     'GC=F|world': ['Gold ($/oz)', 'cmd', null, 'Safe haven; drives Indian gold prices and gold loan / jewellery stocks.'],
     'SI=F|world': ['Silver ($/oz)', 'cmd', null, 'Precious and industrial metal.'],
     'HG=F|world': ['Copper ($/lb)', 'cmd', null, 'A barometer of global growth; moves Hindalco, Vedanta, Hindustan Copper.'],
@@ -132,7 +151,7 @@
     ['asia', 'Asia-Pacific', '🌏', ['^N225|global', '^HSI|global', '000001.SS|world', '^KS11|world', '^TWII|world', '^STI|world', '^AXJO|world']],
     ['europe', 'Europe', '🇪🇺', ['^FTSE|global', '^GDAXI|global', '^FCHI|global', '^STOXX50E|world']],
     ['fx', 'Currencies, yields & volatility', '💱', ['INR=X|world', 'DX-Y.NYB|world', '^TNX|world', '^VIX|world', 'EURUSD=X|world', 'JPY=X|world']],
-    ['cmd', 'Commodities', '🛢️', ['BZ=F|world', 'CL=F|world', 'NG=F|world', 'GC=F|world', 'SI=F|world', 'HG=F|world']],
+    ['cmd', 'Commodities', '🛢️', ['GOLDINR|calc', 'SILVERINR|calc', 'BZ=F|world', 'CL=F|world', 'NG=F|world', 'GC=F|world', 'SI=F|world', 'HG=F|world']],
     ['crypto', 'Crypto', '₿', ['BTC-USD|global', 'ETH-USD|world']],
   ];
 
@@ -146,21 +165,34 @@
     const d = vals.map((v, i) => (i ? 'L' : 'M') + (i / (vals.length - 1) * W).toFixed(1) + ' ' + (2 + (hi - v) / span * (Hh - 4)).toFixed(1)).join('');
     return `<svg class="gm-spark" viewBox="0 0 ${W} ${Hh}" aria-hidden="true"><path d="${d}" fill="none" stroke="${up ? 'var(--positive)' : 'var(--negative)'}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
   }
-  function status(key) {
-    const m = META[key]; if (!m) return '';
-    let s;
-    if (m[2]) { const x = exStatus(m[2]); s = { open: x.open, label: x.open ? 'Open · ' + x.name + ' closes ' + x.at + ' (in ' + until(x.s.end) + ')' : 'Closed · ' + x.name + ' opens ' + x.at + ' (in ' + until(x.s.start) + ')' }; }
-    else s = roundClock(m[1] === 'crypto' ? 'crypto' : m[1] === 'fx' || m[1] === 'rate' ? 'fx' : 'fut');
-    return `<span class="gm-st ${s.open ? 'on' : ''}"><i></i>${esc(s.label)}</span>`;
+  // Open/closed state of a quote's market. rank sorts rows: open ones first, then by how soon they open.
+  function stat(key) {
+    const m = META[key]; if (!m) return { open: false, label: '', rank: 9e15, tip: '' };
+    if (m[2]) {
+      const x = exStatus(m[2]);
+      if (!x.s) return { open: false, label: 'Closed', rank: 9e15, tip: x.name };
+      return x.open
+        ? { open: true, label: 'Open · closes ' + x.at, rank: 0, tip: x.name + ' session ' + x.istHours }
+        : { open: false, label: 'Opens ' + x.at, inTxt: 'in ' + until(x.s.start), rank: x.s.start, tip: x.name + ' session ' + x.istHours };
+    }
+    const kind = m[1] === 'crypto' ? 'crypto' : m[1] === 'fx' || m[1] === 'rate' ? 'fx' : 'fut';
+    const r = roundClock(kind);
+    return { open: r.open, label: r.label, rank: r.open ? 0 : 8e15, tip: '' };
   }
+  function status(key) {
+    const s = stat(key); if (!s.label) return '';
+    return `<span class="gm-st ${s.open ? 'on' : ''}" title="${esc(s.tip)}"><i></i><span>${esc(s.label)}${s.inTxt ? ` <b class="gm-in">· ${esc(s.inTxt)}</b>` : ''}</span></span>`;
+  }
+  // Open markets first (keeping the usual order among them), then closed ones by how soon they open.
+  const byOpen = (keys) => keys.map((k, i) => ({ k, i, r: stat(k).rank })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.k);
   function row(key) {
     const q = Q[key], m = META[key]; if (!q || !m) return '';
     const pct = num(q.change_percent), ch = num(q.change), px = num(q.price);
     const isRate = m[1] === 'rate';
-    const chTxt = isRate ? sgn(ch === null ? null : ch * 100, 0) + ' bp' : sgn(ch, Math.abs(px) < 50 ? 3 : 2);
+    const chTxt = isRate ? sgn(ch === null ? null : ch * 100, 0) + ' bp' : q.inr ? sgn(ch, 0) : sgn(ch, Math.abs(px) < 50 ? 3 : 2);
     return `<tr title="${esc(m[3])}">
-      <td><b>${esc(m[0])}</b><small>${status(key)}${q.market_time ? ' · last trade ' + esc(ago(q.market_time)) : ''}</small>${m[3] ? `<small class="gm-why">${esc(m[3])}</small>` : ''}</td>
-      <td class="r gm-px">${fmtPx(px)}${isRate ? '%' : ''}</td>
+      <td class="gm-n"><b>${esc(m[0])}</b><div class="gm-sub">${status(key)}${q.market_time ? `<span class="gm-ago">last trade ${esc(ago(q.market_time))}</span>` : ''}</div>${q.note ? `<small class="gm-inr">${esc(q.note)}</small>` : ''}${m[3] ? `<small class="gm-why">${esc(m[3])}</small>` : ''}</td>
+      <td class="r gm-px">${q.inr ? '₹' + Math.round(px).toLocaleString('en-IN') : fmtPx(px)}${isRate ? '%' : ''}</td>
       <td class="r ${tone(ch)} gm-hide">${chTxt}</td>
       <td class="r"><span class="gm-pill ${tone(pct)}">${sgn(pct)}%</span></td>
       <td class="r gm-sp">${spark(q.spark, (pct || 0) >= 0)}</td></tr>`;
@@ -205,7 +237,8 @@
   }
 
   function clockHtml() {
-    const list = CLOCK.map((k) => ({ k, s: exStatus(k) }));
+    const list = CLOCK.map((k, i) => ({ k, i, s: exStatus(k) }))
+      .sort((a, b) => (b.s.open - a.s.open) || (a.s.open ? a.i - b.i : (a.s.s?.start || 9e15) - (b.s.s?.start || 9e15)));
     // the next exchange to open gets a highlight
     const soon = list.filter((x) => !x.s.open && x.s.s).sort((a, b) => a.s.s.start - b.s.s.start)[0];
     return list.map(({ k, s }) => `<div class="gm-ex ${s.open ? 'on' : ''} ${soon && soon.k === k ? 'soon' : ''}" title="${esc(s.name)}: weekdays ${esc(s.hours)} local time (${esc(s.istHours)}). Local time now ${esc(s.wd)} ${esc(s.time)}. Exchange holidays are not shown.">
@@ -231,8 +264,8 @@
       </div>
       <div class="mp-panel gm-clock-wrap"><div class="mp-panel-title"><span>Market clock</span><span class="gm-muted">Opening and closing times in IST · holidays not shown</span></div><div class="gm-clock" id="gmClock">${clockHtml()}</div></div>
       <div class="gm-grid">
-        ${GROUPS.map(([id, title, icon, keys]) => {
-          const rows = keys.map(row).join('');
+        ${GROUPS.map((g, i) => ({ g, i, open: g[3].some((k) => Q[k] && stat(k).open) })).sort((a, b) => (b.open - a.open) || a.i - b.i).map(({ g: [id, title, icon, keys] }) => {
+          const rows = byOpen(keys).map(row).join('');
           if (!rows) return '';
           const a = avg(keys.filter((k) => ['index', 'fut'].includes(META[k]?.[1])));
           return `<div class="mp-panel gm-card" id="gm-${id}"><div class="mp-panel-title"><span>${icon} ${esc(title)}</span>${a !== null && ['us', 'asia', 'europe'].includes(id) ? `<span class="gm-pill ${tone(a)}">avg ${sgn(a)}%</span>` : ''}</div>
@@ -255,7 +288,9 @@
         fetch(SB + '/functions/v1/index-sparklines', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null),
         wantHeads ? fetch(SB + '/rest/v1/rpc/global_headlines_feed', { method: 'POST', headers: H, body: JSON.stringify({ p_limit: 12 }) }).then((r) => r.ok ? r.json() : null).catch(() => null) : null,
       ]);
-      if (gm && Array.isArray(gm.quotes)) { Q = {}; for (const q of gm.quotes) Q[q.symbol + '|' + q.grp] = q; updatedAt = gm.updated_at; }
+      if (gm && Array.isArray(gm.quotes)) { Q = {}; for (const q of gm.quotes) Q[q.symbol + '|' + q.grp] = q; updatedAt = gm.updated_at;
+        const au = inrMetal('GC=F|world', 10), ag = inrMetal('SI=F|world', 1000);
+        if (au) Q['GOLDINR|calc'] = au; if (ag) Q['SILVERINR|calc'] = ag; }
       if (sp && sp.gift_nifty) { gift = sp.gift_nifty; document.dispatchEvent(new CustomEvent('mp:gift', { detail: { gift, from: 'global' } })); }
       if (hl) { heads = Array.isArray(hl) ? hl : (hl.articles || []); headsAt = Date.now(); }
       if (gm) lastLoad = Date.now();
