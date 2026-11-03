@@ -190,6 +190,13 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 .all-tabs button b{font-weight:800;opacity:.85;margin-left:3px}
 .all-q{flex:1 1 200px;min-width:0;padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--text)}
 .all-sort{display:flex;gap:6px;align-items:center}
+.all-fno{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:transparent;color:#9eafca;font-weight:750;font-size:12.5px;padding:7px 12px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.all-fno::before{content:"";width:13px;height:13px;border-radius:4px;border:1.5px solid currentColor;box-sizing:border-box;flex:0 0 auto}
+.all-fno[aria-pressed="true"]{border-color:#8c82ff;background:rgba(140,130,255,.16);color:#d9d4ff}
+.all-fno[aria-pressed="true"]::before{background:#8c82ff;border-color:#8c82ff;box-shadow:inset 0 0 0 2px #1b1640}
+.all-fno b{font-weight:800;opacity:.8}
+.all-fno[hidden]{display:none}
+.fnob{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.04em;color:#c9c3ff;background:rgba(140,130,255,.18);padding:1px 5px;border-radius:999px;margin-left:5px;vertical-align:2px}
 .all-sort select{padding:7px 9px;border-radius:9px;border:1px solid var(--line);background:#111b2e;color:var(--text)}
 .all-table th button{background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;cursor:pointer;white-space:nowrap}
 .all-table th button.on{color:#c7d2ff}
@@ -432,6 +439,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
   </div>
   <div class="all-bar">
    <div class="all-tabs" id="allTabs" role="tablist"></div>
+   <button id="allFno" class="all-fno" type="button" aria-pressed="false" title="Show only stocks with futures &amp; options on NSE">F&amp;O stocks<b id="allFnoN"></b></button>
    <input id="allQ" class="all-q" type="search" placeholder="Search symbol, company or sector" aria-label="Search">
    <div class="all-sort"><label for="allSort" class="sub">Sort</label>
     <select id="allSort"><option value="score">Score</option><option value="sym">Symbol (A–Z)</option><option value="name">Company (A–Z)</option><option value="signal">Signal</option><option value="price">Price</option><option value="chg">Last day %</option><option value="r1m">1 month %</option><option value="r3m">3 months %</option><option value="rsi">RSI</option><option value="mcap">Market cap</option><option value="sector">Sector (A–Z)</option></select>
@@ -1298,6 +1306,19 @@ $('refreshPicks').onclick = () => refreshPicks(true);
    Daily bars come from analysis_scan_bars() (stock_swing_cache, plus today's candle from the live quote, as on
    the single-stock view). Results are kept for 5 minutes in this browser and refreshed while the list is open;
    strong scanner setups upgrade WAIT exactly as on the single-stock view. */
+let fnoSet = null, allFno = store.get('mp_sa_allfno', false) === true;
+// NSE F&O stocks (stocks.is_fno), kept for a day in this browser
+async function loadFno() {
+ if (fnoSet) return;
+ const c = store.get('mp_sa_fno', null);
+ if (c?.list?.length && Date.now() - c.at < 864e5) { fnoSet = new Set(c.list); return; }
+ if (!sb) return;
+ const {data, error} = await sb.from('stocks').select('symbol').eq('is_fno', true).limit(2000);
+ if (error || !data?.length) return;
+ fnoSet = new Set(data.map(r => String(r.symbol).toUpperCase()));
+ store.set('mp_sa_fno', {at: Date.now(), list: [...fnoSet]});
+}
+const isFno = sym => !!fnoSet && fnoSet.has(String(sym).toUpperCase());
 let allRows = null, allAt = 0, allTab = 'ALL', allSort = 'score', allDir = 'desc', allLoading = false;
 const SIG_ORDER = {BUY: 3, WAIT: 2, SELL: 1};
 async function loadAll(force) {
@@ -1324,6 +1345,8 @@ async function loadAll(force) {
 function allList() {
  const strong = strongCache ? strongCache.map : {};
  let list = allRows.map(r => strong[r.symbol] && r.signal === 'WAIT' ? {...r, signal: strong[r.symbol].side === 'SELL' ? 'SELL' : 'BUY', viaScanner: true} : r);
+ const fnoN = fnoSet ? list.filter(r => isFno(r.symbol)).length : 0;
+ if (allFno && fnoSet) list = list.filter(r => isFno(r.symbol));
  const counts = {ALL: list.length, BUY: 0, SELL: 0, WAIT: 0}; list.forEach(r => counts[r.signal]++);
  const q = $('allQ').value.trim().toLowerCase();
  if (allTab !== 'ALL') list = list.filter(r => r.signal === allTab);
@@ -1336,23 +1359,24 @@ function allList() {
   if (y == null || (typeof y === 'number' && !Number.isFinite(y))) return -1;
   return (typeof x === 'string' ? x.localeCompare(y) : x - y) * dir;
  });
- return {list, counts};
+ return {list, counts, fnoN};
 }
 const TEXT_SORT = ['sym', 'name', 'sector'];
 function dirLabel() { return TEXT_SORT.includes(allSort) ? (allDir === 'asc' ? '↑ A to Z' : '↓ Z to A') : (allDir === 'asc' ? '↑ Low to high' : '↓ High to low'); }
 function drawAll() {
  if (!allRows) return;
- const {list, counts} = allList();
+ const {list, counts, fnoN} = allList();
+ $('allFno').setAttribute('aria-pressed', allFno ? 'true' : 'false'); $('allFno').hidden = !fnoSet; $('allFnoN').textContent = fnoSet ? fnoN : '';
  $('allTabs').innerHTML = [['ALL', 'All'], ['BUY', 'Buy'], ['SELL', 'Sell'], ['WAIT', 'Wait']].map(([k, l]) => `<button type="button" data-all-tab="${k}" class="${allTab === k ? 'on' : ''}">${l}<b>${counts[k]}</b></button>`).join('');
  $('allSort').value = allSort; $('allDir').textContent = dirLabel();
  const scoreBar = s => `<span class="scorebar"><i style="width:${s}%;background:${s >= 60 ? 'var(--green)' : s <= 40 ? 'var(--red)' : 'var(--gold)'}"></i></span>`;
  const cr = v => Number.isFinite(v) ? (v >= 1e5 ? '₹' + fmt(v / 1e5, 2) + ' L Cr' : '₹' + Math.round(v).toLocaleString('en-IN') + ' Cr') : '—';
  const th = (k, l, v) => `<th class="${v ? 'v' : ''}"><button type="button" data-all-sort="${k}" class="${allSort === k ? 'on' : ''}">${l}${allSort === k ? (allDir === 'asc' ? ' ▲' : ' ▼') : ''}</button></th>`;
  const sig = r => `<span class="sig ${r.signal}">${r.signal}</span>${r.viaScanner ? ' <span class="sub" title="Upgraded from WAIT by a strong Stock Signals setup">scanner</span>' : ''}`;
- if (!list.length) { $('allBody').innerHTML = '<div class="sub" style="padding:16px">No stocks match.</div>'; return; }
+ if (!list.length) { $('allBody').innerHTML = `<div class="sub" style="padding:16px">No stocks match${allFno ? ' among F&amp;O stocks' : ''}.</div>`; return; }
  $('allBody').innerHTML = `<div class="tablewrap all-wrap"><table class="table all-table"><thead><tr>${th('sym', 'Stock')}${th('signal', 'Signal')}${th('score', 'Score', 1)}${th('price', 'Price', 1)}${th('chg', 'Last day', 1)}${th('r1m', '1M', 1)}${th('r3m', '3M', 1)}${th('rsi', 'RSI', 1)}${th('sector', 'Sector')}${th('mcap', 'Market cap', 1)}</tr></thead><tbody>` +
-  list.map(r => `<tr data-go="${esc(r.symbol)}" data-name="${esc(r.name)}"><td><b>${esc(r.symbol)}</b><div class="sub">${esc(r.name)}</div></td><td>${sig(r)}</td><td class="v">${r.score}${scoreBar(r.score)}</td><td class="v">${rs(r.price)}</td><td class="v ${cls(r.chg)}">${pct(r.chg, 1)}</td><td class="v ${cls(r.r1m)}">${pct(r.r1m, 1)}</td><td class="v ${cls(r.r3m)}">${pct(r.r3m, 1)}</td><td class="v">${fmt(r.rsi, 0)}</td><td class="sub">${esc(r.sector)}</td><td class="v">${cr(r.mcap)}</td></tr>`).join('') + '</tbody></table></div>' +
-  `<div class="all-cards">${list.map(r => `<div class="acard" data-go="${esc(r.symbol)}" data-name="${esc(r.name)}"><div class="atop"><div><b>${esc(r.symbol)}</b><small>${esc(r.name)}</small></div><div style="text-align:right">${sig(r)}<small>Score <b style="color:var(--text)">${r.score}</b>${scoreBar(r.score)}</small></div></div>
+  list.map(r => `<tr data-go="${esc(r.symbol)}" data-name="${esc(r.name)}"><td><b>${esc(r.symbol)}</b>${isFno(r.symbol) ? '<span class="fnob">F&amp;O</span>' : ''}<div class="sub">${esc(r.name)}</div></td><td>${sig(r)}</td><td class="v">${r.score}${scoreBar(r.score)}</td><td class="v">${rs(r.price)}</td><td class="v ${cls(r.chg)}">${pct(r.chg, 1)}</td><td class="v ${cls(r.r1m)}">${pct(r.r1m, 1)}</td><td class="v ${cls(r.r3m)}">${pct(r.r3m, 1)}</td><td class="v">${fmt(r.rsi, 0)}</td><td class="sub">${esc(r.sector)}</td><td class="v">${cr(r.mcap)}</td></tr>`).join('') + '</tbody></table></div>' +
+  `<div class="all-cards">${list.map(r => `<div class="acard" data-go="${esc(r.symbol)}" data-name="${esc(r.name)}"><div class="atop"><div><b>${esc(r.symbol)}</b>${isFno(r.symbol) ? '<span class="fnob">F&amp;O</span>' : ''}<small>${esc(r.name)}</small></div><div style="text-align:right">${sig(r)}<small>Score <b style="color:var(--text)">${r.score}</b>${scoreBar(r.score)}</small></div></div>
    <div class="kv"><span>Price <b>${rs(r.price)}</b></span><span>Day <b class="${cls(r.chg)}">${pct(r.chg, 1)}</b></span><span>1M <b class="${cls(r.r1m)}">${pct(r.r1m, 1)}</b></span><span>3M <b class="${cls(r.r3m)}">${pct(r.r3m, 1)}</b></span><span>RSI <b>${fmt(r.rsi, 0)}</b></span><span>${esc(r.sector)}</span></div></div>`).join('')}</div>`;
  const last = allRows.map(r => r.date).sort().pop();
  $('allNote').textContent = `${allRows.length} stocks · prices up to ${last ? new Date(last + 'T00:00:00Z').toLocaleDateString('en-IN', {day: 'numeric', month: 'short', timeZone: 'UTC'}) : '—'} (today's live price included in market hours) · computed ${timeAgo(allAt)}, refreshes every 5 min. Tap a stock for its full analysis. Rule-based signals, not advice.`;
@@ -1363,7 +1387,7 @@ async function openAll(force, quiet) {
  if (allLoading) return;
  allLoading = true;
  if (!allRows || (force && !quiet)) $('allBody').innerHTML = '<div class="sub" style="padding:16px">Running the rules across ~220 stocks…</div>';
- try { await Promise.all([loadAll(force), strongSetups().catch(() => {})]); drawAll(); }
+ try { await Promise.all([loadAll(force), strongSetups().catch(() => {}), loadFno().catch(() => {})]); drawAll(); }
  catch (e) { $('allBody').innerHTML = '<div class="sub" style="padding:16px">Could not load the list right now. Please try again shortly.</div>'; console.warn('[All signals]', e); }
  finally { allLoading = false; }
 }
@@ -1371,6 +1395,7 @@ $('openAll').onclick = () => openAll(false);
 // keep the open list in step with live prices
 setInterval(() => { if (!document.hidden && !$('allSignals').hidden && !allLoading) openAll(true, true).catch(() => {}); }, 5 * 60000);
 $('closeAll').onclick = () => { $('allSignals').hidden = true; $('scan').scrollIntoView({behavior: 'smooth', block: 'start'}); };
+$('allFno').addEventListener('click', () => { allFno = !allFno; store.set('mp_sa_allfno', allFno); drawAll(); });
 $('allTabs').addEventListener('click', e => { const b = e.target.closest('[data-all-tab]'); if (b) { allTab = b.dataset.allTab; drawAll(); } });
 $('allBody').addEventListener('click', e => {
  const b = e.target.closest('[data-all-sort]'); if (!b) return;
