@@ -27,7 +27,8 @@ const S = {
   indices: [],
   status: null,
   tab: 'signals',
-  f: { tf: 'all', side: 'all', sort: 'score', q: '', hist: 'all', hkind: 'signals', htf: 'all', hout: 'all' },
+  f: { tf: 'all', side: 'all', sort: 'score', q: '', hist: 'all', hkind: 'signals', htf: 'all', hout: 'all', fno: (() => { try { return localStorage.getItem('mp-sig-fno') === '1'; } catch (_) { return false; } })() },
+  fno: null,
   sigHist: null, sigHistAt: 0,
   loaded: { feed: 0, trades: 0 },
 };
@@ -93,6 +94,19 @@ function acctNumbers() {
 }
 
 /* ===================== loaders ===================== */
+// NSE F&O stocks (stocks.is_fno), for the F&O filter on signals and the signal record; kept a day in the browser.
+async function loadFno() {
+  try { const c = JSON.parse(localStorage.getItem('mp-fno-set') || 'null'); if (c && c.list && c.list.length && Date.now() - c.at < 864e5) { S.fno = new Set(c.list); return; } } catch (_) {}
+  const { data, error } = await sb.from('stocks').select('symbol').eq('is_fno', true).limit(2000);
+  if (error || !data || !data.length) return;
+  S.fno = new Set(data.map((r) => String(r.symbol).toUpperCase()));
+  try { localStorage.setItem('mp-fno-set', JSON.stringify({ at: Date.now(), list: [...S.fno] })); } catch (_) {}
+}
+const isFno = (x) => !!(x && (x.is_fno === true || (S.fno && S.fno.has(String(x.symbol).toUpperCase()))));
+function fnoButtons() {
+  document.querySelectorAll('[data-fno-toggle]').forEach((b) => b.setAttribute('aria-pressed', S.f.fno ? 'true' : 'false'));
+  const n = S.signals.filter(isFno).length; const c = $('fnoCount'); if (c) c.textContent = S.signals.length ? n : '';
+}
 async function loadFeed() {
   const { data, error } = await sb.rpc('stock_signals_feed');
   if (error) { console.warn('feed', error); return; }
@@ -181,6 +195,7 @@ function filteredSignals() {
   let list = S.signals.slice();
   if (S.f.tf !== 'all') list = list.filter((s) => s.tf === S.f.tf);
   if (S.f.side !== 'all') list = list.filter((s) => s.side === S.f.side);
+  if (S.f.fno) list = list.filter(isFno);
   const q = S.f.q.trim().toLowerCase();
   if (q) list = list.filter((s) => s.symbol.toLowerCase().includes(q) || String(s.name || '').toLowerCase().includes(q));
   const rr = (s) => (num(s.target2) !== null && num(s.risk_per_share) ? Math.abs(s.target2 - s.entry) / s.risk_per_share : 0);
@@ -199,10 +214,11 @@ function renderSignals() {
   note.className = 'note' + (stale ? ' warn' : '');
   if (stale) note.textContent = '⚠ Scanner delayed (' + ago(S.feedAt) + '). ' + note.textContent;
 
+  fnoButtons();
   const list = filteredSignals();
   const host = $('signalList');
   if (!list.length) {
-    host.innerHTML = `<div class="empty"><b>No signals right now</b><br>${S.signals.length ? 'Nothing matches your filters.' : (m.open ? 'The strategy is strict — setups appear when trend, momentum and volume all line up.' : 'New signals are generated during market hours.')}</div>`;
+    host.innerHTML = `<div class="empty"><b>No signals right now</b><br>${S.signals.length ? (S.f.fno && !S.signals.some(isFno) ? 'No F&amp;O stocks among the current signals. Turn off the F&amp;O filter to see all.' : 'Nothing matches your filters.') : (m.open ? 'The strategy is strict — setups appear when trend, momentum and volume all line up.' : 'New signals are generated during market hours.')}</div>`;
     return;
   }
   host.innerHTML = list.map((s) => {
@@ -212,7 +228,7 @@ function renderSignals() {
     return `<article class="scard" data-sig="${esc(s.symbol)}|${esc(s.tf)}">
       <div class="srow"><div><div class="sym" data-sym="${esc(s.symbol)}">${esc(s.symbol)}</div><div class="nm" data-sym="${esc(s.symbol)}">${esc(s.name)}</div></div>
         <div class="px"><div class="l">${L === null ? '—' : fmt(L)}</div><div class="c ${cls(c)}">${pct(c)}</div></div></div>
-      <div class="tags"><span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span><span class="tag">${s.tf === 'intraday' ? 'Intraday' : 'Swing'}</span><span class="tag">${esc(s.setup)}</span>${z.label ? `<span class="tag ${z.cls}">${esc(z.label)}</span>` : ''}${held ? '<span class="tag warn">Holding</span>' : ''}</div>
+      <div class="tags"><span class="tag ${buy ? 'buy' : 'sell'}">${s.side}</span><span class="tag">${s.tf === 'intraday' ? 'Intraday' : 'Swing'}</span>${isFno(s) ? '<span class="tag fno">F&amp;O</span>' : ''}<span class="tag">${esc(s.setup)}</span>${z.label ? `<span class="tag ${z.cls}">${esc(z.label)}</span>` : ''}${held ? '<span class="tag warn">Holding</span>' : ''}</div>
       ${ladder({ stop: s.stop, entry: s.entry, t1: s.target1, t2: s.target2 }, L)}
       ${s.issued_at ? `<div class="sigtime"><span>🕒 Issued <b>${esc(when(s.issued_at))}</b></span><span>⏳ Expires <b>${esc(when(s.expires_at))}</b> <em>${esc(left(s.expires_at))}</em></span>${sinceIssue(s, L) !== null ? `<span>Since issue <b class="${cls(sinceIssue(s, L))}">${pct(sinceIssue(s, L))}</b></span>` : ''}</div>` : ''}
       <div class="srow2"><div class="metrics"><span>Risk <b>${fmt(s.risk_pct, 2)}%</b></span><span>Reward <b>${fmt(rr2, 1)}R</b></span><span>Vol <b>${fmt(s.vol_ratio, 1)}×</b></span><span>RSI <b>${fmt(s.rsi, 0)}</b></span></div>
@@ -389,14 +405,21 @@ function renderSigHistory() {
   const H = S.sigHist;
   const host = $('sigHistList'), sum = $('sigHistSummary');
   if (!H) { host.innerHTML = '<div class="empty">Loading the signal record…</div>'; sum.innerHTML = ''; return; }
-  const st = (H.stats || {})[S.f.htf === 'all' ? 'all' : S.f.htf] || { n: 0 };
+  fnoButtons();
+  let st = (H.stats || {})[S.f.htf === 'all' ? 'all' : S.f.htf] || { n: 0 };
+  if (S.f.fno) {   // stats for F&O stocks only, from the listed record
+    const c = (H.items || []).filter((x) => isFno(x) && (S.f.htf === 'all' || x.tf === S.f.htf));
+    const rr = c.map((x) => num(x.result_r)).filter((v) => v !== null);
+    st = { n: c.length, wins: c.filter((x) => num(x.result_r) > 0).length, avg_r: rr.length ? rr.reduce((a, b) => a + b, 0) / rr.length : null,
+      targets: c.filter((x) => x.status === 'target').length, stops: c.filter((x) => x.status === 'stop').length, expired: c.filter((x) => x.status === 'expired').length };
+  }
   const wr = st.n ? Math.round(st.wins / st.n * 100) : 0;
   sum.innerHTML = `<div class="stat big"><b>Win rate</b><div class="v ${st.n ? (wr >= 50 ? 'up' : 'down') : ''}">${st.n ? wr + '%' : '—'}</div></div>
     <div class="stat"><b>Signals closed</b><div class="v">${st.n || 0}</div></div>
     <div class="stat"><b>Avg result</b><div class="v ${cls(st.avg_r)}">${st.n ? (st.avg_r >= 0 ? '+' : '') + fmt(st.avg_r, 2) + 'R' : '—'}</div></div>
     <div class="stat"><b>🎯 / 🛑 / ⏱</b><div class="v">${st.targets || 0} / ${st.stops || 0} / ${st.expired || 0}</div></div>
     <div class="stat"><b>Active now</b><div class="v">${H.active || 0}</div></div>`;
-  let list = (H.items || []).filter((x) => (S.f.htf === 'all' || x.tf === S.f.htf) && (S.f.hout === 'all' || x.status === S.f.hout));
+  let list = (H.items || []).filter((x) => (S.f.htf === 'all' || x.tf === S.f.htf) && (S.f.hout === 'all' || x.status === S.f.hout) && (!S.f.fno || isFno(x)));
   $('sigHistNote').textContent = `Every signal is recorded when issued and closes at its stop, target 1 or expiry. Last 90 days${H.since ? ' · tracking since ' + new Date(H.since).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}. Results are from the signal's own levels, before costs.`;
   if (!list.length) { host.innerHTML = `<div class="empty"><b>No closed signals yet</b><br>${(H.items || []).length ? 'Nothing matches these filters.' : 'Signals appear here once they hit their target or stop, or expire.'}</div>`; return; }
   host.innerHTML = list.map((x) => {
@@ -404,7 +427,7 @@ function renderSigHistory() {
     return `<article class="scard" style="cursor:default"><div class="srow"><div><div class="sym"><span data-sym="${esc(x.symbol)}">${esc(x.symbol)}</span> <span class="tag ${buy ? 'buy' : 'sell'}">${x.side}</span></div>
       <div class="nm">${esc(x.name || '')}</div></div>
       <div class="px"><div class="l ${cls(x.result_pct)}">${pct(x.result_pct)}</div><div class="c ${cls(x.result_r)}">${x.result_r === null || x.result_r === undefined ? '' : (x.result_r >= 0 ? '+' : '') + fmt(x.result_r, 2) + 'R'}</div></div></div>
-      <div class="tags"><span class="tag ${o[1]}">${o[0]}</span>${x.hit_t2 ? '<span class="tag buy">T2 reached</span>' : ''}<span class="tag">${x.tf === 'intraday' ? 'Intraday' : 'Swing'}</span><span class="tag">${esc(x.setup || '')}</span></div>
+      <div class="tags"><span class="tag ${o[1]}">${o[0]}</span>${x.hit_t2 ? '<span class="tag buy">T2 reached</span>' : ''}<span class="tag">${x.tf === 'intraday' ? 'Intraday' : 'Swing'}</span>${isFno(x) ? '<span class="tag fno">F&amp;O</span>' : ''}<span class="tag">${esc(x.setup || '')}</span></div>
       <div class="kv hk"><div>Entry → exit</div><div>${fmt(x.entry)} → <b>${fmt(x.exit_price)}</b></div><div>Stop · T1 · T2</div><div>${fmt(x.stop)} · ${fmt(x.target1)} · ${fmt(x.target2)}</div>
       <div>Issued</div><div>${esc(when(x.issued_at))}</div><div>Closed</div><div>${esc(when(x.closed_at))}</div></div></article>`;
   }).join('');
@@ -516,6 +539,11 @@ function wire() {
   seg('tfSeg', 'tf', renderSignals); seg('sideSeg', 'side', renderSignals); seg('histSeg', 'hist', renderHistory);
   seg('histKind', 'hkind', () => { renderHistoryTab(); if (S.f.hkind === 'signals') loadSigHistory(false).then(renderSigHistory); });
   seg('sigHistTf', 'htf', renderSigHistory); seg('sigHistOut', 'hout', renderSigHistory);
+  document.querySelectorAll('[data-fno-toggle]').forEach((b) => b.addEventListener('click', () => {
+    S.f.fno = !S.f.fno; try { localStorage.setItem('mp-sig-fno', S.f.fno ? '1' : '0'); } catch (_) {}
+    renderSignals(); if (S.sigHist) renderSigHistory();
+  }));
+  loadFno().then(() => { renderSignals(); if (S.sigHist) renderSigHistory(); }).catch(() => {});
   $('sortSel').addEventListener('change', (e) => { S.f.sort = e.target.value; renderSignals(); });
   $('searchBox').addEventListener('input', (e) => { S.f.q = e.target.value; renderSignals(); });
   $('backdrop').addEventListener('click', closeSheet);

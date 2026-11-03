@@ -566,6 +566,13 @@ async function loadStock(sym, {fresh = false} = {}) {
  if (bars.length < 50) {
   try { const h = normBars(await getJSON(API_BASE + '/stock-history?symbol=' + encodeURIComponent(sym) + '&range=1Y')); if (h.length > bars.length) bars = h; } catch {}
  }
+ // Promoter holding lives in the stocks table (NSE shareholding, synced quarterly); the price feeds don't carry it.
+ if (sb && quote && quote.promoters_latest == null && quote.last_quarter_promoters == null) {
+  try {
+   const {data: st} = await sb.from('stocks').select('promoters_latest,promoters_previous,promoters_change').eq('symbol', sym).maybeSingle();
+   if (st) Object.assign(quote, {promoters_latest: st.promoters_latest, promoters_previous: st.promoters_previous, promoters_change: st.promoters_change});
+  } catch {}
+ }
  const data = {quote, bars};
  stockCache.set(sym, {at: Date.now(), data});
  return data;
@@ -1034,7 +1041,9 @@ function renderAll() {
  const pe = num(f.pe), bv = num(f.book_value), roe = num(f.return_on_equity) * 100, dy = num(f.dividend_yield) * 100;
  const pb = bv > 0 ? livePrice() / bv : NaN;
  const eps = pe > 0 ? livePrice() / pe : NaN;
- const prom = num(q.promoters_latest ?? q.last_quarter_promoters) * 100, promCh = num(q.promoters_change);
+ // promoters_* are fractions; promoters_change is stored as a relative % change, so show the move in points
+ const promPrev = num(q.promoters_previous ?? q.previous_quarter_promoters) * 100;
+ const prom = num(q.promoters_latest ?? q.last_quarter_promoters) * 100, promCh = Number.isFinite(prom) && Number.isFinite(promPrev) ? Math.round((prom - promPrev) * 100) / 100 : NaN;
  $('sectorPill').textContent = q.sector || f.sector || 'Sector N/A';
  $('fundamentals').innerHTML = [
   metric('Market cap', crore(num(f.market_cap)), ''),
@@ -1104,15 +1113,17 @@ function drawChart() {
  if (vmax > 0) bars.forEach((b, i) => { if (!(b.volume > 0)) return; const h = b.volume / vmax * volH; svg += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${(volTop + volH - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${b.close >= b.open ? '#22d69a' : '#ff6178'}" opacity=".35"/>`; });
  else svg += `<text x="${padL + 4}" y="${volTop + volH / 2}" fill="#6c7f9e" font-size="11">Volume not available</text>`;
  // price
- if (chartType === 'line' || step < 2.2) {
+ if (chartType === 'line') {
   const d = path(bars.map(b => b.close)), up = bars.at(-1).close >= bars[0].close, col = up ? '#22d69a' : '#ff6178';
   svg += `<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".25"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>`;
   svg += `<path d="${d}L${X(n - 1)} ${top + priceH}L${X(0)} ${top + priceH}Z" fill="url(#ga)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
  } else {
+  // Candles even on narrow screens: thinner wicks and bodies when many bars share little width.
+  const wick = Math.max(.6, Math.min(1, step * .45)).toFixed(2), cbw = Math.max(step < 2.2 ? .9 : 1, Math.min(10, step * (step < 2.2 ? .8 : .7)));
   bars.forEach((b, i) => {
    const up = b.close >= b.open, col = up ? '#22d69a' : '#ff6178', x = X(i);
    const y1 = Y(Math.max(b.open, b.close)), y2 = Y(Math.min(b.open, b.close));
-   svg += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${Y(b.high).toFixed(1)}" y2="${Y(b.low).toFixed(1)}" stroke="${col}" stroke-width="1"/><rect x="${(x - bw / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y2 - y1).toFixed(1)}" fill="${col}"/>`;
+   svg += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${Y(b.high).toFixed(1)}" y2="${Y(b.low).toFixed(1)}" stroke="${col}" stroke-width="${wick}"/><rect x="${(x - cbw / 2).toFixed(2)}" y="${y1.toFixed(1)}" width="${cbw.toFixed(2)}" height="${Math.max(1, y2 - y1).toFixed(1)}" fill="${col}"/>`;
   });
  }
  for (const [k, c] of [['ema20', '#f3c969'], ['ema50', '#779bff'], ['sma200', '#ff9f5a']]) if (overlays[k]) svg += `<path d="${path(seriesSlice(k))}" fill="none" stroke="${c}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
