@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0f1e">
+<title>Brand Studio · MarketPulse</title>
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--amber:#f3c969;--radius:14px}
+[data-theme="light"]{--bg:#f5f7fb;--surface:#ffffff;--surface2:#f0f3f9;--border:#dde3ee;--text:#111827;--muted:#4b5563;--dim:#6b7280;--accent:#4338ca;--accent2:#4f46e5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:24px;margin:4px 0 2px;letter-spacing:-.02em}
+.lead{color:var(--muted);margin:0 0 16px;max-width:860px}
+.grid{display:grid;grid-template-columns:minmax(330px,430px) 1fr;gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 10px}
+.card + .card{margin-top:12px}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 4px}
+label:first-of-type{margin-top:0}
+input[type=text],input[type=email],input[type=url],textarea,select{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit}
+textarea{min-height:64px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.color{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:4px 8px}
+.color input[type=color]{width:30px;height:28px;border:0;background:none;padding:0;cursor:pointer}
+.color span{font:12px ui-monospace,monospace;color:var(--muted)}
+.hint{font-size:11.5px;color:var(--dim);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;cursor:pointer;user-select:none;background:var(--surface2)}
+.chip input{margin:0;accent-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 13px/1 inherit;font-family:inherit;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:hover{filter:brightness(1.1)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.logo-row{display:flex;align-items:center;gap:12px}
+.logo-prev{width:56px;height:56px;border-radius:12px;border:1px dashed var(--border);display:grid;place-items:center;overflow:hidden;flex:0 0 auto;font:800 18px system-ui}
+.logo-prev img{max-width:100%;max-height:100%}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.preview{position:sticky;top:76px}
+.pv-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.seg button{border:0;background:none;color:var(--muted);font:600 12.5px inherit;font-family:inherit;padding:6px 11px;border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.stage{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);height:calc(100vh - 170px);min-height:520px;overflow:hidden;position:relative;display:flex;justify-content:center}
+.stage iframe{border:0;background:#0a0f1e;transform-origin:0 0;position:absolute;left:0;top:0}
+.stage.phone iframe{position:relative;left:auto;top:auto;margin-top:14px;border-radius:22px;box-shadow:0 0 0 8px #000,0 18px 40px rgba(0,0,0,.45)}
+.out{font:12px ui-monospace,monospace;word-break:break-all;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px;max-height:150px;overflow:auto;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 14px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.on{opacity:1}
+.warn{border-color:#5a4512;background:rgba(224,169,43,.08)}
+.warn p{margin:0;color:var(--muted);font-size:12.5px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}.preview{position:static}.stage{height:640px}}
+@media(max-width:520px){.row,.row3{grid-template-columns:1fr}}
+</style>
+<script src="/brand.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="wrap">
+  <h1>Brand Studio</h1>
+  <p class="lead">Put the whole site under a client's name, logo and colours, with their SEBI registration in the footer of every page. Build a demo in a minute, send the link, or copy the config for a deployment on their own domain.</p>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Identity</h2>
+        <div class="presets" id="presets"></div>
+        <label for="f-name">Brand name</label>
+        <input type="text" id="f-name" maxlength="40" placeholder="Acme Research">
+        <div class="row">
+          <div><label for="f-short">Monogram (1–3 letters)</label><input type="text" id="f-short" maxlength="3" placeholder="AR"></div>
+          <div><label for="f-site">Website (shown on images)</label><input type="text" id="f-site" maxlength="60" placeholder="research.acme.in"></div>
+        </div>
+        <label for="f-tagline">Tagline</label>
+        <input type="text" id="f-tagline" maxlength="80" placeholder="Research you can act on">
+        <label>Logo</label>
+        <div class="logo-row">
+          <div class="logo-prev" id="logoPrev"></div>
+          <div class="btns">
+            <label class="btn" style="margin:0">Upload<input type="file" id="f-logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>
+            <button class="btn" type="button" id="logoClear">Use monogram</button>
+          </div>
+        </div>
+        <div class="hint">Square works best. It's shrunk to 160 px so the demo link stays short. No logo = a monogram tile.</div>
+      </div>
+
+      <div class="card">
+        <h2>Colours</h2>
+        <div class="row3">
+          <div><label>Main</label><div class="color"><input type="color" id="f-primary"><span id="v-primary"></span></div></div>
+          <div><label>Buttons & links</label><div class="color"><input type="color" id="f-accent"><span id="v-accent"></span></div></div>
+          <div><label>Logo mark</label><div class="color"><input type="color" id="f-mark"><span id="v-mark"></span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Registration & contact</h2>
+        <label for="f-entity">Legal entity</label>
+        <input type="text" id="f-entity" maxlength="80" placeholder="Acme Research Private Limited">
+        <div class="row">
+          <div><label for="f-regType">Registered as</label>
+            <select id="f-regType"><option value="">Not registered</option><option>Research Analyst</option><option>Investment Adviser</option><option>Research Analyst and Investment Adviser</option></select></div>
+          <div><label for="f-regNo">SEBI Reg. No.</label><input type="text" id="f-regNo" maxlength="30" placeholder="INH000000000"></div>
+        </div>
+        <div class="row">
+          <div><label for="f-enlistment">BSE enlistment no.</label><input type="text" id="f-enlistment" maxlength="30" placeholder="Optional"></div>
+          <div><label for="f-phone">Phone</label><input type="text" id="f-phone" maxlength="30" placeholder="+91 …"></div>
+        </div>
+        <label for="f-email">Contact email</label>
+        <input type="email" id="f-email" maxlength="80" placeholder="support@acme.in">
+        <label for="f-address">Registered address</label>
+        <input type="text" id="f-address" maxlength="200" placeholder="Office, city, PIN">
+        <div class="row">
+          <div><label for="f-gName">Grievance officer</label><input type="text" id="f-gName" maxlength="60" placeholder="Name"></div>
+          <div><label for="f-gEmail">Grievance email</label><input type="email" id="f-gEmail" maxlength="80" placeholder="grievance@acme.in"></div>
+        </div>
+        <label for="f-extra">Extra disclosure (optional)</label>
+        <textarea id="f-extra" maxlength="600" placeholder="Any other text the firm must show on every page"></textarea>
+        <div class="hint">With a registration number, the footer shows the details, grievance contacts, SEBI SCORES and SMART ODR links and the standard SEBI risk wording, and "not SEBI-registered" lines on the site become the firm's registration line.</div>
+      </div>
+
+      <div class="card">
+        <h2>Sections</h2>
+        <div class="hint" style="margin:0 0 8px">Untick what this client shouldn't offer. Hidden sections leave the menus and their pages redirect to Home.</div>
+        <div class="chips" id="sections"></div>
+        <label class="chip" style="margin-top:12px;display:inline-flex"><input type="checkbox" id="f-powered"> Show "Platform by MarketPulse" in the footer</label>
+      </div>
+
+      <div class="card">
+        <h2>Share</h2>
+        <div class="btns">
+          <button class="btn primary" type="button" id="openDemo">Open demo ↗</button>
+          <button class="btn" type="button" id="copyLink">Copy demo link</button>
+          <button class="btn" type="button" id="copyConfig">Copy deployment config</button>
+          <button class="btn" type="button" id="reset">Start over</button>
+        </div>
+        <label>Demo link</label>
+        <div class="out" id="linkOut"></div>
+        <div class="hint">Anyone with the link sees the site in this brand for that browser tab, with a "Demo" pill and a note that the details aren't verified.</div>
+      </div>
+
+      <div class="card warn" style="margin-top:12px">
+        <p><b>For a real client:</b> paste the deployment config into <code>BRANDS</code> in <code>brand.js</code>, add their domain to <code>hosts</code>, and point the domain at the site. The firm's own Terms, Privacy Policy and disclosures must be reviewed by them; this tool only swaps the name in the existing pages.</p>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div class="pv-bar">
+        <div class="seg" id="pvPage">
+          <button data-p="/" class="on">Home</button><button data-p="/stock-signals.html">Signals</button><button data-p="/picks.html">Picks</button><button data-p="/stock-analysis.html">Analysis</button><button data-p="/screener.html">Screener</button>
+        </div>
+        <div class="seg" id="pvDevice"><button data-d="desktop" class="on">Desktop</button><button data-d="phone">Phone</button></div>
+      </div>
+      <div class="stage" id="stage"><iframe id="pv" title="Preview of the branded site" loading="lazy"></iframe></div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const W = window.mpBrand;
+  const KEY = 'mp-brand-studio';
+  const LABELS = { signals: 'Signals', picks: 'Festive picks', analysis: 'Stock analysis', screener: 'Screener', fno: 'F&O', portfolio: 'Portfolio', money: 'Money', ipo: 'IPO', events: 'Events', crypto: 'Crypto', blog: 'Blog', ticker: 'My ticker' };
+  const PRESETS = [
+    { label: 'Sample: Acme Research', cfg: { name: 'Acme Research', short: 'AR', tagline: 'Research you can act on', primary: '#0b3d2e', accent: '#12a37a', mark: '#f4c542', site: 'research.acme.in', email: 'support@acme.in', phone: '+91 22 0000 0000', address: '101 Sample Tower, Mumbai 400001', legal: { entity: 'Acme Research Private Limited', regType: 'Research Analyst', regNo: 'INH000000000', enlistment: '0000', grievanceName: 'A. Sample', grievanceEmail: 'grievance@acme.in' }, hide: ['crypto', 'blog'] } },
+    { label: 'Sample: Northstar Capital', cfg: { name: 'Northstar Capital', short: 'NC', primary: '#0f2747', accent: '#2f80ed', mark: '#ffffff', site: 'northstar.example', legal: { entity: 'Northstar Capital LLP', regType: 'Research Analyst', regNo: 'INH000000001' }, hide: ['crypto'] } },
+    { label: 'Sample: Saffron Markets', cfg: { name: 'Saffron Markets', short: 'SM', primary: '#5a1a00', accent: '#e8590c', mark: '#ffd43b', site: 'saffron.example', legal: {}, hide: ['crypto', 'money'] } },
+  ];
+  let C = (() => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (_) { return null; } })() || JSON.parse(JSON.stringify(PRESETS[0].cfg));
+  let page = '/', device = 'desktop', timer = null, lastSrc = '';
+
+  const toast = (t) => { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 1600); };
+  const setVal = (id, v) => { $(id).value = v || ''; };
+  function fill() {
+    setVal('f-name', C.name); setVal('f-short', C.short); setVal('f-site', C.site); setVal('f-tagline', C.tagline);
+    $('f-primary').value = C.primary || W.DEFAULT.primary; $('f-accent').value = C.accent || W.DEFAULT.accent; $('f-mark').value = C.mark || W.DEFAULT.mark;
+    const L = C.legal || {};
+    setVal('f-entity', L.entity); setVal('f-regType', L.regType); setVal('f-regNo', L.regNo); setVal('f-enlistment', L.enlistment);
+    setVal('f-phone', C.phone); setVal('f-email', C.email); setVal('f-address', C.address); setVal('f-gName', L.grievanceName); setVal('f-gEmail', L.grievanceEmail); setVal('f-extra', L.extra);
+    document.querySelectorAll('#sections input').forEach((i) => { i.checked = !(C.hide || []).includes(i.value); });
+    $('f-powered').checked = !!C.poweredBy;
+    paintLogo();
+  }
+  function read() {
+    const v = (id) => $(id).value.trim();
+    C = {
+      name: v('f-name'), short: v('f-short'), site: v('f-site'), tagline: v('f-tagline'), logo: C.logo || '',
+      primary: $('f-primary').value, accent: $('f-accent').value, mark: $('f-mark').value,
+      phone: v('f-phone'), email: v('f-email'), address: v('f-address'),
+      legal: { entity: v('f-entity'), regType: v('f-regType'), regNo: v('f-regNo'), enlistment: v('f-enlistment'), grievanceName: v('f-gName'), grievanceEmail: v('f-gEmail'), extra: v('f-extra') },
+      hide: [...document.querySelectorAll('#sections input')].filter((i) => !i.checked).map((i) => i.value),
+      poweredBy: $('f-powered').checked,
+    };
+  }
+  // Only the fields that are set, so links stay short.
+  function compact(cfg) {
+    const out = {};
+    for (const [k, v] of Object.entries(cfg)) {
+      if (k === 'legal') { const l = {}; for (const [a, b] of Object.entries(v || {})) if (b) l[a] = b; if (Object.keys(l).length) out.legal = l; }
+      else if (Array.isArray(v) ? v.length : v) out[k] = v;
+    }
+    return out;
+  }
+  const code = () => W.encode(compact(C));
+  const link = (p) => location.origin + (p || '/') + '?wl=' + code();
+  function paintLogo() {
+    const box = $('logoPrev'), clean = W.clean(C);
+    for (const k of ['primary', 'accent', 'mark']) $('v-' + k).textContent = $('f-' + k).value;
+    if (C.logo) { box.innerHTML = '<img alt="">'; box.firstChild.src = C.logo; box.style.background = 'transparent'; }
+    else { box.textContent = clean ? clean.short : '?'; box.style.background = $('f-primary').value; box.style.color = $('f-mark').value; }
+  }
+  function update(now) {
+    read(); paintLogo();
+    try { localStorage.setItem(KEY, JSON.stringify(C)); } catch (_) {}
+    const ok = !!W.clean(C);
+    $('linkOut').textContent = ok ? link('/') : 'Enter a brand name first.';
+    clearTimeout(timer);
+    timer = setTimeout(preview, now ? 0 : 700);
+  }
+  function preview() {
+    if (!W.clean(C)) return;
+    const src = page + '?wl=' + code();
+    if (src === lastSrc) return;
+    lastSrc = src; $('pv').src = src;
+  }
+  // Desktop preview: a 1366-wide page scaled to fit the panel.
+  function fit() {
+    const st = $('stage'), f = $('pv');
+    st.classList.toggle('phone', device === 'phone');
+    if (device === 'phone') { f.style.width = '390px'; f.style.height = (st.clientHeight - 28) + 'px'; f.style.transform = 'none'; return; }
+    const w = 1366, s = Math.min(1, st.clientWidth / w);
+    f.style.width = w + 'px'; f.style.height = (st.clientHeight / s) + 'px'; f.style.transform = 'scale(' + s + ')';
+  }
+  async function copy(text, what) {
+    try { await navigator.clipboard.writeText(text); toast(what + ' copied'); }
+    catch (_) { prompt('Copy this:', text); }
+  }
+
+  // logo upload: shrink to fit 160 px, keep transparency
+  $('f-logo').addEventListener('change', (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, 160 / Math.max(img.width || 160, img.height || 160));
+        const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round((img.width || 160) * s)); cv.height = Math.max(1, Math.round((img.height || 160) * s));
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        let url = cv.toDataURL('image/png');
+        if (url.length > 60000) url = cv.toDataURL('image/webp', 0.85);
+        C.logo = url; update(true);
+      };
+      img.onerror = () => toast('Could not read that image');
+      img.src = r.result;
+    };
+    r.readAsDataURL(file);
+    e.target.value = '';
+  });
+  $('logoClear').addEventListener('click', () => { C.logo = ''; update(true); });
+
+  $('sections').innerHTML = Object.keys(W.SECTIONS).map((k) => `<label class="chip"><input type="checkbox" value="${k}" checked> ${LABELS[k] || k}</label>`).join('');
+  $('presets').innerHTML = PRESETS.map((p, i) => `<button class="btn" type="button" data-preset="${i}">${p.label}</button>`).join('');
+  $('presets').addEventListener('click', (e) => { const b = e.target.closest('[data-preset]'); if (!b) return; C = JSON.parse(JSON.stringify(PRESETS[+b.dataset.preset].cfg)); fill(); update(true); });
+  document.querySelectorAll('input,select,textarea').forEach((el) => { if (el.id !== 'f-logo') el.addEventListener('input', () => update(false)); });
+  document.querySelectorAll('#sections input,#f-powered,select').forEach((el) => el.addEventListener('change', () => update(false)));
+  $('openDemo').addEventListener('click', () => { if (W.clean(C)) window.open(link(page), '_blank', 'noopener'); });
+  $('copyLink').addEventListener('click', () => W.clean(C) && copy(link('/'), 'Demo link'));
+  $('copyConfig').addEventListener('click', () => {
+    const cfg = W.clean(C); if (!cfg) return;
+    const slug = cfg.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    copy(`    '${slug}': ${JSON.stringify(Object.assign({ hosts: [cfg.site || 'client-domain.example'] }, compact(cfg)), null, 2).replace(/\n/g, '\n    ')},`, 'Deployment config');
+  });
+  $('reset').addEventListener('click', () => { C = JSON.parse(JSON.stringify(PRESETS[0].cfg)); fill(); update(true); });
+  $('pvPage').addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (!b) return; page = b.dataset.p; $('pvPage').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); preview(); });
+  $('pvDevice').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; device = b.dataset.d; $('pvDevice').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); fit(); });
+  window.addEventListener('resize', fit);
+
+  fill(); fit(); update(true);
+})();
+</script>
+</body>
+</html>

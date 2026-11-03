@@ -186,6 +186,17 @@
 - **Sign-in** with email and password. **Google** and **phone number (SMS code)** buttons appear automatically once those providers are enabled in Supabase (`auth-extra.js`).
 - Profile with name and photo, watchlist, price alerts, and an admin panel for news and users.
 
+### White-label mode
+
+The whole site can run under another firm's name, for demos to prospects or for a client's own deployment (`brand.js`, loaded first in every page's `<head>`, and `brand-studio.html`).
+
+- **What changes:** the brand name everywhere it appears (page text, titles, tooltips, meta tags), the logo and favicon (an uploaded logo, or a monogram tile), the main colours, which sections are offered (hidden ones leave the menus and their pages redirect to Home), and the festive-picks poster, story and PDF (`picks-export.js` reads `window.MP_BRAND`).
+- **SEBI details:** with a registration number, every page gets a footer with the entity, SEBI registration type and number, BSE enlistment, address and contacts, the grievance officer, links to SEBI SCORES and SMART ODR, and the standard SEBI wording ("Registration granted by SEBI … no assurance of returns", "Investment in securities market are subject to market risks …"). "Not SEBI-registered" lines on the site become the firm's registration line.
+- **Brand Studio** (`/brand-studio.html`, not linked or indexed): fill in the name, monogram, logo, colours, registration and contacts and the sections to offer, with a live desktop and phone preview of Home, Signals, Picks, Analysis and Screener. It gives a **demo link** (`?wl=…`, the whole brand travels in the link) and a **deployment config**.
+- **Demo links** apply only in that browser tab and always show a "Demo · <name>" pill with Exit and a note that the details were entered for a preview and are not verified, so a link can't pass the site off as a real firm. `?brand=reset` returns to MarketPulse.
+- **A client's deployment:** paste the config from Brand Studio into `BRANDS` in `brand.js` with their domain in `hosts`, and point the domain at the site; that domain then always shows their brand (no pill). `?brand=<slug>` also selects a registered brand.
+- The client must review the Terms, Privacy Policy and disclosures themselves; the name is swapped into the existing pages. Not covered yet: the manifest / installed-app name, emails sent by Supabase Auth, and blog posts' fixed text in RSS.
+
 ---
 
 ## 🏗 How it is built
