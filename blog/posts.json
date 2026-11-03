@@ -1,5 +1,67 @@
 [
   {
+    "slug": "krbl-stock-spotlight-3-nov-2026",
+    "title": "KRBL Surges 10.6% on 18.4x Volume, Reclaims 50-Day Average",
+    "excerpt": "KRBL (KRBL) rose 10.59% to ₹401.45 on volume 18.4 times its three-month average.",
+    "category": "stock-spotlight",
+    "date": "2026-11-03T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "KRBL",
+      "KRBL"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-fmcg-surges-3-65-percent-as-67-of-96-stocks-advance",
+    "title": "Nifty FMCG Surges 3.65% as 67 of 96 Stocks Advance",
+    "excerpt": "The Nifty FMCG index surged 3.65% on 3 Nov 2026, closing at 45,580, as heavyweight stocks powered one of the sector’s strongest sessions in the data.",
+    "category": "sector-analysis",
+    "date": "2026-11-03T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty FMCG",
+      "Sector Analysis",
+      "FMCG",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-3-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 3 Nov 2026: Gains 1.58%",
+    "excerpt": "Indian equities closed firmly higher on 3 Nov 2026, with consumer stocks leading a broad rally. The Nifty 50 surged 370.05 points, or 1.58%, to 23810.85, while the Sensex gained 1.85% to 77092.71. Financial shares also contributed: Nifty Fin Service rose 1.84% to 25357.9, althoug",
+    "category": "daily-wrap",
+    "date": "2026-11-03T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-2-sessions-with-3-114-68-cr-inflow-as-dii-selling-extends-to-2-sessions",
     "title": "FII Buying Extends to 2 Sessions with ₹3,114.68 Cr Inflow as DII Selling Extends to 2 Sessions",
     "excerpt": "Foreign funds kept the market’s engine running on 2 Nov 2026, pouring in enough cash to lift the Nifty 50 even as domestic institutions pulled back.",
