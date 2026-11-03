@@ -3,7 +3,8 @@
 // are fetched and results are cached in memory for 60s, so the function can't
 // be used to hammer Yahoo with arbitrary requests.
 // GIFT Nifty (the near-month Nifty future on NSE IX) comes from NSE IX's public
-// market-rate feed, which has no intraday series, so it is returned without points.
+// market-rate feed, which has no intraday series, so it is returned without points. The feed lists
+// several rows per contract, some stale, in no fixed order, so the contract is picked by expiry.
 // Its open/closed state comes from the session clock (NSE IX's status endpoint can lag by a whole
 // session, e.g. still saying "Session 2 Market Closed - As on <yesterday>" while prices move).
 // GIFT Nifty is cached for 20 s so pages that refresh every 30 s see fresh prices; the index charts for 60 s.
@@ -187,9 +188,17 @@ async function fetchGift(): Promise<Gift | null> {
       fetch("https://www.nseix.com/api/market-rate?type=derivatives", { headers: NSEIX_HEADERS }).then((r) => r.ok ? r.json() : null),
       fetch("https://www.nseix.com/api/derivatives-market-status", { headers: NSEIX_HEADERS }).then((r) => r.ok ? r.json() : null).catch(() => null),
     ]);
-    // Rows are near-month first; take the first NIFTY index future that has a price.
-    const row = (rate?.data || []).find((x: Record<string, unknown>) =>
-      x.SYMBOL === "NIFTY" && x.INSTRUMENTTYPE === "FUTIDX" && num(String(x.LASTPRICE).replace(/,/g, "")) !== null);
+    // The feed's order isn't reliable and it mixes in stale rows (months-old timestamps, DAYCHANGE equal to
+    // the price) with the live ones. Keep sane rows of unexpired contracts traded in the last 4 days and take
+    // the nearest expiry (the near-month contract is GIFT Nifty); on a tie, the latest trade.
+    const p = (v: unknown) => num(String(v ?? "").replace(/,/g, ""));
+    const now = Date.now();
+    const rows = (rate?.data || [])
+      .filter((x: Record<string, unknown>) => x.SYMBOL === "NIFTY" && x.INSTRUMENTTYPE === "FUTIDX" && p(x.LASTPRICE) !== null)
+      .map((x: Record<string, unknown>) => ({ x, price: p(x.LASTPRICE)!, chg: num(x.DAYCHANGE_1) ?? p(x.DAYCHANGE) ?? 0, exp: istMs(String(x.EXPIRYDATE || "")), ts: istMs(String(x.TIMESTMP || "")) }))
+      .filter((r: { price: number; chg: number; exp: number; ts: number }) => r.exp + 864e5 > now && r.ts > now - 4 * 864e5 && Math.abs(r.chg) < r.price * 0.1)
+      .sort((a: { exp: number; ts: number }, b: { exp: number; ts: number }) => a.exp - b.exp || b.ts - a.ts);
+    const row = rows[0]?.x;
     if (!row) return await lastGift(); // feed empty between sessions: last saved reading
     const price = num(String(row.LASTPRICE).replace(/,/g, ""))!;
     const change = num(row.DAYCHANGE_1) ?? num(String(row.DAYCHANGE).replace(/,/g, "")) ?? 0;

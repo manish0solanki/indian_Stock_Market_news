@@ -64,6 +64,13 @@ begin
   checks := checks || public.mp_health_day('Market data', 'FII / DII flows', dd,
     case when ist::date = last_session and mins < 1260 then last_session - case when extract(isodow from last_session) = 1 then 3 else 1 end else last_session end,
     'NSE publishes in the evening');
+  -- GIFT Nifty: last trade time of the contract shown (index-sparklines saves each live reading).
+  -- Sessions (IST, Mon–Fri): 06:30–15:40 and 16:35–02:45 next morning.
+  select (to_timestamp(data->>'as_of', 'DD-Mon-YYYY HH24:MI:SS')::timestamp at time zone 'Asia/Kolkata') into t from gift_nifty_last where id = 1;
+  checks := checks || case
+    when (dow <= 5 and (mins between 400 and 940 or mins >= 1005)) or (dow between 2 and 6 and mins < 165)
+      then public.mp_health_age('Market data', 'GIFT Nifty', t, 30, 90, 'NSE IX near-month Nifty future, last trade time (saved by index-sparklines while the site is open)')
+    else jsonb_build_object('group', 'Market data', 'name', 'GIFT Nifty', 'status', 'idle', 'detail', 'Between sessions · last trade ' || coalesce(to_char(t at time zone 'Asia/Kolkata', 'DD Mon HH24:MI'), '—') || ' IST', 'last', t) end;
 
   -- ---------- News & content ----------
   select max(created_at) into t from news;

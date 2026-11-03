@@ -146,7 +146,7 @@
 ### 🩺 Data Health (Admin Panel → Data health tab, `admin-health.js`, admins only)
 - One page that shows whether every data feed is working: Indian and global quotes, stock quotes and coverage, sector indices, daily price history, FII/DII, news, global headlines, crude, live insights, events, IPOs, the economic calendar schedule, the signals scanner, background job heartbeats and pg_cron failures (from `data_health()`).
 - Each check knows what to expect at that moment (strict in market hours, last session's data otherwise), so nights and weekends don't raise false alarms.
-- Live checks call each backend function from the browser (GIFT Nifty, option chain, index history, stock data, stock news, MF NAVs, global market data) and the published blog posts are checked against the expected dates.
+- Live checks call each backend function from the browser (GIFT Nifty, option chain, index history, stock data, stock news, MF NAVs, global market data) and the published blog posts are checked against the expected dates. Data Health also checks GIFT Nifty's last trade time during its sessions.
 - **▶ Run now** on each check that is backed by a background job re-runs that job straight away (`admin_run_job()` in `supabase/admin-run-job.sql`). Manual runs pass `force=1` so they skip the "refreshed recently" / market-hours throttles, the reply is shown under the button, and the checks are re-run afterwards. Only allowlisted data jobs can be run (trading bots and clean-up jobs are excluded), at most once per 30 seconds; the cron secret never leaves the database and each run is logged in `admin_job_runs`.
 - A tab in the Admin Panel (`admin-news.html#health`) with a badge counting problems; re-checks every 2 minutes. `admin-health.html` redirects there.
 
@@ -242,7 +242,7 @@
 |---|---|
 | `stock-data` | On-demand quote, Yahoo fundamentals and daily history (`?symbol=TCS&days=400`) |
 | `stock-fundamentals` | Last 8 quarterly results from NSE integrated-filing XBRL, cached 6 h |
-| `index-sparklines` | Intraday index paths, GIFT Nifty (NSE IX) and India VIX |
+| `index-sparklines` | Intraday index paths, GIFT Nifty (NSE IX; the near-month contract is picked by expiry, ignoring stale rows in the feed) and India VIX |
 | `mf-data` | Mutual fund NAVs |
 | `stock-news` | Per-stock headlines (Google News) and NSE filings for the stock card's News tab (`?symbol=POWERGRID&name=...`), cached 15 min |
 | `option-chain` | NSE option chain with PCR, max pain, support/resistance and expected move (`?symbol=NIFTY&expiry=03-Nov-2026`), cached a minute |
