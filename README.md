@@ -93,7 +93,8 @@
 - **F&O filter** on the Signals tab and the Signal record: shows only stocks with NSE futures & options (`is_fno` in the feed, `stocks.is_fno` for the record; win rate and average R are recomputed for F&O stocks). F&O signals carry a badge; the choice is remembered in the browser.
 
 ### 🔍 Stock Analysis (`stock-analysis.html`)
-- Interactive chart with RSI, MACD, Bollinger Bands, ADX, and support and resistance, plus fundamentals for any NSE stock.
+- **TradingView Lightweight Charts** price chart (open source, Apache 2.0, loaded from jsDelivr `lightweight-charts@4.2.0`; the small TradingView logo on the chart is the attribution its licence asks for): candles or area, volume, EMA 20/50, SMA 200, Bollinger Bands, support / resistance, and the Stock Signals scanner's entry / stop / targets when it has a live setup. Pinch or scroll to zoom, drag to pan (a vertical swipe still scrolls the page); range buttons set the window and live updates keep your zoom; follows light / dark. Falls back to the built-in SVG chart if the library can't load.
+- Indicators: RSI, MACD, Bollinger Bands, ADX, support and resistance, plus fundamentals for any NSE stock.
 - **All signals** list: the same BUY / WAIT / SELL rules run across the ~220 stocks the signals scanner follows (daily bars from `analysis_scan_bars()`, `supabase/analysis-scan.sql`), with Buy / Sell / Wait tabs, an "F&O stocks" filter (NSE futures & options stocks from `stocks.is_fno`, remembered in the browser; F&O stocks carry a badge), search, and sorting by score, signal, symbol or company (A–Z), price, day / 1-month / 3-month change, RSI, sector or market cap, either direction. Strong scanner setups upgrade WAIT as on the single-stock view.
 
 ### 🧮 Stock Screener (`screener.html`)
