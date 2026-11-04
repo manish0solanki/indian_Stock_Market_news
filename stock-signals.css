@@ -31,9 +31,10 @@ a{color:var(--accent);text-decoration:none}
 .iconbtn{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:10px;width:36px;height:36px;font-size:17px;cursor:pointer}
 
 /* ---- index strip ---- */
-.indexstrip{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;scrollbar-width:none;background:var(--bg)}
+.indexstrip{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;scrollbar-width:none;background:var(--bg);max-width:860px;margin:0 auto;box-sizing:border-box}
 .indexstrip::-webkit-scrollbar{display:none}
 .ix{flex:0 0 auto;min-width:118px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:7px 10px}
+@media(min-width:640px){.ix{flex:1 1 0}}  /* wide screens: the cards fill the row, edge to edge with the tabs and list */
 .ix b{display:block;font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
 .ix .v{font-family:var(--mono);font-size:13px;font-weight:600}
 .ix .c{font-family:var(--mono);font-size:11px;font-weight:600}
@@ -124,7 +125,8 @@ select{font-size:12.5px;font-weight:600}
 @media(max-width:480px){.tabbar.five b{display:none}.tabbar.five span{font-size:12px}}
 @media(min-width:761px){body{padding-bottom:20px}.tabbar{top:60px}}
 @media(min-width:900px){
-  .tabbar{max-width:860px;margin:2px auto 12px}
+  /* same edges as the content inside main (860px minus its 14px padding each side) and the index strip */
+  .tabbar{max-width:832px;margin:2px auto 12px}
   .list{display:grid;grid-template-columns:1fr 1fr}
 }
 
