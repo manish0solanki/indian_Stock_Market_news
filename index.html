@@ -3408,6 +3408,7 @@ input,select,textarea{min-width:0;}
 }
 </style>
 <link rel="stylesheet" href="/global-market.css?v=3">
+<link rel="stylesheet" href="/sectors-page.css?v=1">
 <style>
 /* Account menu: every item the same size, border and alignment */
 #accountMenu{min-width:230px}
@@ -3827,39 +3828,62 @@ input,select,textarea{min-width:0;}
     </div>
   </section>
 
-  <!-- SECTORS PAGE -->
+  <!-- SECTORS PAGE (market read, scoreboard, rotation map and groups: /sectors-page.js) -->
   <section class="mp-page hidden" id="page-sectors" data-page-view="sectors">
     <div class="mp-page-header">
       <div class="mp-page-kicker">Market Structure</div>
-      <h1 class="mp-page-title">Sector Dashboard</h1>
+      <h1 class="mp-page-title">Sector Analysis</h1>
       <p class="mp-page-subtitle" id="sectorMeta">
         Loading live sector data…
       </p>
     </div>
 
     <div class="mp-page-grid">
-      <div class="mp-panel span-12">
-        <div class="mp-panel-title">
-          <span>Sector Performance</span>
-          <span class="widget-badge positive">LIVE DATA</span>
+      <div id="sxRoot"><div class="mp-panel span-12 sx-empty">Loading sector data…</div></div>
+
+      <div class="mp-panel span-12" id="sxSignals">
+        <div class="mp-panel-title"><span>Today's sector signals</span><span class="widget-badge neutral">LIVE</span></div>
+        <div class="sx-tabs sx-sig-tabs" role="tablist">
+          <button type="button" class="sx-tab on" data-sig-tab="crude">Crude impact</button>
+          <button type="button" class="sx-tab" data-sig-tab="def">Defensive vs risk-on</button>
+          <button type="button" class="sx-tab" data-sig-tab="confirm">Is the move confirmed?</button>
         </div>
-        <div class="mp-table-wrap">
+        <div class="sx-sig-pane on" data-sig="crude" id="insightCrude">
+        <div class="sx-sig-h"><span>Crude-sensitive</span><span class="widget-badge neutral" id="crudeBadge">—</span></div>
+        <div id="crudeVerdict" class="mp-panel-note" style="margin:0 0 8px">Loading crude data…</div>
+        <div class="mp-table-wrap" style="max-height:340px;overflow:auto">
           <table class="mp-table">
-            <thead>
-              <tr><th>Sector</th><th>Index</th><th>Price</th><th>Change</th><th>Trend</th></tr>
-            </thead>
-            <tbody id="pageSectorBody">
-              <tr><td colspan="5" class="mp-empty-state">Loading sector data…</td></tr>
-            </tbody>
+            <thead><tr><th>Group</th><th>Stocks</th><th>Avg</th><th>Up/Down</th><th>Reaction</th></tr></thead>
+            <tbody id="crudeBody"></tbody>
           </table>
         </div>
+        <p class="mp-panel-note" style="margin-top:6px">Input-cost users (airlines, paints, tyres, chemicals, plastics) normally fall when crude rises; oil producers normally gain. "Reaction" checks whether today's move matches that.</p>
+      </div>
+        <div class="sx-sig-pane" data-sig="def" id="insightDefensive">
+        <div class="sx-sig-h"><span>Defensive watch</span><span class="widget-badge neutral" id="defBadge">—</span></div>
+        <div id="defVerdict" class="mp-panel-note" style="margin:0 0 8px">Loading defensive data…</div>
+        <div class="mp-table-wrap" style="max-height:340px;overflow:auto">
+          <table class="mp-table">
+            <thead><tr><th>Theme</th><th>Avg</th><th>vs market</th><th>Up/Down</th></tr></thead>
+            <tbody id="defBody"></tbody>
+          </table>
+        </div>
+        <p class="mp-panel-note" style="margin-top:6px">Defensives = FMCG &amp; food, healthcare, utilities, telecom and insurance. "vs market" is the theme's average move minus the average of all stocks.</p>
+      </div>
+        <div class="sx-sig-pane" data-sig="confirm" id="insightConfirm">
+        <div class="sx-sig-h"><span>Confirmation</span><span class="widget-badge neutral" id="confirmBadge">—</span></div>
+        <div class="mp-table-wrap" style="max-height:420px;overflow:auto">
+          <table class="mp-table">
+            <thead><tr><th>Industry (biggest movers)</th><th>Move</th><th>Breadth</th><th>Trend</th><th>Volume</th><th>Verdict</th></tr></thead>
+            <tbody id="confirmBody"><tr><td colspan="6" class="mp-empty-state">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="mp-panel-note" style="margin-top:6px">A sector move is only a usable signal when it is confirmed. <b>Breadth</b>: at least 65% of its stocks moved the same way. <b>Trend</b>: at least 55% of its stocks are on the matching side of their 50-day average. <b>Volume</b>: trading at least 1.15× the market's normal relative volume. Click a row to see the stocks.</p>
+      </div>
       </div>
 
-      <div class="mp-panel span-12" id="industryPanel">
-        <div class="mp-panel-title">
-          <span>Industry Strength <span style="font-weight:400;font-size:11px;color:var(--text-muted)">· equal-weight average of every stock in the industry</span></span>
-          <span class="widget-badge neutral" id="industryBadge">—</span>
-        </div>
+      <details class="mp-panel span-12 sx-all" id="industryPanel">
+        <summary><span>All industries <small>· every industry, equal-weight average of every stock</small></span><span class="widget-badge neutral" id="industryBadge">—</span></summary>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px">
           <div class="filter-chip positive active" id="indSortStrong" role="button" tabindex="0"><span class="fc-dot"></span><span class="fc-label">Strongest</span></div>
           <div class="filter-chip negative" id="indSortWeak" role="button" tabindex="0"><span class="fc-dot"></span><span class="fc-label">Weakest</span></div>
@@ -3873,7 +3897,7 @@ input,select,textarea{min-width:0;}
           </table>
         </div>
         <p class="mp-panel-note" style="margin-top:8px">Click an industry to see its stocks.</p>
-      </div>
+      </details>
 
       <div class="mp-panel span-12" id="industryStocksPanel" style="display:none">
         <div class="mp-panel-title">
@@ -3886,41 +3910,6 @@ input,select,textarea{min-width:0;}
             <tbody id="industryStocksBody"></tbody>
           </table>
         </div>
-      </div>
-
-      <div class="mp-panel span-6" id="insightCrude">
-        <div class="mp-panel-title"><span>Crude-sensitive</span><span class="widget-badge neutral" id="crudeBadge">—</span></div>
-        <div id="crudeVerdict" class="mp-panel-note" style="margin:0 0 8px">Loading crude data…</div>
-        <div class="mp-table-wrap" style="max-height:340px;overflow:auto">
-          <table class="mp-table">
-            <thead><tr><th>Group</th><th>Stocks</th><th>Avg</th><th>Up/Down</th><th>Reaction</th></tr></thead>
-            <tbody id="crudeBody"></tbody>
-          </table>
-        </div>
-        <p class="mp-panel-note" style="margin-top:6px">Input-cost users (airlines, paints, tyres, chemicals, plastics) normally fall when crude rises; oil producers normally gain. "Reaction" checks whether today's move matches that.</p>
-      </div>
-
-      <div class="mp-panel span-6" id="insightDefensive">
-        <div class="mp-panel-title"><span>Defensive watch</span><span class="widget-badge neutral" id="defBadge">—</span></div>
-        <div id="defVerdict" class="mp-panel-note" style="margin:0 0 8px">Loading defensive data…</div>
-        <div class="mp-table-wrap" style="max-height:340px;overflow:auto">
-          <table class="mp-table">
-            <thead><tr><th>Theme</th><th>Avg</th><th>vs market</th><th>Up/Down</th></tr></thead>
-            <tbody id="defBody"></tbody>
-          </table>
-        </div>
-        <p class="mp-panel-note" style="margin-top:6px">Defensives = FMCG &amp; food, healthcare, utilities, telecom and insurance. "vs market" is the theme's average move minus the average of all stocks.</p>
-      </div>
-
-      <div class="mp-panel span-12" id="insightConfirm">
-        <div class="mp-panel-title"><span>Confirmation</span><span class="widget-badge neutral" id="confirmBadge">—</span></div>
-        <div class="mp-table-wrap" style="max-height:420px;overflow:auto">
-          <table class="mp-table">
-            <thead><tr><th>Industry (biggest movers)</th><th>Move</th><th>Breadth</th><th>Trend</th><th>Volume</th><th>Verdict</th></tr></thead>
-            <tbody id="confirmBody"><tr><td colspan="6" class="mp-empty-state">Loading…</td></tr></tbody>
-          </table>
-        </div>
-        <p class="mp-panel-note" style="margin-top:6px">A sector move is only a usable signal when it is confirmed. <b>Breadth</b>: at least 65% of its stocks moved the same way. <b>Trend</b>: at least 55% of its stocks are on the matching side of their 50-day average. <b>Volume</b>: trading at least 1.15× the market's normal relative volume. Click a row to see the stocks.</p>
       </div>
     </div>
   </section>
@@ -8440,6 +8429,7 @@ function showVoiceHint(msg, isError) {
       loadSectorList();
       loadSectorMeta();
       loadSectorInsights();
+      if (window.mpSectors) window.mpSectors.show();
     }
 
     if (page === 'global') {
@@ -8716,27 +8706,8 @@ function fmtCapCr(n) {
   return cr.toLocaleString('en-IN', { maximumFractionDigits: 0 }) + ' Cr';
 }
 
+// The Sectors page itself (market read, scoreboard, rotation map, groups) is rendered by /sectors-page.js.
 function renderPageSectors() {
-  const target = document.getElementById('pageSectorBody');
-  if (!target) return;
-  const items = sectorIndexItems;
-  if (!items.length) return;
-  const rows = items.slice().sort((a, b) => Number(b.change_percent) - Number(a.change_percent));
-  const maxAbs = Math.max(0.5, ...rows.map(r => Math.abs(Number(r.change_percent) || 0)));
-  target.innerHTML = rows.map(r => {
-    const pct = Number(r.change_percent) || 0;
-    const chg = Number(r.change) || 0;
-    const up = pct >= 0;
-    const w = Math.round(Math.abs(pct) / maxAbs * 100);
-    const price = Number(r.price).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-    return `<tr>
-      <td><b>${r.display_name || r.name}</b></td>
-      <td class="mono">${r.name}</td>
-      <td class="mono">${price}</td>
-      <td class="mono ${up ? 'up' : 'down'}">${up ? '+' : ''}${chg.toFixed(2)} (${up ? '+' : ''}${pct.toFixed(2)}%)</td>
-      <td><div style="height:8px;width:100%;max-width:140px;background:var(--bg);border-radius:99px;overflow:hidden"><div style="height:100%;width:${w}%;background:${up ? 'var(--positive)' : 'var(--negative)'}"></div></div></td>
-    </tr>`;
-  }).join('');
   renderIndustryPanel();
 }
 
@@ -8962,6 +8933,11 @@ function renderSectorInsights() {
   bind('indSortStrong', 'strong'); bind('indSortWeak', 'weak'); bind('indSortSize', 'size');
   const inp = document.getElementById('industrySearch');
   if (inp) inp.addEventListener('input', () => { industryQuery = inp.value; renderIndustryPanel(); });
+  document.querySelectorAll('[data-sig-tab]').forEach(btn => btn.addEventListener('click', () => {
+    const k = btn.getAttribute('data-sig-tab');
+    document.querySelectorAll('[data-sig-tab]').forEach(b => b.classList.toggle('on', b === btn));
+    document.querySelectorAll('.sx-sig-pane').forEach(p => p.classList.toggle('on', p.getAttribute('data-sig') === k));
+  }));
   setInterval(() => {
     const pg = document.getElementById('page-sectors');
     if (!document.hidden && pg && !pg.classList.contains('hidden')) { loadSectorMeta(); loadSectorInsights(); loadSectorIndices(); loadSectorList(); }
@@ -9484,6 +9460,7 @@ if ('serviceWorker' in navigator) {
 <script src="/live-insights.js?v=4"></script>
 <script src="/top-signals.js?v=2"></script>
 <script src="/global-market.js?v=5"></script>
+<script src="/sectors-page.js?v=1"></script>
 <script src="/stock-news.js?v=1"></script>
 <script src="/home-watchlist.js?v=3"></script>
 <script src="/auth-extra.js?v=1"></script>

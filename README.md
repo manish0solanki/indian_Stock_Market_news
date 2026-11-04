@@ -92,6 +92,14 @@
 - **History → Signal record** (`signal_history()`): every closed signal with its outcome (target, stop, expired), result in % and R, win rate and average R, filterable by swing or intraday and by outcome. "My paper trades" keeps your own trade history.
 - **F&O filter** on the Signals tab and the Signal record: shows only stocks with NSE futures & options (`is_fno` in the feed, `stocks.is_fno` for the record; win rate and average R are recomputed for F&O stocks). F&O signals carry a badge; the choice is remembered in the browser.
 
+### 🧭 Sector Analysis (`index.html#sectors`, `sectors-page.js/.css`)
+- **Market read**: a plain-English verdict (e.g. "Relief rally in a weak market") from today's breadth, the share of stocks above their 50- and 200-day averages and stocks near 52-week highs vs lows, with gauges and the reasons.
+- **Sector scoreboard**: the 20 NSE sector indices against the Nifty 50 over Today / 1W / 1M / 3M / 6M / 1Y, with the gap to the Nifty, trend (above the 50/200-day average), distance from the 52-week high, a 3-month chart and the rotation phase. Click a row for that group's stocks.
+- **Rotation map**: relative strength vs the Nifty (price ratio over its 3-month average) against its 10-day momentum, in four quadrants (Leading, Weakening, Lagging, Improving) with a 4-week trail.
+- **Breadth & valuation by sector**: for each broad group, market-cap-weighted move, up/down, % above the 50/200-day averages, near highs/lows, median P/E, volume vs normal and top gainer/loser; click for the stocks (`sector_group_stocks()`).
+- **Today's sector signals** (crude impact, defensive vs risk-on, is the move confirmed) in tabs, and every industry in a collapsible table.
+- Data: `sector_dashboard()` (`supabase/sector-dashboard.sql`), daily index closes in `sector_index_history` from the `sector-history` function. Seven indices Yahoo has no history for (Media, Private Bank, Oil & Gas, Healthcare, Consumer Durables, Commodities, Services) show "—" for longer periods until their history builds up day by day.
+
 ### 🔍 Stock Analysis (`stock-analysis.html`)
 - **TradingView Lightweight Charts** price chart (open source, Apache 2.0, loaded from jsDelivr `lightweight-charts@4.2.0`; the small TradingView logo on the chart is the attribution its licence asks for): candles or area, volume, EMA 20/50, SMA 200, Bollinger Bands, support / resistance, and the Stock Signals scanner's entry / stop / targets when it has a live setup. Pinch or scroll to zoom, drag to pan (a vertical swipe still scrolls the page); range buttons set the window and live updates keep your zoom; follows light / dark. Falls back to the built-in SVG chart if the library can't load.
 - Indicators: RSI, MACD, Bollinger Bands, ADX, support and resistance, plus fundamentals for any NSE stock.
@@ -239,6 +247,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 |---|---|---|
 | `index-refresh` | every minute + every 30 s | Indian indices every minute. Global markets, US futures, Asian and European indices, VIX, US yields, currencies, commodities and crypto every 30 seconds (`?fast=1`, Yahoo batch quotes), with last trade times added every 5 minutes (`index_quotes`) |
 | `sector-refresh` | every 3 min | Sector indices and ~2,600 stock quotes (`sector_index_quotes`, `stock_quotes`) |
+| `sector-history` | 10:50 Mon–Fri (4:20 PM IST) | Daily closes of the sector indices and the Nifty 50 for the Sectors page (`sector_index_history`) |
 | `stock-signals-refresh` | every 5 min | Rebuilds swing and intraday signals (`stock_signals`) |
 | `stock-paper-monitor` | every minute | Fills stops and targets on open paper trades |
 | `live-insights` | :05/:20/:35/:50, 03–10 UTC, Mon–Fri | `refresh_live_insights()`: Home's live insight cards (skips holidays) |
@@ -271,6 +280,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `ipo-refresh` | IPOs and GMP |
 | `news-refresh` | News collection |
 | `index-refresh`, `sector-refresh`, `stocks-sync` | Market data collection |
+| `sector-history` | Daily closes of the NSE sector indices and the Nifty 50 from Yahoo (2 years for a new index, else the last month; `?range=` to override) |
 | `crypto-bot`, `crypto-monitor` | Crypto paper-trading bot, circuit-breaker, shadow trades |
 | `blog-dispatch` | Starts the GitHub Actions blog workflow from pg_cron |
 | `frame-check` | Tells `link-viewer.js` whether an outside page can be embedded |
@@ -335,6 +345,7 @@ The main tables:
 | Insights | `live_insights` + `refresh_live_insights()` (`supabase/live-insights.sql`) |
 | Signals | `stock_signals`, `stock_signals_feed()`, `stock_signals_top()` (`supabase/stock-signals-top.sql`), `stock_paper_accounts`, `stock_paper_trades` |
 | Screener | `stock_screener()`, `mp_broad_sector()` (`supabase/stock-screener.sql`) |
+| Sectors | `sector_index_history`, `sector_index_groups`, `sector_dashboard()`, `sector_group_stocks()` (`supabase/sector-dashboard.sql`) |
 | Fundamentals | `stock_fundamentals_cache` (`supabase/stock-fundamentals-schema.sql`) |
 | Events / IPO | `market_events` (`events-schema.sql`), `econ_events` (`supabase/econ-events.sql`), `ipos` (`ipo-schema.sql`) |
 | Users | `profiles` (users can only edit their name and photo), `portfolios`, `portfolio_transactions`, `portfolio_mf_transactions`, `watchlist`, `stock_alerts`, `user_ticker` |
