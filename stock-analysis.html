@@ -600,19 +600,24 @@ async function mergeLiveQuote(sym, quote) {
  } catch {}
 }
 function withLiveCandle(bars, q) {
- const p = num(q?.price ?? q?.last_price ?? q?.ltp ?? q?.current_price), at = q?.quote_time || q?.market_time;
+ const p = num(q?.price ?? q?.last_price ?? q?.ltp ?? q?.current_price);
+ // Trade time: the live quote's, else the session date the stock-signal-data feed says its price is from.
+ const at = q?.quote_time || q?.market_time || (/^\d{4}-\d{2}-\d{2}$/.test(q?.latest_trading_date_ist || '') ? q.latest_trading_date_ist + 'T06:00:00Z' : null);
  const last = bars.at(-1);
- if (!last || !(p > 0) || !at || typeof last.time !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(last.time)) return bars;
- const qd = istDate(at);
+ if (!last || !(p > 0) || !at || !Number.isFinite(last.ts)) return bars;
  if (Math.abs(p / last.close - 1) > 0.35) return bars; // a split or a bad quote; leave the history alone
+ // Candle times come as plain dates ("2026-11-03") or full timestamps ("2026-11-03T03:45:00.000Z"): compare IST dates.
+ const qd = istDate(at), ld = istDate(last.ts);
  const hi = num(q.high), lo = num(q.low), op = num(q.open), vol = num(q.volume);
- if (qd === last.time) {
+ if (qd === ld) {
   const b = {...last, close: p, high: Math.max(last.high, p, hi > 0 ? hi : p), low: Math.min(last.low, p, lo > 0 ? lo : p), volume: Math.max(last.volume || 0, vol || 0), live: true};
   return bars.slice(0, -1).concat(b);
  }
- if (qd < last.time) return bars;
+ if (qd < ld) return bars;
+ const ts = last.ts + (Date.parse(qd) - Date.parse(ld)); // same time of day as the feed's candles
+ const time = typeof last.time === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(last.time) ? qd : new Date(ts).toISOString();
  const o = op > 0 ? op : num(q.previous_close) > 0 ? num(q.previous_close) : last.close;
- return bars.concat({time: qd, ts: Date.parse(qd), open: o, high: Math.max(o, p, hi > 0 ? hi : p), low: Math.min(o, p, lo > 0 ? lo : p), close: p, volume: vol > 0 ? vol : 0, live: true});
+ return bars.concat({time, ts, open: o, high: Math.max(o, p, hi > 0 ? hi : p), low: Math.min(o, p, lo > 0 ? lo : p), close: p, volume: vol > 0 ? vol : 0, live: true});
 }
 async function searchStocks(q) {
  // Worker results merged with the NSE-synced `stocks` table (see /stock-search.js).
