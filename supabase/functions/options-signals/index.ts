@@ -9,10 +9,20 @@
 //   - price: IV of the long leg <= 1.6 x the stock's 20-day historical volatility (options not unusually expensive)
 //   - reward: max profit >= 0.8 x max loss
 //   - fills are conservative: buy at the ask, sell at the bid (and the reverse on exit)
+// Index options (NIFTY, BANKNIFTY): the scanner has no index signals, so this function makes its own from daily closes
+// (sector_index_history) plus the live level, checked only from 2:45 PM IST so it decides near the close like the test:
+//   BUY  "pullback in uptrend":  20-day avg > 50-day avg, the index is below its 20-day avg but above its 50-day avg,
+//                                and below its lowest close of the previous 4 days
+//   SELL "rally in downtrend":   the mirror image
+//   stop = 1.5 x and target 1 = 2.5 x the average daily move (14 days) from the entry level
+//   Tested on ~21 months of Nifty / Bank Nifty closes: 81 signals, target first 38, stop first 32, +0.71 x the daily
+//   move per signal on average (a breakout rule tested the same way came out at zero, so it was not used).
+//   No sector filter; one spread per index; at most one signal per index per day.
 // Open spreads are marked every run and closed when: the stock hits the signal's stop, the stock reaches target 1, the
 // spread is worth >= 80% of its width, or 2 days are left to expiry.
 // POST/GET ?action=run   (x-cron-secret from app_secrets 'crypto_cron', or a signed-in platform admin)
 //          ?dry=1         apply every rule to the current signals and report, saving nothing
+//                         (&sim=NIFTY:BUY,BANKNIFTY:SELL pretends those index signals fired, to test the spread builder)
 //          ?debug=SYMBOL  (admin / cron only) raw NSE fields for one stock, to check the feed
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -28,6 +38,8 @@ const sleep = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
+const INDEX: Record<string, string> = { NIFTY: "^NSEI", BANKNIFTY: "^NSEBANK" };
+const isIndex = (sym: string) => sym in INDEX;
 const RULES = { minDays: 14, maxDays: 70, closeDaysLeft: 2, maxSpreadLong: 0.12, maxSpreadShort: 0.2, minOI: 50, maxIvHv: 1.6, minReward: 0.8, takeProfit: 0.8, maxNewPerRun: 12 };
 
 async function nse(path: string) {
@@ -55,7 +67,7 @@ async function expiries(sym: string): Promise<string[]> {
   return Array.isArray(d?.expiryDates) ? d.expiryDates : [];
 }
 async function chain(sym: string, expiry: string): Promise<Chain> {
-  const d = await nse(`/api/option-chain-v3?type=Equity&symbol=${encodeURIComponent(sym)}&expiry=${expiry}`);
+  const d = await nse(`/api/option-chain-v3?type=${isIndex(sym) ? "Indices" : "Equity"}&symbol=${encodeURIComponent(sym)}&expiry=${expiry}`);
   const rec = d?.records || {}, data: any[] = Array.isArray(rec.data) ? rec.data : [];
   const ce = new Map<number, Leg>(), pe = new Map<number, Leg>();
   let spot = n(rec.underlyingValue);
@@ -97,8 +109,14 @@ const mid = (l: Leg) => (l.bid > 0 && l.ask >= l.bid ? (l.bid + l.ask) / 2 : 0);
 const spreadPct = (l: Leg) => { const m = mid(l); return m > 0 ? (l.ask - l.bid) / m : Infinity; };
 // 20-day historical volatility (annualised %, from the scanner's daily bars)
 async function histVol(sym: string): Promise<number | null> {
-  const { data } = await db.from("stock_swing_cache").select("bars").eq("symbol", sym).maybeSingle();
-  const c = ((data?.bars as any[]) || []).map((b) => n(b[4])).filter((x) => x > 0).slice(-21);
+  let c: number[];
+  if (isIndex(sym)) {
+    const { data } = await db.from("sector_index_history").select("close").eq("symbol", INDEX[sym]).order("d", { ascending: false }).limit(21);
+    c = (data || []).map((r: any) => n(r.close)).filter((x) => x > 0).reverse();
+  } else {
+    const { data } = await db.from("stock_swing_cache").select("bars").eq("symbol", sym).maybeSingle();
+    c = ((data?.bars as any[]) || []).map((b) => n(b[4])).filter((x) => x > 0).slice(-21);
+  }
   if (c.length < 15) return null;
   const r = c.slice(1).map((x, i) => Math.log(x / c[i])), m = r.reduce((a, b) => a + b, 0) / r.length;
   return Math.sqrt(r.reduce((a, b) => a + (b - m) ** 2, 0) / (r.length - 1)) * Math.sqrt(252) * 100;
@@ -128,10 +146,10 @@ async function markOpen(summary: any) {
       if (!cv) { await log(t.symbol, "mark", "no quote for one of the legs", { expiry: nseExp }); continue; }
       const per = Number(t.lot_size) * Number(t.lots);
       const pnl = r2((cv.value - Number(t.net_debit)) * per);
-      const bull = t.opt_type === "CE", spot = c.spot;
+      const bull = t.opt_type === "CE", spot = c.spot, what = isIndex(t.symbol) ? "index" : "stock";
       let reason = "";
-      if (Number(t.stop) > 0 && (bull ? spot <= Number(t.stop) : spot >= Number(t.stop))) reason = "stock hit the signal's stop";
-      else if (Number(t.target) > 0 && (bull ? spot >= Number(t.target) : spot <= Number(t.target))) reason = "stock reached target 1";
+      if (Number(t.stop) > 0 && (bull ? spot <= Number(t.stop) : spot >= Number(t.stop))) reason = what + " hit the signal's stop";
+      else if (Number(t.target) > 0 && (bull ? spot >= Number(t.target) : spot <= Number(t.target))) reason = what + " reached target 1";
       else if (cv.value >= RULES.takeProfit * Number(t.width)) reason = "spread reached 80% of its maximum value";
       else if (daysLeft(exp) <= RULES.closeDaysLeft) reason = "2 days to expiry";
       const now = new Date().toISOString();
@@ -148,14 +166,51 @@ async function markOpen(summary: any) {
   }
 }
 
-async function openNew(summary: any, dry = false, out: any[] = []) {
+// Index signals from daily closes + the live level (see the header). Returns a stock_signals-shaped row, or a reason.
+const istDateStr = () => istNow().toISOString().slice(0, 10);
+const afterIndexCheckTime = () => { const t = istNow(); return t.getUTCHours() * 60 + t.getUTCMinutes() >= 14 * 60 + 45; };
+async function indexSignal(sym: string, force?: string): Promise<{ sig?: any; why?: string }> {
+  const today = istDateStr();
+  const { data: rows } = await db.from("sector_index_history").select("d, close").eq("symbol", INDEX[sym]).lt("d", today).order("d", { ascending: false }).limit(60);
+  const { data: q } = await db.from("index_quotes").select("price, updated_at").eq("symbol", INDEX[sym]).eq("grp", "snapshot").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  const spot = n(q?.price);
+  const past = (rows || []).map((r: any) => n(r.close)).filter((x) => x > 0).reverse();
+  if (past.length < 50 || !(spot > 0)) return { why: "not enough index history or no live level" };
+  const c = past.concat(spot);
+  const avg = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+  const s20 = avg(c.slice(-20)), s50 = avg(c.slice(-50));
+  const prev4 = past.slice(-4), lo4 = Math.min(...prev4), hi4 = Math.max(...prev4);
+  const moves = c.slice(-15).map((x, i, a) => (i ? Math.abs(x - a[i - 1]) : 0)).slice(1), atr = avg(moves);
+  const at = `${today}T03:45:00.000Z`; // one signal per index per day (9:15 IST)
+  const lv = (x: number) => Math.round(x);
+  if (force === "BUY" || (!force && s20 > s50 && spot < s20 && spot > s50 && spot < lo4))
+    return { sig: { symbol: sym, side: "BUY", setup: "Index pullback in uptrend", score: null, entry: spot, stop: r2(spot - 1.5 * atr), target1: r2(spot + 2.5 * atr), generated_at: at } };
+  if (force === "SELL" || (!force && s20 < s50 && spot > s20 && spot < s50 && spot > hi4))
+    return { sig: { symbol: sym, side: "SELL", setup: "Index rally in downtrend", score: null, entry: spot, stop: r2(spot + 1.5 * atr), target1: r2(spot - 2.5 * atr), generated_at: at } };
+  const trend = s20 > s50 ? "uptrend" : "downtrend";
+  return { why: `no setup: ${lv(spot)} vs 20-day avg ${lv(s20)}, 50-day avg ${lv(s50)} (${trend}); previous 4-day range ${lv(lo4)}–${lv(hi4)}` };
+}
+
+async function openNew(summary: any, dry = false, out: any[] = [], sim: Record<string, string> = {}) {
   // dry run: apply every rule, save nothing, report what would happen
   const note = dry ? async (symbol: string | null, action: string, reason: string, detail: unknown = null) => { out.push({ symbol, action, reason, detail }); } : log;
-  const { data: sigs } = await db.from("stock_signals").select("symbol, side, setup, score, entry, stop, target1, target2, generated_at").in("side", ["BUY", "SELL"]).order("score", { ascending: false });
-  const syms = [...new Set((sigs || []).map((s) => s.symbol))];
+  const { data: stockSigs } = await db.from("stock_signals").select("symbol, side, setup, score, entry, stop, target1, target2, generated_at").in("side", ["BUY", "SELL"]).order("score", { ascending: false });
+  const sigs: any[] = [];
+  // Index signals first (they are checked only from 2:45 PM IST, or any time in a dry run).
+  for (const sym of Object.keys(INDEX)) {
+    if (!dry && !afterIndexCheckTime()) continue;
+    try {
+      const r = await indexSignal(sym, dry ? sim[sym] : undefined);
+      if (r.sig && dry && sim[sym]) { r.sig.setup += " (simulated for testing)"; await note(sym, "simulated", `pretending a ${sim[sym]} signal fired, to test the spread builder`); }
+      if (r.sig) sigs.push(r.sig);
+      else if (dry) await note(sym, "no signal", r.why || "");
+    } catch (e) { await note(sym, "error", "index signal: " + String((e as Error).message || e)); }
+  }
+  sigs.push(...(stockSigs || []));
+  const syms = [...new Set(sigs.map((s) => s.symbol))];
   if (!syms.length) return out;
   const { data: st } = await db.from("stocks").select("symbol, is_fno").in("symbol", syms);
-  const fno = new Set((st || []).filter((s) => s.is_fno).map((s) => s.symbol));
+  const fno = new Set((st || []).filter((s) => s.is_fno).map((s) => s.symbol).concat(Object.keys(INDEX)));
   const { data: open } = await db.from("option_paper_trades").select("symbol").eq("status", "OPEN");
   const busy = new Set((open || []).map((t) => t.symbol));
   const { data: done } = await db.from("option_paper_trades").select("symbol, signal_at").in("symbol", syms);
@@ -169,7 +224,7 @@ async function openNew(summary: any, dry = false, out: any[] = []) {
     if (!fno.has(s.symbol) || busy.has(s.symbol) || seen.has(key) || recentSkip.has(key)) continue;
     if (tried >= RULES.maxNewPerRun) break;
     const skip = async (reason: string, detail: Record<string, unknown> = {}) => { await note(s.symbol, "skipped", reason, { signal_at: sigAt, side: s.side, ...detail }); summary.skipped++; };
-    const { data: ss } = await db.rpc("stock_sector_state", { p_symbol: s.symbol });
+    const { data: ss } = isIndex(s.symbol) ? { data: null as any } : await db.rpc("stock_sector_state", { p_symbol: s.symbol });
     if (ss?.state === "weak") { await skip("sector is weak (" + (ss.grp || "") + ")"); continue; }
     tried++;
     try {
@@ -240,14 +295,17 @@ Deno.serve(async (req) => {
     const sym = dbg.toUpperCase();
     try {
       const list = await expiries(sym); await sleep(250);
-      const raw = await nse(`/api/option-chain-v3?type=Equity&symbol=${encodeURIComponent(sym)}&expiry=${list[0]}`);
+      const raw = await nse(`/api/option-chain-v3?type=${isIndex(sym) ? "Indices" : "Equity"}&symbol=${encodeURIComponent(sym)}&expiry=${list[0]}`);
       const row = (raw?.records?.data || []).find((x: any) => x.CE && x.PE) || null;
-      return json({ expiries: list, ceKeys: row ? Object.keys(row.CE) : null, ce: row?.CE, lot: await lotSize(sym, list[0]), hv: await histVol(sym) });
+      return json({ expiries: list, ceKeys: row ? Object.keys(row.CE) : null, ce: row?.CE, lot: await lotSize(sym, list[0]), hv: await histVol(sym), index: isIndex(sym) ? await indexSignal(sym) : undefined });
     } catch (e) { return json({ error: String(e) }, 502); }
   }
   if (u.searchParams.get("dry") === "1") {
     const summary = { opened: 0, skipped: 0, marked: 0, closed: 0, errors: 0 };
-    const out = await openNew(summary, true);
+    // ?sim=NIFTY:BUY,BANKNIFTY:SELL pretends those index signals fired (dry run only), to test the spread builder
+    const sim: Record<string, string> = {};
+    for (const p of (u.searchParams.get("sim") || "").split(",")) { const [k, v] = p.split(":"); if (k && isIndex(k.toUpperCase()) && (v === "BUY" || v === "SELL")) sim[k.toUpperCase()] = v; }
+    const out = await openNew(summary, true, [], sim);
     return json({ dry: true, market_open: marketOpen(), ...summary, results: out });
   }
   const force = u.searchParams.get("force") === "1";

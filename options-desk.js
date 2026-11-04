@@ -17,6 +17,9 @@
   const dExp = (d) => d ? new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '—';
   const istToday = () => new Date(Date.now() + 330 * 60e3).toISOString().slice(0, 10);
   const daysTo = (d) => Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(istToday() + 'T00:00:00Z')) / 864e5);
+  const IDX = new Set(['NIFTY', 'BANKNIFTY']);
+  // Index names aren't stocks: don't make them open the stock card.
+  const symHtml = (sym) => IDX.has(sym) ? `${esc(sym)} <span class="od-pill">Index</span>` : `<span data-sym="${esc(sym)}">${esc(sym)}</span>`;
   const label = (t) => `${t.strategy === 'bear_put_spread' ? 'Bear put' : 'Bull call'} ${k(t.long_strike)}/${k(t.short_strike)} ${t.opt_type}`;
   const isOpenNow = () => { const t = new Date(Date.now() + 330 * 60e3), m = t.getUTCHours() * 60 + t.getUTCMinutes(), d = t.getUTCDay(); return d >= 1 && d <= 5 && m >= 560 && m <= 930; };
 
@@ -37,6 +40,7 @@
     <div class="od-card"><h3><span>Activity (last 2 days)</span></h3><div class="od-tw" data-od="log"></div></div>
     <div class="od-card"><details><summary>How trades are picked and closed</summary><ul>
       <li><b>Source:</b> the Stock Signals scanner's BUY / SELL signals on F&amp;O stocks. Signals in a <b>weak sector</b> (Sectors page filter) are skipped.</li>
+      <li><b>Nifty &amp; Bank Nifty:</b> their own rule, checked from 2:45 PM IST on daily closes plus the live level. BUY when the 20-day average is above the 50-day, and the index has dipped below its 20-day average (still above the 50-day) to under its lowest close of the previous 4 days; SELL is the mirror image. Stop 1.5× and target 2.5× the average daily move. On ~21 months of history: 81 signals, target first 38, stop first 32, +0.71× the daily move per signal on average (a breakout rule tested the same way came out at zero). At most one signal per index per day.</li>
       <li><b>Trade:</b> BUY → bull call spread (buy the at-the-money call, sell the call at the strike nearest the signal's target 1). SELL → bear put spread. One lot, one spread per stock at a time.</li>
       <li><b>Expiry:</b> the nearest with at least 14 days left, so time decay doesn't dominate.</li>
       <li><b>Liquidity:</b> both legs need a live bid and ask, a bid-ask spread within 12% (bought leg) / 20% (sold leg), and open interest of 50+ contracts.</li>
@@ -75,7 +79,7 @@
       if (!(st > 0 && tg > 0 && now > 0)) return '';
       const lo = Math.min(st, tg), hi = Math.max(st, tg), pos = (v) => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100)), bull = t.opt_type === 'CE';
       return `<div class="od-meter"><i class="st" style="left:${pos(st)}%"></i><i class="tg" style="left:calc(${pos(tg)}% - 3px)"></i><i class="now" style="left:${pos(now)}%" title="Stock now ${px(now)}"></i></div>
-        <div class="od-meter-l"><span>${bull ? 'Stop' : 'Target'} ${px(lo)}</span><span>Stock ${px(now)} (entry ${px(en)})</span><span>${bull ? 'Target' : 'Stop'} ${px(hi)}</span></div>`;
+        <div class="od-meter-l"><span>${bull ? 'Stop' : 'Target'} ${px(lo)}</span><span>${IDX.has(t.symbol) ? 'Index' : 'Stock'} ${px(now)} (entry ${px(en)})</span><span>${bull ? 'Target' : 'Stop'} ${px(hi)}</span></div>`;
     }
     function openCards() {
       const open = F.open || [];
@@ -84,7 +88,7 @@
       q('open').innerHTML = '<div class="od-trades">' + open.map((t) => {
         const per = num(t.lot_size) * num(t.lots), cost = num(t.net_debit) * per, pnlPct = cost ? num(t.pnl) / cost * 100 : null;
         return `<div class="od-tr">
-          <div class="od-tr-h"><div><b data-sym="${esc(t.symbol)}">${esc(t.symbol)}</b> <span class="od-pill ${t.opt_type === 'CE' ? 'bull' : 'bear'}">${esc(label(t))}</span>
+          <div class="od-tr-h"><div><b>${symHtml(t.symbol)}</b> <span class="od-pill ${t.opt_type === 'CE' ? 'bull' : 'bear'}">${esc(label(t))}</span>
             <small>${dExp(t.expiry)} expiry · ${daysTo(t.expiry)} days left · lot ${num(t.lot_size)} · ${esc(t.signal_setup || t.signal_side)} signal${t.sector_group ? ' · ' + esc(t.sector_group) + ' (' + esc(t.sector_state) + ')' : ''}</small></div>
             <div class="od-pnl ${tone(t.pnl)}">${sInr(t.pnl)}<small>${pnlPct === null ? '' : (pnlPct > 0 ? '+' : '') + pnlPct.toFixed(0) + '% of cost'}</small></div></div>
           <div class="od-kv">
@@ -94,7 +98,7 @@
             <div><span>Spread worth now</span><b>${px(t.mark_value)}</b></div><div><span>IV / 20-day HV</span><b>${num(t.iv) === null ? '—' : num(t.iv).toFixed(1) + '%'} / ${num(t.hv) === null ? '—' : num(t.hv).toFixed(1) + '%'}</b></div>
           </div>
           ${meter(t)}
-          <div class="od-plan">Opened ${dt(t.opened_at)} with the stock at ${px(t.spot_entry)}. Closes when the stock hits ${px(t.stop)} (stop) or ${px(t.target)} (target 1), when the spread is worth ${px(0.8 * num(t.width))} (80% of its ${px(t.width)} width), or 2 days before expiry. Last mark ${dt(t.marked_at)}.</div>
+          <div class="od-plan">Opened ${dt(t.opened_at)} with the ${IDX.has(t.symbol) ? 'index' : 'stock'} at ${px(t.spot_entry)}. Closes when it hits ${px(t.stop)} (stop) or ${px(t.target)} (target 1), when the spread is worth ${px(0.8 * num(t.width))} (80% of its ${px(t.width)} width), or 2 days before expiry. Last mark ${dt(t.marked_at)}.</div>
         </div>`;
       }).join('') + '</div>';
     }
@@ -102,7 +106,7 @@
       const c = F.closed || [];
       if (!c.length) { q('closed').innerHTML = '<div class="od-empty">No closed spreads yet.</div>'; return; }
       q('closed').innerHTML = `<div class="od-tw"><table><thead><tr><th>Stock</th><th>Spread</th><th class="hide-s">Opened</th><th>Closed</th><th>Why</th><th class="r hide-s">Debit → exit</th><th class="r">P&amp;L</th></tr></thead><tbody>
-        ${c.map((t) => `<tr><td><b data-sym="${esc(t.symbol)}">${esc(t.symbol)}</b><small>${esc(t.signal_setup || t.signal_side || '')}</small></td><td>${esc(label(t))}<small>${dExp(t.expiry)} · lot ${num(t.lot_size)}</small></td>
+        ${c.map((t) => `<tr><td><b>${symHtml(t.symbol)}</b><small>${esc(t.signal_setup || t.signal_side || '')}</small></td><td>${esc(label(t))}<small>${dExp(t.expiry)} · lot ${num(t.lot_size)}</small></td>
           <td class="hide-s">${dt(t.opened_at)}<small>stock ${px(t.spot_entry)}</small></td><td>${dt(t.closed_at)}<small>stock ${px(t.exit_spot)}</small></td><td>${esc(t.exit_reason || '')}</td>
           <td class="r hide-s">${px(t.net_debit)} → ${px(t.exit_value)}</td><td class="r ${tone(t.pnl)}"><b>${sInr(t.pnl)}</b><small>of ${inr(t.max_loss)} risked</small></td></tr>`).join('')}
         </tbody></table></div>`;

@@ -554,8 +554,8 @@ let optionsLoading = null;
 function openOptions() {
   const sec = $('tab-options'); if (!sec || sec.dataset.odMounted) return;
   if (!optionsLoading) optionsLoading = new Promise((ok, fail) => {
-    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/options-desk.css?v=1'; document.head.appendChild(css);
-    const js = document.createElement('script'); js.src = '/options-desk.js?v=1'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/options-desk.css?v=2'; document.head.appendChild(css);
+    const js = document.createElement('script'); js.src = '/options-desk.js?v=2'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
   });
   optionsLoading.then(() => window.mpOptionsDesk.mount(sec, sb)).catch(() => { sec.innerHTML = '<div class="note">Could not load the options desk. Refresh to try again.</div>'; optionsLoading = null; });
 }
