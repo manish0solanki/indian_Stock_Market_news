@@ -592,7 +592,8 @@ async function mergeLiveQuote(sym, quote) {
   const {data: r} = await sb.from('stock_quotes').select('price,previous_close,open,high,low,volume,change_percent,quote_time').eq('symbol', sym).maybeSingle();
   if (!r || !(num(r.price) > 0) || !r.quote_time) return;
   if (Date.now() - Date.parse(r.quote_time) > 10 * 864e5 || Math.abs(num(r.change_percent) || 0) > 20) return; // stale or bad quote
-  const mine = Date.parse(quote.quote_time || quote.market_time || quote.updated_at || 0) || 0;
+  // Compare trade times only: the feed's updated_at is when it was fetched, not when the stock last traded.
+  const mine = Date.parse(quote.quote_time || quote.market_time || 0) || 0;
   if (mine > Date.parse(r.quote_time)) return; // the feed's own quote is newer
   Object.assign(quote, {price: num(r.price), previous_close: num(r.previous_close), open: num(r.open), high: num(r.high), low: num(r.low),
    volume: num(r.volume), change_percent: num(r.change_percent), quote_time: r.quote_time});
