@@ -17,7 +17,7 @@ const OUT = join(ROOT, "sample");
 const CFG = globalThis.MP_CONFIG;
 const HOSTS = [new URL(CFG.supabaseUrl).host, CFG.apiHost];
 const SYMBOLS = ["RELIANCE", "HDFCBANK", "TCS", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", "LT", "TATASTEEL", "KOTAKBANK", "AXISBANK"];
-const MAX_BODY = 4_000_000;
+const MAX_BODY = 12_000_000; // the All signals list (analysis_scan_bars) is several MB
 
 // ── a tiny static server for the repository ──
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".webp": "image/webp", ".xml": "application/xml", ".txt": "text/plain" };
