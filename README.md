@@ -107,6 +107,7 @@
 ### 🔍 Stock Analysis (`stock-analysis.html`)
 - **TradingView Lightweight Charts** price chart (open source, Apache 2.0, loaded from jsDelivr `lightweight-charts@4.2.0`; the small TradingView logo on the chart is the attribution its licence asks for): candles or area, volume, EMA 20/50, SMA 200, Bollinger Bands, support / resistance, and the Stock Signals scanner's entry / stop / targets when it has a live setup. Pinch or scroll to zoom, drag to pan (a vertical swipe still scrolls the page); range buttons set the window and live updates keep your zoom; follows light / dark. Falls back to the built-in SVG chart if the library can't load.
 - Indicators: RSI, MACD, Bollinger Bands, ADX, support and resistance, plus fundamentals for any NSE stock.
+- **Sector state badge** next to the sector (Strong / Neutral / Weak sector, the Sectors page's trade filter) and a **sector check** under the Risk plan saying what the state means for a buy, from `stock_sector_state()` (`supabase/sector-trades.sql`). Stocks whose group has no NSE sector index (e.g. Defence) say so.
 - **All signals** list: the same BUY / WAIT / SELL rules run across the ~220 stocks the signals scanner follows (daily bars from `analysis_scan_bars()`, `supabase/analysis-scan.sql`), with Buy / Sell / Wait tabs, an "F&O stocks" filter (NSE futures & options stocks from `stocks.is_fno`, remembered in the browser; F&O stocks carry a badge), search, and sorting by score, signal, symbol or company (A–Z), price, day / 1-month / 3-month change, RSI, sector or market cap, either direction. Strong scanner setups upgrade WAIT as on the single-stock view.
 
 ### 🧮 Stock Screener (`screener.html`)
@@ -166,6 +167,7 @@
 ### 📅 Events Calendar (`events.html`)
 - **Economy events** alongside company events: RBI policy decisions, India CPI and GDP, the Union Budget, US Fed (FOMC) decisions and US CPI, with IST times, what each one is and how it tends to move Indian markets. Kept in `econ_events` (`supabase/econ-events.sql`); dates not read from the official calendar are marked "Expected date". Add new dates (e.g. the next RBI or Fed calendar) by extending that file and re-running it.
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
+- **Latest price and today's change** next to every company in the list, on calendar chips (desktop; in the tooltip on phones) and in the event window, from `stock_quotes`, refreshed every 2 minutes. A stock with no trade in 10 days shows its last traded price marked "old".
 - **After results**, each company gets:
   - the quarter's numbers vs the previous quarter and a year ago (from NSE's XBRL filings)
   - the share-price reaction

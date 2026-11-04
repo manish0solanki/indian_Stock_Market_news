@@ -73,6 +73,10 @@ button{font:inherit;color:inherit}
 .row:hover{background:var(--hover)}
 .row .dot{width:10px;height:10px;border-radius:50%}
 .row .nm b{font-size:14px}
+.qp{margin-left:8px;font-size:12.5px;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);white-space:nowrap}
+.qp em,.qm em,.qc{font-style:normal;font-weight:700}.qp em.stale,.qm em.stale{color:var(--muted);font-weight:500;font-size:11px}
+.qm{font-weight:700;white-space:nowrap}
+.ev .qc{font-size:10px;margin-left:auto;flex:0 0 auto}.ev .qc+.vd{margin-left:4px}
 .row .nm small{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
 .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
@@ -133,6 +137,7 @@ button{font:inherit;color:inherit}
 @media(max-width:700px){
  .day{min-height:74px;padding:4px}
  .ev{font-size:10.5px;padding:2px 4px}
+ .ev .qc{display:none}
  .ev .vd{display:none}
  .kv{grid-template-columns:repeat(2,minmax(0,1fr))}
  .signal .lv{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -204,7 +209,30 @@ const groupOf=e=>e.econ?'econ':GROUP[e.kind]||'other';
 const KIND_LABEL={econ_rbi:'RBI policy',econ_fomc:'US Fed',econ_cpi:'India CPI',econ_gdp:'India GDP',econ_uscpi:'US CPI',econ_budget:'Union Budget',results:'Results',dividend:'Dividend',bonus:'Bonus',split:'Split',rights:'Rights',buyback:'Buyback',fundraise:'Fund raising',agm:'AGM',board:'Board meeting',action:'Corporate action'};
 const VERDICT={positive:['Positive','pos','▲'],negative:['Negative','neg','▼'],mixed:['Mixed','mix','◆']};
 
-let events=[],signals={},held=new Set(),user=null;
+let events=[],signals={},held=new Set(),user=null,quotes={};
+/* Latest prices (stock_quotes, refreshed every few minutes in market hours). A quote with no trade in 10 days is
+   shown as the last traded price with its date; moves beyond NSE's 20% band are treated as bad data. */
+function q(sym){
+ const r=quotes[sym];if(!r||!(r.price>0))return null;
+ const ageD=r.quote_time?(Date.now()-Date.parse(r.quote_time))/864e5:99,stale=ageD>10,c=Number(r.change_percent);
+ return {p:Number(r.price),c:!stale&&Number.isFinite(c)&&Math.abs(c)<=20?c:null,stale,at:r.quote_time};
+}
+const pxTxt=v=>'₹'+v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function qHtml(sym,cls){
+ const x=q(sym);if(!x)return '';
+ const tip=x.stale?'Last traded '+new Date(x.at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'Latest price'+(x.at?' · '+new Date(x.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'');
+ return '<span class="'+cls+'" title="'+esc(tip)+'">'+pxTxt(x.p)+(x.c!=null?' <em class="'+(x.c>0?'pos':x.c<0?'neg':'')+'">'+pct(x.c,2)+'</em>':x.stale?' <em class="stale">old</em>':'')+'</span>';
+}
+async function loadQuotes(){
+ const out={};
+ for(let from=0;from<6000;from+=1000){
+  const {data,error}=await sb.from('stock_quotes').select('symbol,price,change_percent,quote_time').gt('price',0).order('symbol').range(from,from+999);
+  if(error)return false;
+  for(const r of data||[])out[r.symbol]=r;
+  if(!data||data.length<1000)break;
+ }
+ quotes=out;return true;
+}
 let scope=localStorage.getItem('ev-scope')||'tracked',view=localStorage.getItem('ev-view')||(innerWidth<700?'list':'calendar'),when='upcoming';
 let kinds=new Set(['results','dividend','corp','buyback','other','econ']),query='';
 let month=istToday().slice(0,7);
@@ -289,7 +317,8 @@ function renderStats(){
 function chip(e){
  if(e.econ)return '<button class="ev econ" data-id="'+esc(e.id)+'" title="'+esc(e.title+' · '+(e.period||'')+(e.time?' · '+e.time+' IST':''))+'"><i class="k-econ"></i><b>'+esc(e.symbol)+'</b></button>';
  const v=vd(e),vv=v&&VERDICT[v.label];
- return '<button class="ev" data-id="'+esc(e.id)+'" title="'+esc(e.symbol+' · '+(KIND_LABEL[e.kind]||e.kind)+(v?' · '+vv[0]:''))+'"><i class="k-'+groupOf(e)+'"></i><b>'+esc(e.symbol)+'</b>'+(vv?'<span class="vd '+vv[1]+'">'+vv[2]+'</span>':'')+'</button>';
+ const x=q(e.symbol);
+ return '<button class="ev" data-id="'+esc(e.id)+'" title="'+esc(e.symbol+(x?' '+pxTxt(x.p)+(x.c!=null?' ('+pct(x.c,2)+')':''):'')+' · '+(KIND_LABEL[e.kind]||e.kind)+(v?' · '+vv[0]:''))+'"><i class="k-'+groupOf(e)+'"></i><b>'+esc(e.symbol)+'</b>'+(x&&x.c!=null?'<span class="qc '+(x.c>0?'pos':x.c<0?'neg':'')+'">'+pct(x.c,1)+'</span>':'')+(vv?'<span class="vd '+vv[1]+'">'+vv[2]+'</span>':'')+'</button>';
 }
 function renderCalendar(){
  const [y,m]=month.split('-').map(Number),first=new Date(Date.UTC(y,m-1,1)),startDow=(first.getUTCDay()+6)%7;
@@ -321,7 +350,7 @@ function rowHtml(e){
  if(e.kind==='dividend'&&e.amount)tags.push('<span class="pill">'+inr(e.amount)+'/share</span>');
  if(held.has(e.symbol))tags.push('<span class="pill mine">In portfolio</span>');
  if(s)tags.push('<span class="pill sig '+(s.side==='BUY'?'pos':'neg')+'">'+(s.side==='BUY'?'Buy':'Sell')+' signal</span>');
- return '<button class="row" data-id="'+esc(e.id)+'"><span class="dot k-'+groupOf(e)+'"></span><span class="nm"><b data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</b> <span class="muted">· '+esc(KIND_LABEL[e.kind]||e.kind)+'</span><small>'+esc(e.company||'')+' — '+esc(e.title)+'</small></span><span class="tags">'+tags.join('')+'</span></button>';
+ return '<button class="row" data-id="'+esc(e.id)+'"><span class="dot k-'+groupOf(e)+'"></span><span class="nm"><b data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</b>'+qHtml(e.symbol,'qp')+' <span class="muted">· '+esc(KIND_LABEL[e.kind]||e.kind)+'</span><small>'+esc(e.company||'')+' — '+esc(e.title)+'</small></span><span class="tags">'+tags.join('')+'</span></button>';
 }
 function renderList(){
  const t=istToday(),vis=events.filter(visible);
@@ -426,7 +455,7 @@ function detail(e){
  if(o&&o.filing&&o.filing.view)links.push('<a href="'+esc(o.filing.view)+'" target="_blank" rel="noopener">Read the filing on NSE ↗</a>');
  links.push('<a href="https://www.nseindia.com/companies-listing/corporate-filings-event-calendar" target="_blank" rel="noopener">NSE event calendar ↗</a>');
  body+='<div class="links">'+links.join('')+'</div><div class="disc">Facts from NSE filings and daily prices; the verdict and ideas are rule-based summaries, not advice.</div>';
- $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle"><span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span> · '+esc(KIND_LABEL[e.kind]||e.kind)+'</h2><div class="co"><span data-sym="'+esc(e.symbol)+'">'+esc(e.company||'')+'</span>'+(held.has(e.symbol)?' · <span class="pill mine">In your portfolio</span>':'')+'</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody">'+body+'</div>';
+ $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle"><span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span> · '+esc(KIND_LABEL[e.kind]||e.kind)+'</h2><div class="co"><span data-sym="'+esc(e.symbol)+'">'+esc(e.company||'')+'</span>'+(q(e.symbol)?' · '+qHtml(e.symbol,'qm'):'')+(held.has(e.symbol)?' · <span class="pill mine">In your portfolio</span>':'')+'</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody">'+body+'</div>';
  $('modalbg').classList.add('open');$('modalbg').setAttribute('aria-hidden','false');
  $('mClose').focus();
 }
@@ -465,6 +494,8 @@ async function load(){
  const latest=all.map(e=>e.outcome_at).filter(Boolean).sort().pop();
  $('asOf').textContent='NSE results, dividends, bonus issues, splits and buybacks, plus RBI, Fed, CPI, GDP and Budget dates · '+all.length.toLocaleString('en-IN')+' events'+(latest?' · numbers updated '+new Date(latest).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'')+'. Click any event for the details.';
  render();
+ if(await loadQuotes())render();
+ setInterval(async()=>{if(document.hidden)return;if(await loadQuotes())render()},120000);
  const feed=await sb.rpc('stock_signals_feed').then(r=>r.data).catch(()=>null);
  for(const s of (feed&&feed.signals)||[])signals[String(s.symbol).toUpperCase()]=s;
  try{const {data:{session}}=await sb.auth.getSession();user=session?.user||null;if(user&&window.mpPortfolio)held=new Set(await window.mpPortfolio.heldSymbols(sb,user))}catch(e){}

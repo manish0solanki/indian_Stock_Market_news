@@ -157,6 +157,7 @@ a{color:var(--blue)}
 .table tbody tr:hover{background:#ffffff05}
 .table td.v{white-space:nowrap;font-variant-numeric:tabular-nums}
 .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#1a2640;color:#b9c9e4;white-space:nowrap}
+.secbadge{text-decoration:none;border:0}.sector-check{margin-top:10px;font-size:12.5px;line-height:1.55;color:var(--muted)}.sector-check:empty{display:none}.sector-check b{color:var(--text)}.sector-check a{color:var(--blue,#6aa8ff);white-space:nowrap}
 .tag.up{background:#22d69a1f;color:var(--green)}.tag.down{background:#ff61781f;color:var(--red)}.tag.flat{background:#f3c9691f;color:var(--gold)}
 .mob{display:none;margin-top:3px;font-size:11.5px;line-height:1.4}
 .info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;border-radius:50%;border:1px solid #3a4e74;color:var(--muted);font-size:10px;font-weight:700;cursor:help;vertical-align:middle}
@@ -397,6 +398,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
      <h3>Risk plan <span class="info" title="Illustrative only. The stop is 1.5× ATR below/above the close; the target is the nearest swing level.">?</span></h3>
      <div class="plan" id="plan"></div>
      <div class="note" id="planNote"></div>
+     <div class="sector-check" id="sectorCheck"></div>
     </div>
 
     <div class="panel">
@@ -968,6 +970,37 @@ function livePrice() {
  const q = current.quote, p = num(q.price ?? q.last_price ?? q.ltp ?? q.current_price);
  return Number.isFinite(p) ? p : current.t.last.close;
 }
+/* Sector state (the Sectors page's trade filter): strong = the sector index is above its 50-day average and has beaten
+   the Nifty over a month; weak = below and behind. From stock_sector_state() (supabase/sector-trades.sql). */
+const secCache = new Map();
+async function sectorState(sym) {
+ const hit = secCache.get(sym);
+ if (hit && Date.now() - hit.at < 300000) return hit.v;
+ let v = null;
+ try { if (sb) { const {data} = await sb.rpc('stock_sector_state', {p_symbol: sym}); v = data || null; } } catch {}
+ secCache.set(sym, {at: Date.now(), v});
+ return v;
+}
+const SEC_LABEL = {strong: ['Strong sector', 'up', 'Buy setups OK'], neutral: ['Neutral sector', 'flat', 'Be selective'], weak: ['Weak sector', 'down', 'Consider skipping new buys']};
+async function paintSectorState(sym) {
+ const v = await sectorState(sym);
+ if (current?.sym !== sym) return;
+ const badge = $('secState'), box = $('sectorCheck');
+ if (!v || !SEC_LABEL[v.state]) {
+  if (badge) badge.innerHTML = '';
+  if (box) box.innerHTML = v && v.grp ? `<b>Sector check:</b> ${esc(v.grp)} has no NSE sector index to check, so there is no sector filter for this stock.` : '';
+  return;
+ }
+ const [label, cls_, hint] = SEC_LABEL[v.state];
+ const why = `${v.index}: ${v.above50 ? 'above' : 'below'} its 50-day average, ${pct(num(v.m1), 1)} in a month vs Nifty ${pct(num(v.nifty_m1), 1)}`;
+ if (badge) badge.innerHTML = `<a class="pill tag ${cls_} secbadge" href="/#sectors" title="${esc(why)}. ${esc(hint)}.">${label}</a>`;
+ const msg = {
+  strong: 'Buy setups in strong sectors held up best in our test on the Sectors page.',
+  neutral: 'Be selective: in our test, setups in neutral sectors did no better than average.',
+  weak: 'In our test, buy setups in weak sectors lost money more often than not. Consider skipping new buys or using a smaller size.'
+ }[v.state];
+ if (box) box.innerHTML = `<span class="tag ${cls_}">${label}</span> <b>${esc(v.grp)}</b> · ${esc(why)}. ${msg} <a href="/#sectors">How this is tested →</a>`;
+}
 function renderQuote() {
  const {sym, name, quote: q, t} = current;
  const p = livePrice();
@@ -980,7 +1013,8 @@ function renderQuote() {
  $('change').textContent = (Number.isFinite(abs) ? (abs >= 0 ? '+' : '') + fmt(abs) + ' ' : '') + '(' + pct(ch) + ')';
  $('change').className = cls(ch);
  const sector = q.sector || q.fundamentals?.sector;
- $('quoteMeta').innerHTML = `<span class="pill">NSE: ${esc(sym)}</span>${sector ? `<span class="pill">${esc(sector)}</span>` : ''}<span class="pill tag ${t.trend === 'Bullish' ? 'up' : t.trend === 'Bearish' ? 'down' : 'flat'}">${esc(t.trend)} trend</span><span class="sub">Last candle ${esc(new Date(t.last.ts).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}))}</span>`;
+ $('quoteMeta').innerHTML = `<span class="pill">NSE: ${esc(sym)}</span>${sector ? `<span class="pill">${esc(sector)}</span>` : ''}<span class="pill tag ${t.trend === 'Bullish' ? 'up' : t.trend === 'Bearish' ? 'down' : 'flat'}">${esc(t.trend)} trend</span><span id="secState"></span><span class="sub">Last candle ${esc(new Date(t.last.ts).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}))}</span>`;
+ paintSectorState(sym);
  const dl = num(q.low), dh = num(q.high);
  const range = (label, lo, hi, v) => {
   if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return `<small><span>${label}</span><b>—</b></small>`;

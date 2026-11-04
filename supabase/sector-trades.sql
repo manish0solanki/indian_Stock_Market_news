@@ -150,3 +150,15 @@ language sql volatile security definer set search_path = public as $$
 $$;
 revoke execute on function public.archive_swing_bars() from anon, authenticated, public;
 select cron.schedule('swing-bars-archive', '15 11,16 * * 1-6', $$select public.archive_swing_bars()$$);
+
+-- One stock's sector state, for the badge on Stock Analysis.
+create or replace function public.stock_sector_state(p_symbol text) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('symbol', s.symbol, 'grp', g.grp, 'index', st.name, 'index_symbol', st.symbol,
+           'state', coalesce(st.state, 'none'), 'above50', st.above50, 'm1', st.m1, 'nifty_m1', st.nifty_m1)
+    from stocks s
+    cross join lateral (select mp_stock_group(s.sector, s.company_name) as grp) g
+    left join sector_group_states() st on st.grp = g.grp
+   where s.symbol = upper(p_symbol)
+$$;
+grant execute on function public.stock_sector_state(text) to anon, authenticated;
