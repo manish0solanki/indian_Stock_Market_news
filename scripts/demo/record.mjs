@@ -17,7 +17,7 @@ const OUT = join(ROOT, "sample");
 const CFG = globalThis.MP_CONFIG;
 const HOSTS = [new URL(CFG.supabaseUrl).host, CFG.apiHost];
 const SYMBOLS = ["RELIANCE", "HDFCBANK", "TCS", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", "LT", "TATASTEEL", "KOTAKBANK", "AXISBANK"];
-const MAX_BODY = 12_000_000; // the All signals list (analysis_scan_bars) is several MB
+const MAX_BODY = 12_000_000;
 
 // ── a tiny static server for the repository ──
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".webp": "image/webp", ".xml": "application/xml", ".txt": "text/plain" };
@@ -83,7 +83,8 @@ await visit("/", async (page) => {
   await page.evaluate(async (syms) => { for (const s of syms) { try { await window.fetchStockDetailFromSupabase(s); await window.fetchStockDetailFromSupabase(s, 400); } catch {} } }, SYMBOLS);
 });
 for (const h of ["sectors", "global", "crude", "crypto"]) await visit("/#" + h);
-await visit("/stock-analysis.html", async (page) => { await page.click("#openAll").catch(() => {}); await page.waitForTimeout(8000); });
+// "All signals": request its data the way the page does too, in case the button can't be clicked headless.
+await visit("/stock-analysis.html", async (page) => { await page.click("#openAll", { timeout: 5000 }).catch(() => {}); await page.waitForTimeout(6000); await rpc([["analysis_scan_bars"]])(page); });
 for (const s of SYMBOLS) await visit("/stock-analysis.html?symbol=" + s);
 await visit("/stock-signals.html", rpc([["stock_signals_feed"], ["market_snapshot"], ["stock_signals_status"], ["signal_history", { p_tf: null, p_days: 90, p_limit: 400 }]]));
 for (const p of ["/picks.html", "/screener.html", "/fno.html", "/ipo.html", "/events.html", "/sectors.html", "/crypto-signals.html", "/money.html", "/portfolio.html"]) await visit(p);

@@ -202,6 +202,11 @@ The whole site can run under another firm's name, for demos to prospects or for 
 
 ---
 
+### Sales (selling the white-label platform)
+
+- **Sales Desk** (`/admin-sales.html`, MarketPulse admin only, linked as "🤝 Sales Desk" in the Admin Panel): every SEBI-registered research analyst is a lead (`sales_leads`, `supabase/sales.sql`), imported from SEBI's public register by the `sales-import` Edge Function (name, registration no., contact person, email, phone, address, city; ~2,330 entries) and ranked by fit (`sales_fit()`: independents and small firms with a reachable email first; banks, brokers and AMCs last). Tabs: **Today** (follow-ups due, then the best uncontacted leads), **Pipeline** (search and filter by stage / type), **Templates & playbook** (pricing, cadence, 3 emails, WhatsApp, LinkedIn, call script, demo agenda, personalised per lead) and **Import & settings** (your signature, re-import from SEBI). A lead's panel has **Make demo** (the whole site under the prospect's name with their SEBI registration in the footer, via a demo link), one-click personalised email and WhatsApp that log the touch and schedule the next follow-up (day 3, 7, 12), call / LinkedIn / demo logging, stage, plan and fee, notes and history (`sales_activities`).
+- **Pitch page** (`/for-advisors.html`, linked "For research analysts" in the footer; hidden on client sites): features, built-in compliance, 48-hour onboarding, pricing (Founding Partner ₹4,999/month for the first 10 clients; Starter ₹6,999 + ₹14,999 setup; Pro ₹14,999 + ₹24,999 setup; Enterprise from ₹39,999; before GST; annual = 2 months free), FAQ and a demo form (`submit_demo_request()`) that shows the visitor their own branded demo at once and lands in the Sales Desk as a warm lead.
+
 ## 🏗 How it is built
 
 ```

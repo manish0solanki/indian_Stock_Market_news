@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/site-config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0f1e">
+<title>Sales Desk · MarketPulse Admin</title>
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--radius:14px}
+[data-theme="light"]{--bg:#f5f7fb;--surface:#fff;--surface2:#f0f3f9;--border:#dde3ee;--text:#111827;--muted:#4b5563;--dim:#6b7280;--accent:#4338ca;--accent2:#4f46e5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1400px;margin:0 auto;padding:18px 16px 80px}
+h1{font-size:24px;margin:4px 0 2px}
+.lead{color:var(--muted);margin:0 0 14px;max-width:880px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.kpi b{display:block;font-size:22px;font-weight:800}
+.kpi span{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.kpi.good b{color:var(--green)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:8px 14px;border-radius:10px;font:600 13px inherit;font-family:inherit;cursor:pointer}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+input[type=text],input[type=email],input[type=search],input[type=date],input[type=number],select,textarea{padding:8px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit}
+textarea{width:100%;min-height:70px;resize:vertical}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 12.5px/1 inherit;font-family:inherit;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.good{border-color:rgba(47,210,127,.5);color:var(--green)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.list{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 110px 90px 110px;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface2);cursor:pointer}
+.row:hover{border-color:var(--accent)}
+.row.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.row b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row small{color:var(--dim);font-size:11.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(127,140,170,.15);color:var(--muted)}
+.pill.new{background:rgba(129,140,248,.16);color:var(--accent2)}.pill.contacted{background:rgba(243,201,105,.16);color:var(--amber)}
+.pill.replied,.pill.demo,.pill.pilot{background:rgba(47,210,127,.14);color:var(--green)}.pill.won{background:var(--green);color:#06210f}
+.pill.lost,.pill.skip{background:rgba(255,93,108,.12);color:#ff8a96}
+.score{font:700 12px ui-monospace,monospace;color:var(--muted)}
+.due{color:var(--amber);font-weight:700}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;align-items:start}
+.panel{position:sticky;top:76px;max-height:calc(100vh - 90px);overflow:auto}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:13px;margin:8px 0 12px}
+.kv dt{color:var(--dim)}.kv dd{margin:0;word-break:break-word}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tl{display:grid;gap:6px;margin-top:8px}
+.tl div{font-size:12.5px;border-left:2px solid var(--border);padding:2px 0 2px 10px;color:var(--muted)}
+.tl div b{color:var(--text);font-weight:600}
+.tpl{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface2);margin-bottom:10px}
+.tpl h3{margin:0 0 4px;font-size:14px}
+.tpl pre{white-space:pre-wrap;font:12.5px/1.55 ui-monospace,monospace;color:var(--muted);margin:8px 0 0}
+.hint{font-size:12px;color:var(--dim)}
+.msg{font-size:12.5px;color:var(--muted);margin-top:8px}.msg.err{color:#ff8a96}
+.empty{padding:24px;text-align:center;color:var(--dim)}
+.gate{max-width:560px}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}.panel{position:static;max-height:none}}
+@media(max-width:700px){.row{grid-template-columns:1fr auto;}.row .c3,.row .c4{display:none}.two{grid-template-columns:1fr}}
+</style>
+<script src="/brands.js"></script><script src="/brand.js"></script><script src="/sample-data.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="wrap">
+  <h1>Sales Desk</h1>
+  <p class="lead">Every SEBI-registered research analyst is a prospect. Work the <b>Today</b> list: open a lead, press <b>Make demo</b> (their name and registration on the whole site), send the email or WhatsApp, and log it. Follow-ups come back on their date.</p>
+  <div class="card gate" id="gate"><p class="msg">Checking access…</p></div>
+  <div id="app" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="tabs" id="tabs">
+      <button data-tab="today" class="on">Today</button><button data-tab="pipeline">Pipeline</button><button data-tab="templates">Templates &amp; playbook</button><button data-tab="settings">Import &amp; settings</button>
+    </div>
+    <div class="grid">
+      <section>
+        <div id="tab-today">
+          <div class="hint" style="margin-bottom:8px">Follow-ups due, then the best-fit leads nobody has contacted yet. Aim for 10 new contacts a day.</div>
+          <div class="list" id="todayList"><div class="empty">Loading…</div></div>
+        </div>
+        <div id="tab-pipeline" hidden>
+          <div class="bar">
+            <input type="search" id="q" placeholder="Search name, city, reg no, email" style="flex:1 1 220px">
+            <select id="fStage"><option value="">All stages</option><option>new</option><option>contacted</option><option>replied</option><option>demo</option><option>pilot</option><option>won</option><option>lost</option><option>skip</option></select>
+            <select id="fKind"><option value="">All types</option><option value="individual">Individuals</option><option value="firm">Small firms</option><option value="large">Large firms</option></select>
+            <select id="fSort"><option value="priority">Best fit first</option><option value="next">Next action</option><option value="updated">Recently updated</option><option value="name">Name</option></select>
+            <button class="btn" id="addLead" type="button">+ Add lead</button>
+          </div>
+          <div class="list" id="pipeList"></div>
+          <div class="bar" style="margin-top:10px"><button class="btn" id="more" type="button" hidden>Show more</button><span class="hint" id="count"></span></div>
+        </div>
+        <div id="tab-templates" hidden></div>
+        <div id="tab-settings" hidden>
+          <div class="card">
+            <h2>Your signature</h2>
+            <div class="hint">Used in the messages; kept in this browser only.</div>
+            <div class="two"><div><label for="meName">Your name</label><input type="text" id="meName" style="width:100%"></div><div><label for="mePhone">Your phone / WhatsApp</label><input type="text" id="mePhone" style="width:100%"></div></div>
+            <div class="two"><div><label for="meEmail">Your email</label><input type="email" id="meEmail" style="width:100%"></div><div><label for="meCo">Company name</label><input type="text" id="meCo" style="width:100%" placeholder="MarketPulse"></div></div>
+          </div>
+          <div class="card">
+            <h2>SEBI register</h2>
+            <p class="hint" id="importInfo"></p>
+            <button class="btn primary" id="importBtn" type="button">Import / refresh from SEBI</button>
+            <div class="msg" id="importMsg"></div>
+          </div>
+        </div>
+      </section>
+      <aside class="card panel" id="panel"><div class="empty">Select a lead to see details, make their demo and send the first message.</div></aside>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const sb = window.supabase.createClient(MP_CONFIG.supabaseUrl, MP_CONFIG.supabaseKey);
+  const today = () => new Date(Date.now() + 330 * 60e3).toISOString().slice(0, 10);
+  const addDays = (n) => new Date(Date.now() + 330 * 60e3 + n * 864e5).toISOString().slice(0, 10);
+  const dt = (t) => t ? new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+  const inr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+  const STAGES = ['new', 'contacted', 'replied', 'demo', 'pilot', 'won', 'lost', 'skip'];
+  const PRICES = { founding: 4999, starter: 6999, pro: 14999, enterprise: 39999 };
+  let L = [], sel = null, page = 0, tab = 'today';
+
+  /* ───────── who's signing ───────── */
+  const ME_KEY = 'mp-sales-me';
+  const me = () => { try { return JSON.parse(localStorage.getItem(ME_KEY) || '{}'); } catch (_) { return {}; } };
+  function saveMe() { const v = { name: $('meName').value.trim(), phone: $('mePhone').value.trim(), email: $('meEmail').value.trim(), co: $('meCo').value.trim() }; try { localStorage.setItem(ME_KEY, JSON.stringify(v)); } catch (_) {} }
+  ['meName', 'mePhone', 'meEmail', 'meCo'].forEach((id) => { $(id).value = me()[{ meName: 'name', mePhone: 'phone', meEmail: 'email', meCo: 'co' }[id]] || ''; $(id).addEventListener('input', saveMe); });
+
+  /* ───────── personalised demo: their name + SEBI registration across the whole site ───────── */
+  const PALETTE = [['#0b3d2e', '#12a37a', '#f4c542'], ['#0f2747', '#2f80ed', '#ffffff'], ['#5a1a00', '#e8590c', '#ffd43b'], ['#2b0f4a', '#7c3aed', '#fcd34d'], ['#062a3a', '#0891b2', '#a7f3d0'], ['#3a0b1e', '#db2777', '#fde68a'], ['#14213d', '#fca311', '#ffffff'], ['#1b4332', '#40916c', '#d8f3dc']];
+  const titleCase = (s) => String(s || '').toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()).replace(/\b(Llp|Pvt|Ltd)\b/g, (m) => m.toUpperCase());
+  // "ASHA SHAH Proprietor of ALPHA RESEARCH" → the firm's trading name
+  function shortName(n) { const m = String(n || '').match(/proprietor\s+of\s+(.+)$/i); if (m) n = m[1]; return titleCase(n).replace(/\s+(Private|Pvt\.?)\s+(Limited|Ltd\.?)$/i, '').replace(/\s+(Limited|Ltd\.?|LLP)$/i, '').trim(); }
+  function demoFor(l) {
+    const nm = shortName(l.name).slice(0, 40);
+    const words = nm.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w));
+    const mono = (words.length > 1 ? words[0][0] + words[1][0] : nm.slice(0, 2)).toUpperCase();
+    let h = 0; for (const c of l.reg_no || l.name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const [primary, accent, mark] = PALETTE[h % PALETTE.length];
+    const cfg = { name: nm, short: mono, primary, accent, mark, legal: { entity: titleCase(l.name).slice(0, 80) } };
+    if (l.reg_no) Object.assign(cfg.legal, { regType: 'Research Analyst', regNo: l.reg_no });
+    if (l.email) cfg.email = l.email;
+    if (l.phone) cfg.phone = String(l.phone).slice(0, 30);
+    if (l.address) cfg.address = String(l.address).slice(0, 200);
+    if (l.website) cfg.site = String(l.website).replace(/^https?:\/\//, '').slice(0, 60);
+    return location.origin + '/?wl=' + window.mpBrand.encode(cfg);
+  }
+
+  /* ───────── message templates ───────── */
+  const first = (l) => { const p = (l.contact_person || '').replace(/^(mr|mrs|ms|dr|ca|cs)\.?\s+/i, '').trim(); return p ? titleCase(p.split(/\s+/)[0]) : 'there'; };
+  function fill(t, l) {
+    const m = me();
+    return t.replace(/\{first\}/g, first(l)).replace(/\{firm\}/g, shortName(l.name)).replace(/\{reg\}/g, l.reg_no || '').replace(/\{city\}/g, l.city || 'your city')
+      .replace(/\{demo\}/g, l.demo_link || '[press Make demo first]').replace(/\{me\}/g, m.name || '[your name]').replace(/\{myphone\}/g, m.phone || '[your phone]')
+      .replace(/\{myemail\}/g, m.email || '[your email]').replace(/\{co\}/g, m.co || 'MarketPulse').replace(/\{price\}/g, inr(PRICES.founding));
+  }
+  const T = {
+    email1: { title: 'Email 1: the personalised demo (day 0)', subject: '{firm}: your investor website is ready to try', body:
+`Hi {first},
+
+I built a working demo of a full investor website for {firm}: your name, your SEBI registration ({reg}) and the standard disclosures in the footer, live market data, a signals desk, stock analysis, screener, festive picks and a portfolio tracker for your clients.
+
+Have a look (opens in your browser, nothing to install): {demo}
+
+Analysts use it to give subscribers one branded place for every call, instead of scattered Telegram and WhatsApp messages, and to look as established as the big brokers. It goes live on your own domain in about 48 hours.
+
+We're taking 10 founding partners at {price}/month (+GST) for the first year, setup free. Could I show you around in 15 minutes this week?
+
+{me}
+{co} · {myphone}
+
+If this isn't relevant, just reply "no" and I won't write again.` },
+    email2: { title: 'Email 2: follow-up (day 3)', subject: 'Re: {firm}: your investor website is ready to try', body:
+`Hi {first},
+
+Following up on the {firm} demo: {demo}
+
+Two things analysts usually like most:
+• Every call shows with entry, stop-loss, targets and an expiry, and the track record builds itself.
+• Your registration, grievance details and SEBI's risk wording are on every page automatically.
+
+Worth a 15-minute look? Happy to fit around market hours.
+
+{me} · {myphone}` },
+    email3: { title: 'Email 3: last note (day 10)', subject: 'Closing the loop on {firm}', body:
+`Hi {first},
+
+I'll close the loop here. The demo stays up if you want to show a colleague: {demo}
+
+If a branded website and signals desk becomes a priority later, reply anytime and the founding-partner offer ({price}/month) will still apply if a place is left.
+
+{me}` },
+    whatsapp: { title: 'WhatsApp (business hours, after the first email)', body:
+`Hi {first}, {me} from {co} here. I made a demo investor website for {firm} with your SEBI details on it, have a look: {demo}
+If useful I can show you around in 15 minutes. If not, no problem, I won't message again.` },
+    linkedin: { title: 'LinkedIn connection note (under 300 characters)', body:
+`Hi {first}, I build branded investor websites for SEBI research analysts and made a quick demo for {firm}. Happy to share the link if you're open to it.` },
+    call: { title: 'Call script (2 minutes)', body:
+`1. "Hi {first}, {me} from {co}. Is this a good minute? I'll be quick."
+2. "I sent you a demo website built for {firm}, with your SEBI number on it. Did you get a chance to open it?"
+3. Ask: "How do your subscribers get your calls today: Telegram, WhatsApp, a website?" Listen.
+4. Fit: "This gives them one branded place: calls with entry, stop and targets, a track record, research and tools, live in 48 hours."
+5. Close: "Can I take you through it on a 15-minute screen share, say tomorrow after market hours?"
+Objections:
+• "Too expensive" → it costs less than one or two subscribers a month; founding price {price}.
+• "Compliance?" → their registration, grievance contacts and SEBI's risk wording appear on every page; they approve what is published.
+• "I already have a website" → this adds the investor tools; keep their domain.` },
+    demo: { title: 'Demo agenda (15 minutes)', body:
+`1. Their branded home page: market overview, global cues, news (2 min)
+2. Signals desk: entry / stop / targets / expiry, history and win rate (3 min)
+3. Stock analysis, screener, F&O, festive picks with branded poster and PDF (3 min)
+4. For their subscribers: sign-up, portfolio tracker, money manager, alerts (2 min)
+5. Compliance footer, client admin and user list, own domain (2 min)
+6. Price, founding-partner terms, 48-hour go-live, next step: 14-day pilot (3 min)` },
+  };
+  function renderTemplates() {
+    const sample = L.find((x) => x.stage === 'new') || { name: 'Sample Research LLP', contact_person: 'Ravi Kumar', reg_no: 'INH000000000', city: 'Mumbai' };
+    $('tab-templates').innerHTML = `<div class="card"><h2>Pricing (before 18% GST)</h2>
+        <div class="hint" style="line-height:1.7">Founding partner (first 10 clients): <b>${inr(PRICES.founding)}/month</b>, locked 12 months, setup free, in return for a testimonial and a monthly feedback call.<br>
+        Starter <b>${inr(PRICES.starter)}/month</b> + ${inr(14999)} setup · Pro <b>${inr(PRICES.pro)}/month</b> + ${inr(24999)} setup · Enterprise from <b>${inr(PRICES.enterprise)}/month</b>.<br>
+        Annual: 2 months free. 14-day pilot on their domain before paying. Market-data licence billed at cost or brought by the client.</div></div>
+      <div class="card"><h2>Cadence</h2><div class="hint" style="line-height:1.7">Day 0 email 1 (+ LinkedIn) → day 3 email 2 (+ WhatsApp if a mobile is listed) → day 5 call → day 10 email 3, then mark lost or skip. A reply moves it to <b>replied</b>: book the demo the same day.</div></div>`
+      + Object.values(T).map((t) => `<div class="tpl"><h3>${esc(t.title)}</h3>${t.subject ? `<div class="hint">Subject: ${esc(fill(t.subject, sample))}</div>` : ''}<pre>${esc(fill(t.body, sample))}</pre></div>`).join('');
+  }
+
+  /* ───────── data ───────── */
+  async function summary() {
+    const { data, error } = await sb.rpc('sales_summary'); if (error) return;
+    const s = data.by_stage || {};
+    $('kpis').innerHTML = [['Leads', data.total], ['Not contacted', s.new || 0], ['Contacted', s.contacted || 0], ['Replied', s.replied || 0], ['Demo', s.demo || 0], ['Pilot', s.pilot || 0], ['Won', s.won || 0, 'good'], ['MRR won', inr(data.mrr), 'good'], ['Due today', data.due], ['Touches (7 d)', data.touches_7d]]
+      .map(([k, v, c]) => `<div class="kpi ${c || ''}"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
+    $('importInfo').textContent = data.last_import ? `Last import ${dt(data.last_import)}. Refreshing adds new registrations and updates contact details; it never changes a lead's stage or notes.` : 'Not imported yet.';
+  }
+  const COLS = 'id,source,reg_no,name,contact_person,email,phone,address,city,validity,kind,website,priority,stage,plan,mrr,next_action_at,last_contacted_at,touches,demo_link,message,notes,lost_reason,updated_at';
+  async function loadToday() {
+    const t = today();
+    const [due, fresh] = await Promise.all([
+      sb.from('sales_leads').select(COLS).lte('next_action_at', t).not('stage', 'in', '(won,lost,skip)').order('next_action_at').limit(30),
+      sb.from('sales_leads').select(COLS).eq('stage', 'new').is('next_action_at', null).order('priority', { ascending: false }).order('name').limit(15),
+    ]);
+    L = [...(due.data || []), ...(fresh.data || [])].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
+    $('todayList').innerHTML = L.length ? L.map(rowHtml).join('') : '<div class="empty">Nothing due. Import the SEBI register or add a lead.</div>';
+  }
+  async function loadPipe(reset) {
+    if (reset) { page = 0; L = []; }
+    let q = sb.from('sales_leads').select(COLS, { count: 'exact' });
+    const s = $('q').value.trim();
+    if (s) q = q.or(['name', 'city', 'reg_no', 'email', 'contact_person'].map((c) => `${c}.ilike.*${s.replace(/[,*()]/g, ' ')}*`).join(','));
+    if ($('fStage').value) q = q.eq('stage', $('fStage').value);
+    if ($('fKind').value) q = q.eq('kind', $('fKind').value);
+    const srt = $('fSort').value;
+    q = srt === 'next' ? q.order('next_action_at', { ascending: true, nullsFirst: false }) : srt === 'updated' ? q.order('updated_at', { ascending: false }) : srt === 'name' ? q.order('name') : q.order('priority', { ascending: false }).order('name');
+    const { data, error, count } = await q.range(page * 50, page * 50 + 49);
+    if (error) { $('pipeList').innerHTML = `<div class="msg err">${esc(error.message)}</div>`; return; }
+    L = L.concat(data || []);
+    $('pipeList').innerHTML = L.length ? L.map(rowHtml).join('') : '<div class="empty">No leads match.</div>';
+    $('count').textContent = `${L.length} of ${count ?? L.length}`;
+    $('more').hidden = L.length >= (count || 0);
+  }
+  function rowHtml(l) {
+    const due = l.next_action_at && l.next_action_at <= today() && !['won', 'lost', 'skip'].includes(l.stage);
+    return `<div class="row ${sel && sel.id === l.id ? 'sel' : ''}" data-id="${l.id}">
+      <div><b>${esc(titleCase(l.name))}</b><small>${esc(l.contact_person ? titleCase(l.contact_person) + ' · ' : '')}${esc(l.reg_no || l.source)}</small></div>
+      <div><small>${esc(l.city || '—')}</small><small>${esc(l.email || l.phone || 'no contact listed')}</small></div>
+      <div class="c3"><span class="pill ${l.stage}">${esc(l.stage)}</span></div>
+      <div class="c4 score" title="Fit score">${l.priority}${l.kind ? ' · ' + l.kind[0].toUpperCase() : ''}</div>
+      <div class="${due ? 'due' : 'hint'}">${l.next_action_at ? (due ? 'Due ' : '') + esc(l.next_action_at) : ''}</div></div>`;
+  }
+
+  /* ───────── a lead ───────── */
+  async function open(id) {
+    const l = L.find((x) => x.id === id); if (!l) return;
+    sel = l;
+    document.querySelectorAll('.row').forEach((r) => r.classList.toggle('sel', r.dataset.id === id));
+    const { data: acts } = await sb.from('sales_activities').select('kind,body,at').eq('lead_id', id).order('at', { ascending: false }).limit(30);
+    const mobile = String(l.phone || '').replace(/\D/g, '').match(/(?:91)?([6-9]\d{9})$/);
+    const wa = mobile ? 'https://wa.me/91' + mobile[1] + '?text=' + encodeURIComponent(fill(T.whatsapp.body, l)) : '';
+    const mail = l.email ? 'mailto:' + encodeURIComponent(l.email) + '?subject=' + encodeURIComponent(fill(l.touches >= 2 ? T.email3.subject : l.touches >= 1 ? T.email2.subject : T.email1.subject, l)) + '&body=' + encodeURIComponent(fill(l.touches >= 2 ? T.email3.body : l.touches >= 1 ? T.email2.body : T.email1.body, l)) : '';
+    $('panel').innerHTML = `
+      <h2>${esc(l.source === 'inbound' ? 'Inbound demo request' : l.source === 'sebi' ? 'SEBI-registered research analyst' : 'Lead')}</h2>
+      <div style="font-size:17px;font-weight:800">${esc(titleCase(l.name))}</div>
+      <dl class="kv">
+        ${l.contact_person ? `<dt>Contact</dt><dd>${esc(titleCase(l.contact_person))}</dd>` : ''}
+        ${l.reg_no ? `<dt>SEBI reg.</dt><dd>${esc(l.reg_no)}${l.validity ? ' · ' + esc(l.validity) : ''}</dd>` : ''}
+        <dt>Email</dt><dd>${l.email ? `<a href="mailto:${esc(l.email)}" style="color:var(--accent2)">${esc(l.email)}</a>` : '—'}</dd>
+        <dt>Phone</dt><dd>${esc(l.phone || '—')}</dd>
+        ${l.address ? `<dt>Address</dt><dd>${esc(l.address)}</dd>` : ''}
+        <dt>Fit</dt><dd>${l.priority} (${esc(l.kind || '—')})</dd>
+        <dt>Touches</dt><dd>${l.touches}${l.last_contacted_at ? ' · last ' + dt(l.last_contacted_at) : ''}</dd>
+        ${l.message ? `<dt>They wrote</dt><dd>${esc(l.message)}</dd>` : ''}
+      </dl>
+      <div class="acts">
+        <button class="btn primary" type="button" id="mkDemo">${l.demo_link ? 'Open their demo ↗' : 'Make demo'}</button>
+        ${mail ? `<a class="btn" id="aMail" href="${mail}">✉ Email ${l.touches >= 2 ? '3' : l.touches >= 1 ? '2' : '1'}</a>` : ''}
+        ${wa ? `<a class="btn" id="aWa" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+        <button class="btn" type="button" data-log="call">Log call</button>
+        <button class="btn" type="button" data-log="linkedin">Log LinkedIn</button>
+        <button class="btn good" type="button" data-log="demo">Demo done</button>
+      </div>
+      ${l.demo_link ? `<div class="hint" style="word-break:break-all">Demo: <a href="${esc(l.demo_link)}" target="_blank" rel="noopener" style="color:var(--accent2)">${esc(l.demo_link.slice(0, 70))}…</a> <button class="btn" type="button" id="cpDemo" style="padding:4px 8px">Copy</button></div>` : ''}
+      <div class="two">
+        <div><label for="pStage">Stage</label><select id="pStage" style="width:100%">${STAGES.map((s) => `<option ${s === l.stage ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div><label for="pNext">Next action</label><input type="date" id="pNext" value="${esc(l.next_action_at || '')}" style="width:100%"></div>
+      </div>
+      <div class="two">
+        <div><label for="pPlan">Plan</label><select id="pPlan" style="width:100%"><option value="">—</option>${Object.keys(PRICES).map((p) => `<option ${p === l.plan ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
+        <div><label for="pMrr">Monthly fee (₹)</label><input type="number" id="pMrr" value="${esc(l.mrr ?? '')}" style="width:100%"></div>
+      </div>
+      <label for="pWeb">Website</label><input type="text" id="pWeb" value="${esc(l.website || '')}" style="width:100%" placeholder="their current site, if any">
+      <label for="pNotes">Notes</label><textarea id="pNotes">${esc(l.notes || '')}</textarea>
+      <div class="acts"><button class="btn primary" type="button" id="pSave">Save</button><button class="btn" type="button" id="pNote">+ Add note to history</button></div>
+      <div class="msg" id="pMsg"></div>
+      <h2 style="margin-top:14px">History</h2>
+      <div class="tl">${(acts || []).map((a) => `<div><b>${esc(a.kind)}</b> · ${dt(a.at)}${a.body ? '<br>' + esc(a.body) : ''}</div>`).join('') || '<div>Nothing yet.</div>'}</div>`;
+    $('mkDemo').onclick = async () => {
+      if (!l.demo_link) { l.demo_link = demoFor(l); await sb.from('sales_leads').update({ demo_link: l.demo_link }).eq('id', l.id); }
+      window.open(l.demo_link, '_blank', 'noopener'); open(l.id);
+    };
+    if ($('cpDemo')) $('cpDemo').onclick = () => navigator.clipboard.writeText(l.demo_link).then(() => { $('pMsg').textContent = 'Demo link copied.'; });
+    // Sending an email or WhatsApp counts as a touch; the next follow-up is scheduled.
+    const touched = async (kind, body) => {
+      const n = l.touches + 1, next = n === 1 ? 3 : n === 2 ? 4 : n === 3 ? 5 : null;
+      const upd = { touches: n, last_contacted_at: new Date().toISOString(), next_action_at: next ? addDays(next) : null, stage: l.stage === 'new' ? 'contacted' : l.stage };
+      await sb.from('sales_leads').update(upd).eq('id', l.id);
+      await sb.from('sales_activities').insert({ lead_id: l.id, kind, body });
+      Object.assign(l, upd); refresh(); open(l.id);
+    };
+    if ($('aMail')) $('aMail').addEventListener('click', () => { if (!l.demo_link) { l.demo_link = demoFor(l); sb.from('sales_leads').update({ demo_link: l.demo_link }).eq('id', l.id); } setTimeout(() => touched('email', 'Email ' + (Math.min(l.touches, 2) + 1) + ' sent'), 300); });
+    if ($('aWa')) $('aWa').addEventListener('click', () => setTimeout(() => touched('whatsapp', 'WhatsApp sent'), 300));
+    document.querySelectorAll('[data-log]').forEach((b) => b.onclick = async () => {
+      const kind = b.dataset.log, body = prompt(kind === 'demo' ? 'How did the demo go? Next step?' : 'What happened?', '') ?? null;
+      if (body === null) return;
+      if (kind === 'demo') { await sb.from('sales_leads').update({ stage: ['new', 'contacted', 'replied', 'demo'].includes(l.stage) ? 'demo' : l.stage, next_action_at: addDays(2) }).eq('id', l.id); await sb.from('sales_activities').insert({ lead_id: l.id, kind, body }); refresh(); open(l.id); }
+      else touched(kind, body);
+    });
+    $('pSave').onclick = async () => {
+      const plan = $('pPlan').value || null, stage = $('pStage').value;
+      const upd = { stage, next_action_at: $('pNext').value || null, plan, mrr: $('pMrr').value ? Number($('pMrr').value) : (stage === 'won' && plan ? PRICES[plan] : null), website: $('pWeb').value.trim() || null, notes: $('pNotes').value.trim() || null };
+      if (['won', 'lost', 'skip'].includes(stage)) upd.next_action_at = null;
+      const { error } = await sb.from('sales_leads').update(upd).eq('id', l.id);
+      $('pMsg').className = error ? 'msg err' : 'msg'; $('pMsg').textContent = error ? error.message : 'Saved.';
+      if (!error) { Object.assign(l, upd); refresh(); }
+    };
+    $('pNote').onclick = async () => { const t = $('pNotes').value.trim(); if (!t) return; await sb.from('sales_activities').insert({ lead_id: l.id, kind: 'note', body: t }); open(l.id); };
+  }
+  function refresh() { summary(); if (tab === 'today') loadToday(); else if (tab === 'pipeline') loadPipe(true); }
+
+  /* ───────── wiring ───────── */
+  document.addEventListener('click', (e) => { const r = e.target.closest('.row'); if (r) open(r.dataset.id); });
+  $('tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab;
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    ['today', 'pipeline', 'templates', 'settings'].forEach((t) => { $('tab-' + t).hidden = t !== tab; });
+    if (tab === 'today') loadToday(); if (tab === 'pipeline') loadPipe(true); if (tab === 'templates') renderTemplates();
+  });
+  let qt; $('q').addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => loadPipe(true), 300); });
+  ['fStage', 'fKind', 'fSort'].forEach((id) => $(id).addEventListener('change', () => loadPipe(true)));
+  $('more').onclick = () => { page++; loadPipe(false); };
+  $('addLead').onclick = async () => {
+    const name = prompt('Firm or analyst name'); if (!name) return;
+    const email = prompt('Email (optional)') || null, phone = prompt('Phone (optional)') || null;
+    const { data, error } = await sb.from('sales_leads').insert({ source: 'manual', name, email, phone, kind: 'firm', priority: 80, next_action_at: today() }).select(COLS).single();
+    if (error) return alert(error.message);
+    L.unshift(data); loadPipe(true); open(data.id);
+  };
+  $('importBtn').onclick = async () => {
+    const out = $('importMsg'); out.className = 'msg'; out.textContent = 'Importing from SEBI… this takes about 2 minutes.';
+    const { data: { session } } = await sb.auth.getSession();
+    const parts = [[0, 31], [32, 63], [64, 200]];
+    try {
+      const res = await Promise.all(parts.map(([a, b]) => fetch(MP_CONFIG.fn('sales-import') + `?from=${a}&to=${b}`, { method: 'POST', headers: { Authorization: 'Bearer ' + session.access_token, apikey: MP_CONFIG.supabaseKey, 'Content-Type': 'application/json' }, body: '{}' }).then((r) => r.json())));
+      const bad = res.find((r) => !r.ok); if (bad) throw new Error(bad.error || 'failed');
+      out.textContent = `Done: ${res.reduce((s, r) => s + r.rows, 0)} entries read from SEBI's register (${res[0].total} registered).`;
+      refresh();
+    } catch (e) { out.className = 'msg err'; out.textContent = 'Import failed: ' + e.message; }
+  };
+
+  (async function gate() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { $('gate').innerHTML = '<h2>Admins only</h2><p class="msg">Sign in with the MarketPulse admin account.</p><a class="btn primary" href="/?login=1">Sign in</a>'; return; }
+    const { data } = await sb.rpc('mp_is_platform_admin');
+    if (data !== true) { $('gate').innerHTML = '<h2>Admins only</h2><p class="msg">The Sales Desk is only for the MarketPulse admin.</p>'; return; }
+    $('gate').hidden = true; $('app').hidden = false;
+    summary(); loadToday();
+  })();
+})();
+</script>
+</body>
+</html>

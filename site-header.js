@@ -100,7 +100,7 @@
     if (!document.querySelector('.mph-foot')) {
       var foot = document.createElement('footer');
       foot.className = 'mph-foot';
-      foot.innerHTML = '<a href="/privacy.html" target="_self">Privacy Policy</a><span>·</span><a href="/terms.html" target="_self">Terms of Use</a><span>·</span><a href="/#contact" target="_self">Contact</a>' +
+      foot.innerHTML = '<a href="/privacy.html" target="_self">Privacy Policy</a><span>·</span><a href="/terms.html" target="_self">Terms of Use</a><span>·</span><a href="/#contact" target="_self">Contact</a><span class="mpb-hide-branded">·</span><a class="mpb-hide-branded" href="/for-advisors.html" target="_self">For research analysts</a>' +
         '<p>MarketPulse is for information and education only. It is not investment advice, and signals are paper trading only.</p>';
       document.body.appendChild(foot);
     }

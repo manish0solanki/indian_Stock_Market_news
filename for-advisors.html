@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/site-config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0f1e">
+<title>MarketPulse for Research Analysts: your branded investor platform</title>
+<meta name="description" content="A branded investor website for SEBI-registered research analysts: signals desk, stock research, screener, festive picks and portfolio tools under your name and registration. Live on your domain in 48 hours.">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--gold:#f5a623;--radius:16px}
+[data-theme="light"]{--bg:#f5f7fb;--surface:#fff;--surface2:#f0f3f9;--border:#dde3ee;--text:#111827;--muted:#4b5563;--dim:#6b7280;--accent:#4338ca;--accent2:#4f46e5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+section{padding:46px 0;border-bottom:1px solid var(--border)}
+h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.03em;margin:0 0 14px}
+h2{font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;margin:0 0 10px}
+.sub{color:var(--muted);font-size:17px;max-width:720px;margin:0 0 22px}
+.kicker{display:inline-block;font:700 12px/1 system-ui;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:700 14.5px/1 inherit;font-family:inherit;cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.hero{padding-top:54px}
+.proof{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:20px;color:var(--dim);font-size:13px}
+.proof span::before{content:"✓ ";color:var(--green);font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.card h3{margin:0 0 6px;font-size:16px}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.ico{font-size:22px;margin-bottom:6px}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:18px}
+.steps .card::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;margin-bottom:8px}
+.prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:18px}
+.price{display:flex;flex-direction:column}
+.price.hot{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.price .tag{align-self:flex-start;font:800 11px/1 system-ui;letter-spacing:.05em;text-transform:uppercase;padding:5px 9px;border-radius:999px;background:rgba(245,166,35,.16);color:var(--gold);margin-bottom:8px}
+.price .amt{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.price .amt small{font-size:13px;font-weight:600;color:var(--dim)}
+.price ul{margin:10px 0 14px;padding-left:18px;color:var(--muted);font-size:13.5px;flex:1}
+.price li{margin:4px 0}
+.note{font-size:12.5px;color:var(--dim);margin-top:12px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-top:8px}
+summary{cursor:pointer;font-weight:700}
+details p{color:var(--muted);margin:8px 0 2px;font-size:14px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:16px}
+form label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px}
+form input,form select,form textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit}
+form .full{grid-column:1/-1}
+.ok{background:rgba(47,210,127,.1);border:1px solid rgba(47,210,127,.4);border-radius:12px;padding:16px;margin-top:16px}
+.err{color:#ff8a96;font-size:13.5px}
+.small{font-size:12px;color:var(--dim)}
+footer{padding:26px 0 90px;color:var(--dim);font-size:12.5px}
+@media(max-width:640px){form{grid-template-columns:1fr}section{padding:34px 0}}
+</style>
+<script src="/brands.js"></script><script src="/brand.js"></script><script src="/sample-data.js"></script>
+<script>if (window.MP_BRAND && !window.MP_BRAND_DEMO) location.replace('/');  // a client's own site never shows our sales page</script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main>
+  <section class="hero"><div class="wrap">
+    <span class="kicker">For SEBI-registered research analysts</span>
+    <h1>Your own investor platform,<br>under your name and registration.</h1>
+    <p class="sub">Give subscribers one branded place for your calls and research instead of scattered Telegram and WhatsApp messages: a signals desk with a track record, stock research, a screener, festive picks and portfolio tools, on your own domain in 48 hours.</p>
+    <div class="btns"><a class="btn primary" href="#demo">See it with your name →</a><a class="btn" id="tryDemo" href="#" target="_blank" rel="noopener">Try a sample demo</a></div>
+    <div class="proof"><span>Your SEBI details on every page</span><span>Your own domain and logo</span><span>Your subscribers stay yours</span><span>No setup fee for founding partners</span></div>
+  </div></section>
+
+  <section><div class="wrap">
+    <h2>Everything your subscribers expect, already built</h2>
+    <p class="sub">The same platform that runs MarketPulse, in your brand.</p>
+    <div class="grid">
+      <div class="card"><div class="ico">📈</div><h3>Signals desk</h3><p>Every call with entry, stop-loss, two targets and an expiry. Levels never change after publishing, and a public record shows hits, stops and expiries.</p></div>
+      <div class="card"><div class="ico">🔎</div><h3>Stock research</h3><p>Charts, technicals, fundamentals, promoter holding, quarterly results and a buy / wait / sell read for any NSE stock.</p></div>
+      <div class="card"><div class="ico">🪔</div><h3>Festive picks</h3><p>Diwali, New Year, Holi baskets with targets and reasons, plus shareable posters and PDF reports in your brand.</p></div>
+      <div class="card"><div class="ico">🧮</div><h3>Screener and F&amp;O</h3><p>Screen 2,600+ NSE stocks, option chains with OI, PCR and max pain, sector heatmaps and FII / DII flows.</p></div>
+      <div class="card"><div class="ico">💼</div><h3>Portfolio tracker</h3><p>Subscribers import broker files or their mutual fund CAS and see value, returns and XIRR against the Nifty.</p></div>
+      <div class="card"><div class="ico">🌏</div><h3>Market dashboard</h3><p>Indices, GIFT Nifty, global cues, IPOs with subscription data, events calendar and market news, refreshed through the day.</p></div>
+      <div class="card"><div class="ico">🔔</div><h3>Alerts and watchlists</h3><p>Price alerts, watchlists and a notification bell for new calls and picks.</p></div>
+      <div class="card"><div class="ico">🧾</div><h3>Money manager</h3><p>Budgets, bills, goals and income tracking: a reason for subscribers to open your site every day.</p></div>
+    </div>
+  </div></section>
+
+  <section><div class="wrap">
+    <h2>Compliance built in</h2>
+    <div class="grid">
+      <div class="card"><h3>Your registration, everywhere</h3><p>Entity name, SEBI registration number, BSE enlistment, grievance officer, SCORES and SMART ODR links, and SEBI's standard risk wording in the footer of every page.</p></div>
+      <div class="card"><h3>You stay in control</h3><p>You approve what is published under your name. The platform is software: the research and advice remain yours.</p></div>
+      <div class="card"><h3>Separate, private user base</h3><p>Your subscribers' accounts, portfolios and data are kept apart from every other client's, and you can see your user list.</p></div>
+    </div>
+  </div></section>
+
+  <section><div class="wrap">
+    <h2>Live in 48 hours</h2>
+    <div class="steps">
+      <div class="card"><h3>See your demo</h3><p>Fill the form below and get the whole site with your name and registration instantly.</p></div>
+      <div class="card"><h3>14-day pilot</h3><p>We set it up on your domain with your logo and colours. Use it with a few subscribers.</p></div>
+      <div class="card"><h3>Go live</h3><p>Point your subscribers to it. We keep it running, updated and backed up.</p></div>
+    </div>
+  </div></section>
+
+  <section id="pricing"><div class="wrap">
+    <h2>Simple monthly pricing</h2>
+    <p class="sub">Typically less than what one or two subscribers pay you. Prices are before 18% GST. Annual plans get 2 months free.</p>
+    <div class="prices">
+      <div class="card price hot"><span class="tag">10 founding places</span><h3>Founding Partner</h3><div class="amt">₹4,999<small>/month</small></div><ul><li>Everything in Pro</li><li>Price locked for 12 months</li><li>No setup fee</li><li>In return: a testimonial and a monthly feedback call</li></ul><a class="btn primary" href="#demo" data-plan="founding">Claim a place</a></div>
+      <div class="card price"><h3>Starter</h3><div class="amt">₹6,999<small>/month</small></div><ul><li>All investor features</li><li>Your domain, logo and colours</li><li>Up to 1,000 subscriber accounts</li><li>Email support</li><li>₹14,999 one-time setup</li></ul><a class="btn" href="#demo" data-plan="starter">Choose Starter</a></div>
+      <div class="card price"><h3>Pro</h3><div class="amt">₹14,999<small>/month</small></div><ul><li>Up to 10,000 subscriber accounts</li><li>Client admin and user list</li><li>Branded picks posters and PDFs</li><li>Priority WhatsApp support</li><li>4 hours of custom changes a month</li><li>₹24,999 one-time setup</li></ul><a class="btn" href="#demo" data-plan="pro">Choose Pro</a></div>
+      <div class="card price"><h3>Enterprise</h3><div class="amt">from ₹39,999<small>/month</small></div><ul><li>Unlimited accounts</li><li>Uptime commitment</li><li>Custom features and integrations (broker APIs, subscription billing)</li><li>Dedicated manager</li></ul><a class="btn" href="#demo" data-plan="enterprise">Talk to us</a></div>
+    </div>
+    <p class="note">Exchange market-data licensing for public display is arranged per client and billed at cost, or you can bring your own licence. Cancel any month; your data can be exported.</p>
+  </div></section>
+
+  <section><div class="wrap">
+    <h2>Questions</h2>
+    <details><summary>Who publishes the signals and picks?</summary><p>You do. The platform generates and tracks rule-based setups and lets you publish under your registration; you review and approve what goes out. It is software for your research business, not advice from us.</p></details>
+    <details><summary>Can I use my own domain?</summary><p>Yes. Your site runs on your domain with your logo and colours; MarketPulse is not shown unless you choose to.</p></details>
+    <details><summary>Are my subscribers' accounts separate from other analysts'?</summary><p>Yes. Each client has a separate user base: an account made on your site works only on your site, and you can see your own user list.</p></details>
+    <details><summary>What about market data?</summary><p>Showing exchange prices on a public website needs a market-data licence. For your site we arrange one through an authorised data vendor and bill it at cost, or you can use your own licence.</p></details>
+    <details><summary>Is there a contract or lock-in?</summary><p>Monthly plans can be cancelled any month. Annual plans get two months free. Founding-partner pricing is locked for 12 months.</p></details>
+  </div></section>
+
+  <section id="demo"><div class="wrap">
+    <h2>See it with your name</h2>
+    <p class="sub">Tell us who you are and you'll get the whole site, branded for your firm, right away. We'll follow up to set up your pilot.</p>
+    <form id="f" novalidate>
+      <div><label for="d-name">Your name *</label><input id="d-name" required maxlength="80" autocomplete="name"></div>
+      <div><label for="d-firm">Firm / brand name *</label><input id="d-firm" required maxlength="80" autocomplete="organization"></div>
+      <div><label for="d-email">Email *</label><input id="d-email" type="email" required maxlength="120" autocomplete="email"></div>
+      <div><label for="d-phone">Phone / WhatsApp</label><input id="d-phone" maxlength="20" autocomplete="tel"></div>
+      <div><label for="d-reg">SEBI registration no.</label><input id="d-reg" maxlength="20" placeholder="INH000000000"></div>
+      <div><label for="d-site">Current website (if any)</label><input id="d-site" maxlength="120"></div>
+      <div><label for="d-plan">Plan you're interested in</label><select id="d-plan"><option value="founding">Founding Partner</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option><option value="">Not sure yet</option></select></div>
+      <div class="full"><label for="d-msg">Anything we should know? (number of subscribers, how you share calls today)</label><textarea id="d-msg" rows="3" maxlength="1000"></textarea></div>
+      <div class="full"><button class="btn primary" type="submit" id="d-go">Show me my demo →</button> <span class="small">We use these details only to contact you about this.</span></div>
+      <div class="full err" id="d-err"></div>
+    </form>
+    <div class="ok" id="d-ok" hidden></div>
+  </div></section>
+</main>
+<footer><div class="wrap">MarketPulse provides software for SEBI-registered intermediaries; it does not provide investment advice. Investment in securities market are subject to market risks. <a href="/terms.html" style="color:var(--accent2)">Terms</a> · <a href="/privacy.html" style="color:var(--accent2)">Privacy</a></div></footer>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const sb = window.supabase.createClient(MP_CONFIG.supabaseUrl, MP_CONFIG.supabaseKey);
+  const enc = (c) => location.origin + '/?wl=' + window.mpBrand.encode(c);
+  $('tryDemo').href = enc({ name: 'Acme Research', short: 'AR', primary: '#0b3d2e', accent: '#12a37a', mark: '#f4c542', legal: { entity: 'Acme Research (sample)', regType: 'Research Analyst', regNo: 'INH000000000' } });
+  document.querySelectorAll('[data-plan]').forEach((a) => a.addEventListener('click', () => { $('d-plan').value = a.dataset.plan; setTimeout(() => $('d-name').focus(), 400); }));
+  $('f').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const v = (id) => $(id).value.trim();
+    $('d-err').textContent = '';
+    if (!v('d-name') || !v('d-firm') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('d-email'))) { $('d-err').textContent = 'Please fill in your name, firm and a valid email.'; return; }
+    $('d-go').disabled = true; $('d-go').textContent = 'Building your demo…';
+    const { error } = await sb.rpc('submit_demo_request', { p_name: v('d-name'), p_firm: v('d-firm'), p_email: v('d-email'), p_phone: v('d-phone') || null, p_reg_no: v('d-reg') || null, p_website: v('d-site') || null, p_message: v('d-msg') || null, p_plan: $('d-plan').value || null });
+    $('d-go').disabled = false; $('d-go').textContent = 'Show me my demo →';
+    if (error) { $('d-err').textContent = error.message || 'Something went wrong; please try again.'; return; }
+    const firm = v('d-firm').slice(0, 40), words = firm.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w));
+    const cfg = { name: firm, short: (words.length > 1 ? words[0][0] + words[1][0] : firm.slice(0, 2)).toUpperCase(), primary: '#0f2747', accent: '#2f80ed', mark: '#f5a623', legal: { entity: firm }, email: v('d-email') };
+    if (v('d-reg')) Object.assign(cfg.legal, { regType: 'Research Analyst', regNo: v('d-reg').toUpperCase().slice(0, 30) });
+    if (v('d-phone')) cfg.phone = v('d-phone').slice(0, 30);
+    if (v('d-site')) cfg.site = v('d-site').replace(/^https?:\/\//, '').slice(0, 60);
+    const link = enc(cfg);
+    $('f').hidden = true; $('d-ok').hidden = false;
+    $('d-ok').innerHTML = '<h3 style="margin:0 0 6px">Your demo is ready</h3><p style="margin:0 0 12px;color:var(--muted)">This is the full site with your firm\'s name. Look around: signals, research, picks, portfolio. We\'ll be in touch within one working day to set up your pilot with your logo, colours and domain.</p><a class="btn primary" target="_blank" rel="noopener"></a>';
+    const a = $('d-ok').querySelector('a'); a.href = link; a.textContent = 'Open ' + firm + ' →';
+  });
+})();
+</script>
+</body>
+</html>

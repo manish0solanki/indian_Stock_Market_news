@@ -240,6 +240,7 @@
     '.mph-brand i,.topbar-brand .diamond{' + markCss + '}' +
     (B.logo ? '' : '.mph-brand i::after,.topbar-brand .diamond::after{content:' + cssStr(B.short) + ';font:800 ' + (B.short.length > 2 ? 9 : 11) + 'px/1 system-ui,sans-serif;color:' + markInk + ';font-style:normal;letter-spacing:-.02em}') +
     'html.mpb-wait body{visibility:hidden}' +
+    '.mpb-hide-branded,a[href*="for-advisors"]{display:none !important}' +  // our own sales page isn't part of a client's site
     B.hide.map(function (k) { return 'a[href*="' + SECTIONS[k][0] + '"],[data-mp-go="' + k + '"]'; }).join(',') + (B.hide.length ? '{display:none !important}' : '') +
     '.mpb-foot{margin:28px auto 0;max-width:1400px;padding:18px 20px calc(18px + env(safe-area-inset-bottom));border-top:1px solid rgba(127,140,170,.25);font:12px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;color:#8a97b2;box-sizing:border-box}' +
     '.mpb-foot b{color:inherit;font-weight:700}.mpb-foot .mpb-name{font-size:13.5px;color:' + B.accent + '}' +
@@ -311,7 +312,7 @@
     if (B.email) contact.push('<a href="mailto:' + esc(B.email) + '">' + esc(B.email) + '</a>');
     if (B.phone) contact.push(esc(B.phone));
     var html =
-      (window.MP_BRAND_DEMO ? '<p class="mpb-demo">White-label demo: the name, logo and registration details below were entered in Brand Studio for a preview and have not been verified.</p>' : '') +
+      (window.MP_BRAND_DEMO ? '<p class="mpb-demo">This is a demo preview, not a live website. The name, logo and registration details below are shown for illustration and have not been verified.</p>' : '') +
       '<p><span class="mpb-name"><b>' + esc(who) + '</b></span>' + (bits.length ? ' · ' + bits.join(' · ') : '') + '</p>' +
       (contact.length ? '<p>' + contact.join(' · ') + '</p>' : '') +
       (L.grievanceName || L.grievanceEmail ? '<p>Grievance officer: ' + esc(L.grievanceName) + (L.grievanceEmail ? ' · <a href="mailto:' + esc(L.grievanceEmail) + '">' + esc(L.grievanceEmail) + '</a>' : '') +
