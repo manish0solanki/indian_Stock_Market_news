@@ -530,6 +530,34 @@ function setTab(tab) {
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   window.scrollTo({ top: 0 });
   if (tab === 'history' && S.f.hkind === 'signals') { renderSigHistory(); loadSigHistory(false).then(renderSigHistory); }
+  if (tab === 'options') openOptions();
+}
+/* Options tab: platform admin only. The button and section are created here only after mp_is_platform_admin() says
+   yes, so other users and logged-out visitors never get the tab or its code (options-desk.js/.css load on first open).
+   The data is locked separately: options_paper_feed() refuses anyone who is not the admin. */
+async function addOptionsTab() {
+  let ok = false;
+  try { const { data } = await sb.rpc('mp_is_platform_admin'); ok = data === true; } catch (e) { ok = false; }
+  if (!ok || $('tab-options')) return false;
+  const btn = document.createElement('button');
+  btn.dataset.tab = 'options'; btn.title = 'Options paper desk (visible to the admin only)';
+  btn.innerHTML = '<b>⚡</b><span>Options</span>';
+  btn.addEventListener('click', () => setTab('options'));
+  $('tabbar').appendChild(btn); $('tabbar').classList.add('five');
+  const sec = document.createElement('section');
+  sec.className = 'tab'; sec.id = 'tab-options'; sec.setAttribute('aria-label', 'Options');
+  sec.innerHTML = '<div class="note">Loading the options desk…</div>';
+  $('app').appendChild(sec);
+  return true;
+}
+let optionsLoading = null;
+function openOptions() {
+  const sec = $('tab-options'); if (!sec || sec.dataset.odMounted) return;
+  if (!optionsLoading) optionsLoading = new Promise((ok, fail) => {
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/options-desk.css?v=1'; document.head.appendChild(css);
+    const js = document.createElement('script'); js.src = '/options-desk.js?v=1'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
+  });
+  optionsLoading.then(() => window.mpOptionsDesk.mount(sec, sb)).catch(() => { sec.innerHTML = '<div class="note">Could not load the options desk. Refresh to try again.</div>'; optionsLoading = null; });
 }
 function seg(id, key, after) {
   $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.f[key] = b.dataset.v; $(id).querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); after(); });
@@ -580,6 +608,8 @@ async function init() {
   if (!S.user) { $('gate').hidden = false; document.querySelectorAll('.tab,#tabbar').forEach((el) => { el.hidden = true; }); await Promise.all([loadIndices()]); renderMarket(); renderIndexStrip(); return; }
   window.mpRefreshNow = () => refresh(true);
   await refresh(true);
+  // ?tab=options (from the Admin Panel) opens the admin-only Options tab
+  addOptionsTab().then((added) => { if (added && new URLSearchParams(location.search).get('tab') === 'options') setTab('options'); });
   // ?sig=SYMBOL|tf (from Home's Top Signals) opens that signal's details.
   const deep = new URLSearchParams(location.search).get('sig');
   if (deep) {

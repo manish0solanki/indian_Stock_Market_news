@@ -12,213 +12,38 @@
 <script src="/site-header.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--radius:14px}
-[data-theme="light"]{--bg:#f5f7fb;--surface:#fff;--surface2:#f0f3f9;--border:#dde3ee;--text:#111827;--muted:#4b5563;--dim:#6b7280;--accent:#4338ca;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207}
-*{box-sizing:border-box}
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--accent:#4f46e5;--green:#2fd27f;--red:#ff5d6c}
+[data-theme="light"]{--bg:#f5f7fb;--surface:#fff;--surface2:#f0f3f9;--border:#dde3ee;--text:#111827;--muted:#4b5563;--accent:#4338ca;--green:#0f8a3e;--red:#c72b2b}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 .wrap{max-width:1300px;margin:0 auto;padding:18px 16px 90px}
 h1{font-size:24px;margin:4px 0 2px}
 .lead{color:var(--muted);margin:0 0 14px;max-width:900px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
-.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
-.kpi b{display:block;font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
-.kpi span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
-.up{color:var(--green)}.down{color:var(--red)}.muted{color:var(--muted)}.dim{color:var(--dim)}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 12.5px/1 inherit;font-family:inherit;cursor:pointer;text-decoration:none;white-space:nowrap}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.msg{font-size:12.5px;color:var(--muted)}.msg.err{color:#ff8a96}
-.gate{max-width:560px}
-.banner{border:1px solid rgba(243,201,105,.45);background:rgba(243,201,105,.08);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--muted);margin-bottom:14px}
-.banner b{color:var(--text)}
-.trades{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
-.tr{border:1px solid var(--border);border-radius:12px;background:var(--surface2);padding:12px}
-.tr-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
-.tr-h b{font-size:16px}
-.tr-h small{display:block;color:var(--dim);font-size:11.5px}
-.pnl{font-size:18px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pnl small{display:block;font-size:11px;font-weight:600;color:var(--dim)}
-.kv{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12.5px}
-.kv span{color:var(--dim)}.kv b{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.kv div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dashed var(--border);padding:3px 0}
-.plan{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.5}
-.meter{position:relative;height:8px;border-radius:99px;background:var(--border);margin:10px 0 4px}
-.meter i{position:absolute;top:-3px;width:3px;height:14px;border-radius:2px}
-.meter .st{background:var(--red)}.meter .tg{background:var(--green)}.meter .now{background:var(--text);width:9px;height:9px;top:-1px;border-radius:50%;margin-left:-4px}
-.meter-l{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim)}
-.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(127,140,170,.15);color:var(--muted);white-space:nowrap}
-.pill.bull{background:rgba(47,210,127,.14);color:var(--green)}.pill.bear{background:rgba(255,93,108,.12);color:#ff8a96}
-.pill.opened{background:rgba(47,210,127,.14);color:var(--green)}.pill.closed{background:rgba(129,140,248,.16);color:var(--accent2)}.pill.skipped,.pill.mark{background:rgba(127,140,170,.15)}.pill.error{background:rgba(255,93,108,.12);color:#ff8a96}.pill.run,.pill.note{background:transparent;border:1px solid var(--border)}
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);text-align:left;padding:0 8px 6px;white-space:nowrap}
-td{padding:7px 8px;border-top:1px solid var(--border);vertical-align:top}
-td.r,th.r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-td small{display:block;color:var(--dim);font-size:11px}
-.empty{color:var(--dim);padding:14px;text-align:center;font-size:13px}
-details.rules summary{cursor:pointer;font-weight:700}
-details.rules ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:12.5px;line-height:1.6}
-@media(max-width:700px){.hide-s{display:none}.trades{grid-template-columns:1fr}}
+.lead a{color:var(--accent)}
+.gate{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;max-width:560px}
+.gate .msg{color:var(--muted);font-size:13px}
+.btn{display:inline-flex;padding:8px 12px;border-radius:9px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;font-size:13px}
 </style>
+<link rel="stylesheet" href="/options-desk.css?v=1">
 </head>
 <body>
 <div id="mpHeader"></div>
 <main class="wrap">
   <h1>Options Paper Desk</h1>
-  <p class="lead">The Stock Signals scanner's BUY / SELL ideas on F&amp;O stocks, turned into <b>defined-risk debit spreads</b> and paper-traded at real NSE option prices. Nothing here is real money and nothing here is shown to users.</p>
-  <div class="card gate" id="gate"><p class="msg">Checking access…</p></div>
-  <div id="app" hidden>
-    <div class="banner"><b>Paper only, admins only.</b> These are not recommendations. Showing options trade ideas to the public needs SEBI research-analyst registration; keep this private until that is in place. There is no back-test for options (no stored option prices), so judge it on the paper record below once it has a few weeks of trades.</div>
-    <div class="kpis" id="kpis"></div>
-    <div class="card">
-      <h2><span>Engine</span><span class="msg" id="lastRun"></span></h2>
-      <div class="bar">
-        <button class="btn primary" id="runBtn" type="button">Run now</button>
-        <button class="btn" id="dryBtn" type="button">Dry run: what would it open now?</button>
-        <span class="msg" id="runMsg">Runs by itself every 15 minutes, 9:30 AM – 3:15 PM IST on weekdays. New spreads are only opened while the market is open.</span>
-      </div>
-      <div id="dryOut"></div>
-    </div>
-    <div class="card"><h2><span>Open spreads</span><span class="msg" id="openNote"></span></h2><div id="open"></div></div>
-    <div class="card"><h2><span>Closed spreads</span></h2><div id="closed"></div></div>
-    <div class="card"><h2><span>Activity (last 2 days)</span></h2><div class="tw" id="log"></div></div>
-    <div class="card">
-      <details class="rules"><summary>How trades are picked and closed</summary>
-        <ul>
-          <li><b>Source:</b> the Stock Signals scanner's current BUY / SELL signals, F&amp;O stocks only. Signals in a <b>weak sector</b> (Sectors page filter) are skipped.</li>
-          <li><b>Trade:</b> BUY → bull call spread (buy the at-the-money call, sell the call at the strike nearest the signal's target 1). SELL → bear put spread, the mirror image. One lot, one spread per stock at a time.</li>
-          <li><b>Expiry:</b> the nearest with at least 14 days left, so time decay doesn't dominate.</li>
-          <li><b>Liquidity:</b> both legs need a live bid and ask, a bid-ask spread within 12% (bought leg) / 20% (sold leg) of the price, and open interest of at least 50 contracts.</li>
-          <li><b>Price:</b> skipped when the bought option's implied volatility is above 1.6× the stock's 20-day historical volatility (options unusually expensive), or when the maximum profit is less than 0.8× the maximum loss.</li>
-          <li><b>Fills:</b> conservative: buy at the ask and sell at the bid on entry, the reverse on exit. Brokerage and taxes are not included.</li>
-          <li><b>Exit:</b> the stock hits the signal's stop, the stock reaches target 1, the spread is worth 80% of its width, or 2 days are left to expiry. The most a spread can lose is the debit paid.</li>
-        </ul>
-      </details>
-    </div>
-  </div>
+  <p class="lead">The Stock Signals scanner's BUY / SELL ideas on F&amp;O stocks, turned into <b>defined-risk debit spreads</b> and paper-traded at real NSE option prices. The same desk is the admin-only <a href="/stock-signals.html?tab=options">Options tab on the Signals page</a>.</p>
+  <div class="gate" id="gate"><p class="msg">Checking access…</p></div>
+  <div id="app" hidden></div>
 </main>
+<script src="/options-desk.js?v=1"></script>
 <script>
-(function () {
-  'use strict';
+(async function gate() {
   const $ = (id) => document.getElementById(id);
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const sb = window.supabase.createClient(MP_CONFIG.supabaseUrl, MP_CONFIG.supabaseKey);
-  const num = (v) => { if (v === null || v === undefined || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
-  const inr = (v, d = 0) => { v = num(v); return v === null ? '—' : (v < 0 ? '−' : '') + '₹' + Math.abs(v).toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d }); };
-  const sInr = (v) => { v = num(v); return v === null ? '—' : (v > 0 ? '+' : '') + inr(v); };
-  const px = (v) => { v = num(v); return v === null ? '—' : v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
-  const tone = (v) => (num(v) > 0 ? 'up' : num(v) < 0 ? 'down' : '');
-  const dt = (t) => t ? new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
-  const dExp = (d) => d ? new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '—';
-  const daysTo = (d) => Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(new Date(Date.now() + 330 * 60e3).toISOString().slice(0, 10) + 'T00:00:00Z')) / 864e5);
-  const label = (t) => `${t.strategy === 'bear_put_spread' ? 'Bear put' : 'Bull call'} ${px(t.long_strike).replace('.00', '')}/${px(t.short_strike).replace('.00', '')} ${t.opt_type}`;
-  let F = null, timer = null;
-
-  async function token() { const { data: { session } } = await sb.auth.getSession(); return session ? session.access_token : null; }
-  async function callFn(qs) {
-    const tk = await token();
-    const r = await fetch(MP_CONFIG.fn('options-signals') + qs, { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: MP_CONFIG.supabaseKey, 'Content-Type': 'application/json' }, body: '{}' });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
-    return j;
-  }
-
-  function kpis() {
-    const s = F.stats || {}, open = F.open || [];
-    const winRate = s.closed ? Math.round(100 * s.wins / s.closed) + '%' : '—';
-    const risk = open.reduce((a, t) => a + num(t.max_loss) * num(t.lots), 0);
-    $('kpis').innerHTML = [
-      ['Open spreads', open.length, ''], ['Open P&L', sInr(F.open_pnl), tone(F.open_pnl)], ['At risk now', inr(risk), ''],
-      ['Closed', s.closed || 0, ''], ['Win rate', winRate, ''], ['Realised P&L', sInr(s.pnl), tone(s.pnl)],
-      ['Avg win / loss', s.closed ? `${sInr(s.avg_win)} / ${sInr(s.avg_loss)}` : '—', ''],
-    ].map(([l, v, c]) => `<div class="kpi"><span>${l}</span><b class="${c}">${v}</b></div>`).join('');
-    $('lastRun').textContent = F.last_run ? 'Last run ' + dt(F.last_run) : 'Not run yet';
-  }
-  function meter(t) {
-    const st = num(t.stop), tg = num(t.target), now = num(t.mark_spot), en = num(t.spot_entry);
-    if (!(st > 0 && tg > 0 && now > 0)) return '';
-    const lo = Math.min(st, tg), hi = Math.max(st, tg), pos = (v) => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
-    const bull = t.opt_type === 'CE';
-    return `<div class="meter"><i class="st" style="left:${pos(st)}%"></i><i class="tg" style="left:calc(${pos(tg)}% - 3px)"></i><i class="now" style="left:${pos(now)}%" title="Stock now ${px(now)}"></i></div>
-      <div class="meter-l"><span>${bull ? 'Stop' : 'Target'} ${px(lo)}</span><span>Stock ${px(now)} (entry ${px(en)})</span><span>${bull ? 'Target' : 'Stop'} ${px(hi)}</span></div>`;
-  }
-  function openCards() {
-    const open = F.open || [];
-    $('openNote').textContent = open.length ? 'Marked every 15 minutes in market hours' : '';
-    if (!open.length) { $('open').innerHTML = '<div class="empty">No open spreads. The engine opens one when a scanner signal on an F&amp;O stock passes every rule.</div>'; return; }
-    $('open').innerHTML = '<div class="trades">' + open.map((t) => {
-      const per = num(t.lot_size) * num(t.lots), cost = num(t.net_debit) * per, pnlPct = cost ? num(t.pnl) / cost * 100 : null, dte = daysTo(t.expiry);
-      return `<div class="tr">
-        <div class="tr-h"><div><b>${esc(t.symbol)}</b> <span class="pill ${t.opt_type === 'CE' ? 'bull' : 'bear'}">${esc(label(t))}</span>
-          <small>${dExp(t.expiry)} expiry · ${dte} days left · lot ${num(t.lot_size)} · ${esc(t.signal_setup || t.signal_side)} signal${t.sector_group ? ' · ' + esc(t.sector_group) + ' (' + esc(t.sector_state) + ')' : ''}</small></div>
-          <div class="pnl ${tone(t.pnl)}">${sInr(t.pnl)}<small>${pnlPct === null ? '' : (pnlPct > 0 ? '+' : '') + pnlPct.toFixed(0) + '% of cost'}</small></div></div>
-        <div class="kv">
-          <div><span>Buy ${px(t.long_strike).replace('.00', '')} ${t.opt_type} at</span><b>${px(t.entry_long)}</b></div><div><span>Sell ${px(t.short_strike).replace('.00', '')} ${t.opt_type} at</span><b>${px(t.entry_short)}</b></div>
-          <div><span>Net debit / share</span><b>${px(t.net_debit)}</b></div><div><span>Cost = max loss</span><b>${inr(t.max_loss)}</b></div>
-          <div><span>Max profit</span><b class="up">${inr(t.max_profit)}</b></div><div><span>Breakeven at expiry</span><b>${px(t.breakeven)}</b></div>
-          <div><span>Spread worth now</span><b>${px(t.mark_value)}</b></div><div><span>IV / 20-day HV</span><b>${num(t.iv) === null ? '—' : num(t.iv).toFixed(1) + '%'} / ${num(t.hv) === null ? '—' : num(t.hv).toFixed(1) + '%'}</b></div>
-        </div>
-        ${meter(t)}
-        <div class="plan">Opened ${dt(t.opened_at)} with the stock at ${px(t.spot_entry)}. Closes when the stock hits ${px(t.stop)} (stop) or ${px(t.target)} (target 1), when the spread is worth ${px(0.8 * num(t.width))} (80% of its ${px(t.width)} width), or 2 days before expiry. Last mark ${dt(t.marked_at)}.</div>
-      </div>`;
-    }).join('') + '</div>';
-  }
-  function closedTable() {
-    const c = F.closed || [];
-    if (!c.length) { $('closed').innerHTML = '<div class="empty">No closed spreads yet.</div>'; return; }
-    $('closed').innerHTML = `<div class="tw"><table><thead><tr><th>Stock</th><th>Spread</th><th class="hide-s">Opened</th><th>Closed</th><th>Why</th><th class="r hide-s">Debit → exit</th><th class="r">P&amp;L</th></tr></thead><tbody>
-      ${c.map((t) => `<tr><td><b>${esc(t.symbol)}</b><small>${esc(t.signal_setup || t.signal_side || '')}</small></td><td>${esc(label(t))}<small>${dExp(t.expiry)} · lot ${num(t.lot_size)}</small></td>
-        <td class="hide-s">${dt(t.opened_at)}<small>stock ${px(t.spot_entry)}</small></td><td>${dt(t.closed_at)}<small>stock ${px(t.exit_spot)}</small></td><td>${esc(t.exit_reason || '')}</td>
-        <td class="r hide-s">${px(t.net_debit)} → ${px(t.exit_value)}</td><td class="r ${tone(t.pnl)}"><b>${sInr(t.pnl)}</b><small>of ${inr(t.max_loss)} risked</small></td></tr>`).join('')}
-      </tbody></table></div>`;
-  }
-  function logTable() {
-    const L = F.log || [];
-    if (!L.length) { $('log').innerHTML = '<div class="empty">Nothing yet. The first run is at 9:30 AM IST on the next trading day, or press Run now.</div>'; return; }
-    $('log').innerHTML = `<table><thead><tr><th>Time</th><th>Stock</th><th>What</th><th>Details</th></tr></thead><tbody>
-      ${L.map((l) => `<tr><td style="white-space:nowrap">${dt(l.at)}</td><td><b>${esc(l.symbol || '')}</b></td><td><span class="pill ${esc(l.action.replace(/\s.*/, ''))}">${esc(l.action)}</span></td><td>${esc(l.reason || '')}</td></tr>`).join('')}
-      </tbody></table>`;
-  }
-  async function refresh() {
-    const { data, error } = await sb.rpc('options_paper_feed');
-    if (error) { $('runMsg').className = 'msg err'; $('runMsg').textContent = 'Could not load: ' + error.message; return; }
-    F = data; kpis(); openCards(); closedTable(); logTable();
-  }
-
-  $('runBtn').onclick = async () => {
-    const b = $('runBtn'), m = $('runMsg'); b.disabled = true; m.className = 'msg'; m.textContent = 'Running… this can take a minute (it reads each option chain from NSE).';
-    try {
-      const r = await callFn('?force=1');
-      m.textContent = r.skipped === 'market closed' ? 'Market is closed.' : `Done: opened ${r.opened}, closed ${r.closed}, marked ${r.marked}, skipped ${r.skipped}${r.errors ? ', errors ' + r.errors : ''}.` + (r.opened === 0 && !isOpenNow() ? ' New spreads open only while the market is open.' : '');
-      refresh();
-    } catch (e) { m.className = 'msg err'; m.textContent = 'Run failed: ' + e.message; } finally { b.disabled = false; }
-  };
-  $('dryBtn').onclick = async () => {
-    const b = $('dryBtn'), out = $('dryOut'); b.disabled = true; out.innerHTML = '<p class="msg">Checking every current signal against the rules…</p>';
-    try {
-      const r = await callFn('?dry=1');
-      const rows = r.results || [];
-      out.innerHTML = `<p class="msg">${r.market_open ? 'Live prices.' : 'Market is closed: these use the last quotes NSE shows, which can be stale or missing until the open.'} Would open <b>${r.opened}</b>, skip <b>${r.skipped}</b>${r.errors ? ', errors ' + r.errors : ''}. Nothing was saved.</p>` +
-        (rows.length ? `<div class="tw"><table><thead><tr><th>Stock</th><th>Result</th><th>Details</th><th class="r">Max loss</th><th class="r">Max profit</th></tr></thead><tbody>
-          ${rows.map((x) => `<tr><td><b>${esc(x.symbol || '')}</b></td><td><span class="pill ${x.action === 'would open' ? 'opened' : esc(x.action)}">${esc(x.action)}</span></td><td>${esc(x.reason)}</td>
-            <td class="r">${x.detail && x.detail.max_loss ? inr(x.detail.max_loss) : ''}</td><td class="r up">${x.detail && x.detail.max_profit ? inr(x.detail.max_profit) : ''}</td></tr>`).join('')}
-          </tbody></table></div>` : '<div class="empty">No F&amp;O signals to check right now.</div>');
-    } catch (e) { out.innerHTML = '<p class="msg err">Dry run failed: ' + esc(e.message) + '</p>'; } finally { b.disabled = false; }
-  };
-  function isOpenNow() { const t = new Date(Date.now() + 330 * 60e3), m = t.getUTCHours() * 60 + t.getUTCMinutes(), d = t.getUTCDay(); return d >= 1 && d <= 5 && m >= 560 && m <= 930; }
-
-  (async function gate() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { $('gate').innerHTML = '<h2>Admins only</h2><p class="msg">Sign in with the MarketPulse admin account.</p><a class="btn primary" href="/?login=1">Sign in</a>'; return; }
-    const { data } = await sb.rpc('mp_is_platform_admin');
-    if (data !== true) { $('gate').innerHTML = '<h2>Admins only</h2><p class="msg">The Options Paper Desk is only for the MarketPulse admin.</p>'; return; }
-    $('gate').hidden = true; $('app').hidden = false;
-    await refresh();
-    timer = setInterval(() => { if (!document.hidden) refresh(); }, 60000);
-  })();
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { $('gate').innerHTML = '<h2>Admins only</h2><p class="msg">Sign in with the MarketPulse admin account.</p><a class="btn" href="/?login=1">Sign in</a>'; return; }
+  const { data } = await sb.rpc('mp_is_platform_admin');
+  if (data !== true) { $('gate').innerHTML = '<h2>Admins only</h2><p class="msg">The Options Paper Desk is only for the MarketPulse admin.</p>'; return; }
+  $('gate').hidden = true; $('app').hidden = false;
+  window.mpOptionsDesk.mount($('app'), sb);
 })();
 </script>
 </body>

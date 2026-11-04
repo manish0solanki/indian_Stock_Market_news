@@ -217,13 +217,14 @@ The whole site can run under another firm's name, for demos to prospects or for 
 
 ---
 
-### 📈 Options Paper Desk (`admin-options.html`, platform admin only, paper only)
+### 📈 Options Paper Desk (Signals page → **Options** tab, platform admin only, paper only)
+- The **Options** tab on `stock-signals.html` is created only after `mp_is_platform_admin()` confirms the signed-in user is the admin; other users and logged-out visitors never get the tab or its code (`options-desk.js/.css` load on first open), and `options_paper_feed()` refuses non-admins anyway. `?tab=options` opens it (the Admin Panel's 📈 Options Desk link). `admin-options.html` shows the same desk on its own page.
 - The Stock Signals scanner's BUY / SELL signals on **F&O stocks** turned into **defined-risk debit spreads** and paper-traded at real NSE option prices by the `options-signals` edge function (pg_cron `options-signals`, every 15 minutes 9:30 AM – 3:15 PM IST on weekdays).
   - BUY → bull call spread (buy the at-the-money call, sell the call at the strike nearest target 1); SELL → bear put spread. One lot, one spread per stock.
   - Skipped (with the reason logged) when: the sector is weak (Sectors page filter), no expiry has 14–70 days left, a leg has no live bid/ask, the bid-ask spread is over 12% (bought leg) / 20% (sold leg), open interest is under 50 contracts, IV is over 1.6× the 20-day historical volatility, or the maximum profit is under 0.8× the maximum loss.
   - Fills are conservative (buy at the ask, sell at the bid); brokerage and taxes are not included. Lot sizes come from NSE's daily `fo_mktlots.csv` (`fno_lots`).
   - Closed when the stock hits the signal's stop, reaches target 1, the spread is worth 80% of its width, or 2 days before expiry.
-- The page shows each open spread as a plan (strikes, cost = maximum loss, maximum profit, breakeven, stock vs stop / target, live mark), closed spreads, win rate and P&L, every engine decision, and **Run now** / **Dry run** buttons. Linked from the Admin Panel (📈 Options Desk).
+- The desk shows each open spread as a plan (strikes, cost = maximum loss, maximum profit, breakeven, stock vs stop / target, live mark), closed spreads, win rate and P&L, every engine decision, and **Run now** / **Dry run** buttons. Linked from the Admin Panel (📈 Options Desk).
 - Not shown to users: options trade ideas for the public need SEBI research-analyst registration. There is no back-test (no stored option prices), so it is judged on its paper record.
 - Data: `option_paper_trades`, `option_signal_log`, `fno_lots`, `options_paper_feed()` (`supabase/options-paper.sql`).
 
@@ -331,7 +332,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── picks-export.js          Festive picks downloads: poster/story PNG and PDF report
 ├── fno.html/.js              F&O option chain, PCR, max pain
 ├── admin-news.html, admin-health.js   Admin Panel: news moderation and the data health tab
-├── admin-options.html       Options Paper Desk (platform admin): paper debit spreads from the scanner's F&O signals
+├── options-desk.js/.css     Options Paper Desk (platform admin): the Signals page's admin-only Options tab and admin-options.html
 ├── events.html              Events calendar
 ├── ipo.html                 IPOs and GMP
 ├── crypto-signals.html, crypto-performance.js/.css, crypto-manager/   Crypto bot UI

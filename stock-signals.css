@@ -121,6 +121,7 @@ select{font-size:12.5px;font-weight:600}
 .tabbar button.on{color:#fff;background:var(--accent)}
 .tabbar em{position:absolute;top:3px;right:6px;background:var(--red);color:#fff;font:700 9px var(--mono);border-radius:9px;padding:1px 5px;font-style:normal}
 @media(max-width:380px){.tabbar b{display:none}}
+@media(max-width:480px){.tabbar.five b{display:none}.tabbar.five span{font-size:12px}}
 @media(min-width:761px){body{padding-bottom:20px}.tabbar{top:60px}}
 @media(min-width:900px){
   .tabbar{max-width:860px;margin:2px auto 12px}
