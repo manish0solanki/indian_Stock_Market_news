@@ -1,0 +1,1 @@
+{"key":"GET fzazdrzlemmkqngvpzxj.supabase.co/rest/v1/stocks?select=promoters_latest%2Cpromoters_previous%2Cpromoters_change&symbol=eq.TATASTEEL","page":"/stock-analysis.html?symbol=TATASTEEL","status":200,"type":"application/json; charset=utf-8","range":"0-0/*","body":"[{\"promoters_latest\":0.3294,\"promoters_previous\":0.3319,\"promoters_change\":-0.75}]"}

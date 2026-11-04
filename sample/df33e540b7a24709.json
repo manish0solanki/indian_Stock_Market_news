@@ -1,0 +1,1 @@
+{"key":"GET fzazdrzlemmkqngvpzxj.supabase.co/rest/v1/stocks?select=promoters_latest%2Cpromoters_previous%2Cpromoters_change&symbol=eq.SBIN","page":"/stock-analysis.html?symbol=SBIN","status":200,"type":"application/json; charset=utf-8","range":"0-0/*","body":"[{\"promoters_latest\":0.5547,\"promoters_previous\":0.5552,\"promoters_change\":-0.09}]"}

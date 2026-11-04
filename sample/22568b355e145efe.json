@@ -1,0 +1,1 @@
+{"key":"GET fzazdrzlemmkqngvpzxj.supabase.co/rest/v1/stocks?select=promoters_latest%2Cpromoters_previous%2Cpromoters_change&symbol=eq.AXISBANK","page":"/stock-analysis.html?symbol=AXISBANK","status":200,"type":"application/json; charset=utf-8","range":"0-0/*","body":"[{\"promoters_latest\":0.0787,\"promoters_previous\":0.0814,\"promoters_change\":-3.32}]"}
