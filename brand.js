@@ -65,6 +65,7 @@
       },
       hide: Array.isArray(c.hide) ? c.hide.filter(function (k) { return SECTIONS[k]; }) : [],
       poweredBy: c.poweredBy === true,
+      sample: c.sample !== false, // demos use saved sample data (sample-data.js); a client's own domain always uses live data
     };
   }
   function decode(code) {

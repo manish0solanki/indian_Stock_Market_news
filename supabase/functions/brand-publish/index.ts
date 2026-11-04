@@ -3,6 +3,7 @@
 // Called from brand-studio.html with the signed-in user's token; only the MarketPulse platform admin may.
 // POST           publish (commits only if brands.js would change)
 // POST ?check=1  report what would be published and whether GitHub is reachable; commits nothing
+// POST ?action=sample  start the "Demo sample data" GitHub Action (re-records the demos' sample data)
 // Secrets: GIT_HUB_ACCESS (GitHub token with repo scope; also used by blog-dispatch).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -37,6 +38,17 @@ Deno.serve(async (req) => {
   const anon = Deno.env.get("SUPABASE_ANON_KEY") || "";
   const who = await fetch(SB_URL + "/rest/v1/rpc/mp_is_platform_admin", { method: "POST", headers: { apikey: anon, Authorization: auth, "Content-Type": "application/json" }, body: "{}" });
   if (!who.ok || (await who.json()) !== true) return json({ error: "Only the MarketPulse admin can publish brands." }, 403);
+
+  const token0 = Deno.env.get("GIT_HUB_ACCESS");
+  if (new URL(req.url).searchParams.get("action") === "sample") {
+    if (!token0) return json({ error: "GIT_HUB_ACCESS secret is not set" }, 500);
+    const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/demo-data.yml/dispatches`, {
+      method: "POST", body: JSON.stringify({ ref: BRANCH }),
+      headers: { Authorization: "Bearer " + token0, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "marketpulse-brand-studio", "Content-Type": "application/json" },
+    });
+    if (r.status !== 204) return json({ error: "GitHub: " + r.status + " " + (await r.text()).slice(0, 200) }, 502);
+    return json({ ok: true, started: true, runs: `https://github.com/${REPO}/actions/workflows/demo-data.yml` });
+  }
 
   const { data: rows, error } = await admin.from("tenants").select("slug, hosts, brand").eq("active", true).not("brand", "is", null).order("slug");
   if (error) return json({ error: error.message }, 500);

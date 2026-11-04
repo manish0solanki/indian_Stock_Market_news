@@ -78,7 +78,7 @@ textarea{min-height:64px;resize:vertical}
 .gate{max-width:560px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/brands.js"></script><script src="/brand.js"></script>
+<script src="/brands.js"></script><script src="/brand.js"></script><script src="/sample-data.js"></script>
 </head>
 <body>
 <div id="mpHeader"></div>
@@ -159,6 +159,10 @@ textarea{min-height:64px;resize:vertical}
         <div class="hint" style="margin:0 0 8px">Untick what this client shouldn't offer. Hidden sections leave the menus and their pages redirect to Home.</div>
         <div class="chips" id="sections"></div>
         <label class="chip" style="margin-top:12px;display:inline-flex"><input type="checkbox" id="f-powered"> Show "Platform by MarketPulse" in the footer</label>
+        <label class="chip" style="margin-top:8px;display:inline-flex"><input type="checkbox" id="f-sample" checked> Demo links use sample data (a saved snapshot, not the live feeds)</label>
+        <div class="hint" id="sampleInfo">Sample data: checking…</div>
+        <div class="btns" style="margin-top:8px"><button class="btn" type="button" id="refreshSample">Refresh sample data</button></div>
+        <div class="msg" id="sampleMsg"></div>
       </div>
 
       <div class="card">
@@ -233,6 +237,7 @@ textarea{min-height:64px;resize:vertical}
     setVal('f-phone', C.phone); setVal('f-email', C.email); setVal('f-address', C.address); setVal('f-gName', L.grievanceName); setVal('f-gEmail', L.grievanceEmail); setVal('f-extra', L.extra);
     document.querySelectorAll('#sections input').forEach((i) => { i.checked = !(C.hide || []).includes(i.value); });
     $('f-powered').checked = !!C.poweredBy;
+    $('f-sample').checked = C.sample !== false;
     paintLogo();
   }
   function read() {
@@ -244,6 +249,7 @@ textarea{min-height:64px;resize:vertical}
       legal: { entity: v('f-entity'), regType: v('f-regType'), regNo: v('f-regNo'), enlistment: v('f-enlistment'), grievanceName: v('f-gName'), grievanceEmail: v('f-gEmail'), extra: v('f-extra') },
       hide: [...document.querySelectorAll('#sections input')].filter((i) => !i.checked).map((i) => i.value),
       poweredBy: $('f-powered').checked,
+      sample: $('f-sample').checked ? undefined : false, // on unless switched off (kept out of links when on)
     };
   }
   // Only the fields that are set, so links stay short.
@@ -251,6 +257,7 @@ textarea{min-height:64px;resize:vertical}
     const out = {};
     for (const [k, v] of Object.entries(cfg)) {
       if (k === 'legal') { const l = {}; for (const [a, b] of Object.entries(v || {})) if (b) l[a] = b; if (Object.keys(l).length) out.legal = l; }
+      else if (k === 'sample') { if (v === false) out.sample = false; }
       else if (Array.isArray(v) ? v.length : v) out[k] = v;
     }
     return out;
@@ -316,7 +323,7 @@ textarea{min-height:64px;resize:vertical}
   $('presets').innerHTML = PRESETS.map((p, i) => `<button class="btn" type="button" data-preset="${i}">${p.label}</button>`).join('');
   $('presets').addEventListener('click', (e) => { const b = e.target.closest('[data-preset]'); if (!b) return; C = JSON.parse(JSON.stringify(PRESETS[+b.dataset.preset].cfg)); fill(); update(true); });
   document.querySelectorAll('input,select,textarea').forEach((el) => { if (el.id !== 'f-logo') el.addEventListener('input', () => update(false)); });
-  document.querySelectorAll('#sections input,#f-powered,select').forEach((el) => el.addEventListener('change', () => update(false)));
+  document.querySelectorAll('#sections input,#f-powered,#f-sample,select').forEach((el) => el.addEventListener('change', () => update(false)));
   $('openDemo').addEventListener('click', () => { if (W.clean(C)) window.open(link(page), '_blank', 'noopener'); });
   $('copyLink').addEventListener('click', () => W.clean(C) && copy(link('/'), 'Demo link'));
 
@@ -419,6 +426,20 @@ textarea{min-height:64px;resize:vertical}
   $('saveClient').onclick = () => saveClient(true);
   $('saveOnly').onclick = () => saveClient(false);
   $('deleteClient').onclick = deleteClient;
+  // Sample data for demos: when it was recorded, and a button that re-records it (GitHub Action).
+  fetch('/sample/index.json', { cache: 'no-cache' }).then((r) => r.ok ? r.json() : null).then((m) => {
+    $('sampleInfo').textContent = m ? `Sample data: ${m.count} saved responses, recorded ${dt(m.recorded_at)}. Re-recorded every Saturday morning.` : 'Sample data: not recorded yet, so demos use live data. Press Refresh sample data.';
+  }).catch(() => { $('sampleInfo').textContent = ''; });
+  $('refreshSample').onclick = async () => {
+    const out = $('sampleMsg'); out.className = 'msg'; out.textContent = 'Starting…';
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const r = await fetch(MP_CONFIG.fn('brand-publish') + '?action=sample', { method: 'POST', headers: { Authorization: 'Bearer ' + session.access_token, apikey: MP_CONFIG.supabaseKey, 'Content-Type': 'application/json' }, body: '{}' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error(j.error || 'HTTP ' + r.status);
+      out.innerHTML = `Recording started. It takes about 10 minutes, then Vercel deploys it (<a href="${esc(j.runs)}" target="_blank" rel="noopener">progress on GitHub</a>).`;
+    } catch (e) { out.className = 'msg err'; out.textContent = 'Could not start: ' + e.message; }
+  };
   // A new client's short name follows the brand name until it's typed by hand.
   $('f-name').addEventListener('input', () => { if (!editing && !$('c-slug').dataset.touched) $('c-slug').value = $('f-name').value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40); });
   $('c-slug').addEventListener('input', () => { $('c-slug').dataset.touched = '1'; });

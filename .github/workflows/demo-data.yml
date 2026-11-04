@@ -1,0 +1,56 @@
+# Records the sample data that white-label demo links show (sample-data.js), so demos never depend on
+# the live feeds. Loads every page in a real browser with live data and commits the responses to sample/;
+# Vercel deploys them. Runs weekly after Friday's close, when the recorder or this file changes, and on
+# demand (Actions → Demo sample data → Run workflow, or Brand Studio's "Refresh sample data").
+name: Demo sample data
+
+on:
+  schedule:
+    - cron: "41 4 * * 6"   # Saturday 10:11 AM IST
+  push:
+    branches: [main]
+    paths:
+      - "scripts/demo/**"
+      - ".github/workflows/demo-data.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: demo-data
+  cancel-in-progress: true
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install the browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Record sample data
+        id: rec
+        run: node scripts/demo/record.mjs | tee rec.log && echo "count=$(grep -o 'count=[0-9]*' rec.log | tail -1 | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        if: steps.rec.outputs.count != ''
+        run: |
+          git config user.name "MarketPulse Demo Bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A sample/
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "Demo sample data: ${{ steps.rec.outputs.count }} responses"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
