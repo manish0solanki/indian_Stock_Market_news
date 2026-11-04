@@ -68,6 +68,11 @@ textarea{min-height:64px;resize:vertical}
 .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:4px;vertical-align:1px}
 .tag.live{background:rgba(47,210,127,.15);color:var(--green)}.tag.off{background:rgba(255,93,108,.15);color:#ff5d6c}.tag.pend{background:rgba(243,201,105,.16);color:var(--amber)}
 .btn.danger{border-color:rgba(255,93,108,.5);color:#ff8a96}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.editing{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;margin:-4px 0 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--accent);background:rgba(79,70,229,.12);font-size:13px}
+.editing button{border:0;background:none;color:var(--accent2);font:600 12.5px inherit;font-family:inherit;cursor:pointer;padding:0}
+@keyframes mpflash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.flash{animation:mpflash 1.4s ease-out}
 .msg{font-size:12.5px;margin-top:8px;color:var(--muted)}.msg.err{color:#ff8a96}.msg a{color:var(--accent2)}
 .steps{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:12.5px}.steps li{margin:3px 0}
 .gate{max-width:560px}
@@ -91,8 +96,9 @@ textarea{min-height:64px;resize:vertical}
         <div class="msg" id="pubMsg"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="identityCard">
         <h2>Identity</h2>
+        <div class="editing" id="editingBar" hidden></div>
         <div class="presets" id="presets"></div>
         <label for="f-name">Brand name</label>
         <input type="text" id="f-name" maxlength="40" placeholder="Acme Research">
@@ -341,12 +347,16 @@ textarea{min-height:64px;resize:vertical}
   function renderClients() {
     $('clients').innerHTML = CL.length ? CL.map((c) => `<div class="client ${c.slug === editing ? 'on' : ''}">
         <div><b>${esc(c.name)} ${state(c)}</b><small>${esc(c.slug)} · ${c.hosts.length ? esc(c.hosts.join(', ')) : 'no domain yet'} · ${c.users} user${c.users === 1 ? '' : 's'}</small><small>Published ${dt(c.published_at)}</small></div>
-        <div class="acts"><button class="btn" type="button" data-edit="${esc(c.slug)}">Edit</button><button class="btn" type="button" data-demo="${esc(c.slug)}" ${c.brand ? '' : 'disabled'}>Demo ↗</button></div></div>`).join('')
+        <div class="acts"><button class="btn" type="button" data-edit="${esc(c.slug)}" ${c.slug === editing ? 'disabled' : ''}>${c.slug === editing ? 'Editing' : 'Edit'}</button><button class="btn" type="button" data-demo="${esc(c.slug)}" ${c.brand ? '' : 'disabled'}>Demo ↗</button></div></div>`).join('')
       : '<div class="hint" style="margin:0">No clients yet. Build a brand below, give it a short name and domain, and save.</div>';
     const c = CL.find((x) => x.slug === editing);
     $('clientTitle').textContent = c ? 'Client site · ' + c.name : 'New client site';
     $('c-slug').readOnly = !!c; $('deleteClient').hidden = !c;
-    $('publishAll').disabled = !CL.some(pending);
+    // Which client the form holds, shown at the top of the form.
+    $('editingBar').hidden = !c;
+    if (c) $('editingBar').innerHTML = `<span>Editing <b>${esc(c.name)}</b> (${esc(c.slug)}). Change anything below, then press <b>Save &amp; publish</b>.</span><button type="button" id="stopEdit">Stop editing</button>`;
+    if (c) $('stopEdit').onclick = newClient;
+    $('saveClient').textContent = c ? 'Save changes & publish' : 'Save & publish';
   }
   function editClient(slug) {
     const c = CL.find((x) => x.slug === slug); if (!c) return;
@@ -354,7 +364,10 @@ textarea{min-height:64px;resize:vertical}
     if (c.brand) { C = JSON.parse(JSON.stringify(c.brand)); fill(); }
     $('c-slug').value = c.slug; $('c-hosts').value = c.hosts.join(', '); $('c-active').checked = c.active;
     $('clientMsg').textContent = ''; update(true); renderClients();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const card = $('identityCard');
+    window.scrollTo({ top: Math.max(0, card.getBoundingClientRect().top + window.scrollY - 84), behavior: 'smooth' }); // clear of the sticky header
+    card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+    toast('Editing ' + c.name);
   }
   function newClient() {
     editing = null; delete $('c-slug').dataset.touched;
