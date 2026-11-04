@@ -27,7 +27,7 @@ window.MP_BRANDS = {
     "primary": "#3c0b2a",
     "tagline": "Research you can act on",
     "hosts": [
-      "research.in"
+      "research.marketdata.in"
     ]
   }
 };
