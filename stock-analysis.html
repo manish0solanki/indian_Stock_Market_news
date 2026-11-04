@@ -117,6 +117,9 @@ a{color:var(--blue)}
 .toggles i{display:inline-block;width:14px;height:3px;border-radius:2px}
 .chart{position:relative;width:100%;height:clamp(260px,40vw,440px);touch-action:pan-y}
 .chart svg{display:block;width:100%;height:100%}
+.chart .lwc{position:absolute;inset:0}
+@media(max-width:600px){.chart{height:340px}}
+.chart .tip.hide{display:none}
 .chart .tip{position:absolute;pointer-events:none;z-index:2;min-width:150px;padding:8px 10px;background:#0a1322f2;border:1px solid #3a4e74;border-radius:9px;font-size:11.5px;line-height:1.55;font-variant-numeric:tabular-nums;box-shadow:0 10px 26px #0007}
 .chart .tip strong{display:block;font-size:12px;margin-bottom:2px}
 .chart .tip span{display:flex;justify-content:space-between;gap:12px}
@@ -471,6 +474,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="/stock-search.js?v=1"></script>
 <script src="/stock-news.js?v=1"></script>
 <script>
@@ -1139,7 +1143,119 @@ function sliceIndex(b, range) {
  const days = {'1M': 31, '3M': 92, '6M': 183, '1Y': 366}[range] || 183;
  const cut = b.at(-1).ts - days * 864e5; const i = b.findIndex(x => x.ts >= cut); return Math.max(0, i);
 }
+/* TradingView Lightweight Charts (open source, Apache 2.0; the small TradingView logo on the chart is the
+   attribution its licence asks for). Candles or area, volume, EMA 20/50, SMA 200, Bollinger Bands, support /
+   resistance and, when the Stock Signals scanner has a live setup, its entry / stop / target lines.
+   Pinch or scroll to zoom, drag to pan; the range buttons set the window. Falls back to the SVG chart below
+   if the library can't load. */
+let lw = null; // {chart, el, series: [], main, key}
+function chartColors() {
+ const light = document.documentElement.getAttribute('data-theme') === 'light';
+ return light
+  ? {text: '#5b6782', grid: '#eceff5', border: '#dfe3ec', up: '#0f9d6b', down: '#d93a4a', tipBg: '#ffffff'}
+  : {text: '#8fa2bf', grid: '#18243a', border: '#263650', up: '#22d69a', down: '#ff6178', tipBg: '#0a1322'};
+}
 function drawChart() {
+ if (window.LightweightCharts && current) { try { return drawLW(); } catch (e) { console.warn('[chart] falling back to SVG', e); lwDestroy(); } }
+ drawSvgChart();
+}
+const lwDay = (b) => istDate(b.ts);
+function lwDestroy() { if (lw) { try { lw.chart.remove(); } catch {} lw = null; } }
+function drawLW() {
+ const host = $('chart'), C = chartColors(), LWC = window.LightweightCharts;
+ const {t} = current, all = t.bars, rng = effectiveRange(), from = sliceIndex(all, rng);
+ if (all.length < 2) { lwDestroy(); host.innerHTML = '<div class="msg">Not enough data for this range</div>'; return; }
+ if (!lw || !host.contains(lw.el)) {
+  lwDestroy();
+  host.innerHTML = '<div class="lwc"></div><div class="tip hide" id="tip"></div>';
+  const el = host.querySelector('.lwc');
+  const chart = LWC.createChart(el, {
+   autoSize: true,
+   layout: {background: {type: 'solid', color: 'transparent'}, textColor: C.text, fontSize: innerWidth < 600 ? 10 : 11, fontFamily: 'Inter, system-ui, sans-serif', attributionLogo: true},
+   grid: {vertLines: {color: C.grid}, horzLines: {color: C.grid}},
+   rightPriceScale: {borderColor: C.border, scaleMargins: {top: 0.08, bottom: 0.22}},
+   timeScale: {borderColor: C.border, rightOffset: 4, fixLeftEdge: true, fixRightEdge: false, minBarSpacing: 1.5},
+   crosshair: {mode: LWC.CrosshairMode.Normal},
+   handleScroll: {vertTouchDrag: false}, // a vertical swipe scrolls the page, not the chart
+   localization: {priceFormatter: (p) => Number(p).toLocaleString('en-IN', {maximumFractionDigits: p >= 1000 ? 0 : 2})},
+  });
+  lw = {chart, el, series: [], main: null, key: ''};
+  chart.subscribeCrosshairMove(lwTip);
+ }
+ const {chart} = lw;
+ chart.applyOptions({layout: {textColor: C.text}, grid: {vertLines: {color: C.grid}, horzLines: {color: C.grid}}, rightPriceScale: {borderColor: C.border}, timeScale: {borderColor: C.border}});
+ for (const sr of lw.series) chart.removeSeries(sr);
+ lw.series = [];
+ const add = (sr) => { lw.series.push(sr); return sr; };
+ // The library wants one bar per calendar day as "YYYY-MM-DD"; feeds give plain dates or full timestamps, so key
+ // every candle by its IST date (today's live candle can share a date with the last close; the later one wins).
+ const bars = []; for (const b0 of all) { const b = {...b0, time: lwDay(b0)}; if (bars.length && bars.at(-1).time === b.time) bars[bars.length - 1] = b; else bars.push(b); }
+ const idx = new Map(all.map((b, i) => [lwDay(b), i]));
+ // price
+ let main;
+ if (chartType === 'line') {
+  const up = bars.at(-1).close >= bars[Math.min(from, bars.length - 1)].close, col = up ? C.up : C.down;
+  main = add(chart.addAreaSeries({lineColor: col, topColor: col + '40', bottomColor: col + '00', lineWidth: 2, priceLineVisible: true}));
+  main.setData(bars.map((b) => ({time: b.time, value: b.close})));
+ } else {
+  main = add(chart.addCandlestickSeries({upColor: C.up, downColor: C.down, wickUpColor: C.up, wickDownColor: C.down, borderVisible: false}));
+  main.setData(bars.map((b) => ({time: b.time, open: b.open, high: b.high, low: b.low, close: b.close})));
+ }
+ lw.main = main;
+ // volume, in the bottom fifth
+ if (bars.some((b) => b.volume > 0)) {
+  const vol = add(chart.addHistogramSeries({priceScaleId: 'vol', priceFormat: {type: 'volume'}, lastValueVisible: false, priceLineVisible: false}));
+  chart.priceScale('vol').applyOptions({scaleMargins: {top: 0.82, bottom: 0}, visible: false});
+  vol.setData(bars.filter((b) => b.volume > 0).map((b) => ({time: b.time, value: b.volume, color: (b.close >= b.open ? C.up : C.down) + '59'})));
+ }
+ // indicator lines
+ const line = (key, color, opts = {}) => {
+  const arr = t.series[key]; if (!arr) return;
+  const sr = add(chart.addLineSeries({color, lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, ...opts}));
+  sr.setData(bars.map((b) => ({time: b.time, value: arr[idx.get(b.time)]})).filter((p) => Number.isFinite(p.value)));
+ };
+ if (overlays.bb) { line('bbU', '#b48cff', {lineStyle: LWC.LineStyle.Dashed, lineWidth: 1}); line('bbL', '#b48cff', {lineStyle: LWC.LineStyle.Dashed, lineWidth: 1}); }
+ if (overlays.ema20) line('ema20', '#f3c969');
+ if (overlays.ema50) line('ema50', '#779bff');
+ if (overlays.sma200) line('sma200', '#ff9f5a');
+ // levels: support / resistance, and the scanner's live setup if there is one
+ if (overlays.levels) {
+  const pl = (price, color, title, style = LWC.LineStyle.Dashed) => Number.isFinite(price) && main.createPriceLine({price, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title});
+  pl(t.support, C.up, 'S'); pl(t.resistance, C.down, 'R');
+  const pick = strongCache && strongCache.map ? strongCache.map[String(current.sym).toUpperCase()] : null;
+  if (pick) {
+   pl(num(pick.entry), '#779bff', 'Entry', LWC.LineStyle.Solid);
+   pl(num(pick.stop), C.down, 'Stop', LWC.LineStyle.Solid);
+   pl(num(pick.target1), C.up, 'T1', LWC.LineStyle.Solid);
+   pl(num(pick.target2), C.up, 'T2', LWC.LineStyle.Dotted);
+  }
+ }
+ // window: reset only when the stock or the range button changes, so live updates keep your zoom
+ const key = current.sym + '|' + rng;
+ if (lw.key !== key) {
+  lw.key = key;
+  const n = bars.length, start = Math.max(0, bars.findIndex((b) => b.ts >= all[from].ts));
+  chart.timeScale().setVisibleLogicalRange({from: start - 0.5, to: n - 1 + 4});
+ }
+}
+// Switching light / dark recolours the chart.
+new MutationObserver(() => { if (lw && current) drawChart(); }).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+// Hover / touch readout, same as before: date, OHLC, change, volume, EMAs.
+function lwTip(param) {
+ const tip = $('tip'); if (!tip || !lw || !current) return;
+ if (!param || !param.time || !param.point || param.point.x < 0) { tip.classList.add('hide'); return; }
+ const pt = param.time, key = typeof pt === 'object' ? `${pt.year}-${String(pt.month).padStart(2, '0')}-${String(pt.day).padStart(2, '0')}` : typeof pt === 'number' ? istDate(pt * 1000) : String(pt).slice(0, 10);
+ const all = current.t.bars; let i = -1; for (let k = all.length - 1; k >= 0; k--) if (lwDay(all[k]) === key) { i = k; break; }
+ if (i < 0) { tip.classList.add('hide'); return; }
+ const b = all[i], prev = i > 0 ? all[i - 1].close : NaN, ch = (b.close - prev) / prev * 100, S = current.t.series;
+ tip.innerHTML = `<strong>${esc(new Date(b.ts).toLocaleDateString('en-IN', {weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'}))}</strong><span>Open<b>${fmt(b.open)}</b></span><span>High<b>${fmt(b.high)}</b></span><span>Low<b>${fmt(b.low)}</b></span><span>Close<b class="${cls(ch)}">${fmt(b.close)}${Number.isFinite(ch) ? ' (' + pct(ch, 1) + ')' : ''}</b></span>${b.volume > 0 ? `<span>Volume<b>${Math.round(b.volume).toLocaleString('en-IN')}</b></span>` : ''}${overlays.ema20 && Number.isFinite(S.ema20[i]) ? `<span>EMA 20<b>${fmt(S.ema20[i])}</b></span>` : ''}${overlays.ema50 && Number.isFinite(S.ema50[i]) ? `<span>EMA 50<b>${fmt(S.ema50[i])}</b></span>` : ''}`;
+ tip.classList.remove('hide');
+ const w = lw.el.clientWidth, tw = tip.offsetWidth;
+ tip.style.left = (param.point.x + 16 + tw > w - 60 ? Math.max(4, param.point.x - tw - 16) : param.point.x + 16) + 'px'; tip.style.top = '8px';
+}
+// The original hand-drawn SVG chart, used only if the charting library can't load.
+function drawSvgChart() {
+ lwDestroy();
  const host = $('chart'); if (!current) return;
  const {t} = current, all = t.bars, rng = effectiveRange(), from = sliceIndex(all, rng), bars = all.slice(from);
  if (bars.length < 2) { host.innerHTML = '<div class="msg">Not enough data for this range</div>'; return; }
