@@ -65,6 +65,12 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10p
 .msg{font-size:12.5px;color:var(--muted);margin-top:8px}.msg.err{color:#ff8a96}
 .empty{padding:24px;text-align:center;color:var(--dim)}
 .gate{max-width:560px}
+.agent{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 16px}
+.agent .st{display:flex;align-items:center;gap:10px;font-weight:700}
+.agent .dot{width:10px;height:10px;border-radius:50%;background:var(--dim)}
+.agent.on .dot{background:var(--green);box-shadow:0 0 0 4px rgba(47,210,127,.18)}
+.agent .hint{flex:1 1 320px}
+.btn.stop{border-color:rgba(255,93,108,.55);color:#ff8a96}
 .brief{border-color:var(--accent);margin-bottom:12px}
 .briefbody{font-size:13.5px;line-height:1.6;color:var(--muted);max-height:260px;overflow:auto}
 .briefbody b{color:var(--text)}
@@ -80,6 +86,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10p
   <p class="lead">Every SEBI-registered research analyst is a prospect. Work the <b>Today</b> list: open a lead, press <b>Make demo</b> (their name and registration on the whole site), send the email or WhatsApp, and log it. Follow-ups come back on their date.</p>
   <div class="card gate" id="gate"><p class="msg">Checking access…</p></div>
   <div id="app" hidden>
+    <div class="card agent" id="agent"><div class="hint">Sales agent: checking…</div></div>
     <div class="kpis" id="kpis"></div>
     <div class="tabs" id="tabs">
       <button data-tab="today" class="on">Today</button><button data-tab="pipeline">Pipeline</button><button data-tab="templates">Templates &amp; playbook</button><button data-tab="settings">Import &amp; settings</button>
@@ -240,6 +247,23 @@ Objections:
   }
 
   /* ───────── data ───────── */
+  /* ───────── the sales agent's on/off switch (daily lead prep + AI research and briefing) ───────── */
+  async function agentStatus() {
+    const { data, error } = await sb.rpc('sales_agent_status');
+    if (error) { $('agent').innerHTML = `<div class="hint">${esc(error.message)}</div>`; return; }
+    const on = data.enabled;
+    $('agent').classList.toggle('on', on);
+    $('agent').innerHTML = `<div class="st"><span class="dot"></span>Sales agent: ${on ? 'running' : 'paused'}</div>
+      <div class="hint">${on ? 'Every weekday after the market closes it queues 10 best-fit leads with their demo links, researches them and leaves a briefing here.' : 'Nothing runs while paused: no daily lead prep, no research, no briefing.'} It never sends emails or messages; you do.${data.last_brief ? ' Last briefing ' + dt(data.last_brief) + '.' : ''} ${data.changed_at ? 'Switched ' + (on ? 'on' : 'off') + ' ' + dt(data.changed_at) + '.' : ''}</div>
+      <button class="btn ${on ? 'stop' : 'primary'}" type="button" id="agentBtn">${on ? '■ Stop agent' : '▶ Start agent'}</button>`;
+    $('agentBtn').onclick = async () => {
+      if (!on && !confirm('Start the sales agent? From the next weekday at 4 PM it will queue leads, research them and write a briefing. It never sends messages.')) return;
+      $('agentBtn').disabled = true;
+      const r = await sb.rpc('sales_agent_set', { p_enabled: !on });
+      if (r.error) { alert(r.error.message); $('agentBtn').disabled = false; return; }
+      agentStatus();
+    };
+  }
   async function summary() {
     const { data, error } = await sb.rpc('sales_summary'); if (error) return;
     const s = data.by_stage || {};
@@ -408,7 +432,7 @@ Objections:
     const { data } = await sb.rpc('mp_is_platform_admin');
     if (data !== true) { $('gate').innerHTML = '<h2>Admins only</h2><p class="msg">The Sales Desk is only for the MarketPulse admin.</p>'; return; }
     $('gate').hidden = true; $('app').hidden = false;
-    summary(); loadToday();
+    agentStatus(); summary(); loadToday();
   })();
 })();
 </script>

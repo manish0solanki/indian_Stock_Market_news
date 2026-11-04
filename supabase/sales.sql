@@ -231,3 +231,37 @@ revoke all on function public.sales_post_brief(text, text, jsonb) from public, a
 
 select cron.unschedule('sales-prepare') where exists (select 1 from cron.job where jobname = 'sales-prepare');
 select cron.schedule('sales-prepare', '35 10 * * 1-5', $c$select public.sales_prepare_today(10)$c$);  -- 4:05 PM IST
+
+-- Sales agent on/off switch (Sales Desk "Start agent" / "Stop agent"). Off by default. The AI routine checks it
+-- before doing anything, and switching it also pauses or resumes the 'sales-prepare' cron job.
+create table if not exists public.sales_agent_state (
+  id int primary key default 1 check (id = 1), enabled boolean not null default false,
+  changed_at timestamptz not null default now(), changed_by uuid
+);
+insert into public.sales_agent_state (id, enabled) values (1, false) on conflict (id) do nothing;
+alter table public.sales_agent_state enable row level security;
+revoke all on public.sales_agent_state from anon, authenticated;
+
+create or replace function public.sales_agent_status() returns jsonb
+language plpgsql stable security definer set search_path = public, cron as $$
+begin
+  if not public.mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  return (select jsonb_build_object('enabled', s.enabled, 'changed_at', s.changed_at,
+            'prep_job_active', (select active from cron.job where jobname = 'sales-prepare'),
+            'last_brief', (select max(created_at) from sales_briefs),
+            'queued', (select count(*) from sales_leads where stage = 'new' and agent_prepared_at is not null and touches = 0))
+          from sales_agent_state s where s.id = 1);
+end $$;
+create or replace function public.sales_agent_set(p_enabled boolean) returns jsonb
+language plpgsql security definer set search_path = public, cron as $$
+declare jid bigint;
+begin
+  if not public.mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  update sales_agent_state set enabled = p_enabled, changed_at = now(), changed_by = auth.uid() where id = 1;
+  select jobid into jid from cron.job where jobname = 'sales-prepare';
+  if jid is not null then perform cron.alter_job(jid, active := p_enabled); end if;
+  return public.sales_agent_status();
+end $$;
+revoke all on function public.sales_agent_status(), public.sales_agent_set(boolean) from public, anon;
+grant execute on function public.sales_agent_status(), public.sales_agent_set(boolean) to authenticated;
+select cron.alter_job((select jobid from cron.job where jobname = 'sales-prepare'), active := false);
