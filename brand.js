@@ -91,9 +91,9 @@
     }
     var slug = (q.get('brand') || '').toLowerCase();
     if (slug === 'reset' || slug === BASE.toLowerCase()) { store('mp-brand-demo', null); store('mp-brand', null); return null; }
-    if (slug && BRANDS[slug]) { store('mp-brand', slug); store('mp-brand-demo', null); return { brand: clean(BRANDS[slug]), demo: false }; }
-    for (var k in BRANDS) if ((BRANDS[k].hosts || []).indexOf(location.hostname) >= 0) return { brand: clean(BRANDS[k]), demo: false };
-    var s = load('mp-brand'); if (s && BRANDS[s]) return { brand: clean(BRANDS[s]), demo: false };
+    if (slug && BRANDS[slug]) { store('mp-brand', slug); store('mp-brand-demo', null); return { brand: clean(BRANDS[slug]), demo: false, slug: slug }; }
+    for (var k in BRANDS) if ((BRANDS[k].hosts || []).indexOf(location.hostname) >= 0) return { brand: clean(BRANDS[k]), demo: false, slug: k };
+    var s = load('mp-brand'); if (s && BRANDS[s]) return { brand: clean(BRANDS[s]), demo: false, slug: s };
     var d = load('mp-brand-demo'); if (d) { try { b = clean(JSON.parse(d)); if (b) return { brand: b, demo: true }; } catch (e) {} }
     return null;
   }
@@ -104,6 +104,108 @@
   window.MP_BRAND = B || null;
   window.MP_BRAND_DEMO = !!(hit && hit.demo);
   window.mpBrand = { encode: encode, decode: decode, clean: clean, DEFAULT: DEFAULT, SECTIONS: SECTIONS, BRANDS: BRANDS };
+
+  /* ───────── which client's users this site serves (supabase/tenants.sql) ─────────
+     A registered brand's slug, "demo" for demo links, else "marketpulse". Every Supabase call carries it
+     (header x-mp-tenant) and the database only lets a user's own data through when it matches the
+     tenant in their login. Here: sign-ups are tagged with it, a Google / phone account's first sign-in
+     claims it, and an account from another site is signed out with a short explanation. */
+  var TENANT = hit ? (hit.demo ? 'demo' : hit.slug) : 'marketpulse';
+  window.MP_TENANT = TENANT;
+  var SITE_NAME = B ? B.name : BASE;
+  var CFG = window.MP_CONFIG || {};
+  var tenantOf = function (user) { return user && user.app_metadata && user.app_metadata.tenant || ''; };
+  var noticeShown = false;
+  // The message survives one page change (pages that need a login send a signed-out visitor to Home).
+  function tenantNotice() {
+    if (noticeShown) return; noticeShown = true;
+    try { sessionStorage.setItem('mp-tenant-notice', '1'); } catch (e) {}
+    var clear = function () { try { sessionStorage.removeItem('mp-tenant-notice'); } catch (e) {} };
+    var show = function () {
+      var n = document.createElement('div');
+      n.setAttribute('role', 'alert'); n.setAttribute('data-mpb', '1');
+      n.style.cssText = 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:2147483001;max-width:min(560px,calc(100% - 32px));background:#1d1606;border:1px solid #e0a92b;color:#ffe6a3;border-radius:12px;padding:12px 40px 12px 14px;font:600 13.5px/1.45 system-ui,-apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4)';
+      n.textContent = 'That account belongs to another website, so it has been signed out here. Sign in with an account made on ' + SITE_NAME + ', or create one.';
+      var x = document.createElement('button'); x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', 'Close');
+      x.style.cssText = 'position:absolute;right:8px;top:8px;border:0;background:none;color:inherit;font-size:16px;cursor:pointer';
+      x.onclick = function () { n.remove(); clear(); };
+      n.appendChild(x); document.body.appendChild(n);
+      setTimeout(clear, 4000); // read by now: don't repeat it on the next page
+      setTimeout(function () { if (n.isConnected) n.remove(); }, 12000);
+    };
+    if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);
+  }
+  try { if (sessionStorage.getItem('mp-tenant-notice')) tenantNotice(); } catch (e) {}
+  // A saved login from another site is dropped before any page script reads it.
+  (function () {
+    var key = CFG.authStorageKey; if (!key) return;
+    try {
+      var raw = JSON.parse(localStorage.getItem(key) || 'null'), sess = raw && (raw.currentSession || raw);
+      var t = sess && tenantOf(sess.user);
+      if (t && t !== TENANT) { localStorage.removeItem(key); tenantNotice(); }
+    } catch (e) {}
+  })();
+  function hookClient(c) {
+    if (!c || !c.auth || c.__mpTenant) return c;
+    c.__mpTenant = true;
+    var signUp = c.auth.signUp && c.auth.signUp.bind(c.auth);
+    if (signUp) c.auth.signUp = function (cred) {
+      cred = Object.assign({}, cred); cred.options = Object.assign({}, cred.options);
+      cred.options.data = Object.assign({}, cred.options.data, { tenant: TENANT });
+      return signUp(cred);
+    };
+    var busy = false;
+    c.auth.onAuthStateChange(function (event, session) {
+      if (!session || !session.user || busy) return;
+      var t = tenantOf(session.user);
+      if (t === TENANT) return;
+      busy = true;
+      // Not awaited inside the callback (supabase-js runs it while holding its auth lock).
+      setTimeout(function () {
+        var done = function () { busy = false; };
+        if (!t) {
+          c.rpc('claim_tenant', { p_tenant: TENANT }).then(function (r) {
+            if (r && r.data === TENANT) return c.auth.refreshSession().then(done, done);
+            if (r && r.error) { done(); return; }   // database not ready: leave the session alone
+            return c.auth.signOut().then(function () { tenantNotice(); done(); }, done);
+          }, done);
+        } else {
+          c.auth.signOut().then(function () { tenantNotice(); done(); }, done);
+        }
+      }, 0);
+    });
+    return c;
+  }
+  function wrapLib(lib) {
+    if (!lib || typeof lib.createClient !== 'function' || lib.__mpTenant) return lib;
+    var orig = lib.createClient;
+    try {
+      lib.createClient = function (url, key, opts) {
+        // The main site sends no header: the database treats a missing one as marketpulse.
+        if (TENANT !== 'marketpulse') {
+          opts = Object.assign({}, opts);
+          opts.global = Object.assign({}, opts.global);
+          opts.global.headers = Object.assign({}, opts.global.headers, { 'x-mp-tenant': TENANT });
+        }
+        return hookClient(orig.call(this, url, key, opts));
+      };
+      lib.__mpTenant = true;
+    } catch (e) {}
+    return lib;
+  }
+  // The supabase library may already be loaded, or arrive later as `var supabase = …` (the UMD build),
+  // which assigns through this setter.
+  (function () {
+    var cur = wrapLib(window.supabase);
+    try {
+      Object.defineProperty(window, 'supabase', {
+        configurable: true, enumerable: true,
+        get: function () { return cur; },
+        set: function (v) { cur = wrapLib(v); },
+      });
+    } catch (e) {}
+  })();
+
   if (!B) return;
 
   /* ───────── colours, logo, favicon (before the page paints) ───────── */

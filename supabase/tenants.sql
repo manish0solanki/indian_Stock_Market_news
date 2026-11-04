@@ -81,7 +81,8 @@ end $$;
 drop trigger if exists on_auth_user_tenant on auth.users;
 create trigger on_auth_user_tenant before insert on auth.users for each row execute function public.mp_set_new_user_tenant();
 
--- First sign-in without a tenant (Google / phone): record the site, once. Returns the user's tenant.
+-- First sign-in without a tenant (Google / phone): record the site, once. Returns the user's tenant,
+-- or null when that site isn't taking accounts.
 create or replace function public.claim_tenant(p_tenant text) returns text
 language plpgsql security definer set search_path = public as $$
 declare cur text; want text := lower(coalesce(p_tenant, ''));
@@ -89,7 +90,8 @@ begin
   if auth.uid() is null then raise exception 'sign in first' using errcode = '42501'; end if;
   select raw_app_meta_data ->> 'tenant' into cur from auth.users where id = auth.uid();
   if coalesce(cur, '') <> '' then return cur; end if;
-  if not exists (select 1 from public.tenants where slug = want and active) then want := 'marketpulse'; end if;
+  -- an unknown or switched-off site gets no accounts (the page then signs the user out)
+  if not exists (select 1 from public.tenants where slug = want and active) then return null; end if;
   update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('tenant', want) where id = auth.uid();
   return want;
 end $$;

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/site-config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0f1e">
+<title>Clients · MarketPulse Admin</title>
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--radius:14px}
+[data-theme="light"]{--bg:#f5f7fb;--surface:#fff;--surface2:#f0f3f9;--border:#dde3ee;--text:#111827;--muted:#4b5563;--dim:#6b7280;--accent:#4338ca}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:24px;margin:4px 0 2px}
+.lead{color:var(--muted);margin:0 0 16px;max-width:820px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tile{border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--surface2);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.tile.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tile b{font-size:15px;display:block}
+.tile .slug{font:12px ui-monospace,monospace;color:var(--dim)}
+.tile .num{font-size:26px;font-weight:800;margin-top:6px}
+.tile small{color:var(--muted);display:block}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(47,210,127,.14);color:var(--green)}
+.pill.off{background:rgba(255,93,108,.14);color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);text-align:left;padding:0 8px 8px}
+td{padding:9px 8px;border-top:1px solid var(--border);vertical-align:top}
+td small{color:var(--dim)}
+.tw{overflow-x:auto}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 4px}
+input[type=text],input[type=email]{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 13px/1 inherit;font-family:inherit;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.msg{color:var(--muted)}
+.err{color:var(--red)}
+.hint{font-size:12px;color:var(--dim);margin-top:6px}
+.chk{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:13px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+</style>
+<script src="/brand.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="wrap">
+  <h1>Clients</h1>
+  <p class="lead" id="lead">Each white-label client has its own users: an account made on one client's site can't see or change anything on another's. Sign in to continue.</p>
+  <div id="root"><div class="card msg">Loading…</div></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const when = (t) => t ? new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  const sb = window.supabase.createClient(MP_CONFIG.supabaseUrl, MP_CONFIG.supabaseKey);
+  let O = null, sel = null;
+
+  async function load() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { $('root').innerHTML = '<div class="card msg">Please <a href="/?login=1" style="color:var(--accent)">sign in</a> with an admin account.</div>'; return; }
+    const { data, error } = await sb.rpc('tenants_overview');
+    if (error) { $('root').innerHTML = `<div class="card err">${esc(error.message)}</div>`; return; }
+    O = data;
+    if (!O.tenants.length) { $('root').innerHTML = '<div class="card msg">This account isn\'t an admin of any client on this site.</div>'; return; }
+    if (!sel || !O.tenants.some((t) => t.slug === sel)) sel = O.platform ? O.tenants[0].slug : O.me;
+    $('lead').textContent = O.platform
+      ? 'Every client site and its users. An account made on one client\'s site can\'t see or change anything on another\'s. Add a client here with the same slug as its brand in brand.js.'
+      : 'The people who have signed up on your site.';
+    render();
+    users();
+  }
+  function render() {
+    const T = O.tenants.find((t) => t.slug === sel);
+    $('root').innerHTML = `
+      <div class="card"><h2>${O.platform ? 'Client sites' : 'Your site'}</h2><div class="grid">${O.tenants.map((t) => `
+        <button type="button" class="tile ${t.slug === sel ? 'on' : ''}" data-t="${esc(t.slug)}">
+          <b>${esc(t.name)}</b><span class="slug">${esc(t.slug)}</span> <span class="pill ${t.active ? '' : 'off'}">${t.active ? 'Active' : 'Off'}</span>
+          <div class="num">${t.users}</div><small>users · ${t.new_30d} new in 30 days</small>
+          <small>${t.hosts.length ? esc(t.hosts.join(', ')) : 'no domain yet'}</small>
+          <small>Admins: ${t.admins.length ? esc(t.admins.join(', ')) : 'none'}</small>
+        </button>`).join('')}</div></div>
+      ${O.platform ? `
+      <div class="card"><h2>${T ? 'Edit ' + esc(T.name) : 'Add a client'}</h2>
+        <div class="row">
+          <div><label for="c-slug">Slug (same as in brand.js)</label><input type="text" id="c-slug" value="${esc(T ? T.slug : '')}" ${T ? 'readonly' : ''} placeholder="acme"></div>
+          <div><label for="c-name">Name</label><input type="text" id="c-name" value="${esc(T ? T.name : '')}" placeholder="Acme Research"></div>
+        </div>
+        <label for="c-hosts">Domains (comma separated)</label><input type="text" id="c-hosts" value="${esc(T ? T.hosts.join(', ') : '')}" placeholder="research.acme.in">
+        <label class="chk"><input type="checkbox" id="c-active" ${!T || T.active ? 'checked' : ''}> Active (accepts new accounts)</label>
+        <div class="btns"><button class="btn primary" type="button" id="c-save">Save</button><button class="btn" type="button" id="c-new">+ New client</button></div>
+        <div class="hint" id="c-msg"></div>
+        ${T && T.slug !== 'marketpulse' ? `
+        <label for="a-email">Client admin (an account made on their site)</label>
+        <div class="row"><input type="email" id="a-email" placeholder="owner@acme.in"><div class="btns" style="margin:0"><button class="btn" type="button" id="a-add">Add admin</button><button class="btn" type="button" id="a-del">Remove</button></div></div>
+        <div class="hint">Client admins see this page on their own site, with only their users.</div>` : ''}
+      </div>` : ''}
+      <div class="card"><h2 id="u-title">Users</h2><div id="users" class="msg">Loading…</div></div>`;
+    document.querySelectorAll('[data-t]').forEach((b) => b.onclick = () => { sel = b.dataset.t; render(); users(); });
+    if (O.platform) {
+      $('c-new').onclick = () => { sel = '__new'; render(); $('users').textContent = 'Save the client first.'; };
+      $('c-save').onclick = save;
+      if ($('a-add')) { $('a-add').onclick = () => admin(true); $('a-del').onclick = () => admin(false); }
+    }
+  }
+  async function users() {
+    if (!sel || sel === '__new') return;
+    const T = O.tenants.find((t) => t.slug === sel);
+    const { data, error } = await sb.rpc('tenant_users', { p_tenant: sel, p_limit: 200, p_offset: 0 });
+    if (error) { $('users').innerHTML = `<span class="err">${esc(error.message)}</span>`; return; }
+    $('u-title').textContent = `Users · ${T ? T.name : sel} (${data.total})`;
+    $('users').innerHTML = data.users.length ? `<div class="tw"><table><thead><tr><th>Account</th><th>Name</th><th>Signed up</th><th>Last sign-in</th></tr></thead><tbody>${data.users.map((u) => `
+      <tr><td>${esc(u.email || u.phone || '—')}${u.admin ? ' <span class="pill">admin</span>' : ''}<br><small>${esc(u.provider || 'email')}</small></td>
+      <td>${esc(u.name || '—')}</td><td>${when(u.created_at)}</td><td>${when(u.last_sign_in_at)}</td></tr>`).join('')}</tbody></table></div>`
+      + (data.total > data.users.length ? `<div class="hint">Showing the newest ${data.users.length} of ${data.total}.</div>` : '')
+      : 'No users yet.';
+  }
+  async function save() {
+    const slug = $('c-slug').value.trim().toLowerCase(), name = $('c-name').value.trim();
+    const hosts = $('c-hosts').value.split(',').map((h) => h.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')).filter(Boolean);
+    if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(slug)) { $('c-msg').innerHTML = '<span class="err">Slug: 2–40 lowercase letters, numbers or hyphens.</span>'; return; }
+    if (!name) { $('c-msg').innerHTML = '<span class="err">Enter a name.</span>'; return; }
+    const { error } = await sb.rpc('admin_upsert_tenant', { p_slug: slug, p_name: name, p_hosts: hosts, p_active: $('c-active').checked });
+    if (error) { $('c-msg').innerHTML = `<span class="err">${esc(error.message)}</span>`; return; }
+    sel = slug; await load();
+  }
+  async function admin(add) {
+    const email = $('a-email').value.trim(); if (!email) return;
+    const { data, error } = await sb.rpc('admin_set_tenant_admin', { p_tenant: sel, p_email: email, p_add: add });
+    if (error) { $('c-msg').innerHTML = `<span class="err">${esc(error.message)}</span>`; return; }
+    $('c-msg').textContent = 'Admin ' + data + '.'; await load();
+  }
+  sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') setTimeout(load, 0); });
+  load();
+})();
+</script>
+</body>
+</html>

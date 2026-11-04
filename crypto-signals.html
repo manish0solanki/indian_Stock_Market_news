@@ -1290,6 +1290,7 @@ async function dbRequest(path, options={}){
     "apikey":SUPABASE_ANON_KEY,
     "Authorization":"Bearer "+(token||SUPABASE_ANON_KEY),
     "Content-Type":"application/json",
+    ...(window.MP_TENANT&&window.MP_TENANT!=="marketpulse"?{"x-mp-tenant":window.MP_TENANT}:{}), // client site (supabase/tenants.sql)
     ...(options.headers||{})
   };
 
