@@ -26,6 +26,7 @@
     Lagging: { cls: 'lag', txt: 'Behind the Nifty and still slipping.' },
     Improving: { cls: 'imp', txt: 'Behind the Nifty, but catching up.' },
   };
+  let T = null, E = null, tradeTab = 'go', evLoading = false;
   let D = null, period = 'd1', groupSort = 'mcap', openGroup = null, lastLoad = 0, loading = false, timer = null;
   try { period = localStorage.getItem('mp_sec_period') || 'd1'; } catch (e) { /* ignore */ }
   if (!PERIODS.some((p) => p[0] === period)) period = 'd1';
@@ -90,12 +91,79 @@
     </div>`;
   }
 
+
+  /* ---------- 1b. Trade with the sector ---------- */
+  // Rule tested in sector_trade_evidence(): a sector is strong when its index is above its 50-day average and has
+  // beaten the Nifty over the past month, weak when it is below and behind; stock setups did far better in strong ones.
+  const ST = { strong: ['Strong', 'up', 'Buy setups OK'], neutral: ['Neutral', 'mid', 'Be selective'], weak: ['Weak', 'down', 'Skip new buys'], none: ['No index', '', 'No sector index to check'] };
+  const stChip = (st) => { const x = ST[st] || ST.none; return `<span class="sx-st ${x[1]}" title="${esc(x[2])}">${x[0]}</span>`; };
+  const px = (v) => { v = num(v); return v === null ? '—' : '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: v < 100 ? 2 : 1 }); };
+  const aLink = (sym) => `/stock-analysis.html?symbol=${encodeURIComponent(sym)}`;
+  function evidenceRow(setup, sec) { return E && Array.isArray(E.rows) ? E.rows.find((r) => r.setup === setup && r.sec === sec) : null; }
+  function tradePanel() {
+    if (!T) return `<div class="mp-panel span-12 sx-trade"><div class="mp-panel-title"><span>Trade with the sector</span></div><div class="sx-empty">Loading trade setups…</div></div>`;
+    const secs = T.sectors || [], ideas = T.ideas || [], sigs = T.signals || [];
+    const by = (k) => secs.filter((x) => x.state === k);
+    const col = (k, title, help) => `<div class="sx-sc ${ST[k][1]}"><div class="sx-sc-h">${stChip(k)}<small>${help}</small></div>
+      <div class="sx-sc-l">${by(k).length ? by(k).map((x) => `<span data-grp="${esc(x.grp)}" role="button" tabindex="0" title="${esc(x.index)}: ${sgn(num(x.m1))} in a month (Nifty ${sgn(num(T.nifty_m1))}), ${x.above50 ? 'above' : 'below'} its 50-day average">${esc(x.grp)} <em class="${tone(num(x.m1) - num(T.nifty_m1))}">${sgn(num(x.m1), 1)}</em></span>`).join('') : '<i>None today</i>'}</div></div>`;
+    const go = ideas.filter((x) => x.st === 'strong' && x.setup === 'breakout');
+    const near = ideas.filter((x) => x.st === 'strong' && x.setup === 'near');
+    const skip = ideas.filter((x) => x.st === 'weak' && x.setup === 'breakout');
+    const sigOk = sigs.filter((x) => x.st === 'strong'), sigBad = sigs.filter((x) => x.st === 'weak');
+    const tabs = [['go', `Breakouts in strong sectors`, go.length], ['near', 'Close to a breakout', near.length], ['sig', 'Scanner BUY signals', sigs.length], ['skip', 'Breakouts to skip', skip.length]];
+    const ideaTable = (list, empty) => list.length ? `<div class="sx-tw"><table class="sx-t sx-t2"><thead><tr><th>Stock</th><th class="r">Price</th><th class="r">Today</th><th class="r hide-s" title="Highest close of the previous 20 days. A close back below it means the breakout failed.">Breakout level</th><th class="r hide-s" title="Lowest price of the last 20 days, and how far below today's price it is">20-day low</th><th class="r hide-s" title="Today's volume vs its 20-day average (part-day while the market is open)">Volume</th><th></th></tr></thead><tbody>
+      ${list.map((x) => `<tr><td><b data-sym="${esc(x.s)}">${esc(x.s)}</b><small>${esc(x.n)} · ${esc(x.g)}</small></td>
+        <td class="r">${px(x.p)}</td><td class="r ${tone(num(x.chg))}">${sgn(num(x.chg))}</td>
+        <td class="r hide-s">${px(x.hi20)}</td><td class="r hide-s">${px(x.lo20)} <small class="sx-muted">−${num(x.risk)}%</small></td>
+        <td class="r hide-s ${num(x.vr) >= 1.5 ? 'up' : ''}">${num(x.vr) === null ? '—' : num(x.vr).toFixed(1) + '×'}</td>
+        <td class="r"><a class="sx-go" href="${aLink(x.s)}">Plan →</a></td></tr>`).join('')}</tbody></table></div>` : `<div class="sx-empty sm">${empty}</div>`;
+    let body;
+    if (tradeTab === 'go') body = `<p class="sx-tip">Stocks that closed above their highest close of the last 20 days, are above their 50-day average, and whose sector is strong. This is the setup that held up best in the test below. Open <b>Plan</b> for entry, stop and targets on the chart.</p>` + ideaTable(go, by('strong').length ? 'No breakouts in the strong sectors today. Check “Close to a breakout” for ones to watch.' : 'No sector is strong right now, so there is nothing to buy by this rule. Waiting is a valid choice.');
+    else if (tradeTab === 'near') body = `<p class="sx-tip">Within 2% of their 20-day high in a strong sector: a watchlist. A close above the breakout level would turn them into a setup.</p>` + ideaTable(near, 'Nothing close to a breakout in the strong sectors.');
+    else if (tradeTab === 'skip') body = `<p class="sx-tip">These broke out today, but their sector is weak. In the test, breakouts like these went on to lose money more often than not. Treat them with caution or skip them.</p>` + ideaTable(skip, 'No breakouts in weak sectors today.');
+    else body = `<p class="sx-tip">The signal scanner's current BUY ideas with their sector's state. <b>${sigOk.length}</b> in strong sectors, <b>${sigBad.length}</b> in weak ones (consider skipping those), the rest neutral or without a sector index.</p>` + (sigs.length ? `<div class="sx-tw"><table class="sx-t sx-t2"><thead><tr><th>Stock</th><th>Sector</th><th class="r">Entry</th><th class="r">Stop</th><th class="r hide-s">Target 1</th><th class="r hide-s">Risk</th><th class="r hide-s">Score</th></tr></thead><tbody>
+      ${sigs.map((x) => `<tr class="${x.st === 'weak' ? 'sx-dim' : ''}"><td><b data-sym="${esc(x.s)}">${esc(x.s)}</b><small>${esc(x.setup || '')}</small></td><td>${stChip(x.st)}<small>${esc(x.g || '')}</small></td>
+        <td class="r">${px(x.entry)}</td><td class="r">${px(x.stop)}</td><td class="r hide-s">${px(x.t1)}</td><td class="r hide-s">${num(x.risk) === null ? '—' : num(x.risk).toFixed(1) + '%'}</td><td class="r hide-s">${num(x.score) ?? '—'}</td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="sx-empty sm">The scanner has no BUY signals right now.</div>');
+    return `<div class="mp-panel span-12 sx-trade" id="sxTrade">
+      <div class="mp-panel-title"><span>Trade with the sector</span><span class="widget-badge neutral">A filter, not a buy signal</span></div>
+      <div class="sx-rule"><b>The rule:</b> buy only in <span class="up">strong</span> sectors, be selective in neutral ones, and skip new buys in <span class="down">weak</span> sectors. A sector is <i>strong</i> when its index is above its 50-day average <i>and</i> has beaten the Nifty over the past month.</div>
+      <div class="sx-scs">${col('strong', 'Strong', 'buy setups OK')}${col('neutral', 'Neutral', 'be selective')}${col('weak', 'Weak', 'skip new buys')}</div>
+      <div class="sx-tabs">${tabs.map((t) => `<button type="button" class="sx-tab${tradeTab === t[0] ? ' on' : ''}" data-ttab="${t[0]}">${t[1]} <b>${t[2]}</b></button>`).join('')}</div>
+      ${body}
+      ${evidence()}
+    </div>`;
+  }
+  function evidence() {
+    if (!E || !Array.isArray(E.rows)) return `<details class="sx-ev"><summary>Does this work? <small>Loading the test…</small></summary></details>`;
+    const r = (setup, sec) => evidenceRow(setup, sec) || {};
+    const cell = (o) => o.n ? `<td class="r">${num(o.win20).toFixed(0)}%</td><td class="r ${tone(num(o.avg20))}">${sgn(num(o.avg20))}</td><td class="r hide-s ${tone(num(o.vs_nifty20))}">${sgn(num(o.vs_nifty20), 1, ' pts')}</td><td class="r hide-s sx-muted">${num(o.n).toLocaleString('en-IN')}</td>` : '<td colspan="4" class="sx-muted">—</td>';
+    const rows = [['breakout', 'Breakout'], ['uptrend', 'In uptrend'], ['all', 'Any stock, any day']].map(([k, l]) => ['strong', 'neutral', 'weak'].map((sec, i) => `<tr${i === 0 ? ' class="sx-ev-first"' : ''}>${i === 0 ? `<td rowspan="3"><b>${l}</b></td>` : ''}<td>${stChip(sec)}</td>${cell(r(k, sec))}</tr>`).join('')).join('');
+    const b = r('breakout', 'strong'), w = r('breakout', 'weak');
+    const fmtD = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const summary = b.n && w.n ? `Breakouts in strong sectors went up ${num(b.win20).toFixed(0)}% of the time (avg ${sgn(num(b.avg20))}) vs ${num(w.win20).toFixed(0)}% (avg ${sgn(num(w.avg20))}) in weak sectors.` : '';
+    return `<details class="sx-ev"><summary>Does this work? <small>${esc(summary)}</small></summary>
+      <p class="sx-tip">Every past day for ${E.stocks} of the scanner's stocks (${fmtD(E.from)} – ${fmtD(E.to)}), split by the setup and by the state of the stock's sector index that day, then measured <b>20 trading days later</b> (no stop-loss, no costs).</p>
+      <div class="sx-tw"><table class="sx-t sx-evt"><thead><tr><th>Setup</th><th>Sector</th><th class="r">Went up</th><th class="r">Avg return</th><th class="r hide-s">vs Nifty</th><th class="r hide-s">Cases</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <ul class="sx-caveats">
+        <li>The Nifty averaged ${sgn(num(E.nifty20))} per 20 days in this period, a falling market. Even the best group roughly broke even. The edge was in <b>losing much less</b> and picking stocks that beat the index, not in guaranteed profits.</li>
+        <li>One short period and one market mood. Cases overlap (the same stock on nearby days), so the real sample is smaller than the count. The test re-runs every day as more history is stored.</li>
+        <li>The rotation-map phase (Leading, Improving, …) on its own did <b>not</b> predict the next month in 20 months of index data, so it is shown only as context.</li>
+        <li>For research and education. Not investment advice.</li>
+      </ul></details>`;
+  }
+
   /* ---------- 2. Scoreboard ---------- */
   function spark(arr, up) {
     if (!Array.isArray(arr) || arr.length < 5) return '<span class="sx-spark-empty">—</span>';
     const v = arr.map(Number), mn = Math.min(...v), mx = Math.max(...v), w = 84, h = 26, r = mx - mn || 1;
     const pts = v.map((y, i) => `${(i / (v.length - 1) * w).toFixed(1)},${(h - 2 - (y - mn) / r * (h - 4)).toFixed(1)}`).join(' ');
     return `<svg class="sx-spark ${up ? 'up' : 'down'}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}"/></svg>`;
+  }
+  function idxState(x, nf) {
+    const m1 = num(x.ret && x.ret.m1), n1 = num(nf.m1);
+    if (x.above50 === null || x.above50 === undefined || m1 === null || n1 === null) return '<span class="sx-st" title="Needs about 2 months of history">—</span>';
+    return stChip(x.above50 && m1 > n1 ? 'strong' : !x.above50 && m1 < n1 ? 'weak' : 'neutral');
   }
   function scoreboard() {
     const nf = D.nifty || {}, nRet = num(nf[period]);
@@ -118,7 +186,7 @@
         <div class="sx-trend">${chip(x.above50, '50')}${chip(x.above200, '200')}</div>
         <div class="sx-fh" title="Distance from the 52-week high">${fh === null ? '—' : fh > -0.5 ? '<span class="up">At high</span>' : sgn(fh, 1)}</div>
         <div class="sx-sp">${spark(x.spark, (num(x.ret.m3) ?? 0) >= 0)}</div>
-        <div class="sx-ph">${ph ? `<span class="sx-phase ${ph.cls}" title="${esc(ph.txt)}">${x.phase}</span>` : '<span class="sx-phase na" title="Needs about 3 months of history">—</span>'}</div>
+        <div class="sx-ph">${idxState(x, nf)}${ph ? `<small class="sx-phs" title="Rotation phase: ${esc(ph.txt)}">${x.phase}</small>` : ''}</div>
       </div>`;
     }).join('');
     const bench = `<div class="sx-row sx-bench" title="The benchmark every sector is compared with">
@@ -131,10 +199,10 @@
       <div class="mp-panel-title"><span>Sector scoreboard</span><span class="widget-badge neutral">Nifty 50 ${pLabel}: ${sgn(nRet)}</span></div>
       <div class="sx-tabs" role="tablist">${PERIODS.map((p) => `<button type="button" role="tab" class="sx-tab${p[0] === period ? ' on' : ''}" data-period="${p[0]}">${p[1]}</button>`).join('')}</div>
       <div class="sx-board">
-        <div class="sx-row sx-head"><div>Index</div><div>Return ${pLabel}</div><div>vs Nifty</div><div>Trend</div><div>From 52W high</div><div>3 months</div><div>Phase</div></div>
+        <div class="sx-row sx-head"><div>Index</div><div>Return ${pLabel}</div><div>vs Nifty</div><div>Trend</div><div>From 52W high</div><div>3 months</div><div title="Strong: above its 50-day average and beating the Nifty over a month. Weak: below and behind.">State</div></div>
         ${bench}${body}
       </div>
-      <p class="mp-panel-note">Sorted by the ${pLabel} return. <b>vs Nifty</b> is the gap to the Nifty 50's return over the same period. <b>Trend</b>: is the index above its 50- and 200-day averages. <b>Phase</b> comes from the rotation map below. Click a row to see the stocks in that group.${missing ? ` ${missing} indices show “—” because their price history is still being collected.` : ''}</p>
+      <p class="mp-panel-note">Sorted by the ${pLabel} return. <b>vs Nifty</b> is the gap to the Nifty 50's return over the same period. <b>Trend</b>: is the index above its 50- and 200-day averages. <b>State</b> is the trade filter above (strong / neutral / weak); the small label under it is the rotation phase. Click a row to see the stocks in that group.${missing ? ` ${missing} indices show “—” because their price history is still being collected.` : ''}</p>
     </div>`;
   }
 
@@ -194,7 +262,7 @@
     return `<div class="mp-panel span-12">
       <div class="mp-panel-title"><span>Sector rotation vs Nifty 50</span><span class="widget-badge neutral">${pts.length} indices · trail = last 4 weeks</span></div>
       <div class="sx-rot"><div class="sx-rrg-w">${svg}</div><div class="sx-qs">${lists}</div></div>
-      <p class="mp-panel-note"><b>How to read:</b> right of centre = the sector has done better than the Nifty over the last 3 months (its price ratio to the Nifty is above its 3-month average); above centre = that lead is growing over the last 10 days. Sectors usually move clockwise: Improving → Leading → Weakening → Lagging. The faded dots show where each one was 5, 10, 15 and 20 trading days ago. This describes past moves; it is not a forecast.</p>
+      <p class="mp-panel-note"><b>How to read:</b> right of centre = the sector has done better than the Nifty over the last 3 months (its price ratio to the Nifty is above its 3-month average); above centre = that lead is growing over the last 10 days. Sectors usually move clockwise: Improving → Leading → Weakening → Lagging. The faded dots show where each one was 5, 10, 15 and 20 trading days ago. This describes past moves; it is not a forecast. Tested on 20 months of index data, the phase on its own did not predict which sectors would beat the Nifty over the next month. Use the <b>State</b> filter above for trades.</p>
     </div>`;
   }
 
@@ -252,7 +320,9 @@
   function render() {
     const root = $('sxRoot');
     if (!root || !D) return;
-    root.innerHTML = marketRead() + scoreboard() + rotation() + groups();
+    const evOpen = !!root.querySelector('.sx-ev[open]');
+    root.innerHTML = marketRead() + tradePanel() + scoreboard() + groups() + rotation();
+    if (evOpen) { const ev = root.querySelector('.sx-ev'); if (ev) ev.open = true; }
     if (openGroup) loadGroup(openGroup);
   }
   function setGroup(g, scroll) {
@@ -265,8 +335,10 @@
     if (loading) return;
     loading = true;
     try {
-      const d = await rpc('sector_dashboard');
+      const [d, t] = await Promise.all([rpc('sector_dashboard'), rpc('sector_trade_setup').catch(() => null)]);
+      if (t && Array.isArray(t.sectors)) T = t;
       if (d && Array.isArray(d.indices)) { D = d; lastLoad = Date.now(); render(); }
+      if (!E && !evLoading) { evLoading = true; rpc('sector_trade_evidence').then((e) => { E = e; render(); }).catch(() => {}).finally(() => { evLoading = false; }); }
     } catch (e) {
       console.error('[Sectors]', e);
       if (!D && $('sxRoot')) $('sxRoot').innerHTML = '<div class="mp-panel span-12 sx-empty">Could not load sector data. It will retry in a minute.</div>';
@@ -278,10 +350,11 @@
     const root = $('sxRoot');
     if (!root || !root.contains(e.target)) return;
     if (e.target.closest('[data-sym]')) return; // opens the stock (site-header.js)
-    const t = e.target.closest('[data-period],[data-gsort],[data-close],[data-grp]');
+    const t = e.target.closest('[data-period],[data-gsort],[data-close],[data-ttab],[data-grp]');
     if (!t) return;
     if (t.dataset.period) { period = t.dataset.period; try { localStorage.setItem('mp_sec_period', period); } catch (x) { /* ignore */ } render(); }
     else if (t.dataset.gsort) { groupSort = t.dataset.gsort; render(); }
+    else if (t.dataset.ttab) { tradeTab = t.dataset.ttab; render(); }
     else if (t.dataset.close) { openGroup = null; render(); }
     else if (t.dataset.grp) setGroup(t.dataset.grp, !t.classList.contains('sx-grow'));
   });

@@ -10,6 +10,7 @@ create or replace function public.mp_broad_sector(industry text) returns text
 language sql immutable set search_path = public as $$
   select case
     when industry is null or industry = '' then 'Other'
+    when industry ~* 'nbfc|non banking' then 'Financial Services'  -- before 'bank': "Non Banking Financial Company"
     when industry ~* 'bank' then 'Banks'
     when industry ~* 'insurance|nbfc|finance|financial|stockbroking|asset management|investment company|holding company|microfinance|depositor|exchange and data|capital market|ratings|fintech' then 'Financial Services'
     when industry ~* 'software|it enabled|computers|bpo|kpo|data processing|consulting services' then 'IT & Technology'

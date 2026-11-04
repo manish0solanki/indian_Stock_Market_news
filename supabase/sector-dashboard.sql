@@ -10,6 +10,9 @@
 --                median P/E, market cap, volume vs average, biggest gainers and losers
 --       market:  breadth across all stocks and the Nifty
 --   sector_group_stocks()  the stocks of one group, largest first
+-- Stocks count only with a trade in the last 10 days and a move within NSE's 20% band (stale or suspended quotes
+-- such as a months-old price against a new previous close otherwise show moves like +1900%). Groups come from
+-- mp_stock_group() (industry, else a guess from the company name).
 
 create table if not exists public.sector_index_history (symbol text not null, d date not null, close numeric not null, primary key (symbol, d));
 alter table public.sector_index_history enable row level security;
@@ -87,7 +90,7 @@ begin
         'above50', round(100.0 * count(*) filter (where q.price > q.fifty_day_avg) / nullif(count(*) filter (where q.fifty_day_avg > 0), 0), 1),
         'above200', round(100.0 * count(*) filter (where q.price > q.two_hundred_day_avg) / nullif(count(*) filter (where q.two_hundred_day_avg > 0), 0), 1),
         'near_high', count(*) filter (where q.high_52w > 0 and q.price >= 0.97 * q.high_52w), 'near_low', count(*) filter (where q.low_52w > 0 and q.price <= 1.03 * q.low_52w))
-      from stock_quotes q where q.price > 0 and q.updated_at > now() - interval '7 days'),
+      from stock_quotes q where q.price > 0 and q.quote_time > now() - interval '10 days' and abs(coalesce(q.change_percent, 0)) <= 20),
     'groups', (select coalesce(jsonb_agg(x order by x.mcap desc nulls last), '[]'::jsonb) from (
       select b.grp, count(*) as stocks,
              count(*) filter (where b.change_percent > 0) as up, count(*) filter (where b.change_percent < 0) as down,
@@ -102,13 +105,13 @@ begin
              round((sum(b.volume) filter (where b.avg_volume_3m > 0) / nullif(sum(b.avg_volume_3m) filter (where b.avg_volume_3m > 0), 0))::numeric, 2) as rel_vol,
              jsonb_agg(jsonb_build_object('s', b.symbol, 'c', round(b.change_percent::numeric, 2)) order by b.change_percent desc) filter (where b.big and b.r_up <= 3) as best,
              jsonb_agg(jsonb_build_object('s', b.symbol, 'c', round(b.change_percent::numeric, 2)) order by b.change_percent) filter (where b.big and b.r_dn <= 3) as worst
-        from (select mp_broad_sector(s.sector) as grp, s.pe, q.symbol, q.price, q.change_percent, q.market_cap, q.fifty_day_avg, q.two_hundred_day_avg,
+        from (select mp_stock_group(s.sector, s.company_name) as grp, s.pe, q.symbol, q.price, q.change_percent, q.market_cap, q.fifty_day_avg, q.two_hundred_day_avg,
                      q.high_52w, q.low_52w, q.volume, q.avg_volume_3m,
                      (q.market_cap > 5e9 and q.change_percent is not null) as big,
-                     row_number() over (partition by mp_broad_sector(s.sector), (q.market_cap > 5e9 and q.change_percent is not null) order by q.change_percent desc nulls last) as r_up,
-                     row_number() over (partition by mp_broad_sector(s.sector), (q.market_cap > 5e9 and q.change_percent is not null) order by q.change_percent asc nulls last) as r_dn
+                     row_number() over (partition by mp_stock_group(s.sector, s.company_name), (q.market_cap > 5e9 and q.change_percent is not null) order by q.change_percent desc nulls last) as r_up,
+                     row_number() over (partition by mp_stock_group(s.sector, s.company_name), (q.market_cap > 5e9 and q.change_percent is not null) order by q.change_percent asc nulls last) as r_dn
                 from stocks s join stock_quotes q using (symbol)
-               where q.price > 0 and q.updated_at > now() - interval '7 days') b
+               where q.price > 0 and q.quote_time > now() - interval '10 days' and abs(coalesce(q.change_percent, 0)) <= 20) b
        group by b.grp) x));
 end $$;
 grant execute on function public.sector_dashboard() to anon, authenticated;
@@ -124,7 +127,7 @@ language sql stable security definer set search_path = public as $$
            case when q.high_52w > 0 then round((q.price / greatest(q.high_52w, q.price) - 1) * 100, 1) end as from_high,
            case when q.avg_volume_3m > 0 then round(q.volume::numeric / q.avg_volume_3m, 2) end as rel_vol
       from stocks s join stock_quotes q using (symbol)
-     where mp_broad_sector(s.sector) = p_group and q.price > 0 and q.updated_at > now() - interval '7 days'
+     where mp_stock_group(s.sector, s.company_name) = p_group and q.price > 0 and q.quote_time > now() - interval '10 days' and abs(coalesce(q.change_percent, 0)) <= 20
      order by q.market_cap desc nulls last limit greatest(1, least(p_limit, 200))) x
 $$;
 grant execute on function public.sector_group_stocks(text, int) to anon, authenticated;
