@@ -217,6 +217,16 @@ The whole site can run under another firm's name, for demos to prospects or for 
 
 ---
 
+### 📈 Options Paper Desk (`admin-options.html`, platform admin only, paper only)
+- The Stock Signals scanner's BUY / SELL signals on **F&O stocks** turned into **defined-risk debit spreads** and paper-traded at real NSE option prices by the `options-signals` edge function (pg_cron `options-signals`, every 15 minutes 9:30 AM – 3:15 PM IST on weekdays).
+  - BUY → bull call spread (buy the at-the-money call, sell the call at the strike nearest target 1); SELL → bear put spread. One lot, one spread per stock.
+  - Skipped (with the reason logged) when: the sector is weak (Sectors page filter), no expiry has 14–70 days left, a leg has no live bid/ask, the bid-ask spread is over 12% (bought leg) / 20% (sold leg), open interest is under 50 contracts, IV is over 1.6× the 20-day historical volatility, or the maximum profit is under 0.8× the maximum loss.
+  - Fills are conservative (buy at the ask, sell at the bid); brokerage and taxes are not included. Lot sizes come from NSE's daily `fo_mktlots.csv` (`fno_lots`).
+  - Closed when the stock hits the signal's stop, reaches target 1, the spread is worth 80% of its width, or 2 days before expiry.
+- The page shows each open spread as a plan (strikes, cost = maximum loss, maximum profit, breakeven, stock vs stop / target, live mark), closed spreads, win rate and P&L, every engine decision, and **Run now** / **Dry run** buttons. Linked from the Admin Panel (📈 Options Desk).
+- Not shown to users: options trade ideas for the public need SEBI research-analyst registration. There is no back-test (no stored option prices), so it is judged on its paper record.
+- Data: `option_paper_trades`, `option_signal_log`, `fno_lots`, `options_paper_feed()` (`supabase/options-paper.sql`).
+
 ### Sales (selling the white-label platform)
 
 - **Sales Desk** (`/admin-sales.html`, MarketPulse admin only, linked as "🤝 Sales Desk" in the Admin Panel): every SEBI-registered research analyst is a lead (`sales_leads`, `supabase/sales.sql`), imported from SEBI's public register by the `sales-import` Edge Function (name, registration no., contact person, email, phone, address, city; ~2,330 entries) and ranked by fit (`sales_fit()`: independents and small firms with a reachable email first; banks, brokers and AMCs last). Tabs: **Today** (follow-ups due, then the best uncontacted leads), **Pipeline** (search and filter by stage / type), **Templates & playbook** (pricing, cadence, 3 emails, WhatsApp, LinkedIn, call script, demo agenda, personalised per lead) and **Import & settings** (your signature, re-import from SEBI). A lead's panel has **Make demo** (the whole site under the prospect's name with their SEBI registration in the footer, via a demo link), one-click personalised email and WhatsApp that log the touch and schedule the next follow-up (day 3, 7, 12), call / LinkedIn / demo logging, stage, plan and fee, notes and history (`sales_activities`).
@@ -253,6 +263,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 |---|---|---|
 | `index-refresh` | every minute + every 30 s | Indian indices every minute. Global markets, US futures, Asian and European indices, VIX, US yields, currencies, commodities and crypto every 30 seconds (`?fast=1`, Yahoo batch quotes), with last trade times added every 5 minutes (`index_quotes`) |
 | `sector-refresh` | every 3 min | Sector indices and ~2,600 stock quotes (`sector_index_quotes`, `stock_quotes`) |
+| `options-signals` | every 15 min, 04:00–09:45 Mon–Fri | Options Paper Desk: opens, marks and closes paper debit spreads from the scanner's F&O signals |
 | `swing-bars-archive` | 11:15 and 16:15 Mon–Sat | Copies the signal scanner's daily bars into `stock_price_history` (`archive_swing_bars()`) for the sector trade test |
 | `sector-history` | 10:50 Mon–Fri (4:20 PM IST) | Daily closes of the sector indices and the Nifty 50 for the Sectors page (`sector_index_history`) |
 | `stock-signals-refresh` | every 5 min | Rebuilds swing and intraday signals (`stock_signals`) |
@@ -287,6 +298,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `ipo-refresh` | IPOs and GMP |
 | `news-refresh` | News collection |
 | `index-refresh`, `sector-refresh`, `stocks-sync` | Market data collection |
+| `options-signals` | Paper debit spreads from the scanner's F&O signals (`?dry=1` to preview, `?debug=SYMBOL` for raw NSE fields; cron secret or platform admin) |
 | `sector-history` | Daily closes of the NSE sector indices and the Nifty 50 from Yahoo (2 years for a new index, else the last month; `?range=` to override) |
 | `crypto-bot`, `crypto-monitor` | Crypto paper-trading bot, circuit-breaker, shadow trades |
 | `blog-dispatch` | Starts the GitHub Actions blog workflow from pg_cron |
@@ -319,6 +331,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── picks-export.js          Festive picks downloads: poster/story PNG and PDF report
 ├── fno.html/.js              F&O option chain, PCR, max pain
 ├── admin-news.html, admin-health.js   Admin Panel: news moderation and the data health tab
+├── admin-options.html       Options Paper Desk (platform admin): paper debit spreads from the scanner's F&O signals
 ├── events.html              Events calendar
 ├── ipo.html                 IPOs and GMP
 ├── crypto-signals.html, crypto-performance.js/.css, crypto-manager/   Crypto bot UI
