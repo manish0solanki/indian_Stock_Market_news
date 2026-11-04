@@ -581,9 +581,41 @@ async function loadStock(sym, {fresh = false} = {}) {
    if (st) Object.assign(quote, {promoters_latest: st.promoters_latest, promoters_previous: st.promoters_previous, promoters_change: st.promoters_change});
   } catch {}
  }
- const data = {quote, bars};
+ await mergeLiveQuote(sym, quote);
+ const data = {quote, bars: withLiveCandle(bars, quote)};
  stockCache.set(sym, {at: Date.now(), data});
  return data;
+}
+/* Today's candle. The daily-history feed ends at the last completed session, while the live quote
+   (stock_quotes, refreshed every few minutes) has today's price. Without merging them the header shows today's
+   price but the chart, 1D return, day range and signals stay on yesterday's candle. */
+const istDate = (t) => new Date(new Date(t).getTime() + 5.5 * 3600e3).toISOString().slice(0, 10);
+async function mergeLiveQuote(sym, quote) {
+ if (!sb || !quote) return;
+ try {
+  const {data: r} = await sb.from('stock_quotes').select('price,previous_close,open,high,low,volume,change_percent,quote_time').eq('symbol', sym).maybeSingle();
+  if (!r || !(num(r.price) > 0) || !r.quote_time) return;
+  if (Date.now() - Date.parse(r.quote_time) > 10 * 864e5 || Math.abs(num(r.change_percent) || 0) > 20) return; // stale or bad quote
+  const mine = Date.parse(quote.quote_time || quote.market_time || quote.updated_at || 0) || 0;
+  if (mine > Date.parse(r.quote_time)) return; // the feed's own quote is newer
+  Object.assign(quote, {price: num(r.price), previous_close: num(r.previous_close), open: num(r.open), high: num(r.high), low: num(r.low),
+   volume: num(r.volume), change_percent: num(r.change_percent), quote_time: r.quote_time});
+ } catch {}
+}
+function withLiveCandle(bars, q) {
+ const p = num(q?.price ?? q?.last_price ?? q?.ltp ?? q?.current_price), at = q?.quote_time || q?.market_time;
+ const last = bars.at(-1);
+ if (!last || !(p > 0) || !at || typeof last.time !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(last.time)) return bars;
+ const qd = istDate(at);
+ if (Math.abs(p / last.close - 1) > 0.35) return bars; // a split or a bad quote; leave the history alone
+ const hi = num(q.high), lo = num(q.low), op = num(q.open), vol = num(q.volume);
+ if (qd === last.time) {
+  const b = {...last, close: p, high: Math.max(last.high, p, hi > 0 ? hi : p), low: Math.min(last.low, p, lo > 0 ? lo : p), volume: Math.max(last.volume || 0, vol || 0), live: true};
+  return bars.slice(0, -1).concat(b);
+ }
+ if (qd < last.time) return bars;
+ const o = op > 0 ? op : num(q.previous_close) > 0 ? num(q.previous_close) : last.close;
+ return bars.concat({time: qd, ts: Date.parse(qd), open: o, high: Math.max(o, p, hi > 0 ? hi : p), low: Math.min(o, p, lo > 0 ? lo : p), close: p, volume: vol > 0 ? vol : 0, live: true});
 }
 async function searchStocks(q) {
  // Worker results merged with the NSE-synced `stocks` table (see /stock-search.js).
@@ -1013,7 +1045,7 @@ function renderQuote() {
  $('change').textContent = (Number.isFinite(abs) ? (abs >= 0 ? '+' : '') + fmt(abs) + ' ' : '') + '(' + pct(ch) + ')';
  $('change').className = cls(ch);
  const sector = q.sector || q.fundamentals?.sector;
- $('quoteMeta').innerHTML = `<span class="pill">NSE: ${esc(sym)}</span>${sector ? `<span class="pill">${esc(sector)}</span>` : ''}<span class="pill tag ${t.trend === 'Bullish' ? 'up' : t.trend === 'Bearish' ? 'down' : 'flat'}">${esc(t.trend)} trend</span><span id="secState"></span><span class="sub">Last candle ${esc(new Date(t.last.ts).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}))}</span>`;
+ $('quoteMeta').innerHTML = `<span class="pill">NSE: ${esc(sym)}</span>${sector ? `<span class="pill">${esc(sector)}</span>` : ''}<span class="pill tag ${t.trend === 'Bullish' ? 'up' : t.trend === 'Bearish' ? 'down' : 'flat'}">${esc(t.trend)} trend</span><span id="secState"></span><span class="sub">${t.last.live ? "Today's candle" : 'Last candle'} ${esc(new Date(t.last.ts).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}))}${t.last.live ? ' (live)' : ''}</span>`;
  paintSectorState(sym);
  const dl = num(q.low), dh = num(q.high);
  const range = (label, lo, hi, v) => {
@@ -1047,7 +1079,7 @@ function renderAll() {
   : [['20-day low', t.support], ['S1 pivot', t.pivots.S1], ['S2 pivot', t.pivots.S2], ['52W low', t.lo52]].filter(x => x[1] <= close - t.atr).sort((a, b) => b[1] - a[1]);
  const [targetName, target] = cands[0] || ['2R projection', long ? close + 2 * risk : close - 2 * risk];
  const reward = Math.abs(target - close), rr = risk ? reward / risk : NaN;
- $('plan').innerHTML = metric('Reference', rs(close), 'Last close') + metric(long ? 'Stop (1.5× ATR)' : 'Stop (short)', rs(stop), pct((stop - close) / close * 100) + ' away', 'negative')
+ $('plan').innerHTML = metric('Reference', rs(close), t.last.live ? 'Latest price' : 'Last close') + metric(long ? 'Stop (1.5× ATR)' : 'Stop (short)', rs(stop), pct((stop - close) / close * 100) + ' away', 'negative')
   + metric('Target (' + targetName + ')', rs(target), pct((target - close) / close * 100) + ' away', 'positive')
   + metric('Reward : risk', Number.isFinite(rr) ? fmt(rr, 1) + ' : 1' : '—', rr >= 2 ? 'Favourable' : rr >= 1 ? 'Acceptable' : 'Poor, so be selective', rr >= 2 ? 'positive' : rr < 1 ? 'negative' : 'warn');
  $('planNote').textContent = (long ? 'Shown as a long setup. ' : 'Shown as a short setup. ') + 'Daily ATR is ' + rs(t.atr) + ' (' + fmt(t.atrPct, 1) + '% of price). Risking 1% of ₹1,00,000 = about ' + (risk > 0 ? Math.floor(1000 / risk).toLocaleString('en-IN') : '—') + ' shares.';
@@ -1327,7 +1359,18 @@ function startLive() {
   dot.classList.toggle('on', open); dot.textContent = open ? 'Live · 60s' : 'Market closed';
   if (!open || document.hidden || !current) return;
   const sym = current.sym;
-  try { const {quote} = await loadStock(sym, {fresh: true}); if (current?.sym === sym && quote && Object.keys(quote).length) { current.quote = {...current.quote, ...quote, history: undefined}; renderQuote(); } } catch {}
+  try {
+   const {quote, bars} = await loadStock(sym, {fresh: true});
+   if (current?.sym !== sym || !quote || !Object.keys(quote).length) return;
+   current.quote = {...current.quote, ...quote, history: undefined};
+   if (bars.length >= 50) { // today's candle moved: rebuild the indicators, verdict and chart (zoom is kept)
+    const t = technical(bars), qh = num(current.quote.high_52w), ql = num(current.quote.low_52w);
+    if (qh > 0) t.hi52 = Math.max(qh, t.last.high);
+    if (ql > 0) t.lo52 = Math.min(ql, t.last.low);
+    current.t = t; current.decision = decide(t);
+    renderAll();
+   } else renderQuote();
+  } catch {}
  };
  dot.classList.toggle('on', marketOpen()); dot.textContent = marketOpen() ? 'Live · 60s' : 'Market closed';
  liveTimer = setInterval(tick, 60000);
