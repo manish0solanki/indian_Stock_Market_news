@@ -65,6 +65,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10p
 .msg{font-size:12.5px;color:var(--muted);margin-top:8px}.msg.err{color:#ff8a96}
 .empty{padding:24px;text-align:center;color:var(--dim)}
 .gate{max-width:560px}
+.brief{border-color:var(--accent);margin-bottom:12px}
+.briefbody{font-size:13.5px;line-height:1.6;color:var(--muted);max-height:260px;overflow:auto}
+.briefbody b{color:var(--text)}
 @media(max-width:1100px){.grid{grid-template-columns:1fr}.panel{position:static;max-height:none}}
 @media(max-width:700px){.row{grid-template-columns:1fr auto;}.row .c3,.row .c4{display:none}.two{grid-template-columns:1fr}}
 </style>
@@ -85,6 +88,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10p
       <section>
         <div id="tab-today">
           <div class="hint" style="margin-bottom:8px">Follow-ups due, then the best-fit leads nobody has contacted yet. Aim for 10 new contacts a day.</div>
+          <div class="card brief" id="brief" hidden></div>
           <div class="list" id="todayList"><div class="empty">Loading…</div></div>
         </div>
         <div id="tab-pipeline" hidden>
@@ -243,7 +247,15 @@ Objections:
       .map(([k, v, c]) => `<div class="kpi ${c || ''}"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
     $('importInfo').textContent = data.last_import ? `Last import ${dt(data.last_import)}. Refreshing adds new registrations and updates contact details; it never changes a lead's stage or notes.` : 'Not imported yet.';
   }
-  const COLS = 'id,source,reg_no,name,contact_person,email,phone,address,city,validity,kind,website,priority,stage,plan,mrr,next_action_at,last_contacted_at,touches,demo_link,message,notes,lost_reason,updated_at';
+  const COLS = 'id,source,reg_no,name,contact_person,email,phone,address,city,validity,kind,website,priority,stage,plan,mrr,next_action_at,last_contacted_at,touches,demo_link,message,notes,lost_reason,updated_at,agent_note,agent_prepared_at';
+  // The sales agent's latest briefing (written by the daily AI routine), shown above Today's list.
+  async function loadBrief() {
+    const { data } = await sb.from('sales_briefs').select('created_at,kind,body').order('created_at', { ascending: false }).limit(1);
+    const b = (data || [])[0];
+    if (!b) { $('brief').hidden = true; return; }
+    $('brief').hidden = false;
+    $('brief').innerHTML = `<h2>Sales agent · ${esc(b.kind === 'weekly' ? 'weekly review' : 'daily briefing')} · ${dt(b.created_at)}</h2><div class="briefbody">${esc(b.body).replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>`;
+  }
   async function loadToday() {
     const t = today();
     const [due, fresh] = await Promise.all([
@@ -252,6 +264,7 @@ Objections:
     ]);
     L = [...(due.data || []), ...(fresh.data || [])].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
     $('todayList').innerHTML = L.length ? L.map(rowHtml).join('') : '<div class="empty">Nothing due. Import the SEBI register or add a lead.</div>';
+    loadBrief();
   }
   async function loadPipe(reset) {
     if (reset) { page = 0; L = []; }
@@ -272,7 +285,7 @@ Objections:
   function rowHtml(l) {
     const due = l.next_action_at && l.next_action_at <= today() && !['won', 'lost', 'skip'].includes(l.stage);
     return `<div class="row ${sel && sel.id === l.id ? 'sel' : ''}" data-id="${l.id}">
-      <div><b>${esc(titleCase(l.name))}</b><small>${esc(l.contact_person ? titleCase(l.contact_person) + ' · ' : '')}${esc(l.reg_no || l.source)}</small></div>
+      <div><b>${l.agent_note ? '<span title="Researched by the sales agent">✦ </span>' : ''}${esc(titleCase(l.name))}</b><small>${esc(l.agent_note || ((l.contact_person ? titleCase(l.contact_person) + ' · ' : '') + (l.reg_no || l.source)))}</small></div>
       <div><small>${esc(l.city || '—')}</small><small>${esc(l.email || l.phone || 'no contact listed')}</small></div>
       <div class="c3"><span class="pill ${l.stage}">${esc(l.stage)}</span></div>
       <div class="c4 score" title="Fit score">${l.priority}${l.kind ? ' · ' + l.kind[0].toUpperCase() : ''}</div>
@@ -298,6 +311,8 @@ Objections:
         <dt>Phone</dt><dd>${esc(l.phone || '—')}</dd>
         ${l.address ? `<dt>Address</dt><dd>${esc(l.address)}</dd>` : ''}
         <dt>Fit</dt><dd>${l.priority} (${esc(l.kind || '—')})</dd>
+        ${l.agent_note ? `<dt>Agent's note</dt><dd>${esc(l.agent_note)}</dd>` : ''}
+        ${l.website ? `<dt>Online</dt><dd><a href="${esc(/^https?:/.test(l.website) ? l.website : 'https://' + l.website)}" target="_blank" rel="noopener" style="color:var(--accent2)">${esc(l.website)}</a></dd>` : ''}
         <dt>Touches</dt><dd>${l.touches}${l.last_contacted_at ? ' · last ' + dt(l.last_contacted_at) : ''}</dd>
         ${l.message ? `<dt>They wrote</dt><dd>${esc(l.message)}</dd>` : ''}
       </dl>

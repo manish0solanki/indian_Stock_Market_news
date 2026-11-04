@@ -168,3 +168,66 @@ begin
   return n;
 end $$;
 revoke all on function public.sales_upsert_sebi(jsonb) from public, anon, authenticated;
+
+-- ───────── Sales agent ─────────
+-- Daily prep (pg_cron 'sales-prepare', weekdays 4:05 PM IST): the best-fit uncontacted leads get their demo link
+-- and go into the Sales Desk's Today list. The AI sales agent (a scheduled Claude routine, see README) then
+-- researches them, writes agent_note, adjusts priority and posts a briefing to sales_briefs.
+alter table public.sales_leads add column if not exists agent_note text;
+alter table public.sales_leads add column if not exists agent_prepared_at timestamptz;
+create table if not exists public.sales_briefs (
+  id bigserial primary key, created_at timestamptz not null default now(), kind text not null default 'daily', body text not null, stats jsonb
+);
+alter table public.sales_briefs enable row level security;
+revoke all on public.sales_briefs from anon;
+grant select on public.sales_briefs to authenticated;
+drop policy if exists "platform admin" on public.sales_briefs;
+create policy "platform admin" on public.sales_briefs for select to authenticated using ((select public.mp_is_platform_admin()));
+
+-- The demo link for a lead (same as the Sales Desk's Make demo): the whole site under their name and SEBI registration.
+create or replace function public.sales_demo_link(p_id uuid, p_base text default 'https://tradesutra-chi.vercel.app') returns text
+language plpgsql stable security definer set search_path = public as $$
+declare l sales_leads; nm text; w text[]; mono text; pal text[]; cfg jsonb; legal jsonb;
+begin
+  select * into l from sales_leads where id = p_id; if l.id is null then return null; end if;
+  nm := coalesce((regexp_match(l.name, 'proprietor\s+of\s+(.+)$', 'i'))[1], l.name);
+  nm := regexp_replace(initcap(lower(nm)), '\s+(Private|Pvt\.?)\s+(Limited|Ltd\.?)$|\s+(Limited|Ltd\.?|Llp)$', '', 'i');
+  nm := left(trim(replace(replace(nm, ' Llp', ' LLP'), ' Pvt', ' PVT')), 40);
+  w := array(select x from regexp_split_to_table(nm, '\s+') x where x ~ '^[A-Za-z]');
+  mono := upper(case when array_length(w, 1) > 1 then left(w[1], 1) || left(w[2], 1) else left(nm, 2) end);
+  pal := (array[array['#0b3d2e','#12a37a','#f4c542'], array['#0f2747','#2f80ed','#ffffff'], array['#5a1a00','#e8590c','#ffd43b'], array['#2b0f4a','#7c3aed','#fcd34d'],
+                array['#062a3a','#0891b2','#a7f3d0'], array['#3a0b1e','#db2777','#fde68a'], array['#14213d','#fca311','#ffffff'], array['#1b4332','#40916c','#d8f3dc']])[1 + abs(hashtext(coalesce(l.reg_no, l.name))) % 8:1 + abs(hashtext(coalesce(l.reg_no, l.name))) % 8][1:3];
+  legal := jsonb_build_object('entity', left(initcap(lower(l.name)), 80));
+  if l.reg_no is not null then legal := legal || jsonb_build_object('regType', 'Research Analyst', 'regNo', l.reg_no); end if;
+  cfg := jsonb_strip_nulls(jsonb_build_object('name', nm, 'short', mono, 'primary', pal[1][1], 'accent', pal[1][2], 'mark', pal[1][3], 'legal', legal,
+           'email', l.email, 'phone', left(l.phone, 30), 'address', left(l.address, 200), 'site', nullif(left(regexp_replace(coalesce(l.website, ''), '^https?://', ''), 60), '')));
+  return rtrim(p_base, '/') || '/?wl=' || translate(rtrim(replace(encode(convert_to(cfg::text, 'UTF8'), 'base64'), E'\n', ''), '='), '+/', '-_');
+end $$;
+revoke all on function public.sales_demo_link(uuid, text) from public, anon, authenticated;
+
+create or replace function public.sales_prepare_today(p_n int default 10, p_base text default 'https://tradesutra-chi.vercel.app') returns int
+language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  -- top the queue up to p_n prepared-but-untouched leads, so it never piles up
+  select greatest(0, p_n - count(*)) into n from sales_leads where stage = 'new' and agent_prepared_at is not null and touches = 0;
+  with pick as (
+    select id from sales_leads
+     where stage = 'new' and agent_prepared_at is null and touches = 0 and email like '%@%' and kind <> 'large'
+     order by priority desc, random() limit n
+  )
+  update sales_leads l set demo_link = coalesce(l.demo_link, sales_demo_link(l.id, p_base)), next_action_at = (now() at time zone 'Asia/Kolkata')::date, agent_prepared_at = now()
+    from pick where pick.id = l.id;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.sales_prepare_today(int, text) from public, anon, authenticated;
+
+create or replace function public.sales_post_brief(p_body text, p_kind text default 'daily', p_stats jsonb default null) returns bigint
+language sql security definer set search_path = public as $$
+  insert into sales_briefs (kind, body, stats) values (coalesce(p_kind, 'daily'), left(p_body, 20000), p_stats) returning id
+$$;
+revoke all on function public.sales_post_brief(text, text, jsonb) from public, anon, authenticated;
+
+select cron.unschedule('sales-prepare') where exists (select 1 from cron.job where jobname = 'sales-prepare');
+select cron.schedule('sales-prepare', '35 10 * * 1-5', $c$select public.sales_prepare_today(10)$c$);  -- 4:05 PM IST
