@@ -58,17 +58,39 @@ textarea{min-height:64px;resize:vertical}
 .warn p{margin:0;color:var(--muted);font-size:12.5px}
 @media(max-width:980px){.grid{grid-template-columns:1fr}.preview{position:static}.stage{height:640px}}
 @media(max-width:520px){.row,.row3{grid-template-columns:1fr}}
+.clients{display:grid;gap:8px}
+.client{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface2)}
+.client.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.client b{display:block;font-size:14px}
+.client small{color:var(--dim);display:block;font-size:11.5px}
+.client .acts{display:flex;gap:6px;flex:0 0 auto}
+.client .acts .btn{padding:7px 10px;font-size:12px}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:4px;vertical-align:1px}
+.tag.live{background:rgba(47,210,127,.15);color:var(--green)}.tag.off{background:rgba(255,93,108,.15);color:#ff5d6c}.tag.pend{background:rgba(243,201,105,.16);color:var(--amber)}
+.btn.danger{border-color:rgba(255,93,108,.5);color:#ff8a96}
+.msg{font-size:12.5px;margin-top:8px;color:var(--muted)}.msg.err{color:#ff8a96}.msg a{color:var(--accent2)}
+.steps{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:12.5px}.steps li{margin:3px 0}
+.gate{max-width:560px}
 </style>
-<script src="/brand.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/brands.js"></script><script src="/brand.js"></script>
 </head>
 <body>
 <div id="mpHeader"></div>
 <main class="wrap">
   <h1>Brand Studio</h1>
-  <p class="lead">Put the whole site under a client's name, logo and colours, with their SEBI registration in the footer of every page. Build a demo in a minute, send the link, or copy the config for a deployment on their own domain.</p>
+  <p class="lead">Put the whole site under a client's name, logo and colours, with their SEBI registration in the footer of every page. Build a demo in a minute and send the link, or save the client and publish it to their own domain.</p>
 
-  <div class="grid">
+  <div class="card gate" id="gate"><p class="msg">Checking access…</p></div>
+  <div class="grid" id="studio" hidden>
     <div>
+      <div class="card">
+        <h2>Client sites</h2>
+        <div class="clients" id="clients"><div class="hint" style="margin:0">Loading…</div></div>
+        <div class="btns"><button class="btn" type="button" id="newClient">+ New client</button><button class="btn" type="button" id="publishAll">Publish to live site</button></div>
+        <div class="msg" id="pubMsg"></div>
+      </div>
+
       <div class="card">
         <h2>Identity</h2>
         <div class="presets" id="presets"></div>
@@ -138,7 +160,6 @@ textarea{min-height:64px;resize:vertical}
         <div class="btns">
           <button class="btn primary" type="button" id="openDemo">Open demo ↗</button>
           <button class="btn" type="button" id="copyLink">Copy demo link</button>
-          <button class="btn" type="button" id="copyConfig">Copy deployment config</button>
           <button class="btn" type="button" id="reset">Start over</button>
         </div>
         <label>Demo link</label>
@@ -146,8 +167,26 @@ textarea{min-height:64px;resize:vertical}
         <div class="hint">Anyone with the link sees the site in this brand for that browser tab, with a "Demo" pill and a note that the details aren't verified.</div>
       </div>
 
-      <div class="card warn" style="margin-top:12px">
-        <p><b>For a real client:</b> paste the deployment config into <code>BRANDS</code> in <code>brand.js</code>, add their domain to <code>hosts</code>, add them on the <a href="/admin-clients.html" style="color:var(--accent2)">Clients</a> page with the same slug (so their users are kept separate), and point the domain at the site. Demo links keep their sign-ups apart too, under "White-label demos". The firm's own Terms, Privacy Policy and disclosures must be reviewed by them; this tool only swaps the name in the existing pages.</p>
+      <div class="card" id="clientCard">
+        <h2 id="clientTitle">Client site</h2>
+        <div class="row">
+          <div><label for="c-slug">Short name (slug)</label><input type="text" id="c-slug" maxlength="40" placeholder="acme"></div>
+          <div><label for="c-hosts">Their domain(s)</label><input type="text" id="c-hosts" maxlength="300" placeholder="research.acme.in"></div>
+        </div>
+        <div class="hint">Slug: lowercase letters, numbers and hyphens; it can't be changed later. Separate several domains with commas.</div>
+        <label class="chip" style="margin-top:10px;display:inline-flex"><input type="checkbox" id="c-active" checked> Live (shown on their domain, and accepts new accounts)</label>
+        <div class="btns">
+          <button class="btn primary" type="button" id="saveClient">Save &amp; publish</button>
+          <button class="btn" type="button" id="saveOnly">Save without publishing</button>
+          <button class="btn danger" type="button" id="deleteClient" hidden>Delete client</button>
+        </div>
+        <div class="msg" id="clientMsg"></div>
+        <ol class="steps">
+          <li>Publishing writes the brand to the site (a commit to GitHub); Vercel deploys it in about a minute.</li>
+          <li>Their users are kept separate automatically, and sign-ups from demo links go to "White-label demos".</li>
+          <li>Still done by hand, once per client: add their domain to the Vercel project, point their DNS at it, and add <code>https://their-domain/**</code> to Supabase → Authentication → URL Configuration → Redirect URLs.</li>
+          <li>The firm must review the Terms, Privacy Policy and disclosures; the site only swaps the name into the existing pages.</li>
+        </ol>
       </div>
     </div>
 
@@ -274,17 +313,109 @@ textarea{min-height:64px;resize:vertical}
   document.querySelectorAll('#sections input,#f-powered,select').forEach((el) => el.addEventListener('change', () => update(false)));
   $('openDemo').addEventListener('click', () => { if (W.clean(C)) window.open(link(page), '_blank', 'noopener'); });
   $('copyLink').addEventListener('click', () => W.clean(C) && copy(link('/'), 'Demo link'));
-  $('copyConfig').addEventListener('click', () => {
-    const cfg = W.clean(C); if (!cfg) return;
-    const slug = cfg.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    copy(`    '${slug}': ${JSON.stringify(Object.assign({ hosts: [cfg.site || 'client-domain.example'] }, compact(cfg)), null, 2).replace(/\n/g, '\n    ')},`, 'Deployment config');
+
+  /* ───────── clients: saved in the database (tenants.brand), published to brands.js on GitHub ───────── */
+  const sb = window.supabase.createClient(MP_CONFIG.supabaseUrl, MP_CONFIG.supabaseKey);
+  const esc = (x) => String(x ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const dt = (t) => t ? new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'never';
+  let CL = [], editing = null;
+  function deny(text, login) {
+    $('studio').hidden = true; $('gate').hidden = false;
+    $('gate').innerHTML = `<h2>Admins only</h2><p class="msg">${esc(text)}</p>${login ? '<div class="btns"><a class="btn primary" href="/?login=1">Sign in</a></div>' : ''}`;
+  }
+  // Only the MarketPulse admin (signed in on the main site) can use the studio; the database checks it again.
+  async function gate() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return deny('Sign in with the MarketPulse admin account to use Brand Studio.', true);
+    const { data, error } = await sb.rpc('mp_is_platform_admin');
+    if (error || data !== true) return deny('Brand Studio is only for the MarketPulse admin.');
+    $('gate').hidden = true; $('studio').hidden = false; fit(); loadClients();
+  }
+  async function loadClients() {
+    const { data, error } = await sb.rpc('admin_brands');
+    if (error) { $('clients').innerHTML = `<div class="msg err">${esc(error.message)}</div>`; return; }
+    CL = data || []; renderClients();
+  }
+  const pending = (c) => !c.published_at || Date.parse(c.updated_at) > Date.parse(c.published_at);
+  const state = (c) => !c.active ? '<span class="tag off">Off</span>' : pending(c) ? '<span class="tag pend">Not published</span>' : '<span class="tag live">Live</span>';
+  function renderClients() {
+    $('clients').innerHTML = CL.length ? CL.map((c) => `<div class="client ${c.slug === editing ? 'on' : ''}">
+        <div><b>${esc(c.name)} ${state(c)}</b><small>${esc(c.slug)} · ${c.hosts.length ? esc(c.hosts.join(', ')) : 'no domain yet'} · ${c.users} user${c.users === 1 ? '' : 's'}</small><small>Published ${dt(c.published_at)}</small></div>
+        <div class="acts"><button class="btn" type="button" data-edit="${esc(c.slug)}">Edit</button><button class="btn" type="button" data-demo="${esc(c.slug)}" ${c.brand ? '' : 'disabled'}>Demo ↗</button></div></div>`).join('')
+      : '<div class="hint" style="margin:0">No clients yet. Build a brand below, give it a short name and domain, and save.</div>';
+    const c = CL.find((x) => x.slug === editing);
+    $('clientTitle').textContent = c ? 'Client site · ' + c.name : 'New client site';
+    $('c-slug').readOnly = !!c; $('deleteClient').hidden = !c;
+    $('publishAll').disabled = !CL.some(pending);
+  }
+  function editClient(slug) {
+    const c = CL.find((x) => x.slug === slug); if (!c) return;
+    editing = slug;
+    if (c.brand) { C = JSON.parse(JSON.stringify(c.brand)); fill(); }
+    $('c-slug').value = c.slug; $('c-hosts').value = c.hosts.join(', '); $('c-active').checked = c.active;
+    $('clientMsg').textContent = ''; update(true); renderClients();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function newClient() {
+    editing = null; delete $('c-slug').dataset.touched;
+    $('c-slug').value = ''; $('c-hosts').value = ''; $('c-active').checked = true; $('clientMsg').textContent = '';
+    renderClients();
+  }
+  async function publish(where) {
+    const out = $(where); out.className = 'msg'; out.textContent = 'Publishing…';
+    const { data: { session } } = await sb.auth.getSession();
+    try {
+      if (!session) throw new Error('signed out');
+      const r = await fetch(MP_CONFIG.fn('brand-publish'), { method: 'POST', headers: { Authorization: 'Bearer ' + session.access_token, apikey: MP_CONFIG.supabaseKey, 'Content-Type': 'application/json' }, body: '{}' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error(j.error || j.message || 'HTTP ' + r.status);
+      out.innerHTML = j.unchanged ? 'Already live: the site has these brands.'
+        : `Published ${j.brands.length} client brand${j.brands.length === 1 ? '' : 's'}. The site updates in about a minute, once Vercel deploys${j.commit ? ` (<a href="${esc(j.commit)}" target="_blank" rel="noopener">see the commit</a>)` : ''}.`;
+      await loadClients(); return true;
+    } catch (e) { out.className = 'msg err'; out.textContent = 'Publish failed: ' + e.message + '. Your changes are saved; press Publish again.'; return false; }
+  }
+  async function saveClient(andPublish) {
+    read();
+    const out = $('clientMsg'); out.className = 'msg';
+    if (!W.clean(C)) { out.className = 'msg err'; out.textContent = 'Give the brand a name first.'; return; }
+    const hosts = $('c-hosts').value.split(',').map((h) => h.trim()).filter(Boolean);
+    out.textContent = 'Saving…';
+    const { data, error } = await sb.rpc('admin_save_brand', { p_slug: $('c-slug').value.trim().toLowerCase(), p_brand: compact(C), p_hosts: hosts, p_active: $('c-active').checked });
+    if (error) { out.className = 'msg err'; out.textContent = error.message; return; }
+    editing = data.slug; $('c-hosts').value = data.hosts.join(', ');
+    await loadClients();
+    if (andPublish) await publish('clientMsg'); else out.textContent = 'Saved. It reaches the live site when you publish.';
+  }
+  async function deleteClient() {
+    const c = CL.find((x) => x.slug === editing); if (!c) return;
+    const what = c.users ? `It has ${c.users} user account${c.users === 1 ? '' : 's'}: they are kept, but the site is switched off and nobody can sign up there.` : 'It has no users, so it is removed completely.';
+    if (!confirm(`Delete ${c.name}?\n\n${what}\n\nIts brand is then taken off the live site.`)) return;
+    const { data, error } = await sb.rpc('admin_delete_brand', { p_slug: c.slug });
+    if (error) { $('clientMsg').className = 'msg err'; $('clientMsg').textContent = error.message; return; }
+    newClient();
+    $('clientMsg').textContent = data === 'deleted' ? 'Deleted.' : 'Switched off; its accounts are kept.';
+    await loadClients(); await publish('pubMsg');
+  }
+  $('clients').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-edit]'); if (ed) return editClient(ed.dataset.edit);
+    const dm = e.target.closest('[data-demo]');
+    if (dm) { const c = CL.find((x) => x.slug === dm.dataset.demo); if (c && c.brand) window.open(location.origin + '/?wl=' + W.encode(c.brand), '_blank', 'noopener'); }
   });
+  $('newClient').onclick = newClient;
+  $('publishAll').onclick = () => publish('pubMsg');
+  $('saveClient').onclick = () => saveClient(true);
+  $('saveOnly').onclick = () => saveClient(false);
+  $('deleteClient').onclick = deleteClient;
+  // A new client's short name follows the brand name until it's typed by hand.
+  $('f-name').addEventListener('input', () => { if (!editing && !$('c-slug').dataset.touched) $('c-slug').value = $('f-name').value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40); });
+  $('c-slug').addEventListener('input', () => { $('c-slug').dataset.touched = '1'; });
   $('reset').addEventListener('click', () => { C = JSON.parse(JSON.stringify(PRESETS[0].cfg)); fill(); update(true); });
   $('pvPage').addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (!b) return; page = b.dataset.p; $('pvPage').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); preview(); });
   $('pvDevice').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; device = b.dataset.d; $('pvDevice').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); fit(); });
   window.addEventListener('resize', fit);
 
   fill(); fit(); update(true);
+  gate();
 })();
 </script>
 </body>

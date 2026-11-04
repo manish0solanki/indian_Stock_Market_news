@@ -6,7 +6,9 @@
 (function () {
   'use strict';
   var THEME_KEY = 'marketpulse-theme';
-  var AUTH_KEY = window.MP_CONFIG.authStorageKey; // where supabase-js keeps the session
+  // Where supabase-js keeps the session. Client and demo sites keep theirs under their own key
+  // (brand.js sets MP_AUTH_KEY, after this script), so read it when needed.
+  function authKey() { return window.MP_AUTH_KEY || window.MP_CONFIG.authStorageKey; }
   var SEARCH_API = window.MP_CONFIG.apiBase + '/stock-search';
   var SUPABASE_URL = window.MP_CONFIG.supabaseUrl;
   var SUPABASE_KEY = window.MP_CONFIG.supabaseKey;
@@ -51,7 +53,7 @@
 
   function session() {
     try {
-      var raw = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+      var raw = JSON.parse(localStorage.getItem(authKey()) || 'null');
       var s = raw && (raw.currentSession || raw);
       return s && s.user && s.refresh_token ? s.user : null;
     } catch (e) { return null; }
@@ -138,7 +140,7 @@
       acct.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; acct.setAttribute('aria-expanded', String(!menu.hidden)); });
       document.addEventListener('click', function (e) { if (!menu.hidden && !menu.contains(e.target)) { menu.hidden = true; acct.setAttribute('aria-expanded', 'false'); } });
       document.getElementById('mphLogout').addEventListener('click', function () {
-        var done = function () { try { localStorage.removeItem(AUTH_KEY); } catch (e) {} location.href = '/'; };
+        var done = function () { try { localStorage.removeItem(authKey()); } catch (e) {} location.href = '/'; };
         try {
           if (window.supabase && window.supabase.createClient) window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY).auth.signOut().then(done, done);
           else done();

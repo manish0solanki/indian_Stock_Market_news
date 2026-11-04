@@ -76,7 +76,7 @@ export function renderPost(post, narrative, publishedIso, aiSource) {
 <link rel="stylesheet" href="/site-header.css">
 <script src="/site-header.js"></script>
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
-<script src="/brand.js"></script>
+<script src="/brands.js"></script><script src="/brand.js"></script>
 </head>
 <body>
 <div id="mpHeader"></div>

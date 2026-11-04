@@ -27,7 +27,7 @@
  .admin-tabs{top:52px;padding:0 8px}.admin-tabs button{padding:11px 10px;font-size:13px}
 }
 </style>
-<script src="/brand.js"></script>
+<script src="/brands.js"></script><script src="/brand.js"></script>
 </head>
 <body>
 <div id="loginView" class="login">
@@ -56,6 +56,7 @@
   <button type="button" class="on" data-admin-tab="news" role="tab" aria-selected="true">📰 News</button>
   <button type="button" data-admin-tab="health" role="tab" aria-selected="false">🩺 Data health <span class="tab-badge" id="healthBadge" hidden></span></button>
   <a href="/admin-clients.html" style="display:inline-flex;align-items:center;padding:0 12px;color:inherit;text-decoration:none;opacity:.85">🏢 Clients</a>
+  <a href="/brand-studio.html" id="brandStudioLink" style="display:none;align-items:center;padding:0 12px;color:inherit;text-decoration:none;opacity:.85">🎨 Brand Studio</a>
 </nav>
 <main class="wrap" id="healthTab" hidden><div id="healthRoot"></div></main>
 <main class="wrap" id="newsTab">
@@ -130,6 +131,8 @@ function render(){const data=filtered();$("rows").innerHTML=data.length?data.map
 </tr>`).join(""):'<tr><td colspan="6" class="empty">No matching articles.</td></tr>';
 $("total").textContent=all.length;$("visible").textContent=all.filter(x=>x.is_visible).length;$("hidden").textContent=all.filter(x=>!x.is_visible).length;$("featured").textContent=all.filter(x=>x.is_featured).length}
 async function checkAdmin(){if(!user)return false;const {data,error}=await sb.from("profiles").select("role").eq("id",user.id).maybeSingle();if(error||data?.role!=="admin"){loginMsg("This account is not an admin.");await sb.auth.signOut();return false}return true}
+// Brand Studio is only for the MarketPulse (platform) admin, not a client's admins.
+async function showPlatformLinks(){try{const {data}=await sb.rpc("mp_is_platform_admin");const l=document.getElementById("brandStudioLink");if(l)l.style.display=data===true?"inline-flex":"none"}catch(e){}}
 async function load(){$("refresh").disabled=true;$("refresh").textContent="Loading…";const {data,error}=await sb.from("news").select("*").order("published_at",{ascending:false});$("refresh").disabled=false;$("refresh").textContent="↻ Refresh";if(error){console.error("[News Admin] Load error:",error);msg("Could not load News: "+error.message,"error");$("rows").innerHTML=`<tr><td colspan="6" class="empty">Could not load news.<br><span style="font-size:10px">${esc(error.message)}</span></td></tr>`;return}all=Array.isArray(data)?data:[];render();if(!all.length)msg("No rows were returned from the Supabase news table.","error")}
 window.editNews=async id=>{current=all.find(x=>Number(x.id)===Number(id));if(!current)return;$("fCompany").value=current.company_name||"";$("fSymbol").value=current.symbol||"";$("fTitle").value=current.title||"";$("fSummary").value=current.summary||"";$("fShort").value=current.short_term_impact||"Neutral";$("fLong").value=current.long_term_impact||"Neutral";$("fConfidence").value=current.confidence||"Medium";$("fPublished").value=dtLocal(current.published_at);$("fLink").value=current.source_link||"";$("fNote").value=current.admin_note||"";$("fVisible").checked=current.is_visible!==false;$("fFeatured").checked=current.is_featured===true;$("editBg").classList.add("open")}
 async function save(){if(!current)return;$("saveEdit").disabled=true;const published=$("fPublished").value?new Date($("fPublished").value).toISOString():null;const patch={company_name:$("fCompany").value.trim(),symbol:$("fSymbol").value.trim().toUpperCase()||null,title:$("fTitle").value.trim(),summary:$("fSummary").value.trim()||null,short_term_impact:$("fShort").value,long_term_impact:$("fLong").value,confidence:$("fConfidence").value,published_at:published,source_link:$("fLink").value.trim()||null,admin_note:$("fNote").value.trim()||null,is_visible:$("fVisible").checked,is_featured:$("fFeatured").checked,admin_updated_at:new Date().toISOString()};const {error}=await sb.from("news").update(patch).eq("id",current.id);$("saveEdit").disabled=false;if(error){msg(error.message,"error");return}closeEdit();msg("News article updated.");await load()}
@@ -141,7 +144,7 @@ let healthMounted=false;
 function healthCount(f,w){const b=$("healthBadge");b.hidden=false;b.className="tab-badge"+(f?"":w?" warn":" ok");b.textContent=f?f:w?w:"✓";b.title=f?f+" broken":w?w+" running late":"All systems normal"}
 function showTab(t){document.querySelectorAll("[data-admin-tab]").forEach(b=>{const on=b.dataset.adminTab===t;b.classList.toggle("on",on);b.setAttribute("aria-selected",on)});$("newsTab").hidden=t!=="news";$("healthTab").hidden=t!=="health";history.replaceState(null,"",t==="health"?"#health":location.pathname);if(t==="health"&&!healthMounted&&window.mpAdminHealth){healthMounted=true;window.mpAdminHealth.mount($("healthRoot"),sb,{onCount:healthCount})}}
 document.querySelector(".admin-tabs").addEventListener("click",e=>{const b=e.target.closest("[data-admin-tab]");if(b)showTab(b.dataset.adminTab)});
-async function start(){const {data}=await sb.auth.getSession();user=data.session?.user||null;if(user&&await checkAdmin()){ $("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";
+async function start(){const {data}=await sb.auth.getSession();user=data.session?.user||null;if(user&&await checkAdmin()){ $("loginView").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email||"";showPlatformLinks();
  // Run the health check once in the background so the tab badge shows problems even from the News tab.
  if(location.hash==="#health")showTab("health");else if(window.mpAdminHealth){healthMounted=true;window.mpAdminHealth.mount($("healthRoot"),sb,{onCount:healthCount})}
  await load()}}

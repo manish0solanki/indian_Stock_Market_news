@@ -18,11 +18,13 @@
   'use strict';
   var BASE = 'MarketPulse';
 
-  // Brands deployed for clients. Fields as in DEFAULT below; hosts: domains that load it automatically.
-  var BRANDS = {
+  // Brands deployed for clients: brands.js (window.MP_BRANDS), written by Brand Studio's Publish button.
+  // Entries added here by hand are used too, but Brand Studio is the place to manage them.
+  // Fields as in DEFAULT below; hosts: the domains that show the brand automatically.
+  var BRANDS = Object.assign({}, window.MP_BRANDS || {}, {
     // 'acme': { hosts: ['research.acme.in'], name: 'Acme Research', short: 'AR', primary: '#0b3d2e', accent: '#12a37a', mark: '#f4c542',
     //           legal: { entity: 'Acme Research Pvt Ltd', regType: 'Research Analyst', regNo: 'INH000000000', ... } },
-  };
+  });
 
   // The fields a brand can set. Everything is optional except name.
   var DEFAULT = {
@@ -114,6 +116,10 @@
   window.MP_TENANT = TENANT;
   var SITE_NAME = B ? B.name : BASE;
   var CFG = window.MP_CONFIG || {};
+  // Each site keeps its login under its own storage key. Demo links share the main site's address, so this
+  // keeps a demo login (and the wrong-site check below) from ever touching the main-site login.
+  var AUTH_KEY = (CFG.authStorageKey || '') + (TENANT === 'marketpulse' ? '' : '-' + TENANT);
+  window.MP_AUTH_KEY = AUTH_KEY;
   var tenantOf = function (user) { return user && user.app_metadata && user.app_metadata.tenant || ''; };
   var noticeShown = false;
   // The message survives one page change (pages that need a login send a signed-out visitor to Home).
@@ -138,7 +144,7 @@
   try { if (sessionStorage.getItem('mp-tenant-notice')) tenantNotice(); } catch (e) {}
   // A saved login from another site is dropped before any page script reads it.
   (function () {
-    var key = CFG.authStorageKey; if (!key) return;
+    var key = AUTH_KEY; if (!CFG.authStorageKey) return;
     try {
       var raw = JSON.parse(localStorage.getItem(key) || 'null'), sess = raw && (raw.currentSession || raw);
       var t = sess && tenantOf(sess.user);
@@ -184,6 +190,7 @@
         // The main site sends no header: the database treats a missing one as marketpulse.
         if (TENANT !== 'marketpulse') {
           opts = Object.assign({}, opts);
+          opts.auth = Object.assign({}, opts.auth, { storageKey: AUTH_KEY });
           opts.global = Object.assign({}, opts.global);
           opts.global.headers = Object.assign({}, opts.global.headers, { 'x-mp-tenant': TENANT });
         }
