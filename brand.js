@@ -239,7 +239,8 @@
     '.mpb-foot p{margin:6px 0}.mpb-foot .mpb-warn{font-weight:600}.mpb-foot .mpb-demo{color:#e0a92b;font-weight:700}' +
     '@media(max-width:760px){.mpb-foot{padding-bottom:calc(88px + env(safe-area-inset-bottom))}}' +
     '.mpb-pill{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:2147483000;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;border-radius:999px;background:#1d1606;border:1px solid #e0a92b;color:#ffe6a3;font:700 12px/1 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.35)}' +
-    '.mpb-pill a{color:#1d1606;background:#e0a92b;border-radius:999px;padding:5px 9px;text-decoration:none;font-weight:800}' +
+    '.mpb-pill button{border:0;cursor:pointer;color:#1d1606;background:#e0a92b;border-radius:999px;width:22px;height:22px;font:800 12px/1 system-ui,sans-serif;display:grid;place-items:center;padding:0}' +
+    '.mpb-pill.mini{padding:6px 10px;gap:0;cursor:pointer;opacity:.85}.mpb-pill.mini button,.mpb-pill.mini .mpb-full{display:none}.mpb-pill:not(.mini) .mpb-short{display:none}' +
     '@media(max-width:760px){.mpb-pill{bottom:calc(76px + env(safe-area-inset-bottom))}}';
   document.head.appendChild(style);
   document.documentElement.classList.add('mpb-wait');
@@ -320,7 +321,12 @@
     if (!window.MP_BRAND_DEMO || document.getElementById('mpbPill')) return;
     var p = document.createElement('div');
     p.className = 'mpb-pill'; p.id = 'mpbPill'; p.setAttribute('data-mpb', '1');
-    p.innerHTML = '<span>Demo · ' + esc(B.name) + '</span><a href="' + esc(location.pathname) + '?brand=reset">Exit</a>';
+    // No way back to MarketPulse from here: a prospect shouldn't land on it. ✕ only shrinks the pill to a
+    // small "Demo" tag (it never disappears). To leave a demo: close the tab, or open any page with ?brand=reset.
+    p.innerHTML = '<span class="mpb-full">Demo · ' + esc(B.name) + '</span><span class="mpb-short">Demo</span><button type="button" aria-label="Make smaller" title="Make smaller">✕</button>';
+    var mini = function (on) { p.classList.toggle('mini', on); p.title = on ? 'White-label demo · tap for details' : ''; try { sessionStorage.setItem('mp-pill-mini', on ? '1' : ''); } catch (e) {} };
+    try { if (sessionStorage.getItem('mp-pill-mini')) mini(true); } catch (e) {}
+    p.addEventListener('click', function (e) { if (e.target.closest('button')) { e.stopPropagation(); mini(true); } else if (p.classList.contains('mini')) mini(false); });
     document.body.appendChild(p);
   }
 
