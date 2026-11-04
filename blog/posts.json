@@ -1,5 +1,67 @@
 [
   {
+    "slug": "hegam-stock-spotlight-4-nov-2026",
+    "title": "HEG Advanced Materials Surges 19.7% on 13.5x Volume",
+    "excerpt": "HEG Advanced Materials shares surged 19.75% on 4 Nov 2026, closing at ₹288.18 against the previous close of ₹240.66, in one of the day’s sharpest single-stock moves. The rally was accompanied by extraordinary activity: 21,524,257 shares changed hands, compared with a three-month ",
+    "category": "stock-spotlight",
+    "date": "2026-11-04T15:39:14+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "HEGAM",
+      "HEG Advanced Materials"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-media-surges-5-15-percent-as-35-of-55-stocks-advance",
+    "title": "Nifty Media Surges 5.15% as 35 of 55 Stocks Advance",
+    "excerpt": "Nifty Media rose 5.15% (83.80 points) to 1,710.65. Across 55 listed Media stocks, 35 advanced and 16 declined.",
+    "category": "sector-analysis",
+    "date": "2026-11-04T15:39:14+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Media",
+      "Sector Analysis",
+      "Media",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-4-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 4 Nov 2026: Gains 0.63%",
+    "excerpt": "Indian stocks extended their rally on 4 Nov 2026, with the Nifty 50 climbing 149.75 points, or 0.63%, to 23,960.6 as gains reached well beyond the headline index. The Sensex rose 0.71% to 77,465.93, while the Nifty Midcap 50 outpaced both with a 1.42% jump to 17,149.1. Banks prov",
+    "category": "daily-wrap",
+    "date": "2026-11-04T15:39:14+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-3-sessions-with-6-836-81-cr-inflow-as-dii-selling-extends-to-3-sessions",
     "title": "FII Buying Extends to 3 Sessions with ₹6,836.81 Cr Inflow as DII Selling Extends to 3 Sessions",
     "excerpt": "Foreign investors powered the market higher on 3 Nov 2026, pouring in enough cash to comfortably offset persistent selling by domestic institutions.",
