@@ -20,7 +20,12 @@
 //   No sector filter; one spread per index; at most one signal per index per day.
 // Open spreads are marked every run and closed when: the stock hits the signal's stop, the stock reaches target 1, the
 // spread is worth >= 80% of its width, or 2 days are left to expiry.
+// Cap (option_paper_settings, editable on the desk): at most max_open open spreads and max_risk rupees at risk in total
+// (sum of max loss x lots); candidates are taken in order: index signals, strong-sector stocks, neutral, no sector index,
+// then by scanner score. auto_open = false stops the engine opening new spreads (open ones are still marked and closed).
 // POST/GET ?action=run   (x-cron-secret from app_secrets 'crypto_cron', or a signed-in platform admin)
+//          ?action=exit&id=N        close one open spread now (live prices; after hours, at its last mark)
+//          ?action=take&symbol=SYM  open a spread for SYM's current signal now, ignoring the cap (market hours only)
 //          ?dry=1         apply every rule to the current signals and report, saving nothing
 //                         (&sim=NIFTY:BUY,BANKNIFTY:SELL pretends those index signals fired, to test the spread builder)
 //          ?debug=SYMBOL  (admin / cron only) raw NSE fields for one stock, to check the feed
@@ -191,14 +196,22 @@ async function indexSignal(sym: string, force?: string): Promise<{ sig?: any; wh
   return { why: `no setup: ${lv(spot)} vs 20-day avg ${lv(s20)}, 50-day avg ${lv(s50)} (${trend}); previous 4-day range ${lv(lo4)}–${lv(hi4)}` };
 }
 
-async function openNew(summary: any, dry = false, out: any[] = [], sim: Record<string, string> = {}) {
+type OpenOpts = { only?: string; manual?: boolean };
+async function settings() {
+  const { data } = await db.from("option_paper_settings").select("*").eq("id", 1).maybeSingle();
+  return { max_open: n(data?.max_open ?? 10), max_risk: n(data?.max_risk ?? 150000), lots: Math.max(1, n(data?.lots ?? 1)), auto_open: data?.auto_open !== false };
+}
+async function openNew(summary: any, dry = false, out: any[] = [], sim: Record<string, string> = {}, opts: OpenOpts = {}) {
   // dry run: apply every rule, save nothing, report what would happen
   const note = dry ? async (symbol: string | null, action: string, reason: string, detail: unknown = null) => { out.push({ symbol, action, reason, detail }); } : log;
+  const cfg = await settings(), manual = !!opts.manual;
+  if (!dry && !manual && !cfg.auto_open) { summary.note = "auto-open is off"; return out; }
   const { data: stockSigs } = await db.from("stock_signals").select("symbol, side, setup, score, entry, stop, target1, target2, generated_at").in("side", ["BUY", "SELL"]).order("score", { ascending: false });
   const sigs: any[] = [];
   // Index signals first (they are checked only from 2:45 PM IST, or any time in a dry run).
   for (const sym of Object.keys(INDEX)) {
-    if (!dry && !afterIndexCheckTime()) continue;
+    if (opts.only && opts.only !== sym) continue;
+    if (!dry && !manual && !afterIndexCheckTime()) continue;
     try {
       const r = await indexSignal(sym, dry ? sim[sym] : undefined);
       if (r.sig && dry && sim[sym]) { r.sig.setup += " (simulated for testing)"; await note(sym, "simulated", `pretending a ${sim[sym]} signal fired, to test the spread builder`); }
@@ -206,26 +219,40 @@ async function openNew(summary: any, dry = false, out: any[] = [], sim: Record<s
       else if (dry) await note(sym, "no signal", r.why || "");
     } catch (e) { await note(sym, "error", "index signal: " + String((e as Error).message || e)); }
   }
-  sigs.push(...(stockSigs || []));
+  sigs.push(...(stockSigs || []).filter((x) => !opts.only || x.symbol === opts.only));
   const syms = [...new Set(sigs.map((s) => s.symbol))];
   if (!syms.length) return out;
   const { data: st } = await db.from("stocks").select("symbol, is_fno").in("symbol", syms);
   const fno = new Set((st || []).filter((s) => s.is_fno).map((s) => s.symbol).concat(Object.keys(INDEX)));
-  const { data: open } = await db.from("option_paper_trades").select("symbol").eq("status", "OPEN");
+  const { data: open } = await db.from("option_paper_trades").select("symbol, max_loss, lots").eq("status", "OPEN");
   const busy = new Set((open || []).map((t) => t.symbol));
+  let openCount = (open || []).length, openRisk = (open || []).reduce((a, t) => a + n(t.max_loss) * n(t.lots || 1), 0);
   const { data: done } = await db.from("option_paper_trades").select("symbol, signal_at").in("symbol", syms);
   const seen = new Set((done || []).map((t) => t.symbol + "|" + new Date(t.signal_at).toISOString()));
   // Signals already skipped for a reason that won't change soon are not re-checked for 2 hours.
   const { data: recent } = await db.from("option_signal_log").select("symbol, detail").eq("action", "skipped").gt("at", new Date(Date.now() - 2 * 3600e3).toISOString());
-  const recentSkip = new Set(dry ? [] : (recent || []).map((l: any) => l.symbol + "|" + (l.detail?.signal_at || "")));
-  let tried = 0;
-  for (const s of sigs || []) {
+  const recentSkip = new Set(dry || manual ? [] : (recent || []).filter((l: any) => !l.detail?.cap).map((l: any) => l.symbol + "|" + (l.detail?.signal_at || "")));
+  // Candidates that pass the cheap checks, with their sector state, in priority order:
+  // index signals, then strong-sector stocks, neutral, no sector index, then by scanner score.
+  const cands: any[] = [];
+  for (const s of sigs) {
     const sigAt = new Date(s.generated_at).toISOString(), key = s.symbol + "|" + sigAt;
-    if (!fno.has(s.symbol) || busy.has(s.symbol) || seen.has(key) || recentSkip.has(key)) continue;
+    if (!fno.has(s.symbol) || busy.has(s.symbol) || (!manual && seen.has(key)) || recentSkip.has(key)) continue;
+    const { data: ss } = isIndex(s.symbol) ? { data: null as any } : await db.rpc("stock_sector_state", { p_symbol: s.symbol });
+    cands.push({ s, ss, sigAt, rank: isIndex(s.symbol) ? 0 : ({ strong: 1, neutral: 2, none: 3, weak: 9 } as any)[ss?.state || "none"] ?? 3 });
+  }
+  cands.sort((a, b) => a.rank - b.rank || n(b.s.score) - n(a.s.score));
+  if (opts.only && !cands.length) await note(opts.only, "skipped", isIndex(opts.only) ? "no index signal right now" : "no current signal for this stock, or a spread is already open on it", { manual: true });
+  let tried = 0, capNoted = false;
+  for (const { s, ss, sigAt } of cands) {
     if (tried >= RULES.maxNewPerRun) break;
     const skip = async (reason: string, detail: Record<string, unknown> = {}) => { await note(s.symbol, "skipped", reason, { signal_at: sigAt, side: s.side, ...detail }); summary.skipped++; };
-    const { data: ss } = isIndex(s.symbol) ? { data: null as any } : await db.rpc("stock_sector_state", { p_symbol: s.symbol });
     if (ss?.state === "weak") { await skip("sector is weak (" + (ss.grp || "") + ")"); continue; }
+    if (!manual && openCount >= cfg.max_open) {
+      if (!capNoted) { const m = `cap reached: ${openCount} of ${cfg.max_open} spreads open`; if (dry) await note(null, "cap", m, { cap: true }); else summary.note = m; capNoted = true; }
+      if (dry) { await skip("over the cap (" + cfg.max_open + " open spreads)", { cap: true }); continue; }
+      break;
+    }
     tried++;
     try {
       const bull = s.side === "BUY", target = n(s.target1), stop = n(s.stop);
@@ -258,22 +285,49 @@ async function openNew(summary: any, dry = false, out: any[] = [], sim: Record<s
       const row = {
         symbol: s.symbol, signal_side: s.side, signal_at: sigAt, signal_setup: s.setup, signal_score: s.score,
         strategy: bull ? "bull_call_spread" : "bear_put_spread", opt_type: bull ? "CE" : "PE",
-        expiry: expiryDate(exp).toISOString().slice(0, 10), long_strike: atm, short_strike: shortK, lot_size: lot, lots: 1,
+        expiry: expiryDate(exp).toISOString().slice(0, 10), long_strike: atm, short_strike: shortK, lot_size: lot, lots: cfg.lots, source: manual ? "manual" : "auto",
         entry_long: L.ask, entry_short: S.bid, net_debit: debit, width,
         max_loss: r2(debit * lot), max_profit: r2(maxProfitPS * lot), breakeven: r2(bull ? atm + debit : atm - debit),
         spot_entry: c.spot, stop, target, iv: L.iv || null, hv: hv ? r2(hv) : null, sector_state: ss?.state || null, sector_group: ss?.grp || null,
         mark_long: L.bid, mark_short: S.ask, mark_value: r2(Math.max(0, L.bid - S.ask)), mark_spot: c.spot, marked_at: new Date().toISOString(),
-        pnl: r2((Math.max(0, L.bid - S.ask) - debit) * lot),
+        pnl: r2((Math.max(0, L.bid - S.ask) - debit) * lot * cfg.lots),
       };
-      if (dry) { await note(s.symbol, "would open", `${bull ? "Bull call" : "Bear put"} spread ${atm}/${shortK} ${exp}, debit ₹${debit} × ${lot}`, row); summary.opened++; continue; }
+      const risk = row.max_loss * cfg.lots;
+      if (!manual && openRisk + risk > cfg.max_risk) {
+        await skip(`would put ₹${Math.round(openRisk + risk).toLocaleString("en-IN")} at risk, over the ₹${Math.round(cfg.max_risk).toLocaleString("en-IN")} cap`, { cap: true, max_loss: row.max_loss, max_profit: row.max_profit, lots: cfg.lots });
+        continue;
+      }
+      if (dry) { await note(s.symbol, "would open", `${bull ? "Bull call" : "Bear put"} spread ${atm}/${shortK} ${exp}, debit ₹${debit} × ${lot}${cfg.lots > 1 ? " × " + cfg.lots + " lots" : ""}`, row); summary.opened++; openCount++; openRisk += risk; continue; }
       const { error } = await db.from("option_paper_trades").insert(row);
       if (error) { await log(s.symbol, "error", "could not save: " + error.message); summary.errors++; continue; }
-      busy.add(s.symbol);
-      await log(s.symbol, "opened", `${bull ? "Bull call" : "Bear put"} spread ${atm}/${shortK} ${exp}, debit ₹${debit} × ${lot}`, { signal_at: sigAt, ...row });
+      busy.add(s.symbol); openCount++; openRisk += risk;
+      await log(s.symbol, "opened", `${manual ? "Taken by hand: " : ""}${bull ? "Bull call" : "Bear put"} spread ${atm}/${shortK} ${exp}, debit ₹${debit} × ${lot}${cfg.lots > 1 ? " × " + cfg.lots + " lots" : ""}`, { signal_at: sigAt, ...row });
+      summary.trade = row;
       summary.opened++;
     } catch (e) { await note(s.symbol, "error", String((e as Error).message || e), { signal_at: sigAt }); summary.errors++; }
   }
   return out;
+}
+
+// Close one open spread now: at live prices while the market is open, else at its last mark.
+async function exitTrade(id: number) {
+  const { data: t } = await db.from("option_paper_trades").select("*").eq("id", id).maybeSingle();
+  if (!t) return { error: "trade not found" };
+  if (t.status !== "OPEN") return { error: "this spread is already closed" };
+  const per = n(t.lot_size) * n(t.lots || 1);
+  let value: number | null = null, lg = n(t.mark_long), sh = n(t.mark_short), spot = n(t.mark_spot), how = "at its last mark (market closed)";
+  if (marketOpen()) {
+    const exp = new Date(t.expiry + "T00:00:00Z");
+    const nseExp = `${String(exp.getUTCDate()).padStart(2, "0")}-${Object.keys(MON)[exp.getUTCMonth()]}-${exp.getUTCFullYear()}`;
+    const c = await chain(t.symbol, nseExp), cv = closeValue(c, t);
+    if (cv) { value = cv.value; lg = cv.long; sh = cv.short; spot = c.spot; how = "at live prices"; }
+  }
+  if (value === null) { if (t.mark_value === null) return { error: "no price to exit at yet; try again in market hours" }; value = n(t.mark_value); }
+  const pnl = r2((value - n(t.net_debit)) * per), now = new Date().toISOString();
+  await db.from("option_paper_trades").update({ status: "CLOSED", exit_long: lg, exit_short: sh, exit_value: r2(value), exit_spot: spot || null, exit_reason: "manual exit " + how,
+    closed_at: now, pnl, mark_value: r2(value), marked_at: now }).eq("id", id);
+  await log(t.symbol, "closed", "manual exit " + how, { pnl, value: r2(value) });
+  return { ok: true, symbol: t.symbol, pnl, value: r2(value), how };
 }
 
 async function authorised(req: Request) {
@@ -300,8 +354,26 @@ Deno.serve(async (req) => {
       return json({ expiries: list, ceKeys: row ? Object.keys(row.CE) : null, ce: row?.CE, lot: await lotSize(sym, list[0]), hv: await histVol(sym), index: isIndex(sym) ? await indexSignal(sym) : undefined });
     } catch (e) { return json({ error: String(e) }, 502); }
   }
+  const action = u.searchParams.get("action");
+  if (action === "exit") {
+    const id = Number(u.searchParams.get("id"));
+    if (!Number.isFinite(id)) return json({ error: "bad id" }, 400);
+    try { const r = await exitTrade(id); return json(r, r.error ? 400 : 200); } catch (e) { return json({ error: String((e as Error).message || e) }, 502); }
+  }
+  if (action === "take") {
+    const sym = (u.searchParams.get("symbol") || "").toUpperCase();
+    if (!/^[A-Z0-9&-]{1,20}$/.test(sym)) return json({ error: "bad symbol" }, 400);
+    if (!marketOpen()) return json({ error: "The market is closed: spreads can only be taken at live prices, 9:20 AM – 3:30 PM IST." }, 400);
+    const summary: any = { opened: 0, skipped: 0, marked: 0, closed: 0, errors: 0 };
+    const out: any[] = [];
+    const before = Date.now();
+    await openNew(summary, false, out, {}, { only: sym, manual: true });
+    if (summary.opened) return json({ ok: true, trade: summary.trade });
+    const { data: why } = await db.from("option_signal_log").select("reason").eq("symbol", sym).in("action", ["skipped", "error"]).gte("at", new Date(before - 1000).toISOString()).order("at", { ascending: false }).limit(1).maybeSingle();
+    return json({ error: "Not taken: " + (why?.reason || "no current signal for " + sym) }, 400);
+  }
   if (u.searchParams.get("dry") === "1") {
-    const summary = { opened: 0, skipped: 0, marked: 0, closed: 0, errors: 0 };
+    const summary: any = { opened: 0, skipped: 0, marked: 0, closed: 0, errors: 0 };
     // ?sim=NIFTY:BUY,BANKNIFTY:SELL pretends those index signals fired (dry run only), to test the spread builder
     const sim: Record<string, string> = {};
     for (const p of (u.searchParams.get("sim") || "").split(",")) { const [k, v] = p.split(":"); if (k && isIndex(k.toUpperCase()) && (v === "BUY" || v === "SELL")) sim[k.toUpperCase()] = v; }
@@ -310,11 +382,11 @@ Deno.serve(async (req) => {
   }
   const force = u.searchParams.get("force") === "1";
   if (!marketOpen() && !force) return json({ ok: true, skipped: "market closed" });
-  const summary = { opened: 0, skipped: 0, marked: 0, closed: 0, errors: 0 };
+  const summary: any = { opened: 0, skipped: 0, marked: 0, closed: 0, errors: 0 };
   await markOpen(summary);
   if (marketOpen()) await openNew(summary); // new trades only while the market is open, even when forced
   else await log(null, "note", "market closed: open spreads marked, no new trades");
-  await log(null, "run", `opened ${summary.opened}, closed ${summary.closed}, marked ${summary.marked}, skipped ${summary.skipped}, errors ${summary.errors}`, summary);
+  await log(null, "run", `opened ${summary.opened}, closed ${summary.closed}, marked ${summary.marked}, skipped ${summary.skipped}, errors ${summary.errors}${summary.note ? " (" + summary.note + ")" : ""}`, summary);
   await db.from("option_signal_log").delete().lt("at", new Date(Date.now() - 14 * 864e5).toISOString());
   return json({ ok: true, ...summary });
 });
