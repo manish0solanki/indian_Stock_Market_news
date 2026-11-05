@@ -73,3 +73,98 @@ grant execute on function public.options_paper_feed() to authenticated;
 
 -- Weekdays every 15 minutes, 04:00–09:45 UTC = 9:30 AM – 3:15 PM IST (the function itself also checks market hours).
 select cron.schedule('options-signals', '*/15 4-9 * * 1-5', $$select net.http_post('https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/options-signals', '{}'::jsonb, headers => jsonb_build_object('Content-Type','application/json','x-cron-secret',(select value from app_secrets where name='crypto_cron')), timeout_milliseconds => 150000)$$);
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Cap, settings and manual controls (exit / take go through the edge function, which needs live NSE prices).
+--   option_paper_settings       one row: max open spreads, max total at risk (₹), lots per new trade, auto-open on/off
+--   option_paper_trades.source  'auto' (engine) or 'manual' (Take); max_loss / max_profit stay per lot, so the money at
+--                               risk on a trade is max_loss × lots
+--   options_paper_settings_set(), options_paper_edit(), options_paper_delete(), options_paper_clear()  admin only
+create table if not exists public.option_paper_settings (
+  id int primary key default 1 check (id = 1),
+  max_open int not null default 10 check (max_open between 0 and 200),
+  max_risk numeric not null default 150000 check (max_risk >= 0),
+  lots int not null default 1 check (lots between 1 and 50),
+  auto_open boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+insert into public.option_paper_settings (id) values (1) on conflict (id) do nothing;
+alter table public.option_paper_settings enable row level security;
+revoke all on public.option_paper_settings from anon, authenticated;
+alter table public.option_paper_trades add column if not exists source text not null default 'auto';
+
+create or replace function public.options_paper_feed() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  return jsonb_build_object(
+    'as_of', now(),
+    'settings', (select to_jsonb(s) from option_paper_settings s where id = 1),
+    'open', (select coalesce(jsonb_agg(to_jsonb(t) order by t.opened_at desc), '[]'::jsonb) from option_paper_trades t where status = 'OPEN'),
+    'closed', (select coalesce(jsonb_agg(to_jsonb(t) order by t.closed_at desc), '[]'::jsonb)
+                 from (select * from option_paper_trades where status = 'CLOSED' order by closed_at desc limit 200) t),
+    'stats', (select jsonb_build_object('closed', count(*), 'wins', count(*) filter (where pnl > 0), 'losses', count(*) filter (where pnl <= 0),
+                 'pnl', coalesce(round(sum(pnl)), 0), 'avg_win', round(avg(pnl) filter (where pnl > 0)), 'avg_loss', round(avg(pnl) filter (where pnl <= 0)),
+                 'risked', coalesce(round(sum(max_loss * lots)), 0))
+                from option_paper_trades where status = 'CLOSED'),
+    'open_pnl', (select coalesce(round(sum(pnl)), 0) from option_paper_trades where status = 'OPEN'),
+    'open_risk', (select coalesce(round(sum(max_loss * lots)), 0) from option_paper_trades where status = 'OPEN'),
+    'last_run', (select max(at) from option_signal_log where action = 'run'),
+    'log', (select coalesce(jsonb_agg(to_jsonb(l) order by l.at desc), '[]'::jsonb)
+              from (select at, symbol, action, reason, detail from option_signal_log where at > now() - interval '2 days' order by at desc limit 150) l));
+end $$;
+
+create or replace function public.options_paper_settings_set(p_max_open int, p_max_risk numeric, p_lots int, p_auto boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  update option_paper_settings set max_open = p_max_open, max_risk = p_max_risk, lots = p_lots, auto_open = p_auto, updated_at = now() where id = 1;
+  insert into option_signal_log (action, reason) values ('note', format('settings: max %s open, max ₹%s at risk, %s lot(s) per trade, auto-open %s',
+    p_max_open, to_char(p_max_risk, 'FM99,99,99,999'), p_lots, case when p_auto then 'on' else 'off' end));
+  return (select to_jsonb(s) from option_paper_settings s where id = 1);
+end $$;
+
+-- Change an open spread's stop / target on the underlying, or its number of lots (P&L is rescaled to the new size).
+create or replace function public.options_paper_edit(p_id bigint, p_stop numeric, p_target numeric, p_lots int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare t option_paper_trades;
+begin
+  if not mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  select * into t from option_paper_trades where id = p_id;
+  if t.id is null then raise exception 'trade not found'; end if;
+  if t.status <> 'OPEN' then raise exception 'only open spreads can be edited'; end if;
+  if p_lots is null or p_lots < 1 or p_lots > 50 then raise exception 'lots must be 1–50'; end if;
+  if p_stop is not null and p_stop <= 0 or p_target is not null and p_target <= 0 then raise exception 'stop and target must be positive'; end if;
+  update option_paper_trades set stop = coalesce(p_stop, stop), target = coalesce(p_target, target), lots = p_lots,
+         pnl = case when mark_value is not null then round((mark_value - net_debit) * lot_size * p_lots, 2) else pnl end
+   where id = p_id returning * into t;
+  insert into option_signal_log (symbol, action, reason) values (t.symbol, 'edited', format('stop %s, target %s, %s lot(s)', t.stop, t.target, t.lots));
+  return to_jsonb(t);
+end $$;
+
+create or replace function public.options_paper_delete(p_id bigint) returns void
+language plpgsql security definer set search_path = public as $$
+declare s text;
+begin
+  if not mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  delete from option_paper_trades where id = p_id returning symbol into s;
+  if s is not null then insert into option_signal_log (symbol, action, reason) values (s, 'deleted', 'removed from the record'); end if;
+end $$;
+
+-- p_what: 'closed' = closed spreads only; 'all' = every spread and the activity log.
+create or replace function public.options_paper_clear(p_what text) returns int
+language plpgsql security definer set search_path = public as $$
+declare k int;
+begin
+  if not mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  if p_what = 'closed' then delete from option_paper_trades where status = 'CLOSED'; get diagnostics k = row_count;
+  elsif p_what = 'all' then delete from option_paper_trades; get diagnostics k = row_count; delete from option_signal_log;
+  else raise exception 'p_what must be closed or all'; end if;
+  insert into option_signal_log (action, reason) values ('note', case when p_what = 'all' then 'cleared everything' else 'cleared closed spreads' end);
+  return k;
+end $$;
+
+revoke execute on function public.options_paper_settings_set(int, numeric, int, boolean), public.options_paper_edit(bigint, numeric, numeric, int),
+  public.options_paper_delete(bigint), public.options_paper_clear(text) from anon, public;
+grant execute on function public.options_paper_settings_set(int, numeric, int, boolean), public.options_paper_edit(bigint, numeric, numeric, int),
+  public.options_paper_delete(bigint), public.options_paper_clear(text) to authenticated;
