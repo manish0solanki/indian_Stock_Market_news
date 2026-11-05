@@ -1,5 +1,67 @@
 [
   {
+    "slug": "piind-stock-spotlight-5-nov-2026",
+    "title": "PI Industries Slumps 19.1% on 34.0x Volume, Nears 52-Week Low",
+    "excerpt": "PI Industries shares collapsed 19.07% on 5 Nov 2026, closing at ₹1770 against the previous close of ₹2187, as a disappointing set of Q2 results sent the stock to a six-year low.",
+    "category": "stock-spotlight",
+    "date": "2026-11-05T15:39:14+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "PIIND",
+      "PI Industries"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-auto-surges-4-14-percent-as-87-of-122-stocks-advance",
+    "title": "Nifty Auto Surges 4.14% as 87 of 122 Stocks Advance",
+    "excerpt": "The Nifty Auto index staged a powerful 4.14% rally on 5 Nov 2026, adding 1096.95 points to close at 27601.75, with heavyweight stocks setting the pace.",
+    "category": "sector-analysis",
+    "date": "2026-11-05T15:39:14+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Auto",
+      "Sector Analysis",
+      "Auto",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-5-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 5 Nov 2026: Gains 2.40%",
+    "excerpt": "The Nifty 50 surged 2.4% to close at 24,536.6 on 5 Nov 2026, gaining 576 points in a session where financials and automobiles did the heavy lifting.",
+    "category": "daily-wrap",
+    "date": "2026-11-05T15:39:14+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-4-sessions-with-7-284-03-cr-inflow-as-dii-selling-extends-to-4-sessions",
     "title": "FII Buying Extends to 4 Sessions with ₹7,284.03 Cr Inflow as DII Selling Extends to 4 Sessions",
     "excerpt": "Foreign investors extended their buying streak to a fourth session on 4 Nov 2026, pouring a net ₹7284.03 Cr into Indian equities and comfortably absorbing another round of domestic selling.",
