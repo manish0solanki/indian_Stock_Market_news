@@ -157,8 +157,9 @@ language plpgsql security definer set search_path = public as $$
 declare k int;
 begin
   if not mp_is_platform_admin() then raise exception 'admins only' using errcode = '42501'; end if;
+  -- 'where true': requests from the site run with Supabase's safeupdate guard, which refuses a DELETE with no WHERE.
   if p_what = 'closed' then delete from option_paper_trades where status = 'CLOSED'; get diagnostics k = row_count;
-  elsif p_what = 'all' then delete from option_paper_trades; get diagnostics k = row_count; delete from option_signal_log;
+  elsif p_what = 'all' then delete from option_paper_trades where true; get diagnostics k = row_count; delete from option_signal_log where true;
   else raise exception 'p_what must be closed or all'; end if;
   insert into option_signal_log (action, reason) values ('note', case when p_what = 'all' then 'cleared everything' else 'cleared closed spreads' end);
   return k;

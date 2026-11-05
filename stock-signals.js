@@ -526,6 +526,7 @@ function renderAll() {
 }
 function setTab(tab) {
   S.tab = tab;
+  try { localStorage.setItem('mp-sig-tab', tab); } catch (e) { /* ignore */ } // reopened on the next visit or reload
   document.querySelectorAll('.tab').forEach((el) => el.classList.toggle('active', el.id === 'tab-' + tab));
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   window.scrollTo({ top: 0 });
@@ -554,8 +555,8 @@ let optionsLoading = null;
 function openOptions() {
   const sec = $('tab-options'); if (!sec || sec.dataset.odMounted) return;
   if (!optionsLoading) optionsLoading = new Promise((ok, fail) => {
-    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/options-desk.css?v=3'; document.head.appendChild(css);
-    const js = document.createElement('script'); js.src = '/options-desk.js?v=3'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/options-desk.css?v=4'; document.head.appendChild(css);
+    const js = document.createElement('script'); js.src = '/options-desk.js?v=4'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
   });
   optionsLoading.then(() => window.mpOptionsDesk.mount(sec, sb)).catch(() => { sec.innerHTML = '<div class="note">Could not load the options desk. Refresh to try again.</div>'; optionsLoading = null; });
 }
@@ -608,8 +609,13 @@ async function init() {
   if (!S.user) { $('gate').hidden = false; document.querySelectorAll('.tab,#tabbar').forEach((el) => { el.hidden = true; }); await Promise.all([loadIndices()]); renderMarket(); renderIndexStrip(); return; }
   window.mpRefreshNow = () => refresh(true);
   await refresh(true);
-  // ?tab=options (from the Admin Panel) opens the admin-only Options tab
-  addOptionsTab().then((added) => { if (added && new URLSearchParams(location.search).get('tab') === 'options') setTab('options'); });
+  // Reopen the tab you were on (?tab= in the link wins; a ?sig= deep link stays on Signals). The admin-only Options
+  // tab exists only after the admin check, so it is restored once addOptionsTab() has added it.
+  const params = new URLSearchParams(location.search);
+  let want = params.get('tab'); if (!want) { try { want = localStorage.getItem('mp-sig-tab'); } catch (e) { want = null; } }
+  if (params.get('sig')) want = 'signals';
+  if (want && want !== 'options' && want !== 'signals' && $('tab-' + want)) setTab(want);
+  addOptionsTab().then((added) => { if (added && want === 'options') setTab('options'); });
   // ?sig=SYMBOL|tf (from Home's Top Signals) opens that signal's details.
   const deep = new URLSearchParams(location.search).get('sig');
   if (deep) {
