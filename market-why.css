@@ -103,3 +103,5 @@
 .mw-dot.up{background:var(--positive)}.mw-dot.down{background:var(--negative)}
 .mw-reg .mw-toggle{margin-top:10px;padding:7px 10px;font-size:12.5px}
 .mw-regions{align-items:start}
+.mw-why h4{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.mw-upd{font-size:11px!important;font-weight:600!important;text-transform:none;letter-spacing:0;color:var(--text-muted)}

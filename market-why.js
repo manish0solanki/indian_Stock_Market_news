@@ -17,6 +17,13 @@
   const pts = (v) => v === null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.round(Math.abs(v)).toLocaleString('en-IN');
   const tone = (v) => (v > 0 ? 'up' : v < 0 ? 'down' : '');
   const ago = (iso) => { if (!iso) return ''; const m = Math.round((Date.now() - Date.parse(iso)) / 60e3); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
+  // "3:42 pm" today, "6 Nov, 3:42 pm" on other days, in India time
+  const istWhen = (iso) => {
+    if (!iso) return ''; const d = new Date(iso), o = { timeZone: 'Asia/Kolkata' };
+    const day = (x) => x.toLocaleDateString('en-IN', { ...o, day: 'numeric', month: 'short' });
+    const t = d.toLocaleTimeString('en-IN', { ...o, hour: 'numeric', minute: '2-digit' });
+    return (day(d) === day(new Date()) ? '' : day(d) + ', ') + t + ' IST';
+  };
   const short = (n) => String(n || '').replace(/ (Limited|Ltd\.?)$/i, '').replace(/^Nifty /, '');
   // Headlines must be about markets / the economy (the global feed also carries general news).
   const MARKETY = /(stock|share|market|index|indices|nifty|sensex|nasdaq|s&p|dow|nikkei|hang seng|kospi|stoxx|dax|ftse|rally|sell-?off|slump|surge|tumble|plunge|jump|rate|inflation|yield|bond|treasur|earnings|results|profit|economy|gdp|currency|rupee|dollar|yen|euro|\bfed\b|ecb|boj|rbi|tariff|chip|oil|crude|gold|investor|fii|fpi)/i;
@@ -64,8 +71,9 @@
     const stk = (arr) => (arr || []).map((x) => `<span>${esc(x.n)} <b class="${tone(num(x.c))}">${pct(num(x.c), 1)}</b></span>`).join('');
     let h = '';
     if (reasons.length) {
-      h += `<div class="mw-why"><h4>The main reasons</h4><ol>${reasons.map((x) => `<li><b>${esc(x.title)}</b>${x.detail ? `<p>${esc(x.detail)}</p>` : ''}${(x.sources || []).length ? `<small>Sources: ${src(x.sources)}</small>` : ''}</li>`).join('')}</ol>
-        <div class="mw-by mw-x">Written by AI from the news and checked against the market data · ${ago(rr.updated_at)}</div></div>`;
+      const at = rr.written_at || rr.updated_at;
+      h += `<div class="mw-why"><h4>The main reasons${at ? ` <small class="mw-upd" title="When the AI last wrote these reasons">Updated ${istWhen(at)} · ${ago(at)}</small>` : ''}</h4><ol>${reasons.map((x) => `<li><b>${esc(x.title)}</b>${x.detail ? `<p>${esc(x.detail)}</p>` : ''}${(x.sources || []).length ? `<small>Sources: ${src(x.sources)}</small>` : ''}</li>`).join('')}</ol>
+        <div class="mw-by mw-x">Written by AI from the news and checked against the market data. Rewritten when the news or the index move changes, around each market's trading hours${rr.updated_at ? `; news last checked ${ago(rr.updated_at)}` : ''}.</div></div>`;
     }
     if (themes.length) {
       h += `<div class="mw-themes mw-x"><h4>What the news is about <small>last 24 hours</small></h4>${themes.map((t) => `<details class="mw-th"><summary><span class="mw-th-l">${esc(t.label)}</span><span class="mw-th-n">${t.n} ${t.n === 1 ? 'story' : 'stories'}</span>${num(t.avg) !== null ? `<span class="mw-th-a ${tone(num(t.avg))}">${pct(num(t.avg), 1)} avg</span>` : ''}</summary>

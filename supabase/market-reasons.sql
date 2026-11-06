@@ -6,29 +6,32 @@
 --                     reasons [{title, detail, sources:[{title,source,url}]}]  a short list written by the AI from those
 --                             headlines and numbers only (numbers it can't match to the data are dropped), or null;
 --                     movers  [{s,n,c,theme}]  bellwether stocks of the region and their latest session move;
---                     writer  'moonshot:<model>' or 'themes' (no AI text).
+--                     writer  'moonshot:<model>' or 'themes' (no AI text); written_at  when the AI last wrote them;
+--                     updated_at  when the row was last refreshed.
 --                     sentiment {pos, neg, neu, score -100..100, label, by:'ai'|'words', up:[head], down:[head]}  the tone
 --                             of every headline (AI-rated as good / bad / neutral for that market's stocks, or a word
 --                             list when the AI isn't available).
 --   market_reasons()  public read: {region: row} for market-why.js.
 create table if not exists public.market_reasons (
-  region text primary key, themes jsonb, reasons jsonb, movers jsonb, sentiment jsonb, writer text, heads_hash text,
+  region text primary key, themes jsonb, reasons jsonb, movers jsonb, sentiment jsonb, writer text, heads_hash text, written_at timestamptz,
   updated_at timestamptz not null default now()
 );
 alter table public.market_reasons add column if not exists sentiment jsonb;
+alter table public.market_reasons add column if not exists written_at timestamptz;
 alter table public.market_reasons enable row level security;
 revoke all on public.market_reasons from anon, authenticated;
 
 create or replace function public.market_reasons() returns jsonb
 language sql stable security definer set search_path = public as $$
   select coalesce(jsonb_object_agg(region, jsonb_build_object('themes', themes, 'reasons', reasons, 'movers', movers,
-           'sentiment', sentiment, 'writer', writer, 'updated_at', updated_at)), '{}'::jsonb)
-    from market_reasons where updated_at > now() - interval '2 days';
+           'sentiment', sentiment, 'writer', writer, 'updated_at', updated_at, 'written_at', written_at)), '{}'::jsonb)
+    from market_reasons where updated_at > now() - interval '4 days';  -- 4 days: survives a weekend
 $$;
 revoke all on function public.market_reasons() from public;
 grant execute on function public.market_reasons() to anon, authenticated;
 
--- hourly on weekdays, every 4 hours at weekends (the function skips the AI when the headlines haven't changed)
+-- hourly on weekdays (each market is only refreshed around its own trading hours, see WINDOWS in the function),
+-- once a day at weekends (12:07 UTC); the AI is skipped when the headlines and index move haven't changed
 select cron.unschedule('market-reasons') where exists (select 1 from cron.job where jobname = 'market-reasons');
 select cron.schedule('market-reasons', '7 * * * 1-5', $c$
   select net.http_post(url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/market-reasons',
@@ -36,7 +39,7 @@ select cron.schedule('market-reasons', '7 * * * 1-5', $c$
     body := '{}'::jsonb, timeout_milliseconds := 150000);
 $c$);
 select cron.unschedule('market-reasons-weekend') where exists (select 1 from cron.job where jobname = 'market-reasons-weekend');
-select cron.schedule('market-reasons-weekend', '7 */4 * * 0,6', $c$
+select cron.schedule('market-reasons-weekend', '7 12 * * 0,6', $c$
   select net.http_post(url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/market-reasons',
     headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', (select value from app_secrets where name = 'crypto_cron')),
     body := '{}'::jsonb, timeout_milliseconds := 150000);
