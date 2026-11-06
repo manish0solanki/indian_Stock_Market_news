@@ -3408,6 +3408,7 @@ input,select,textarea{min-width:0;}
 }
 </style>
 <link rel="stylesheet" href="/global-market.css?v=3">
+<link rel="stylesheet" href="/market-why.css?v=1">
 <link rel="stylesheet" href="/sectors-page.css?v=2">
 <style>
 /* Account menu: every item the same size, border and alignment */
@@ -3924,6 +3925,7 @@ input,select,textarea{min-width:0;}
       </p>
     </div>
 
+    <div id="mwGlobal"></div>
     <div id="gmRoot"></div>
   </section>
 
@@ -3931,6 +3933,9 @@ input,select,textarea{min-width:0;}
   <section class="mp-index-cards" id="mpIndexCards" data-home-only="true" aria-label="Key indices">
     <div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div>
   </section>
+
+  <!-- Why is the market moving? (rendered by /market-why.js) -->
+  <section id="mwIndia" data-home-only="true" aria-label="Why the market is moving"></section>
 
   <!-- Your portfolio (stocks + mutual funds), rendered by /home-overview.js -->
   <section class="mp-card mp-pf" id="mpPortfolio" data-home-only="true" aria-label="Your portfolio" hidden></section>
@@ -8947,6 +8952,7 @@ function renderSectorInsights() {
 // The Global Market page is rendered by /global-market.js.
 function renderPageGlobal() {
   if (window.mpGlobalMarket) window.mpGlobalMarket.show();
+  if (window.mpMarketWhy) window.mpMarketWhy.show();
 }
 
 /* ─── Filter Chips ─── */
@@ -9457,6 +9463,7 @@ if ('serviceWorker' in navigator) {
 <script src="/portfolio-core.js?v=4"></script>
 <script src="/my-ticker.js?v=2"></script>
 <script src="/home-overview.js?v=11"></script>
+<script src="/market-why.js?v=1"></script>
 <script src="/live-insights.js?v=4"></script>
 <script src="/top-signals.js?v=2"></script>
 <script src="/global-market.js?v=5"></script>

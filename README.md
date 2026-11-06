@@ -104,6 +104,12 @@
 - Groups: NBFCs now count as Financial Services (they were matched as banks), and new listings with no NSE industry get a group guessed from the company name (`mp_stock_group()`). Stocks with no trade in 10 days or a move outside NSE's 20% band (stale quotes) are left out of breadth and averages.
 - Data: `sector_dashboard()` (`supabase/sector-dashboard.sql`), daily index closes in `sector_index_history` from the `sector-history` function. Seven indices Yahoo has no history for (Media, Private Bank, Oil & Gas, Healthcare, Consumer Durables, Commodities, Services) show "—" for longer periods until their history builds up day by day.
 
+### ❓ Why is the market moving? (Home card + Global Market page, `market-why.js/.css`)
+- **India (Home)**: a plain-English story of why the Nifty 50 is up or down today, written only from the numbers: which Nifty 50 stocks added or took away the most points (each stock's move × its free-float weight, i.e. market cap less promoter holding), leading / weakest sectors, whether the move was broad or narrow (advance/decline, Midcap 50), and the outside drivers split into **Pushing it up/down** and **Working against it**: overnight Wall Street, Asia, US futures, crude, the rupee, US yields, the dollar index, and FII / DII flows. Plus today's results from index stocks and matching headlines.
+- **Global (Global Market page)**: the same for the United States, Europe and Asia: each region's latest session, the cross-market moves that line up with it (yields, dollar, VIX, gold, bitcoin, euro, yen, the Wall Street lead) and market headlines.
+- It explains with data that agrees with the move; it can't prove the cause, and says so. The estimated index points are shown next to the actual move as a check. Refreshes every 2 minutes while on screen.
+- Data: `market_why()` (`supabase/market-why.sql`), Nifty 50 / Nifty Bank members in `index_members` (refreshed daily by the `sector-history` function from NSE's index lists).
+
 ### 🔍 Stock Analysis (`stock-analysis.html`)
 - **TradingView Lightweight Charts** price chart (open source, Apache 2.0, loaded from jsDelivr `lightweight-charts@4.2.0`; the small TradingView logo on the chart is the attribution its licence asks for): candles or area, volume, EMA 20/50, SMA 200, Bollinger Bands, support / resistance, and the Stock Signals scanner's entry / stop / targets when it has a live setup. Pinch or scroll to zoom, drag to pan (a vertical swipe still scrolls the page); range buttons set the window and live updates keep your zoom; follows light / dark. Falls back to the built-in SVG chart if the library can't load. Both charts end on today's candle, built from the live quote (`stock_quotes`) because the daily-history feed stops at the last completed session.
 - Indicators: RSI, MACD, Bollinger Bands, ADX, support and resistance, plus fundamentals for any NSE stock.
@@ -270,7 +276,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `sector-refresh` | every 3 min | Sector indices and ~2,600 stock quotes (`sector_index_quotes`, `stock_quotes`) |
 | `options-signals` | every 15 min, 04:00–09:45 Mon–Fri | Options Paper Desk: opens, marks and closes paper debit spreads from the scanner's F&O signals |
 | `swing-bars-archive` | 11:15 and 16:15 Mon–Sat | Copies the signal scanner's daily bars into `stock_price_history` (`archive_swing_bars()`) for the sector trade test |
-| `sector-history` | 10:50 Mon–Fri (4:20 PM IST) | Daily closes of the sector indices and the Nifty 50 for the Sectors page (`sector_index_history`) |
+| `sector-history` | 10:50 Mon–Fri (4:20 PM IST) | Daily closes of the sector indices and the Nifty 50 for the Sectors page (`sector_index_history`), and the Nifty 50 / Nifty Bank member lists (`index_members`) |
 | `stock-signals-refresh` | every 5 min | Rebuilds swing and intraday signals (`stock_signals`) |
 | `stock-paper-monitor` | every minute | Fills stops and targets on open paper trades |
 | `live-insights` | :05/:20/:35/:50, 03–10 UTC, Mon–Fri | `refresh_live_insights()`: Home's live insight cards (skips holidays) |
