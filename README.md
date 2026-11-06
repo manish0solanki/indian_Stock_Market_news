@@ -108,7 +108,9 @@
 - **India (Home)**: a plain-English story of why the Nifty 50 is up or down today, written only from the numbers: which Nifty 50 stocks added or took away the most points (each stock's move × its free-float weight, i.e. market cap less promoter holding), leading / weakest sectors, whether the move was broad or narrow (advance/decline, Midcap 50), and the outside drivers split into **Pushing it up/down** and **Working against it**: overnight Wall Street, Asia, US futures, crude, the rupee, US yields, the dollar index, and FII / DII flows. Plus today's results from index stocks and matching headlines.
 - **Global (Global Market page)**: the same for the United States, Europe and Asia: each region's latest session, the cross-market moves that line up with it (yields, dollar, VIX, gold, bitcoin, euro, yen, the Wall Street lead) and market headlines.
 - It explains with data that agrees with the move; it can't prove the cause, and says so. The estimated index points are shown next to the actual move as a check. Refreshes every 2 minutes while on screen.
-- Data: `market_why()` (`supabase/market-why.sql`), Nifty 50 / Nifty Bank members in `index_members` (refreshed daily by the `sector-history` function from NSE's index lists).
+- **The main reasons** (top of each card): what actually happened, from the news. Every hour the `market-reasons` function searches the last day's market wraps for each market (Google News) plus the site's own feeds. It groups the headlines into themes (AI & chips, elections & politics, rates & central banks, tariffs, company results, oil, China, war, money flows, banks, autos, midcaps, currencies) and pulls the moves of each region's bellwether stocks: Nvidia, AMD, Micron, Broadcom, TSMC, SK Hynix, Samsung, SoftBank, ASML, SAP, Indian IT, banks and more. Moonshot then writes 2–4 reasons from those headlines and numbers only, each with links to its sources. Any reason with a number that isn't in the data or the headlines is dropped. The AI runs again only when the headlines or the index move change.
+- **What the news is about**: each theme with its number of stories, its stocks' moves and average, and the headlines (tap to open). Below it, the region's key stocks.
+- Data: `market_why()` (`supabase/market-why.sql`), `market_reasons()` (`supabase/market-reasons.sql`, written by the `market-reasons` function), Nifty 50 / Nifty Bank members in `index_members` (refreshed daily by the `sector-history` function from NSE's index lists).
 
 ### 🔍 Stock Analysis (`stock-analysis.html`)
 - **TradingView Lightweight Charts** price chart (open source, Apache 2.0, loaded from jsDelivr `lightweight-charts@4.2.0`; the small TradingView logo on the chart is the attribution its licence asks for): candles or area, volume, EMA 20/50, SMA 200, Bollinger Bands, support / resistance, and the Stock Signals scanner's entry / stop / targets when it has a live setup. Pinch or scroll to zoom, drag to pan (a vertical swipe still scrolls the page); range buttons set the window and live updates keep your zoom; follows light / dark. Falls back to the built-in SVG chart if the library can't load. Both charts end on today's candle, built from the live quote (`stock_quotes`) because the daily-history feed stops at the last completed session.
@@ -276,6 +278,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `sector-refresh` | every 3 min | Sector indices and ~2,600 stock quotes (`sector_index_quotes`, `stock_quotes`) |
 | `options-signals` | every 15 min, 04:00–09:45 Mon–Fri | Options Paper Desk: opens, marks and closes paper debit spreads from the scanner's F&O signals |
 | `swing-bars-archive` | 11:15 and 16:15 Mon–Sat | Copies the signal scanner's daily bars into `stock_price_history` (`archive_swing_bars()`) for the sector trade test |
+| `market-reasons` | hourly at :07 Mon–Fri, every 4 h at weekends | The "main reasons" behind each market's move, from the news (`market_reasons`) |
 | `sector-history` | 10:50 Mon–Fri (4:20 PM IST) | Daily closes of the sector indices and the Nifty 50 for the Sectors page (`sector_index_history`), and the Nifty 50 / Nifty Bank member lists (`index_members`) |
 | `stock-signals-refresh` | every 5 min | Rebuilds swing and intraday signals (`stock_signals`) |
 | `stock-paper-monitor` | every minute | Fills stops and targets on open paper trades |
@@ -310,6 +313,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `news-refresh` | News collection |
 | `index-refresh`, `sector-refresh`, `stocks-sync` | Market data collection |
 | `options-signals` | Paper debit spreads from the scanner's F&O signals (`?dry=1` to preview, `?debug=SYMBOL` for raw NSE fields; cron secret or platform admin) |
+| `market-reasons` | News themes, bellwether stock moves and AI-written reasons for India, the US, Europe and Asia (`?force=1` to rewrite, `?debug=1` to preview without saving, `?region=us`; cron secret; uses the `MOONSHOT_API_KEY` function secret) |
 | `sector-history` | Daily closes of the NSE sector indices and the Nifty 50 from Yahoo (2 years for a new index, else the last month; `?range=` to override) |
 | `crypto-bot`, `crypto-monitor` | Crypto paper-trading bot, circuit-breaker, shadow trades |
 | `blog-dispatch` | Starts the GitHub Actions blog workflow from pg_cron |

@@ -33,7 +33,7 @@
   const phrase = (d) => (PHRASE[d.key] || [d.label, d.label])[d.impact > 0 ? 0 : 1];
   const list = (a) => a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 
-  let D = null, lastLoad = 0, loading = false, timer = null;
+  let D = null, R = {}, lastLoad = 0, loading = false, timer = null;
 
   // Drivers split into those pushing with the move and those working against it.
   function split(drivers, dir) {
@@ -49,6 +49,29 @@
     const hs = (arr || []).filter((h) => MARKETY.test(unent(h.title))).slice(0, 4);
     if (!hs.length) return empty ? `<p class="mw-none">${empty}</p>` : '';
     return `<ul class="mw-heads">${hs.map((h) => `<li>${h.url ? `<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(unent(h.title))}</a>` : esc(unent(h.title))}<small>${esc(unent(h.source || ''))}${h.at ? ' · ' + ago(h.at) : ''}</small></li>`).join('')}</ul>`;
+  }
+
+  // "The main reasons" (written from the news by market-reasons, checked against the data) and the news themes
+  // with the moves of the stocks behind them.
+  function reasonsBlock(rr, region) {
+    if (!rr) return '';
+    const reasons = (rr.reasons || []).filter((x) => x && x.title), themes = rr.themes || [];
+    const movers = (rr.movers || []).filter((m) => num(m.c) !== null).sort((a, b) => Math.abs(b.c) - Math.abs(a.c)).slice(0, region === 'india' ? 0 : 8);
+    if (!reasons.length && !themes.length) return '';
+    const src = (arr) => (arr || []).filter((h) => h && h.title).map((h) => h.url ? `<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.source || 'source')}</a>` : esc(h.source || '')).join(' · ');
+    const stk = (arr) => (arr || []).map((x) => `<span>${esc(x.n)} <b class="${tone(num(x.c))}">${pct(num(x.c), 1)}</b></span>`).join('');
+    let h = '';
+    if (reasons.length) {
+      h += `<div class="mw-why"><h4>The main reasons</h4><ol>${reasons.map((x) => `<li><b>${esc(x.title)}</b>${x.detail ? `<p>${esc(x.detail)}</p>` : ''}${(x.sources || []).length ? `<small>Sources: ${src(x.sources)}</small>` : ''}</li>`).join('')}</ol>
+        <div class="mw-by">Written by AI from the news and checked against the market data · ${ago(rr.updated_at)}</div></div>`;
+    }
+    if (themes.length) {
+      h += `<div class="mw-themes"><h4>What the news is about <small>last 24 hours</small></h4>${themes.map((t) => `<details class="mw-th"><summary><span class="mw-th-l">${esc(t.label)}</span><span class="mw-th-n">${t.n} ${t.n === 1 ? 'story' : 'stories'}</span>${num(t.avg) !== null ? `<span class="mw-th-a ${tone(num(t.avg))}">${pct(num(t.avg), 1)} avg</span>` : ''}</summary>
+        ${(t.stocks || []).length ? `<div class="mw-idx">${stk(t.stocks)}</div>` : ''}
+        <ul class="mw-heads">${(t.heads || []).map((x) => `<li>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(unent(x.title))}</a>` : esc(unent(x.title))}<small>${esc(x.source || '')}${x.at ? ' · ' + ago(x.at) : ''}</small></li>`).join('')}</ul></details>`).join('')}</div>`;
+    }
+    if (movers.length) h += `<div class="mw-movers"><h5>Key stocks, latest session</h5><div class="mw-idx">${stk(movers)}</div></div>`;
+    return h;
   }
 
   /* ---------- India ---------- */
@@ -89,6 +112,8 @@
           <div class="mw-sub">Sensex ${pct(num(I.sensex))} · Bank Nifty ${pct(num(I.bank))} · Midcap 50 ${pct(num(I.midcap))}</div></div>
         <div class="mw-asof">${closed ? 'At the close' : 'Live'} · updated ${ago(D.as_of)}</div>
       </div>
+      ${reasonsBlock(R.india, 'india')}
+      <h4 class="mw-sec">By the numbers</h4>
       <p class="mw-story">${s.map(esc).join(' ')}</p>
       <div class="mw-grid">
         <div class="mw-col"><h4>Points ${dir >= 0 ? 'added' : 'lost'} by stock <small>Nifty 50, estimated</small></h4>
@@ -100,7 +125,7 @@
       </div>
       ${(I.events || []).length ? `<div class="mw-events"><b>Today:</b> ${(I.events || []).map((e) => `<span class="mw-chip">${esc(e.t)}</span>`).join('')}</div>` : ''}
       ${headlines(I.headlines) ? `<div class="mw-news"><h4>In the news</h4>${headlines(I.headlines)}</div>` : ''}
-      <p class="mw-note">Built from today's data that lines up with the move: index points are estimated from each Nifty 50 stock's move and free-float size (market cap less promoter holding), so they add to ${num(I.est_pts) !== null ? pts(num(I.est_pts)) : '—'} vs the actual ${pts(p)}. Markets can move for reasons the data doesn't show. Not investment advice.</p>
+      <p class="mw-note">The main reasons are written by AI from the last day's market news; any reason with a number that doesn't match the market data is dropped, but news can be wrong or incomplete. In the numbers, index points are estimated from each Nifty 50 stock's move and free-float size (market cap less promoter holding), so they add to ${num(I.est_pts) !== null ? pts(num(I.est_pts)) : '—'} vs the actual ${pts(p)}. Markets can move for reasons the data doesn't show. Not investment advice.</p>
     </div>`;
   }
 
@@ -117,19 +142,22 @@
         return `<div class="mw-reg">
           <div class="mw-reg-h"><b>${esc(r.name)}</b><span class="mw-pill ${tone(dir)}">${pct(mv)}</span></div>
           <div class="mw-idx">${idx.map((x) => `<span>${esc(x.n)} <b class="${tone(num(x.c))}">${pct(num(x.c))}</b></span>`).join('')}</div>
-          <p class="mw-story sm">${esc(story)}</p>
+          ${reasonsBlock(R[r.key], r.key)}
+          ${R[r.key] && (R[r.key].reasons || []).length ? `<h5>By the numbers</h5>` : ''}<p class="mw-story sm">${esc(story)}</p>
           ${withMove.length ? `<h5 class="${dir < 0 ? 'down' : 'up'}">${dir < 0 ? 'Pushing down' : 'Pushing up'}</h5>${driverList(withMove, dir < 0 ? 'neg' : 'pos', '')}` : ''}
           ${against.length ? `<h5 class="${dir < 0 ? 'up' : 'down'}">Working against</h5>${driverList(against, dir < 0 ? 'pos' : 'neg', '')}` : ''}
-          ${headlines(r.headlines, 'No market headlines for this region in the last day.')}
+          ${R[r.key] && (R[r.key].themes || []).length ? '' : headlines(r.headlines, 'No market headlines for this region in the last day.')}
         </div>`;
       }).join('')}</div>
-      <p class="mw-note">Lined up from market data and headlines; it can't prove the cause. Index moves are each market's latest session (some are closed now).</p></div>`;
+      <p class="mw-note">The main reasons are written by AI from the last day's market news and checked against the market data; news can be wrong or incomplete. Index moves are each market's latest session (some are closed now).</p></div>`;
   }
 
   async function load() {
     if (loading) return; loading = true;
     try {
-      const r = await fetch(SB + '/rest/v1/rpc/market_why', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: '{}' });
+      const call = (fn) => fetch(SB + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: '{}' });
+      const [r, rr] = await Promise.all([call('market_why'), call('market_reasons').catch(() => null)]);
+      if (rr && rr.ok) R = (await rr.json()) || {};
       if (r.ok) { D = await r.json(); lastLoad = Date.now(); india(); global(); }
     } catch (e) { /* keep the last good view */ } finally { loading = false; }
   }
