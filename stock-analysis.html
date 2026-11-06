@@ -157,7 +157,14 @@ a{color:var(--blue)}
 .table tbody tr:hover{background:#ffffff05}
 .table td.v{white-space:nowrap;font-variant-numeric:tabular-nums}
 .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#1a2640;color:#b9c9e4;white-space:nowrap}
-.secbadge{text-decoration:none;border:0}.sector-check{margin-top:10px;font-size:12.5px;line-height:1.55;color:var(--muted)}.sector-check:empty{display:none}.sector-check b{color:var(--text)}.sector-check a{color:var(--blue,#6aa8ff);white-space:nowrap}
+.secbadge{text-decoration:none;border:0}
+.sn-row{display:grid;gap:5px;padding:10px 0;border-bottom:1px solid var(--line2)}.sn-row:first-child{padding-top:2px}
+.sn-h{display:flex;align-items:baseline;gap:8px;font-size:12.5px}.sn-h span{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}.sn-h b{font-size:14px}.sn-h em{margin-left:auto;font-style:normal;font-weight:800;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.sn-bar{display:flex;height:7px;border-radius:5px;overflow:hidden;background:var(--line2)}.sn-bar i{display:block;height:100%}.sn-bar i.p{background:var(--green)}.sn-bar i.u{background:var(--muted);opacity:.35}.sn-bar i.n{background:var(--red)}
+.sn-sub{font-size:11.5px;color:var(--muted)}
+.sn-heads{list-style:none;margin:2px 0 0;padding:0;display:grid;gap:4px;font-size:12.5px;line-height:1.45}.sn-heads a{color:var(--text);text-decoration:none}.sn-heads a:hover{text-decoration:underline}
+.sn-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}.sn-dot.p{background:var(--green)}.sn-dot.n{background:var(--red)}
+.sn-read{margin-top:10px;font-size:12.5px;line-height:1.55;color:var(--muted)}.sn-read b{color:var(--text)}.sector-check{margin-top:10px;font-size:12.5px;line-height:1.55;color:var(--muted)}.sector-check:empty{display:none}.sector-check b{color:var(--text)}.sector-check a{color:var(--blue,#6aa8ff);white-space:nowrap}
 .tag.up{background:#22d69a1f;color:var(--green)}.tag.down{background:#ff61781f;color:var(--red)}.tag.flat{background:#f3c9691f;color:var(--gold)}
 .mob{display:none;margin-top:3px;font-size:11.5px;line-height:1.4}
 .info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;border-radius:50%;border:1px solid #3a4e74;color:var(--muted);font-size:10px;font-weight:700;cursor:help;vertical-align:middle}
@@ -394,6 +401,11 @@ details.settings summary{cursor:pointer;color:var(--muted)}
      <div id="vExtra"></div>
     </div>
 
+    <div class="panel" id="sentiPanel">
+     <h3>News sentiment <span class="info" title="This stock's news over the last 7 days (MarketPulse items by their AI impact tag, other headlines by keywords), and today's India market news (rated by AI on the Home page). A check on the setup, not a signal on its own.">?</span></h3>
+     <div id="senti"><div class="skel" style="height:58px"></div></div>
+    </div>
+
     <div class="panel">
      <h3>Risk plan <span class="info" title="Illustrative only. The stop is 1.5× ATR below/above the close; the target is the nearest swing level.">?</span></h3>
      <div class="plan" id="plan"></div>
@@ -476,7 +488,7 @@ details.settings summary{cursor:pointer;color:var(--muted)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="/stock-search.js?v=1"></script>
-<script src="/stock-news.js?v=1"></script>
+<script src="/stock-news.js?v=2"></script>
 <script>
 (() => {
 'use strict';
@@ -1039,6 +1051,49 @@ async function paintSectorState(sym) {
  }[v.state];
  if (box) box.innerHTML = `<span class="tag ${cls_}">${label}</span> <b>${esc(v.grp)}</b> · ${esc(why)}. ${msg} <a href="/#sectors">How this is tested →</a>`;
 }
+/* News sentiment: this stock's last 7 days of news (stock-news.js) and today's India market news (market_reasons()),
+   read against the setup verdict. Cached per stock (5 min) and for the market (10 min), so the 60-second tick is cheap. */
+let mktSenti = null, mktSentiAt = 0;
+async function marketSentiment() {
+ if (mktSenti && Date.now() - mktSentiAt < 10 * 60e3) return mktSenti;
+ try { const {data} = await sb.rpc('market_reasons'); mktSenti = data && data.india ? data.india : null; mktSentiAt = Date.now(); } catch {}
+ return mktSenti;
+}
+async function paintSentiment(sym) {
+ const box = $('senti'); if (!box) return;
+ const [st, mk] = await Promise.all([window.mpStockNews && sb ? window.mpStockNews.sentiment({symbol: sym, name: current?.name, client: sb}).catch(() => null) : null, sb ? marketSentiment() : null]);
+ if (current?.sym !== sym) return;
+ const ms = mk && mk.sentiment, d = current.decision?.label || 'WAIT';
+ const tcls = v => v === null || v === undefined ? 'muted' : v >= 15 ? 'positive' : v <= -15 ? 'negative' : 'warn';
+ const sg = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
+ const bar = (p, u, n) => { const t = p + u + n || 1; return `<div class="sn-bar"><i class="p" style="width:${100 * p / t}%"></i><i class="u" style="width:${100 * u / t}%"></i><i class="n" style="width:${100 * n / t}%"></i></div>`; };
+ const head = (h, c) => { const u = safeUrl(h.url); return `<li><i class="sn-dot ${c}"></i>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(h.title)}</a>` : esc(h.title)}</li>`; };
+ let html = '';
+ if (st) {
+  html += `<div class="sn-row"><div class="sn-h"><span>${esc(sym)} news</span><b class="${tcls(st.score)}">${esc(st.label)}</b>${st.score !== null ? `<em class="${tcls(st.score)}">${sg(st.score)}</em>` : ''}</div>
+   ${st.n ? bar(st.pos, st.neu, st.neg) : ''}
+   <div class="sn-sub">${st.n ? `${st.pos} positive · ${st.neu} neutral · ${st.neg} negative, of ${st.n} items in the last 7 days${st.ai ? ` (${st.ai} rated by AI, the rest by keywords)` : ' (rated by keywords)'}` : 'No news on this stock in the last 7 days.'}</div>
+   ${(st.up.length || st.down.length) ? `<ul class="sn-heads">${st.up.map(h => head(h, 'p')).join('')}${st.down.map(h => head(h, 'n')).join('')}</ul>` : ''}</div>`;
+ }
+ if (ms) {
+  html += `<div class="sn-row"><div class="sn-h"><span>India market news</span><b class="${tcls(ms.score)}">${esc(ms.label)}</b><em class="${tcls(ms.score)}">${sg(ms.score)}</em></div>
+   ${bar(ms.pos, ms.neu, ms.neg)}
+   <div class="sn-sub">${ms.pos} positive · ${ms.neu} neutral · ${ms.neg} negative headlines, rated by AI${mk.written_at || mk.updated_at ? ` · updated ${esc(timeAgo(mk.written_at || mk.updated_at))}` : ''} · <a href="/" style="color:var(--blue)">Why the market moved →</a></div></div>`;
+ }
+ // What it means for the setup on this page
+ const s = st ? st.score : null, m = ms ? ms.score : null, out = [];
+ if (s === null) out.push(`<b>Little news on ${esc(sym)} this week</b>, so the price is moving on flows and the chart rather than news. The technical setup carries more weight here.`);
+ else if (d === 'BUY' && s <= -15) out.push(`<b>Conflict:</b> the setup is a BUY but the news on ${esc(sym)} is ${st.label.toLowerCase()}. Read the red headlines first: a results miss, a downgrade or a probe can break a chart setup. If you still take it, use a smaller size and keep the stop.`);
+ else if (d === 'BUY' && s >= 15) out.push(`<b>Agrees:</b> the news on ${esc(sym)} is ${st.label.toLowerCase()}, which backs the BUY setup.`);
+ else if (d === 'SELL' && s >= 15) out.push(`<b>Conflict:</b> the setup is a SELL but the news on ${esc(sym)} is ${st.label.toLowerCase()}. Shorting into good news is risky; wait for the price to confirm.`);
+ else if (d === 'SELL' && s <= -15) out.push(`<b>Agrees:</b> the news on ${esc(sym)} is ${st.label.toLowerCase()}, which backs the SELL setup.`);
+ else if (d === 'WAIT') out.push(`<b>No setup yet.</b> The news on ${esc(sym)} is ${st.label.toLowerCase()}; if a setup forms in the same direction as the news, it has more behind it.`);
+ else out.push(`<b>Mixed news</b> on ${esc(sym)}, so it doesn't change the setup.`);
+ if (m !== null && d === 'BUY' && m <= -40) out.push('The wider market news today is very negative; even good buy setups struggle on days like this.');
+ if (m !== null && d === 'SELL' && m >= 40) out.push('The wider market news today is very positive; shorts are fighting the tide.');
+ html += `<div class="sn-read">${out.join(' ')} <span style="opacity:.8">News sentiment isn't back-tested here: use it as a check on the setup, not a signal on its own.</span></div>`;
+ box.innerHTML = html;
+}
 function renderQuote() {
  const {sym, name, quote: q, t} = current;
  const p = livePrice();
@@ -1053,6 +1108,7 @@ function renderQuote() {
  const sector = q.sector || q.fundamentals?.sector;
  $('quoteMeta').innerHTML = `<span class="pill">NSE: ${esc(sym)}</span>${sector ? `<span class="pill">${esc(sector)}</span>` : ''}<span class="pill tag ${t.trend === 'Bullish' ? 'up' : t.trend === 'Bearish' ? 'down' : 'flat'}">${esc(t.trend)} trend</span><span id="secState"></span><span class="sub">${t.last.live ? "Today's candle" : 'Last candle'} ${esc(new Date(t.last.ts).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}))}${t.last.live ? ' (live)' : ''}</span>`;
  paintSectorState(sym);
+ paintSentiment(sym);
  const dl = num(q.low), dh = num(q.high);
  const range = (label, lo, hi, v) => {
   if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return `<small><span>${label}</span><b>—</b></small>`;

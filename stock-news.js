@@ -3,7 +3,11 @@
    Three sources, newest first in each section:
      1. MarketPulse news tagged to the stock (news table, with short/long-term impact tags)
      2. Latest headlines from Google News, last 14 days       } stock-news Edge Function,
-     3. The company's NSE filings (results, dividends, orders) } cached 15 min */
+     3. The company's NSE filings (results, dividends, orders) } cached 15 min
+   window.mpStockNews.sentiment({ symbol, name, client }) rates the last 7 days of that news for Stock Analysis:
+   MarketPulse items by their AI short-term impact tag (counted 1.5x), Google headlines by a word list
+   (rises / upgrade / order win vs falls / downgrade / probe ...). Score -100..+100, like the market sentiment.
+   Both share one fetch per stock (5-minute cache). */
 (function () {
   const FN = window.MP_CONFIG.fn('stock-news');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -40,6 +44,14 @@
   document.head.appendChild(css);
 
   let run = 0;
+  const cache = new Map(); // symbol -> { at, p: Promise<[ours, external]> settled results }
+  function fetchAll(client, symbol, name) {
+    const c = cache.get(symbol);
+    if (c && Date.now() - c.at < 5 * 60e3) return c.p;
+    const p = Promise.allSettled([ours(client, symbol), external(symbol, name)]);
+    cache.set(symbol, { at: Date.now(), p });
+    return p;
+  }
   async function ours(client, symbol) {
     if (!client) return [];
     const { data, error } = await client.from('news')
@@ -66,7 +78,7 @@
     const id = ++run;
     symbol = String(symbol).toUpperCase();
     host.innerHTML = '<div class="msn"><div class="msn-skel"></div><div class="msn-skel"></div><div class="msn-skel"></div></div>';
-    const [a, b] = await Promise.allSettled([ours(client, symbol), external(symbol, name)]);
+    const [a, b] = await fetchAll(client, symbol, name);
     if (id !== run) return;
     const mp = a.status === 'fulfilled' ? a.value : [];
     const ext = b.status === 'fulfilled' ? b.value : {};
@@ -96,5 +108,34 @@
     host.querySelectorAll('[data-msn-more]').forEach((btn) => btn.addEventListener('click', () => { btn.previousElementSibling.hidden = false; btn.remove(); }));
   }
 
-  window.mpStockNews = { render };
+  // Word list for headlines (the MarketPulse items already carry an AI impact tag).
+  const POS = /\b(rall(?:y|ies|ied)|surg\w*|soar\w*|jump\w*|gain\w*|ris(?:e|es|ing)|rose|climb\w*|record|rebound\w*|advanc\w*|boost\w*|upgrad\w*|outperform\w*|beat\w*|bags?|wins?|won|order win|new order|bullish|buy rating|target raised|raises target|higher|profit (?:up|rises|jumps)|strong)\b/i;
+  const NEG = /\b(fall\w*|fell|drop\w*|slump\w*|plung\w*|tumbl\w*|crash\w*|sell-?off|selloff|sink\w*|sank|slid\w*|slide\w*|loss\w*|downgrad\w*|underperform\w*|miss(?:es|ed)?|probe|raid\w*|penalt\w*|fine[ds]?|fraud|resign\w*|default\w*|pledg\w*|bearish|sell rating|target cut|cuts target|lower|declin\w*|weak\w*|warns?|halt\w*|block deal|exits? stake)\b/i;
+  const wordTone = (t) => { const p = POS.test(t), n = NEG.test(t); return p && !n ? 1 : n && !p ? -1 : 0; };
+  async function sentiment({ symbol, name, client } = {}) {
+    symbol = String(symbol || '').toUpperCase(); if (!symbol) return null;
+    const [a, b] = await fetchAll(client, symbol, name);
+    const since = Date.now() - 7 * 864e5, recent = (iso) => iso && Date.parse(iso) >= since;
+    const items = [];
+    for (const n of a.status === 'fulfilled' ? a.value : []) {
+      const when = n.published_at || n.created_at; if (!recent(when)) continue;
+      const t = tone(n.short_term_impact); items.push({ title: n.title, url: n.source_link, at: when, src: 'MarketPulse', w: 1.5, t: t === 'up' ? 1 : t === 'down' ? -1 : 0 });
+    }
+    const seen = new Set(items.map((x) => String(x.title || '').toLowerCase().slice(0, 50)));
+    for (const h of (b.status === 'fulfilled' ? b.value.headlines : null) || []) {
+      const k = String(h.title || '').toLowerCase().slice(0, 50); if (!h.title || !recent(h.published_at) || seen.has(k)) continue; seen.add(k);
+      items.push({ title: h.title, url: h.url, at: h.published_at, src: h.source || 'News', w: 1, t: wordTone(h.title) });
+    }
+    const sum = (f) => items.filter(f).reduce((s, x) => s + x.w, 0);
+    const P = sum((x) => x.t > 0), N = sum((x) => x.t < 0), U = sum((x) => x.t === 0);
+    const pos = items.filter((x) => x.t > 0).length, neg = items.filter((x) => x.t < 0).length, neu = items.length - pos - neg;
+    const enough = items.length >= 3 && P + N > 0;
+    const score = enough ? Math.round(100 * (P - N) / (P + N + U * 0.5)) : null;
+    const label = score === null ? 'Not enough news' : score >= 40 ? 'Very positive' : score >= 15 ? 'Positive' : score > -15 ? 'Mixed' : score > -40 ? 'Negative' : 'Very negative';
+    const byDate = (x, y) => Date.parse(y.at) - Date.parse(x.at);
+    return { symbol, score, label, pos, neg, neu, n: items.length, ai: items.filter((x) => x.src === 'MarketPulse').length,
+      up: items.filter((x) => x.t > 0).sort(byDate).slice(0, 2), down: items.filter((x) => x.t < 0).sort(byDate).slice(0, 2) };
+  }
+
+  window.mpStockNews = { render, sentiment };
 })();
