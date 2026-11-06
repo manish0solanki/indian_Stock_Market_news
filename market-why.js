@@ -34,7 +34,7 @@
   const list = (a) => a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 
   // Each card opens as a summary (the move and the main reasons' titles); Read more shows everything.
-  const open = { india: false, global: false };
+  const open = { india: false, us: false, europe: false, asia: false };
   let D = null, R = {}, lastLoad = 0, loading = false, timer = null;
 
   // Drivers split into those pushing with the move and those working against it.
@@ -70,12 +70,26 @@
     if (themes.length) {
       h += `<div class="mw-themes mw-x"><h4>What the news is about <small>last 24 hours</small></h4>${themes.map((t) => `<details class="mw-th"><summary><span class="mw-th-l">${esc(t.label)}</span><span class="mw-th-n">${t.n} ${t.n === 1 ? 'story' : 'stories'}</span>${num(t.avg) !== null ? `<span class="mw-th-a ${tone(num(t.avg))}">${pct(num(t.avg), 1)} avg</span>` : ''}</summary>
         ${(t.stocks || []).length ? `<div class="mw-idx">${stk(t.stocks)}</div>` : ''}
-        <ul class="mw-heads">${(t.heads || []).map((x) => `<li>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(unent(x.title))}</a>` : esc(unent(x.title))}<small>${esc(x.source || '')}${x.at ? ' · ' + ago(x.at) : ''}</small></li>`).join('')}</ul></details>`).join('')}</div>`;
+        <ul class="mw-heads">${(t.heads || []).map((x) => `<li>${num(x.t) ? `<i class="mw-dot ${x.t > 0 ? 'up' : 'down'}"></i>` : ''}${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(unent(x.title))}</a>` : esc(unent(x.title))}<small>${esc(x.source || '')}${x.at ? ' · ' + ago(x.at) : ''}</small></li>`).join('')}</ul></details>`).join('')}</div>`;
     }
     if (movers.length) h += `<div class="mw-movers mw-x"><h5>Key stocks, latest session</h5><div class="mw-idx">${stk(movers)}</div></div>`;
     return h;
   }
 
+  // News sentiment: every headline of the last day rated good / bad / neutral for that market (market-reasons).
+  function sentiBlock(rr) {
+    const se = rr && rr.sentiment; if (!se) return '';
+    const pos = num(se.pos) || 0, neg = num(se.neg) || 0, neu = num(se.neu) || 0, n = pos + neg + neu; if (!n) return '';
+    const sc = num(se.score) || 0, cls = sc >= 15 ? 'up' : sc <= -15 ? 'down' : '';
+    const w = (x) => (100 * x / n).toFixed(1) + '%';
+    const hl = (arr, c) => (arr || []).slice(0, 2).map((h) => `<li><i class="mw-dot ${c}"></i>${h.url ? `<a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(unent(h.title))}</a>` : esc(unent(h.title))}<small>${esc(h.source || '')}</small></li>`).join('');
+    return `<div class="mw-senti">
+      <div class="mw-senti-h"><span>News sentiment</span><b class="${cls}">${esc(se.label || '')}</b><em class="${cls}">${sc > 0 ? '+' : sc < 0 ? '−' : ''}${Math.abs(sc)}</em></div>
+      <div class="mw-senti-bar" role="img" aria-label="${pos} positive, ${neu} neutral, ${neg} negative headlines"><i class="up" style="width:${w(pos)}"></i><i class="neu" style="width:${w(neu)}"></i><i class="down" style="width:${w(neg)}"></i></div>
+      <small>${pos} positive · ${neu} neutral · ${neg} negative, of ${n} headlines in the last day${se.by === 'ai' ? ', rated by AI' : ', rated by keywords'}</small>
+      ${(se.up || []).length || (se.down || []).length ? `<ul class="mw-heads mw-senti-l mw-x">${hl(se.up, 'up')}${hl(se.down, 'down')}</ul>` : ''}
+    </div>`;
+  }
   const toggle = (k) => `<button type="button" class="mw-toggle" data-mw="${k}" aria-expanded="${open[k]}">${open[k] ? 'Show less ▴' : 'Read more ▾'}</button>`;
 
   /* ---------- India ---------- */
@@ -117,6 +131,7 @@
           <div class="mw-sub">Sensex ${pct(num(I.sensex))} · Bank Nifty ${pct(num(I.bank))} · Midcap 50 ${pct(num(I.midcap))}</div></div>
         <div class="mw-asof">${closed ? 'At the close' : 'Live'} · updated ${ago(D.as_of)}</div>
       </div>
+      ${sentiBlock(R.india)}
       ${reasonsBlock(R.india, 'india')}
       ${hasR ? '<h4 class="mw-sec mw-x">By the numbers</h4>' : ''}
       <p class="mw-story${hasR ? ' mw-x' : ''}">${s.map(esc).join(' ')}</p>
@@ -140,16 +155,17 @@
   /* ---------- United States, Europe, Asia ---------- */
   function global() {
     const box = $('mwGlobal'); if (!box || !D || !D.regions) return;
-    box.innerHTML = `<div class="mw-card${open.global ? '' : ' mw-c'}"><div class="mw-head"><div><div class="mw-k">Why global markets moved</div><div class="mw-sub">Each region's latest session, and the moves in yields, currencies, oil and volatility that line up with it.</div></div><div class="mw-asof">Updated ${ago(D.as_of)}</div></div>
+    box.innerHTML = `<div class="mw-card"><div class="mw-head"><div><div class="mw-k">Why global markets moved</div><div class="mw-sub">Each region's latest session, and the moves in yields, currencies, oil and volatility that line up with it.</div></div><div class="mw-asof">Updated ${ago(D.as_of)}</div></div>
       <div class="mw-regions">${D.regions.map((r) => {
         const mv = num(r.move), dir = mv === null ? 0 : mv >= 0.25 ? 1 : mv <= -0.25 ? -1 : 0;
         const { withMove, against } = split(r.drivers, dir);
         const idx = (r.indices || []).filter((x) => num(x.c) !== null);
         const why = withMove.slice(0, 3).map(phrase), despite = against.slice(0, 2).map(phrase);
         const story = dir ? `${r.name === 'Asia' ? 'Asian markets' : r.name === 'Europe' ? 'European markets' : 'US stocks'} ${dir > 0 ? 'rose' : 'fell'}${why.length ? ' alongside ' + list(why) : ''}${despite.length ? ', despite ' + list(despite) : ''}.` : `${r.name} was little changed.`;
-        return `<div class="mw-reg">
+        return `<div class="mw-reg${open[r.key] ? '' : ' mw-c'}">
           <div class="mw-reg-h"><b>${esc(r.name)}</b><span class="mw-pill ${tone(dir)}">${pct(mv)}</span></div>
           <div class="mw-idx">${idx.map((x) => `<span>${esc(x.n)} <b class="${tone(num(x.c))}">${pct(num(x.c))}</b></span>`).join('')}</div>
+          ${sentiBlock(R[r.key])}
           ${reasonsBlock(R[r.key], r.key)}
           ${R[r.key] && (R[r.key].reasons || []).length ? `<h5 class="mw-x">By the numbers</h5><p class="mw-story sm mw-x">${esc(story)}</p>` : `<p class="mw-story sm">${esc(story)}</p>`}
           <div class="mw-x">
@@ -157,9 +173,10 @@
           ${against.length ? `<h5 class="${dir < 0 ? 'up' : 'down'}">Working against</h5>${driverList(against, dir < 0 ? 'pos' : 'neg', '')}` : ''}
           ${R[r.key] && (R[r.key].themes || []).length ? '' : headlines(r.headlines, 'No market headlines for this region in the last day.')}
           </div>
+          ${toggle(r.key)}
         </div>`;
       }).join('')}</div>
-      <p class="mw-note mw-x">The main reasons are written by AI from the last day's market news and checked against the market data; news can be wrong or incomplete. Index moves are each market's latest session (some are closed now).</p>${toggle('global')}</div>`;
+      <p class="mw-note">The main reasons and the sentiment come from the last day's market news (rated by AI) and are checked against the market data; news can be wrong or incomplete. Index moves are each market's latest session (some are closed now).</p></div>`;
   }
 
   async function load() {
@@ -175,7 +192,7 @@
   document.addEventListener('click', (e) => {
     const b = e.target.closest && e.target.closest('.mw-toggle'); if (!b) return;
     const k = b.dataset.mw; open[k] = !open[k];
-    const card = b.closest('.mw-card');
+    const card = b.closest('.mw-reg') || b.closest('.mw-card');
     card.classList.toggle('mw-c', !open[k]);
     b.textContent = open[k] ? 'Show less ▴' : 'Read more ▾'; b.setAttribute('aria-expanded', open[k]);
     if (!open[k]) { const top = card.getBoundingClientRect().top; if (top < 0) window.scrollBy({ top: top - 80, behavior: 'smooth' }); }

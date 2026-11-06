@@ -7,18 +7,22 @@
 --                             headlines and numbers only (numbers it can't match to the data are dropped), or null;
 --                     movers  [{s,n,c,theme}]  bellwether stocks of the region and their latest session move;
 --                     writer  'moonshot:<model>' or 'themes' (no AI text).
+--                     sentiment {pos, neg, neu, score -100..100, label, by:'ai'|'words', up:[head], down:[head]}  the tone
+--                             of every headline (AI-rated as good / bad / neutral for that market's stocks, or a word
+--                             list when the AI isn't available).
 --   market_reasons()  public read: {region: row} for market-why.js.
 create table if not exists public.market_reasons (
-  region text primary key, themes jsonb, reasons jsonb, movers jsonb, writer text, heads_hash text,
+  region text primary key, themes jsonb, reasons jsonb, movers jsonb, sentiment jsonb, writer text, heads_hash text,
   updated_at timestamptz not null default now()
 );
+alter table public.market_reasons add column if not exists sentiment jsonb;
 alter table public.market_reasons enable row level security;
 revoke all on public.market_reasons from anon, authenticated;
 
 create or replace function public.market_reasons() returns jsonb
 language sql stable security definer set search_path = public as $$
   select coalesce(jsonb_object_agg(region, jsonb_build_object('themes', themes, 'reasons', reasons, 'movers', movers,
-           'writer', writer, 'updated_at', updated_at)), '{}'::jsonb)
+           'sentiment', sentiment, 'writer', writer, 'updated_at', updated_at)), '{}'::jsonb)
     from market_reasons where updated_at > now() - interval '2 days';
 $$;
 revoke all on function public.market_reasons() from public;

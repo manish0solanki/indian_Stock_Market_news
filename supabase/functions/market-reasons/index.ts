@@ -8,6 +8,8 @@
 // 4. If MOONSHOT_API_KEY is set, Moonshot writes 2-4 short reasons from those headlines and numbers only, citing the
 //    headlines. A reason with a number that isn't in the facts is dropped. The AI is skipped when the headlines and
 //    index moves haven't changed since the last run.
+// 5. News sentiment: every headline rated good / bad / neutral for that market's stocks (by the AI in the same call, or
+//    by a word list when the AI isn't available), summed into a -100..100 score.
 // Writes market_reasons (supabase/market-reasons.sql). POST [?force=1] [?debug=1: return, don't save].
 // Auth: x-cron-secret (app_secrets 'crypto_cron'); pg_cron 'market-reasons' hourly on weekdays.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -151,7 +153,7 @@ async function moonshot(model: string, prompt: string) {
   const r = await fetch("https://api.moonshot.ai/v1/chat/completions", {
     method: "POST", signal: AbortSignal.timeout(90000),
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + MOONSHOT },
-    body: JSON.stringify({ model, temperature: 0.6, max_tokens: 700, thinking: { type: "disabled" },
+    body: JSON.stringify({ model, temperature: 0.6, max_tokens: 900, thinking: { type: "disabled" },
       messages: [{ role: "system", content: "You are a careful markets reporter. You explain market moves using only the facts and headlines you are given, and you never invent events or numbers." }, { role: "user", content: prompt }] }),
   });
   const d = await r.json().catch(() => ({}));
@@ -161,12 +163,13 @@ async function moonshot(model: string, prompt: string) {
 
 async function writeReasons(region: string, facts: string, heads: Head[]) {
   const prompt = `${facts}\n\nUsing ONLY the facts and numbered headlines above, explain why the ${REGIONS[region].name} market moved the way it did in its latest session.
-Return JSON only, no prose around it: {"reasons":[{"title":"...","detail":"...","sources":[1,2]}]}
+Return JSON only, no prose around it: {"reasons":[{"title":"...","detail":"...","sources":[1,2]}],"tones":[1,-1,0]}
 - 2 to 4 reasons, the most important first. Name the actual events (e.g. an election result, a sell-off in AI stocks, a central bank decision, company results) when the headlines report them.
 - title: under 10 words. detail: 1-2 plain sentences that connect the news to the move, adding the stock or index moves from the facts where they back it up.
 - Use numbers only exactly as they appear in the facts. Don't add numbers from your own knowledge.
 - sources: the numbers of the headlines that support the reason (at least one).
 - Write for an investor: never mention "the facts", "supplied" or "provided" data, headline numbers or headline counts.
+- tones: one number for EVERY headline, in order (${heads.length} numbers): 1 if it is good news for this market's stocks, -1 if bad news, 0 if neutral or not about the market.
 - If the headlines don't explain the move, give one reason saying the cause isn't clear from the news, with no sources.`;
   let lastErr = "";
   for (const model of MODELS) {
@@ -178,11 +181,25 @@ Return JSON only, no prose around it: {"reasons":[{"title":"...","detail":"...",
         title: String(x.title || "").trim(), detail: String(x.detail || "").trim(),
         sources: [...new Set((x.sources || []).map(Number).filter((i: number) => i >= 1 && i <= heads.length))].slice(0, 3).map((i: any) => heads[i - 1]),
       })).filter((x: any) => x.title && numbersOk(x.title + " " + x.detail, facts));
-      if (reasons.length) return { reasons, writer: "moonshot:" + model };
+      const tones = Array.isArray(parsed.tones) && parsed.tones.length === heads.length ? parsed.tones.map((t: unknown) => Math.sign(Number(t) || 0)) : null;
+      if (reasons.length) return { reasons, tones, writer: "moonshot:" + model };
       lastErr = model + ": no usable reasons";
     } catch (e) { lastErr = String((e as Error).message || e); }
   }
-  return { reasons: null, writer: "themes", error: lastErr };
+  return { reasons: null, tones: null, writer: "themes", error: lastErr };
+}
+
+// Word-list tone, used when the AI didn't rate the headlines.
+const POS = /\b(rall(?:y|ies|ied)|surg(?:e|es|ed|ing)|soar\w*|jump\w*|gain\w*|ris(?:e|es|ing)|rose|climb\w*|record high|rebound\w*|recover\w*|advanc\w*|boost\w*|upbeat|optimis\w*|bull\w*|beat\w*|green|higher|winning streak)\b/i;
+const NEG = /\b(fall\w*|fell|drop\w*|slump\w*|plung\w*|tumbl\w*|crash\w*|sell-?off\w*|selloff|rout\w*|sink\w*|sank|slid\w*|slide\w*|loss\w*|lose|losing|fear\w*|worr\w*|bear\w*|lower|declin\w*|weak\w*|red|halt\w*|turmoil|panic|recession)\b/i;
+const wordTone = (t: string) => { const p = POS.test(t), n = NEG.test(t); return p && !n ? 1 : n && !p ? -1 : 0; };
+function sentimentOf(heads: Head[], tones: number[] | null) {
+  const t = heads.map((h, i) => (tones ? tones[i] : wordTone(h.title)));
+  const pos = t.filter((x) => x > 0).length, neg = t.filter((x) => x < 0).length, neu = t.length - pos - neg;
+  const score = pos + neg ? Math.round(100 * (pos - neg) / (pos + neg + neu * 0.5)) : 0;
+  const label = score >= 40 ? "Very positive" : score >= 15 ? "Positive" : score > -15 ? "Mixed" : score > -40 ? "Negative" : "Very negative";
+  const pick = (sgn: number) => heads.filter((_, i) => t[i] === sgn).slice(0, 3).map(({ title, source, url, at }) => ({ title, source, url, at }));
+  return { sentiment: { pos, neg, neu, score, label, by: tones ? "ai" : "words", up: pick(1), down: pick(-1) }, t };
 }
 
 async function sha(s: string) {
@@ -198,7 +215,7 @@ Deno.serve(async (req) => {
 
   const { data: W, error } = await sb.rpc("market_why");
   if (error) return json({ error: error.message }, 500);
-  const { data: prev } = await sb.from("market_reasons").select("region,heads_hash,reasons,writer,updated_at");
+  const { data: prev } = await sb.from("market_reasons").select("region,heads_hash,reasons,writer,sentiment,themes,updated_at");
   const old = new Map((prev || []).map((r) => [r.region, r]));
 
   const out: Record<string, unknown> = { has_ai_key: !!MOONSHOT };
@@ -217,17 +234,31 @@ Deno.serve(async (req) => {
     const moveKey = region === "india" ? String(W?.india?.chg) : String((W?.regions || []).find((r: any) => r.key === region)?.move?.toFixed?.(1));
     const hash = await sha(moveKey + "|" + top.slice(0, 15).map((h) => key(h.title)).sort().join("|"));
     const o = old.get(region);
-    let reasons = o?.reasons ?? null, writer = o?.writer ?? "themes", aiErr: string | undefined;
+    let reasons = o?.reasons ?? null, writer = o?.writer ?? "themes", aiErr: string | undefined, tones: number[] | null = null, ran = false;
     const stale = !o || Date.now() - Date.parse(o.updated_at) > 3 * 3600e3;
     if (MOONSHOT && top.length >= 3 && (force || debug || !o?.reasons || o.heads_hash !== hash || stale)) {
       const w = await writeReasons(region, facts, top);
+      ran = true; tones = w.tones;
       if (w.reasons) { reasons = w.reasons; writer = w.writer; } else { aiErr = w.error; if (o?.heads_hash !== hash) { reasons = null; writer = "themes"; } }
     } else if (!MOONSHOT) { reasons = null; writer = "themes"; }
-    const row = { region, themes, reasons, movers, writer, heads_hash: hash, updated_at: new Date().toISOString() };
+    // sentiment: from the AI's ratings when it ran; the last saved one when nothing changed; else the word list
+    let sentiment: any;
+    if (tones || ran || !o?.sentiment || o.heads_hash !== hash) {
+      const sres = sentimentOf(top, tones);
+      sentiment = sres.sentiment;
+      const toneBy = new Map(top.map((h, i) => [key(h.title), sres.t[i]]));
+      for (const th of themes) th.heads = th.heads.map((h: Head) => ({ ...h, t: toneBy.get(key(h.title)) ?? 0 }));
+    } else {
+      sentiment = o.sentiment;
+      const was = new Map<string, number>();
+      for (const th of o.themes || []) for (const h of th.heads || []) if (typeof h.t === "number") was.set(key(h.title), h.t);
+      for (const th of themes) th.heads = th.heads.map((h: Head) => ({ ...h, t: was.get(key(h.title)) ?? wordTone(h.title) }));
+    }
+    const row = { region, themes, reasons, movers, sentiment, writer, heads_hash: hash, updated_at: new Date().toISOString() };
     if (debug) out[region] = { ...row, heads: top.length, google: gn.map((g) => g.length), aiErr, facts };
     else {
       const { error: e } = await sb.from("market_reasons").upsert(row, { onConflict: "region" });
-      out[region] = e ? { error: e.message } : { heads: top.length, themes: themes.map((t) => `${t.k}:${t.n}`), movers: movers.length, writer, aiErr };
+      out[region] = e ? { error: e.message } : { sentiment: `${sentiment.label} ${sentiment.score} (${sentiment.by})`, heads: top.length, themes: themes.map((t) => `${t.k}:${t.n}`), movers: movers.length, writer, aiErr };
     }
   }));
   return json(out);
