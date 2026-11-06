@@ -85,3 +85,5 @@
 .mw-c .mw-reg .mw-why{margin-bottom:0}
 .mw-toggle{display:block;width:100%;margin-top:12px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font:700 13px inherit;font-family:inherit;cursor:pointer}
 .mw-toggle:hover{background:var(--surface-hover)}
+/* phones: home-overview.css lifts the index cards and the portfolio to the top (order:-2); the same order keeps this card between them */
+@media(max-width:760px){#mwIndia{order:-2}}
