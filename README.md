@@ -115,6 +115,22 @@
 - Groups: NBFCs now count as Financial Services (they were matched as banks), and new listings with no NSE industry get a group guessed from the company name (`mp_stock_group()`). Stocks with no trade in 10 days or a move outside NSE's 20% band (stale quotes) are left out of breadth and averages.
 - Data: `sector_dashboard()` (`supabase/sector-dashboard.sql`), daily index closes in `sector_index_history` from the `sector-history` function. Seven indices Yahoo has no history for (Media, Private Bank, Oil & Gas, Healthcare, Consumer Durables, Commodities, Services) show "—" for longer periods until their history builds up day by day.
 
+### 🌅 Pre-market brief (Home card, `premarket.js/.css`)
+- **Built at 7:45 and 8:50 AM IST on weekdays** by the `premarket-brief` function (`supabase/premarket-brief.sql`). A **3:35 PM snapshot** (`?action=snap`) saves the Nifty / Bank Nifty high, low, close and the GIFT Nifty price, so the next morning's GIFT move is measured from our close.
+- **What's in it:**
+  - GIFT Nifty and the Nifty open it points to (its move applied to the Nifty's close);
+  - India VIX;
+  - today's Nifty and Bank Nifty levels (floor pivots: S2, S1, pivot, R1, R2 from the last session);
+  - overnight US, Europe and Asia, with their main reasons and news sentiment (from `market-reasons`);
+  - US futures, crude, rupee, US 10-year yield and the dollar;
+  - FII / DII flows for the last session and the last 5;
+  - today's results (largest companies first) and corporate actions;
+  - this week's economic data;
+  - stocks in the news since the last close.
+- **3–4 lines on what to watch**, written by Moonshot from those facts only. Any line with a number that isn't in the facts is dropped; a plain template is used without the AI. About 2 calls a weekday.
+- **When signed in, "Your stocks in the news"** matches that news to your holdings in the browser; your holdings aren't sent anywhere.
+- The card opens in full before 9:30 AM IST on its day and shows as a summary with Read more after that. It sits above "Why is the market moving?" on phone and desktop.
+
 ### ❓ Why is the market moving? (Home card + Global Market page, `market-why.js/.css`)
 - **India (Home)**: a plain-English story of why the Nifty 50 is up or down today, written only from the numbers: which Nifty 50 stocks added or took away the most points (each stock's move × its free-float weight, i.e. market cap less promoter holding), leading / weakest sectors, whether the move was broad or narrow (advance/decline, Midcap 50), and the outside drivers split into **Pushing it up/down** and **Working against it**: overnight Wall Street, Asia, US futures, crude, the rupee, US yields, the dollar index, and FII / DII flows. Plus today's results from index stocks and matching headlines.
 - **Global (Global Market page)**: the same for the United States, Europe and Asia: each region's latest session, the cross-market moves that line up with it (yields, dollar, VIX, gold, bitcoin, euro, yen, the Wall Street lead) and market headlines.
@@ -298,6 +314,8 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `sector-refresh` | every 3 min | Sector indices and ~2,600 stock quotes (`sector_index_quotes`, `stock_quotes`) |
 | `options-signals` | every 15 min, 04:00–09:45 Mon–Fri | Options Paper Desk: opens, marks and closes paper debit spreads from the scanner's F&O signals |
 | `swing-bars-archive` | 11:15 and 16:15 Mon–Sat | Copies the signal scanner's daily bars into `stock_price_history` (`archive_swing_bars()`) for the sector trade test |
+| `premarket-brief`, `premarket-brief-2` | 02:15 and 03:20 Mon–Fri (7:45 and 8:50 AM IST) | Builds the pre-market brief (`premarket_brief`) |
+| `premarket-snap` | 10:05 Mon–Fri (3:35 PM IST) | Close snapshot for the next brief (`premarket_snap`) |
 | `market-reasons` | hourly at :07 Mon–Fri, every 4 h at weekends | The "main reasons" behind each market's move, from the news (`market_reasons`) |
 | `sector-history` | 10:50 Mon–Fri (4:20 PM IST) | Daily closes of the sector indices and the Nifty 50 for the Sectors page (`sector_index_history`), and the Nifty 50 / Nifty Bank member lists (`index_members`) |
 | `stock-signals-refresh` | every 5 min | Rebuilds swing and intraday signals (`stock_signals`) |
