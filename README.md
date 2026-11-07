@@ -115,6 +115,17 @@
 - Groups: NBFCs now count as Financial Services (they were matched as banks), and new listings with no NSE industry get a group guessed from the company name (`mp_stock_group()`). Stocks with no trade in 10 days or a move outside NSE's 20% band (stale quotes) are left out of breadth and averages.
 - Data: `sector_dashboard()` (`supabase/sector-dashboard.sql`), daily index closes in `sector_index_history` from the `sector-history` function. Seven indices Yahoo has no history for (Media, Private Bank, Oil & Gas, Healthcare, Consumer Durables, Commodities, Services) show "—" for longer periods until their history builds up day by day.
 
+### 🪔 Muhurat trading 2026 (Home card, `muhurat.js/.css`, shown 7–9 Nov 2026)
+- **Before Sunday 8 Nov's session:** the times (pre-open 2:05 PM, trading 2:20–3:30 PM, F&O to 3:40 PM IST) and a countdown.
+- **During it:** the Nifty's live move every 30 seconds. A reading only counts if it is from that day; otherwise the card says live prices aren't in yet.
+- **After it:** how the session went.
+- **Always:** how the session works (settlement, intraday square-off, thin volumes; Tuesday 10 Nov holiday); the Nifty in the last 10 Muhurat sessions and the Samvat year after each; and Samvat 2082 so far (sector indices, best and worst Nifty 50 stocks), with a link to the Diwali picks.
+- **Data:** `festival_stats('muhurat-2026')`, built by the `muhurat-stats` function (`supabase/muhurat-2026.sql`).
+  - Session history comes from Yahoo's daily Nifty. The four weekend sessions Yahoo doesn't carry (2016, 2019, 2020, 2023) use the published close, cross-checked across sources.
+  - 2026's session comes from NSE's index feed if Yahoo has no bar.
+- **Sunday-only jobs:** `muhurat-quotes` forces stock prices every 3 minutes during the session (`sector-refresh` skips weekends otherwise); `muhurat-after` rewrites the India "why" and the stats after the close.
+- **Special sessions and holidays live in `site-config.js`** (`specialSessions`, `holidays`, `MP_CONFIG.marketSession()`). The market-open checks on Home, Stock Analysis, Signals, F&O and the watchlist use them, so the session shows as open and holidays as closed. Server jobs use `market_holidays`; the pre-market brief skips those days.
+
 ### 🌅 Pre-market brief (Home card, `premarket.js/.css`)
 - **Built at 7:45 and 8:50 AM IST on weekdays** by the `premarket-brief` function (`supabase/premarket-brief.sql`). A **3:35 PM snapshot** (`?action=snap`) saves the Nifty / Bank Nifty high, low, close and the GIFT Nifty price, so the next morning's GIFT move is measured from our close.
 - **What's in it:**

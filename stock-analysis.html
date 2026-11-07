@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head>
-<script src="/site-config.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="/site-config.js?v=2"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stock Analysis | MarketPulse</title>
 <meta name="description" content="Free technical and fundamental analysis for NSE stocks: interactive chart, RSI, MACD, Bollinger Bands, ADX, support and resistance, pivots, fundamentals and related news.">
 <meta name="theme-color" content="#080e1a">
@@ -543,6 +543,7 @@ function timeAgo(d) {
  return new Date(t).toLocaleDateString('en-IN', {day:'numeric', month:'short'});
 }
 function marketOpen() {
+ { const S_ = window.MP_CONFIG && MP_CONFIG.marketSession && MP_CONFIG.marketSession(); if (S_ && S_.special) return true; if (S_ && S_.holiday) return false; }
  const ist = new Date(new Date().toLocaleString('en-US', {timeZone:'Asia/Kolkata'}));
  const day = ist.getDay(), mins = ist.getHours() * 60 + ist.getMinutes();
  return day > 0 && day < 6 && mins >= 555 && mins <= 930;

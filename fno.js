@@ -163,6 +163,7 @@
   }
 
   function marketOpen() {
+    { const S_ = window.MP_CONFIG && MP_CONFIG.marketSession && MP_CONFIG.marketSession(); if (S_ && S_.special) return true; if (S_ && S_.holiday) return false; }
     const t = new Date(Date.now() + 330 * 60e3), d = t.getUTCDay(), m = t.getUTCHours() * 60 + t.getUTCMinutes();
     return d > 0 && d < 6 && m >= 555 && m <= 935;
   }

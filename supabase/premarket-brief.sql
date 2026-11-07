@@ -23,20 +23,29 @@ $$;
 revoke all on function public.premarket_brief() from public;
 grant execute on function public.premarket_brief() to anon, authenticated;
 
+-- Weekday exchange holidays: the jobs below skip these days.
+create table if not exists public.market_holidays (d date primary key, name text);
+alter table public.market_holidays enable row level security;
+revoke all on public.market_holidays from anon, authenticated;
+insert into public.market_holidays (d, name) values ('2026-11-10', 'Diwali Balipratipada') on conflict (d) do nothing;
+
 -- 7:45 and 8:50 AM IST (02:15 / 03:20 UTC) Mon-Fri: build; 3:35 PM IST (10:05 UTC) Mon-Fri: snapshot after the close.
 select cron.unschedule(j) from (values ('premarket-brief'), ('premarket-brief-2'), ('premarket-snap')) v(j) where exists (select 1 from cron.job where jobname = j);
 select cron.schedule('premarket-brief', '15 2 * * 1-5', $c$
   select net.http_post(url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/premarket-brief',
     headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', (select value from app_secrets where name = 'crypto_cron')),
-    body := '{}'::jsonb, timeout_milliseconds := 120000);
+    body := '{}'::jsonb, timeout_milliseconds := 120000)
+  where not exists (select 1 from market_holidays where d = (now() at time zone 'Asia/Kolkata')::date);
 $c$);
 select cron.schedule('premarket-brief-2', '20 3 * * 1-5', $c$
   select net.http_post(url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/premarket-brief',
     headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', (select value from app_secrets where name = 'crypto_cron')),
-    body := '{}'::jsonb, timeout_milliseconds := 120000);
+    body := '{}'::jsonb, timeout_milliseconds := 120000)
+  where not exists (select 1 from market_holidays where d = (now() at time zone 'Asia/Kolkata')::date);
 $c$);
 select cron.schedule('premarket-snap', '5 10 * * 1-5', $c$
   select net.http_post(url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/premarket-brief?action=snap',
     headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', (select value from app_secrets where name = 'crypto_cron')),
-    body := '{}'::jsonb, timeout_milliseconds := 60000);
+    body := '{}'::jsonb, timeout_milliseconds := 60000)
+  where not exists (select 1 from market_holidays where d = (now() at time zone 'Asia/Kolkata')::date);
 $c$);

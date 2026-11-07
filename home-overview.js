@@ -33,6 +33,7 @@
     };
   }
   function marketOpen() {
+  { const S_ = window.MP_CONFIG && MP_CONFIG.marketSession && MP_CONFIG.marketSession(); if (S_ && S_.special) return true; if (S_ && S_.holiday) return false; }
     const ist = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
     const d = ist.getDay(), m = ist.getHours() * 60 + ist.getMinutes();
     return d > 0 && d < 6 && m >= 550 && m <= 940;

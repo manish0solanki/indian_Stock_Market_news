@@ -16,7 +16,7 @@
   const client = () => { try { return supabaseClient; } catch (_) { return null; } };
   const istDay = (d = 0) => new Date(Date.now() + 330 * 60e3 + d * 864e5).toISOString().slice(0, 10);
   const dayTxt = (iso) => { const n = Math.round((Date.parse(iso) - Date.parse(istDay())) / 864e5); return n === 0 ? 'today' : n === 1 ? 'tomorrow' : new Date(iso + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); };
-  const marketOpen = () => { const t = new Date(Date.now() + 330 * 60e3), d = t.getUTCDay(), m = t.getUTCHours() * 60 + t.getUTCMinutes(); return d > 0 && d < 6 && m >= 555 && m <= 935; };
+  const marketOpen = () => { const S_ = window.MP_CONFIG && MP_CONFIG.marketSession && MP_CONFIG.marketSession(); if (S_ && S_.special) return true; if (S_ && S_.holiday) return false; const t = new Date(Date.now() + 330 * 60e3), d = t.getUTCDay(), m = t.getUTCHours() * 60 + t.getUTCMinutes(); return d > 0 && d < 6 && m >= 555 && m <= 935; };
   let loading = false, lastAt = 0, data = [], sortBy = (() => { try { return localStorage.getItem('mp-watch-sort') || 'added'; } catch (_) { return 'added'; } })();
   const crore = (v) => v === null ? '—' : v >= 1e5 ? '₹' + (v / 1e5).toFixed(2) + ' L Cr' : '₹' + v.toLocaleString('en-IN') + ' Cr';
   const ret1m = (x) => { const sp = (x.spark || []).map(Number).filter((v) => v > 0); return sp.length > 1 ? (sp[sp.length - 1] / sp[0] - 1) * 100 : null; };

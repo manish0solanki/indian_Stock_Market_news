@@ -36,7 +36,9 @@ const S = {
 /* ===================== time / market ===================== */
 function ist(ms) { const t = new Date(ms + 330 * 60000); return { dow: t.getUTCDay(), min: t.getUTCHours() * 60 + t.getUTCMinutes(), date: t.toISOString().slice(0, 10) }; }
 function marketState(ms) {
-  const p = ist(ms), wk = p.dow >= 1 && p.dow <= 5;
+  const S_ = window.MP_CONFIG && MP_CONFIG.marketSession ? MP_CONFIG.marketSession(ms) : null;
+  if (S_ && S_.special) { const [h, m] = S_.special.to.split(':'), p0 = ist(ms); return { open: true, text: S_.special.name + ' · closes in ' + dur((+h * 60 + +m - p0.min) * 60) }; }
+  const p = ist(ms), wk = p.dow >= 1 && p.dow <= 5 && !(S_ && S_.holiday);
   const OPEN = 9 * 60 + 15, CLOSE = 15 * 60 + 30;
   if (wk && p.min >= OPEN && p.min < CLOSE) return { open: true, text: 'Market open · closes in ' + dur((CLOSE - p.min) * 60) };
   let mins;

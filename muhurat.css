@@ -1,0 +1,35 @@
+/* Muhurat trading card (muhurat.js), Home #muhuratCard. Builds on market-why.css and premarket.css. */
+#muhuratCard{margin:14px 0}
+#muhuratCard:empty{display:none}
+@media(max-width:760px){#muhuratCard{order:-2}}
+.mu-card{border-color:rgba(245,166,35,.45);background:linear-gradient(160deg,rgba(245,166,35,.10),var(--surface) 45%)}
+.mu-card .mw-k{color:#e0a43a}
+.mu-big{font-size:clamp(17px,5vw,22px)!important}
+.mu-big span:last-child{font-size:.62em;white-space:nowrap}
+.mu-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--negative);text-transform:uppercase;letter-spacing:.05em}
+.mu-live i{width:8px;height:8px;border-radius:50%;background:var(--negative);animation:mu-pulse 1.4s infinite}
+@keyframes mu-pulse{50%{opacity:.25}}
+.mu-times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mu-times span{border:1px solid var(--border);border-radius:9px;padding:8px 10px;background:var(--bg);font-weight:700;font-size:13px}
+.mu-times small{display:block;font-size:10.5px;color:var(--text-muted);font-weight:700}
+.mu-small{font-size:11.5px!important;color:var(--text-muted);margin-top:6px!important}
+.mu-list{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13px;line-height:1.5}
+.mu-hist{border:1px solid var(--border);border-radius:var(--radius-md,10px);overflow:hidden}
+.mu-hr{display:grid;grid-template-columns:62px 1fr 76px 96px;gap:8px;padding:7px 10px;font-size:12.5px;border-top:1px solid var(--border)}
+.mu-hr:first-child{border-top:0}
+.mu-hr span:nth-child(n+3){text-align:right;font-family:var(--font-mono,ui-monospace,monospace);font-weight:700}
+.mu-hh{background:var(--bg);font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.mu-hh span{font-family:inherit!important}
+.mu-secs{display:grid;gap:4px;margin-bottom:12px}
+.mu-sr{display:grid;grid-template-columns:minmax(90px,1fr) 2fr 60px;gap:8px;align-items:center;font-size:12px}
+.mu-sr b{text-align:right;font-family:var(--font-mono,ui-monospace,monospace)}
+.mu-bar{position:relative;height:8px;background:var(--surface-hover);border-radius:4px}
+.mu-bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+.mu-bar i.p{background:var(--positive)}.mu-bar i.n{background:var(--negative)}
+.mu-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mu-two h5{margin:0 0 6px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.mu-st{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12.5px;text-decoration:none;color:var(--text)}
+.mu-st em{font-style:normal;font-family:var(--font-mono,ui-monospace,monospace);font-weight:700}
+.mu-cta{display:block;text-align:center;padding:10px 12px;border-radius:10px;border:1px solid rgba(245,166,35,.5);color:var(--text);text-decoration:none;font-weight:700;font-size:13px}
+.mu-cta:hover{background:rgba(245,166,35,.10)}
+@media(max-width:420px){.mu-hr{grid-template-columns:50px 1fr 64px 84px;font-size:12px}.mu-two{grid-template-columns:1fr}}
