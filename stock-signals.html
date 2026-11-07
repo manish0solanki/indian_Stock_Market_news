@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#2E1F82">
 <title>Stock Signals · MarketPulse</title>
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="stylesheet" href="stock-signals.css?v=6">
+<link rel="stylesheet" href="stock-signals.css?v=7">
 <link rel="stylesheet" href="/site-header.css">
 <script src="/site-header.js"></script>
 <style>/* Shared header sits above; this bar is now the page title and scrolls normally. */.appbar{position:static!important;padding-top:10px!important}.appbar [hidden]{display:none!important}</style>
@@ -70,7 +70,7 @@
 
   <!-- ============ HISTORY ============ -->
   <section class="tab" id="tab-history" aria-label="History">
-    <div class="toolbar"><div class="seg" id="histKind"><button data-v="signals" class="on">Signal record</button><button data-v="mine">My paper trades</button></div></div>
+    <div class="toolbar"><div class="seg" id="histKind"><button data-v="signals" class="on">Signal record</button><button data-v="score">Scorecard</button><button data-v="mine">My paper trades</button></div></div>
     <div id="sigHist">
       <div class="summary" id="sigHistSummary"></div>
       <div class="toolbar">
@@ -80,6 +80,10 @@
       </div>
       <div class="note" id="sigHistNote"></div>
       <div id="sigHistList" class="list"></div>
+    </div>
+    <div id="sigScore" hidden>
+      <div class="toolbar"><div class="seg" id="scoreTf"><button data-v="all" class="on">All</button><button data-v="swing">Swing</button><button data-v="intraday">Intraday</button></div></div>
+      <div id="scoreBody"><div class="empty">Loading the scorecard…</div></div>
     </div>
     <div id="myHist" hidden>
       <div class="summary" id="histSummary"></div>
@@ -117,6 +121,6 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="stock-signals.js?v=10"></script>
+<script src="stock-signals.js?v=11"></script>
 </body>
 </html>

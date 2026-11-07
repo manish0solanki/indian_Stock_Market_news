@@ -90,6 +90,17 @@
   - A later setup in the same stock is a new signal.
   - The Signals page, Home's top signals, Analysis and the bell all read the active signals, which show their issue time, expiry and result since issue.
 - **History → Signal record** (`signal_history()`): every closed signal with its outcome (target, stop, expired), result in % and R, win rate and average R, filterable by swing or intraday and by outcome. "My paper trades" keeps your own trade history.
+- **History → Scorecard** (`signal_scorecard()`, `supabase/signal-scorecard.sql`): which conditions make the signals work better or worse.
+  - When a signal is issued, `signal_context_fill()` (pg_cron `signal-context`, every 5 minutes) records the conditions in `signal_log.ctx`. It uses only data from before the signal, so nothing uses hindsight:
+    - the stock's sector state, by the Sectors page rule on the previous day's closes;
+    - the Nifty's trend (above or below its 50-day average);
+    - the stock's AI-rated MarketPulse news over the previous 7 days;
+    - the India market news mood, recorded live from 6 Nov 2026.
+  - The signals logged before this existed were backfilled from the same data.
+  - Closed signals are grouped by Nifty trend, time of day, setup, buy vs sell, sector, stock news, market mood, scanner score, and sector and trend together. Each condition is read as with or against the signal's side, with signals, win rate and average R.
+  - "What stands out so far" lists the strongest difference for each question.
+  - A group needs 20+ signals. It is marked better or worse only when it differs from the rest by about two standard errors (an approximate t-statistic). It is called settled only after 10+ trading days, because signals on the same day tend to win or lose together; before that it shows as "Early".
+  - Filter: All, Swing, Intraday. Last 90 days.
 - **F&O filter** on the Signals tab and the Signal record: shows only stocks with NSE futures & options (`is_fno` in the feed, `stocks.is_fno` for the record; win rate and average R are recomputed for F&O stocks). F&O signals carry a badge; the choice is remembered in the browser.
 
 ### 🧭 Sector Analysis (`index.html#sectors`, `sectors-page.js/.css`)

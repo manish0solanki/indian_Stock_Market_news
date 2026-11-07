@@ -27,9 +27,9 @@ const S = {
   indices: [],
   status: null,
   tab: 'signals',
-  f: { tf: 'all', side: 'all', sort: 'score', q: '', hist: 'all', hkind: 'signals', htf: 'all', hout: 'all', fno: (() => { try { return localStorage.getItem('mp-sig-fno') === '1'; } catch (_) { return false; } })() },
+  f: { tf: 'all', side: 'all', sort: 'score', q: '', hist: 'all', hkind: 'signals', htf: 'all', hout: 'all', stf: 'all', fno: (() => { try { return localStorage.getItem('mp-sig-fno') === '1'; } catch (_) { return false; } })() },
   fno: null,
-  sigHist: null, sigHistAt: 0,
+  sigHist: null, sigHistAt: 0, score: {}, scoreAt: {},
   loaded: { feed: 0, trades: 0 },
 };
 
@@ -433,9 +433,79 @@ function renderSigHistory() {
   }).join('');
 }
 function renderHistoryTab() {
-  const sig = S.f.hkind === 'signals';
-  $('sigHist').hidden = !sig; $('myHist').hidden = sig;
-  if (sig) renderSigHistory(); else renderHistory();
+  const k = S.f.hkind;
+  $('sigHist').hidden = k !== 'signals'; $('sigScore').hidden = k !== 'score'; $('myHist').hidden = k !== 'mine';
+  if (k === 'signals') renderSigHistory(); else if (k === 'score') { renderScore(); loadScore(false).then(renderScore); } else renderHistory();
+}
+
+/* ===================== HISTORY tab: scorecard =====================
+   signal_scorecard() (supabase/signal-scorecard.sql): the closed signals grouped by the conditions when each was issued,
+   to see which ones make the signals work better or worse. A group is only called better / worse when it differs from
+   the rest by about 2 standard errors (vs_rest), and only "settled" once it spans 10+ trading days, because signals on
+   the same day move together. */
+async function loadScore(force) {
+  const tf = S.f.stf;
+  if (!force && S.score[tf] && Date.now() - (S.scoreAt[tf] || 0) < 5 * 60e3) return;
+  const { data, error } = await sb.rpc('signal_scorecard', { p_tf: tf === 'all' ? null : tf, p_days: 90 });
+  if (error) { console.warn('signal_scorecard', error); return; }
+  S.score[tf] = data; S.scoreAt[tf] = Date.now();
+}
+const SCORE_DIMS = [
+  ['trend', 'Nifty trend', 'Was the signal in the same direction as the Nifty’s trend (the Nifty above or below its 50-day average the day before)?'],
+  ['time', 'Time of day', 'When the signal was issued (IST).'],
+  ['setup', 'Setup', 'The scanner pattern that triggered it.'],
+  ['side', 'Buy vs sell', ''],
+  ['sector', 'Sector', 'Was the stock’s sector strong for a BUY, or weak for a SELL, by the Sectors page rule on the day before?'],
+  ['news', 'Stock news', 'The stock’s AI-rated MarketPulse news in the 7 days before the signal. Most stocks have none.'],
+  ['mood', 'Market news mood', 'The India market news sentiment when the signal fired.'],
+  ['score', 'Scanner score', ''],
+  ['combo', 'Sector and Nifty trend together', ''],
+];
+const SETTLED_DAYS = 10;
+function scoreVerdict(r) {
+  if (r.n < 20) return ['Too few', 'few'];
+  const t = num(r.vs_rest); if (t === null || Math.abs(t) < 2) return ['', ''];
+  const better = t > 0;
+  return r.days >= SETTLED_DAYS ? [better ? 'Better' : 'Worse', better ? 'good' : 'bad'] : [better ? 'Early: better' : 'Early: worse', better ? 'egood' : 'ebad'];
+}
+const rTxt = (v) => v === null || v === undefined ? '—' : (v >= 0 ? '+' : '−') + fmt(Math.abs(v), 2) + 'R';
+function renderScore() {
+  const host = $('scoreBody'), D = S.score[S.f.stf];
+  if (!D) { host.innerHTML = '<div class="empty">Loading the scorecard…</div>'; return; }
+  const B = D.base || {}, G = D.groups || {};
+  if (!B.n) { host.innerHTML = '<div class="empty"><b>No closed signals yet</b><br>The scorecard fills in as signals hit their target or stop, or expire.</div>'; return; }
+  const wr = (r) => r.n ? Math.round(100 * r.wins / r.n) : 0;
+  const nice = (dim, k) => dim === 'time' ? String(k).replace(/^\d · /, '') : dim === 'setup' && S.f.stf !== 'all' ? String(k).replace(/^(swing|intraday) · /, '') : k;
+  // what stands out: groups that differ from the rest, strongest first
+  const flags = [];
+  SCORE_DIMS.forEach(([dim, title]) => (G[dim] || []).forEach((r) => { const v = scoreVerdict(r); if (v[1] && v[1] !== 'few') flags.push({ dim, title, r, v }); }));
+  flags.sort((a, b) => Math.abs(num(b.r.vs_rest)) - Math.abs(num(a.r.vs_rest)));
+  const seen = new Set(), top = flags.filter((f) => { if (f.dim === 'combo' || seen.has(f.dim)) return false; seen.add(f.dim); return true; }).slice(0, 5); // the strongest one per question
+  const early = (B.days || 0) < SETTLED_DAYS;
+  let h = `<div class="summary">
+    <div class="stat big"><b>Average result</b><div class="v ${cls(B.avg_r)}">${rTxt(num(B.avg_r))}</div></div>
+    <div class="stat"><b>Signals closed</b><div class="v">${B.n}</div></div>
+    <div class="stat"><b>Win rate</b><div class="v">${wr(B)}%</div></div>
+    <div class="stat"><b>Total</b><div class="v ${cls(B.sum_r)}">${rTxt(num(B.sum_r))}</div></div>
+    <div class="stat"><b>Trading days</b><div class="v">${B.days || 0}</div></div></div>`;
+  h += `<div class="card sc-take"><h3>What stands out so far</h3>${early ? `<p class="note warn" style="margin:0 0 8px">Only ${B.days} trading day${B.days === 1 ? '' : 's'} of signals so far, in one kind of market. Everything below is an early sign, not a rule. A difference is called settled once it has held over ${SETTLED_DAYS}+ trading days.</p>` : ''}
+    ${top.length ? `<ul>${top.map((f) => `<li class="${num(f.r.vs_rest) > 0 ? 'up' : 'down'}"><b>${esc(f.title)}: ${esc(nice(f.dim, f.r.k))}</b> <span>${rTxt(num(f.r.avg_r))} per signal, ${wr(f.r)}% won (${f.r.n} signals over ${f.r.days} days), ${num(f.r.vs_rest) > 0 ? 'better' : 'worse'} than the rest${f.v[1].startsWith('e') ? ' · early' : ''}.</span></li>`).join('')}</ul>`
+      : '<p class="sub" style="margin:0">Nothing differs from the rest by more than chance yet.</p>'}</div>`;
+  const lo = -1, hi = 1.5, z = (v) => (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * 100, z0 = z(0);
+  SCORE_DIMS.forEach(([dim, title, help]) => {
+    const rows = (G[dim] || []).slice().sort((a, b) => dim === 'time' || dim === 'score' ? String(a.k).localeCompare(String(b.k)) : b.n - a.n);
+    if (!rows.length) return;
+    let extra = help;
+    if (dim === 'mood' && D.mood_since) extra += ` Recorded from ${new Date(D.mood_since).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, so older signals show as “not recorded”.`;
+    h += `<div class="card sc-dim"><h3>${esc(title)}</h3>${extra ? `<p class="sub sc-help">${esc(extra)}</p>` : ''}
+      <div class="sc-head"><span></span><span>Signals</span><span>Won</span><span>Avg result</span></div>
+      ${rows.map((r) => { const a = num(r.avg_r) || 0, v = scoreVerdict(r);
+        return `<div class="sc-row"><span class="sc-k">${esc(nice(dim, r.k))}${v[0] ? ` <em class="sc-v ${v[1]}">${v[0]}</em>` : ''}</span><span class="num">${r.n}</span><span class="num">${wr(r)}%</span>
+          <span class="sc-r"><span class="sc-bar"><i style="left:${Math.min(z0, z(a))}%;width:${Math.abs(z(a) - z0)}%" class="${a >= 0 ? 'p' : 'n'}"></i><b style="left:${z0}%"></b></span><span class="num ${cls(a)}">${rTxt(a)}</span></span></div>`; }).join('')}
+    </div>`;
+  });
+  h += `<p class="note">R is the result in units of the risk taken (entry to stop): +1R made what it risked, −1R is a full stop. Results use each signal’s own stop, target 1 or expiry, before costs. Conditions are taken from data before each signal (the previous day’s closes and earlier news), so nothing uses hindsight. A group needs 20+ signals to be judged, and is marked better or worse only when it differs from the rest by about two standard errors; it is called settled only after ${SETTLED_DAYS}+ trading days, because signals on the same day tend to win or lose together. Last 90 days.</p>`;
+  host.innerHTML = h;
 }
 
 /* ===================== HISTORY tab: my paper trades ===================== */
@@ -531,6 +601,7 @@ function setTab(tab) {
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   window.scrollTo({ top: 0 });
   if (tab === 'history' && S.f.hkind === 'signals') { renderSigHistory(); loadSigHistory(false).then(renderSigHistory); }
+  if (tab === 'history' && S.f.hkind === 'score') { renderScore(); loadScore(false).then(renderScore); }
   if (tab === 'options') openOptions();
 }
 /* Options tab: platform admin only. The button and section are created here only after mp_is_platform_admin() says
@@ -567,6 +638,7 @@ function wire() {
   document.querySelectorAll('#tabbar button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
   seg('tfSeg', 'tf', renderSignals); seg('sideSeg', 'side', renderSignals); seg('histSeg', 'hist', renderHistory);
   seg('histKind', 'hkind', () => { renderHistoryTab(); if (S.f.hkind === 'signals') loadSigHistory(false).then(renderSigHistory); });
+  seg('scoreTf', 'stf', () => { renderScore(); loadScore(false).then(renderScore); });
   seg('sigHistTf', 'htf', renderSigHistory); seg('sigHistOut', 'hout', renderSigHistory);
   document.querySelectorAll('[data-fno-toggle]').forEach((b) => b.addEventListener('click', () => {
     S.f.fno = !S.f.fno; try { localStorage.setItem('mp-sig-fno', S.f.fno ? '1' : '0'); } catch (_) {}
