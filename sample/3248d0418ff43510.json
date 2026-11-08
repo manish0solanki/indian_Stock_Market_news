@@ -1,0 +1,1 @@
+{"key":"GET fzazdrzlemmkqngvpzxj.supabase.co/rest/v1/market_events?event_date=gte.2026-11-07&kind=eq.results&limit=1&order=event_date.asc&select=event_date%2Ckind&symbol=eq.HDFCBANK","page":"/stock-analysis.html?symbol=HDFCBANK","status":200,"type":"application/json; charset=utf-8","range":"*/*","body":"[]"}
