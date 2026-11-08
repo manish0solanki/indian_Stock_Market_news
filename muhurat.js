@@ -1,6 +1,6 @@
 /* Muhurat trading 2026: Home card (#muhuratCard), shown 7-9 Nov 2026 IST.
    Before the session: the timings and a countdown. Pre-open / live: the Nifty's move, refreshed every 30 seconds
-   (index-sparklines). After it: how the session went. Always: how the session works, the Nifty in the last 10 Muhurat
+   (market_snapshot). After it: how the session went. Always: how the session works, the Nifty in the last 10 Muhurat
    sessions and the Samvat year after each, and Samvat 2082 so far (sectors, best and worst Nifty 50 stocks), from
    festival_stats('muhurat-2026') (supabase/muhurat-2026.sql, built by the muhurat-stats function). */
 (function () {
@@ -96,15 +96,16 @@
       if (r.ok) S = await r.json();
     } catch (_) { /* keep */ }
   }
+  // Live Nifty from the site's index table (market_snapshot: price and the true previous close). index-sparklines
+  // was tried first, but on the Muhurat Sunday its previous close and chart points were from earlier sessions.
   async function loadLive() {
     try {
-      const r = await fetch(window.MP_CONFIG.fn('index-sparklines'));
+      const r = await fetch(SB + '/rest/v1/rpc/market_snapshot', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: '{}' });
       if (!r.ok) return;
-      const j = await r.json(), s = j && j.series && j.series['^NSEI'];
-      // only a reading from the Muhurat day counts as live (the data source may not carry a Sunday session)
-      const pts = (s && s.points) || [], lastT = pts.length ? pts[pts.length - 1][0] : null;
-      const lastDay = lastT ? new Date((lastT > 1e12 ? lastT : lastT * 1000)).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : null;
-      live = s && num(s.price) && lastDay === DAY ? { price: num(s.price), prev: num(s.previous_close) } : null;
+      const n = (await r.json() || []).find((x) => x.symbol === '^NSEI');
+      // only a reading refreshed on the Muhurat day counts as live
+      const upd = n && n.updated_at ? new Date(n.updated_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : null;
+      live = n && num(n.price) && num(n.previous_close) && upd === DAY ? { price: num(n.price), prev: num(n.previous_close) } : null;
     } catch (_) { /* keep */ }
   }
   async function tick() {
