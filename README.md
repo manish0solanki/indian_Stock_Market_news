@@ -124,6 +124,7 @@
   - Session history comes from Yahoo's daily Nifty. The four weekend sessions Yahoo doesn't carry (2016, 2019, 2020, 2023) use the published close, cross-checked across sources.
   - 2026's session comes from NSE's index feed if Yahoo has no bar.
 - **Sunday-only jobs:** `muhurat-quotes` forces stock prices every 3 minutes during the session (`sector-refresh` skips weekends otherwise); `muhurat-after` rewrites the India "why" and the stats after the close.
+- **Special-session previous close** (`supabase/special-session-prevclose.sql`, `special-prevclose` function): on a weekend session Yahoo measures each stock's change from the close two sessions back. `session_prev_close` holds the true previous close from NSE's bhavcopy. A trigger on `stock_quotes` applies it to quotes traded that day, so portfolio day P&L, the "why" card and breadth stay right. Used for 8 Nov 2026: 3,443 closes from 6 Nov.
 - **Special sessions and holidays live in `site-config.js`** (`specialSessions`, `holidays`, `MP_CONFIG.marketSession()`). The market-open checks on Home, Stock Analysis, Signals, F&O and the watchlist use them, so the session shows as open and holidays as closed. Server jobs use `market_holidays`; the pre-market brief skips those days.
 
 ### 🌅 Pre-market brief (Home card, `premarket.js/.css`)

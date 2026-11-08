@@ -1,5 +1,6 @@
--- STATUS: written 8 Nov 2026, NOT YET APPLIED to the database (waiting for approval). Apply as a migration, then fill
--- session_prev_close from NSE's bhavcopy of the last regular session before the special session.
+-- Applied 8 Nov 2026 (migration special_session_prevclose). For a new special session: run
+--   special-prevclose?d=<session date>&prev=<last regular session>   then
+--   update stock_quotes set price = price where (quote_time at time zone 'Asia/Kolkata')::date = '<session date>';
 -- Special sessions (e.g. the Diwali Muhurat session on a Sunday): Yahoo's quotes then report the change from the close
 -- two sessions back (on 8 Nov 2026 it measured from Thursday 5 Nov, so ICICI Bank showed +4.33% for a -0.39% session).
 --   session_prev_close  (d = the special session's IST date, symbol, prev = the true previous close), filled from NSE's
