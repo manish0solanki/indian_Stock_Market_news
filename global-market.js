@@ -29,6 +29,9 @@
   };
   // Market clock tiles, in the order they open (IST).
   const CLOCK = ['sydney', 'tokyo', 'seoul', 'shanghai', 'hk', 'singapore', 'india', 'frankfurt', 'london', 'newyork'];
+  // Each exchange's main index: an open tile shows its move and turns red when it is down. India: the Nifty 50.
+  const EX_IDX = { sydney: '^AXJO|world', tokyo: '^N225|global', seoul: '^KS11|world', shanghai: '000001.SS|world', hk: '^HSI|global',
+    singapore: '^STI|world', frankfurt: '^GDAXI|global', london: '^FTSE|global', newyork: '^GSPC|world', india: '^NSEI|nifty' };
   function local(zone, at) {
     const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: zone, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(at || new Date()).map((x) => [x.type, x.value]));
     return { wd: p.weekday, hm: p.hour + ':' + p.minute };
@@ -241,11 +244,12 @@
       .sort((a, b) => (b.s.open - a.s.open) || (a.s.open ? a.i - b.i : (a.s.s?.start || 9e15) - (b.s.s?.start || 9e15)));
     // the next exchange to open gets a highlight
     const soon = list.filter((x) => !x.s.open && x.s.s).sort((a, b) => a.s.s.start - b.s.s.start)[0];
-    return list.map(({ k, s }) => `<div class="gm-ex ${s.open ? 'on' : ''} ${soon && soon.k === k ? 'soon' : ''}" title="${esc(s.name)}: weekdays ${esc(s.hours)} local time (${esc(s.istHours)}). Local time now ${esc(s.wd)} ${esc(s.time)}. Exchange holidays are not shown.">
+    const move = (k) => { const q = Q[EX_IDX[k]], m = META[EX_IDX[k]]; const c = q ? num(q.change_percent) : null; return c === null ? null : { c, n: k === 'shanghai' ? 'SSE Composite' : m ? m[0] : 'Nifty 50' }; };
+    return list.map(({ k, s }) => { const mv = s.open ? move(k) : null; return `<div class="gm-ex ${s.open ? 'on' : ''} ${mv && mv.c < 0 ? 'dn' : ''} ${soon && soon.k === k ? 'soon' : ''}" title=""${esc(s.name)}: weekdays ${esc(s.hours)} local time (${esc(s.istHours)}). Local time now ${esc(s.wd)} ${esc(s.time)}. Exchange holidays are not shown.">
       <b>${esc(s.name)}</b>
       <em>${esc(s.next)}</em>
       <span>${s.open ? 'until ' : ''}${esc(s.at.replace(/ IST$/, ''))}</span>
-      <span class="gm-ex-h">${esc(s.istHours.replace(/ IST$/, ''))}</span></div>`).join('');
+      <span class="gm-ex-h">${esc(s.istHours.replace(/ IST$/, ''))}</span>${mv ? `<span class="gm-ex-c ${tone(mv.c)}">${esc(mv.n)} ${sgn(mv.c)}%</span>` : ''}</div>`; }).join('');
   }
   function tickClock() { const el = $('gmClock'); if (el && visible()) el.innerHTML = clockHtml(); }
   function render() {
@@ -283,14 +287,16 @@
     try {
       // Headlines change slowly: fetch them every 5 minutes, not on every 30-second tick.
       const wantHeads = Date.now() - headsAt > 5 * 60e3;
-      const [gm, sp, hl] = await Promise.all([
+      const [gm, sp, ms, hl] = await Promise.all([
         fetch(SB + '/rest/v1/rpc/global_market', { method: 'POST', headers: H, body: '{}' }).then((r) => r.ok ? r.json() : null).catch(() => null),
         fetch(SB + '/functions/v1/index-sparklines', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        fetch(SB + '/rest/v1/rpc/market_snapshot', { method: 'POST', headers: H, body: '{}' }).then((r) => r.ok ? r.json() : null).catch(() => null),
         wantHeads ? fetch(SB + '/rest/v1/rpc/global_headlines_feed', { method: 'POST', headers: H, body: JSON.stringify({ p_limit: 12 }) }).then((r) => r.ok ? r.json() : null).catch(() => null) : null,
       ]);
       if (gm && Array.isArray(gm.quotes)) { Q = {}; for (const q of gm.quotes) Q[q.symbol + '|' + q.grp] = q; updatedAt = gm.updated_at;
         const au = inrMetal('GC=F|world', 10), ag = inrMetal('SI=F|world', 1000);
-        if (au) Q['GOLDINR|calc'] = au; if (ag) Q['SILVERINR|calc'] = ag; }
+        if (au) Q['GOLDINR|calc'] = au; if (ag) Q['SILVERINR|calc'] = ag;
+        const nf = Array.isArray(ms) ? ms.find((x) => x.symbol === '^NSEI') : null; if (nf) Q['^NSEI|nifty'] = nf; }
       if (sp && sp.gift_nifty) { gift = sp.gift_nifty; document.dispatchEvent(new CustomEvent('mp:gift', { detail: { gift, from: 'global' } })); }
       if (hl) { heads = Array.isArray(hl) ? hl : (hl.articles || []); headsAt = Date.now(); }
       if (gm) lastLoad = Date.now();

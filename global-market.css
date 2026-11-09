@@ -79,3 +79,9 @@
   .gm-pill { font-size: 11px; padding: 2px 5px; }
   .gm-spark, .gm-spark-empty { width: 46px; }
 }
+/* open exchange whose main index is down: red instead of green */
+.gm-ex.on.dn { border-color: var(--negative-light, rgba(255, 93, 108, .45)); background: var(--negative-bg); }
+.gm-ex.on.dn b::before { background: var(--negative); }
+.gm-ex.on.dn em { color: var(--negative); }
+.gm-ex .gm-ex-c { font-weight: 700; color: var(--text-secondary); }
+.gm-ex .gm-ex-c.up { color: var(--positive); } .gm-ex .gm-ex-c.down { color: var(--negative); }
