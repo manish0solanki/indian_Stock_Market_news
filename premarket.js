@@ -1,7 +1,7 @@
 /* Pre-market brief: Home card (#pmBrief). Data: premarket_brief() (supabase/premarket-brief.sql), built by the
    premarket-brief Edge Function at 7:45 and 8:50 AM IST on weekdays.
-   Opens in full before 9:30 AM IST on the brief's own day; otherwise it shows as a summary (the open GIFT Nifty
-   points to and the lines on what to watch) with Read more. When signed in, stocks you hold that are in the news
+   Shown only on the brief's own day until the market opens at 9:15 AM IST; once live trading starts the live cards
+   take over and it hides (the next brief comes at 7:45 AM on the next weekday). Opens in full, with Read less. When signed in, stocks you hold that are in the news
    since the last close are listed in the summary too (matched in the browser; your holdings are not sent anywhere). */
 (function () {
   'use strict';
@@ -28,20 +28,22 @@
   function render() {
     const box = $('pmBrief'); if (!box) return;
     if (!B || !B.date) { box.innerHTML = ''; return; }
-    const today = istDay(), isToday = B.date === today, early = isToday && istMin() < 9 * 60 + 30;
-    if (open === null) open = early; // full before 9:30 AM on the day, a summary after
-    const G = B.gift, Nf = B.nifty, wk = new Date().getUTCDay(), weekend = wk === 0 || wk === 6;
+    const today = istDay(), isToday = B.date === today;
+    // only before the open on its own day: after 9:15 AM, or on any later day, it has done its job
+    if (!isToday || istMin() >= 9 * 60 + 15) { box.innerHTML = ''; return; }
+    if (open === null) open = true;
+    const G = B.gift, Nf = B.nifty;
     const gdir = G && G.pct !== null ? (Math.abs(G.pct) < 0.15 ? 'a flat' : G.pct > 0 ? 'a higher' : 'a lower') : null;
     const mine = held && held.size ? (B.news || []).filter((x) => held.has(x.symbol)) : [];
     const mineSyms = [...new Set(mine.map((x) => x.symbol))];
 
     let h = `<div class="mw-card pm-card${open ? '' : ' mw-c'}">
       <div class="mw-head"><div>
-        <div class="mw-k">${isToday ? 'Pre-market brief' : 'Last pre-market brief'} · ${esc(dayName(B.date))}</div>
+        <div class="mw-k">Pre-market brief · ${esc(dayName(B.date))}</div>
         ${G ? `<div class="mw-big ${tone(G.pct)}">GIFT Nifty ${n0(G.price)} <span>${sgn(G.pts)} pts (${pct(G.pct)})</span></div>
           <div class="mw-sub">${esc(G.basis)}${gdir ? ` · points to ${gdir} open${G.implied_open ? ' near ' + n0(G.implied_open) : ''}` : ''}${B.vix ? ` · India VIX ${B.vix.price}${num(B.vix.chg) !== null ? ` (${pct(num(B.vix.chg), 1)})` : ''}` : ''}</div>`
           : `<div class="mw-big">Before the open</div>`}
-      </div><div class="mw-asof">Built ${esc(timeOf(B.built_at))} IST · ${esc(ago(B.built_at))}${!isToday ? `<br>${weekend ? 'Next brief Monday 7:45 AM' : 'Next brief 7:45 AM'}` : ''}</div></div>`;
+      </div><div class="mw-asof">Built ${esc(timeOf(B.built_at))} IST · ${esc(ago(B.built_at))}</div></div>`;
     if ((B.lines || []).length) h += `<ul class="pm-lines">${B.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`;
     if (mineSyms.length) h += `<div class="pm-mine"><b>Your stocks in the news:</b> ${mineSyms.map((s) => { const t = mine.filter((x) => x.symbol === s).reduce((a, x) => a + x.t, 0); return `<a class="mw-chip ${tone(t)}" href="/stock-analysis.html?symbol=${encodeURIComponent(s)}">${esc(s)}</a>`; }).join(' ')}</div>`;
 
@@ -99,7 +101,11 @@
     if (!open) { const top = card.getBoundingClientRect().top; if (top < 0) window.scrollBy({ top: top - 80, behavior: 'smooth' }); }
   });
   // refresh every 5 minutes while open (picks up the 8:50 AM rebuild); a new day starts collapsed or open again by the clock
-  setInterval(() => { if (!document.hidden && Date.now() - at > 5 * 60e3) { const d = B && B.date; load().then(() => { if (B && B.date !== d) { open = null; render(); } }); } }, 60e3);
+  setInterval(() => {
+    if (document.hidden) return;
+    render(); // hides itself at 9:15 AM
+    if (Date.now() - at > 5 * 60e3) { const d = B && B.date; load().then(() => { if (B && B.date !== d) { open = null; render(); } }); }
+  }, 60e3);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
   window.mpPremarket = { refresh: load };
 })();

@@ -141,7 +141,7 @@
   - stocks in the news since the last close.
 - **3–4 lines on what to watch**, written by Moonshot from those facts only. Any line with a number that isn't in the facts is dropped; a plain template is used without the AI. About 2 calls a weekday.
 - **When signed in, "Your stocks in the news"** matches that news to your holdings in the browser; your holdings aren't sent anywhere.
-- The card opens in full before 9:30 AM IST on its day and shows as a summary with Read more after that. It sits above "Why is the market moving?" on phone and desktop.
+- The card shows only on its own day from the 7:45 AM build until the 9:15 AM open, when live trading takes over and it hides. It sits above "Why is the market moving?" on phone and desktop.
 
 ### ❓ Why is the market moving? (Home card + Global Market page, `market-why.js/.css`)
 - **India (Home)**: a plain-English story of why the Nifty 50 is up or down today, written only from the numbers: which Nifty 50 stocks added or took away the most points (each stock's move × its free-float weight, i.e. market cap less promoter holding), leading / weakest sectors, whether the move was broad or narrow (advance/decline, Midcap 50), and the outside drivers split into **Pushing it up/down** and **Working against it**: overnight Wall Street, Asia, US futures, crude, the rupee, US yields, the dollar index, and FII / DII flows. Plus today's results from index stocks and matching headlines.
