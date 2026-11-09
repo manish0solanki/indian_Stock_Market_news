@@ -39,7 +39,7 @@
       <div class="mw-head"><div>
         <div class="mw-k">${isToday ? 'Pre-market brief' : 'Last pre-market brief'} · ${esc(dayName(B.date))}</div>
         ${G ? `<div class="mw-big ${tone(G.pct)}">GIFT Nifty ${n0(G.price)} <span>${sgn(G.pts)} pts (${pct(G.pct)})</span></div>
-          <div class="mw-sub">${esc(G.basis)}${gdir ? ` · points to ${gdir} open${G.implied_open ? ' near ' + n0(G.implied_open) : ''}` : ''}${B.vix ? ` · India VIX ${B.vix.price} (${pct(num(B.vix.chg), 1)})` : ''}</div>`
+          <div class="mw-sub">${esc(G.basis)}${gdir ? ` · points to ${gdir} open${G.implied_open ? ' near ' + n0(G.implied_open) : ''}` : ''}${B.vix ? ` · India VIX ${B.vix.price}${num(B.vix.chg) !== null ? ` (${pct(num(B.vix.chg), 1)})` : ''}` : ''}</div>`
           : `<div class="mw-big">Before the open</div>`}
       </div><div class="mw-asof">Built ${esc(timeOf(B.built_at))} IST · ${esc(ago(B.built_at))}${!isToday ? `<br>${weekend ? 'Next brief Monday 7:45 AM' : 'Next brief 7:45 AM'}` : ''}</div></div>`;
     if ((B.lines || []).length) h += `<ul class="pm-lines">${B.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`;
@@ -47,9 +47,9 @@
 
     // ---------- full brief ----------
     let x = '';
-    const lv = (name, L) => L ? `<div class="pm-lv"><div class="pm-lv-h"><b>${name}</b><span>Last close ${n0(L.close)}${num(L.chg) !== null ? ` <em class="${tone(L.chg)}">${pct(L.chg)}</em>` : ''} · range ${n0(L.low)}–${n0(L.high)}</span></div>
+    const lv = (name, L) => L ? `<div class="pm-lv"><div class="pm-lv-h"><b>${name}</b><span>Last close ${n0(L.close)}${num(L.chg) !== null ? ` <em class="${tone(L.chg)}">${pct(L.chg)}</em>` : ''} · ${L.pivots_from === 'the last full session' ? 'levels from the last full session' : 'range'} ${n0(L.low)}–${n0(L.high)}</span></div>
       <div class="pm-lv-row"><span class="down"><small>S2</small>${n0(L.S2)}</span><span class="down"><small>S1</small>${n0(L.S1)}</span><span><small>Pivot</small>${n0(L.P)}</span><span class="up"><small>R1</small>${n0(L.R1)}</span><span class="up"><small>R2</small>${n0(L.R2)}</span></div></div>` : '';
-    if (Nf || B.bank) x += `<div class="pm-sec"><h4>Levels for today <small>pivots from the last session</small></h4>${lv('Nifty 50', Nf)}${lv('Bank Nifty', B.bank)}</div>`;
+    if (Nf || B.bank) x += `<div class="pm-sec"><h4>Levels for today <small>pivots from ${esc((Nf && Nf.pivots_from) || 'the last session')}</small></h4>${lv('Nifty 50', Nf)}${lv('Bank Nifty', B.bank)}</div>`;
     if ((B.regions || []).length) x += `<div class="pm-sec"><h4>Overnight</h4>${B.regions.map((r) => `<div class="pm-reg"><div class="pm-reg-h"><b>${esc(r.name)}</b><span class="mw-pill ${tone(r.move)}">${pct(num(r.move))}</span>${r.sentiment ? `<span class="pm-sent ${tone(r.sentiment.score >= 15 ? 1 : r.sentiment.score <= -15 ? -1 : 0)}">News: ${esc(r.sentiment.label)}</span>` : ''}</div>
         ${(r.reasons || []).length ? `<div class="pm-why">${r.reasons.slice(0, 2).map(esc).join(' · ')}</div>` : ''}</div>`).join('')}
       <a class="pm-more" href="/#global">Why global markets moved →</a></div>`;

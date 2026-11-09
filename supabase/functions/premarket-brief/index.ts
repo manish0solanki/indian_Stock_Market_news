@@ -41,9 +41,9 @@ const pivots = (h: number, l: number, c: number) => {
 /* ---------- 3:35 PM snapshot ---------- */
 async function snap() {
   const S = await sparks();
-  const n = ser(S, "^NSEI"), b = ser(S, "^NSEBANK"), g = S?.gift_nifty;
+  const n = ser(S, "^NSEI"), b = ser(S, "^NSEBANK"), v = ser(S, "^INDIAVIX"), g = S?.gift_nifty;
   if (!n?.price) return { error: "no Nifty data" };
-  const data = { nifty: { c: n.price, h: n.high, l: n.low, prev: n.prev }, bank: b?.price ? { c: b.price, h: b.high, l: b.low, prev: b.prev } : null,
+  const data = { vix: v?.price ? { c: v.price } : null, nifty: { c: n.price, h: n.high, l: n.low, prev: n.prev }, bank: b?.price ? { c: b.price, h: b.high, l: b.low, prev: b.prev } : null,
     // GIFT only while it is trading (3:35 PM on a weekday); a weekend run must not store Friday night's close as "our close"
     gift: g?.price && g.live ? { price: num(g.price), as_of: g.as_of } : null, at: new Date().toISOString() };
   const { error } = await sb.from("premarket_snap").upsert({ d: istDate(), data }, { onConflict: "d" });
@@ -53,7 +53,7 @@ async function snap() {
 /* ---------- the brief ---------- */
 async function build() {
   const today = istDate();
-  const [S, why, rsn, snapRow, fii, ev, econ, news] = await Promise.all([
+  const [S, why, rsn, snapRow, fii, ev, econ, news, mkt] = await Promise.all([
     sparks(),
     sb.rpc("market_why").then((r) => r.data),
     sb.rpc("market_reasons").then((r) => r.data || {}),
@@ -64,15 +64,23 @@ async function build() {
       .gte("event_date", today).lte("event_date", istDate(new Date(Date.now() + 5 * 864e5))).order("event_date").order("time_ist").then((r) => r.data || []),
     sb.from("news").select("symbol,company_name,title,short_term_impact,source_link,published_at,created_at").eq("is_visible", true).not("symbol", "is", null)
       .gte("published_at", new Date(Date.now() - 20 * 3600e3).toISOString()).order("published_at", { ascending: false }).limit(120).then((r) => r.data || []),
+    sb.rpc("market_snapshot").then((r) => r.data || []),
   ]);
 
   // GIFT Nifty and the open it points to
   const n = ser(S, "^NSEI"), b = ser(S, "^NSEBANK"), vixS = ser(S, "^INDIAVIX"), g = S?.gift_nifty || null;
   const sn = snapRow?.data || null;
-  const niftyClose = num(sn?.nifty?.c) ?? n?.price ?? null;
+  // The site's index table has the true last close and change, also after a special session (e.g. a Muhurat Sunday)
+  // that the 3:35 PM weekday snapshot didn't see. When its close differs from the snapshot's, a session happened after
+  // the snapshot: then the GIFT move is measured from its own last session, VIX's change is left out (Yahoo's previous
+  // close can be wrong then), and the pivots stay on the last full session.
+  const mk = (sym: string) => (mkt as any[]).find((x) => x.symbol === sym);
+  const mN = mk("^NSEI"), mB = mk("^NSEBANK");
+  const stale = !!(sn?.nifty?.c && num(mN?.price) && Math.abs(num(mN.price)! - num(sn.nifty.c)!) > 0.01);
+  const niftyClose = num(mN?.price) ?? num(sn?.nifty?.c) ?? n?.price ?? null;
   let gift: any = null;
   if (g?.price) {
-    const base = num(sn?.gift?.price);
+    const base = stale ? null : num(sn?.gift?.price);
     const pts = base ? num(g.price)! - base : num(g.change);
     const pct = base ? (num(g.price)! / base - 1) * 100 : num(g.change_percent);
     gift = { price: num(g.price), pts: r2(pts), pct: r2(pct), live: !!g.live, as_of: g.as_of, basis: base ? "since our close" : "since its last session",
@@ -82,8 +90,10 @@ async function build() {
     const h = num(x?.h) ?? fallback?.high, l = num(x?.l) ?? fallback?.low, c = num(x?.c) ?? fallback?.price, prev = num(x?.prev) ?? fallback?.prev;
     return h && l && c ? { close: c, high: h, low: l, chg: prev ? r2((c / prev - 1) * 100) : null, ...pivots(h, l, c) } : null;
   };
-  const nifty = lvl(sn?.nifty, n), bank = lvl(sn?.bank, b);
-  const vix = vixS?.price ? { price: r2(vixS.price), chg: vixS.prev ? r2((vixS.price / vixS.prev - 1) * 100) : null } : null;
+  const withLast = (L: any, m: any) => L && m && num(m.price) ? { ...L, close: num(m.price), chg: r2(num(m.change_percent)), pivots_from: stale ? "the last full session" : "the last session" } : L;
+  const nifty = withLast(lvl(sn?.nifty, n), mN), bank = withLast(lvl(sn?.bank, b), mB);
+  const vixBase = stale ? null : num(sn?.vix?.c) ?? vixS?.prev ?? null;
+  const vix = vixS?.price ? { price: r2(vixS.price), chg: vixBase ? r2((vixS.price / vixBase - 1) * 100) : null } : null;
 
   // overnight world
   const regions = (why?.regions || []).map((r: any) => {
@@ -136,9 +146,9 @@ async function build() {
 function factsOf(p: any) {
   const L: string[] = [`Date: ${p.date} (IST). Indian market opens at 9:15 AM.`];
   if (p.gift) L.push(`GIFT Nifty: ${p.gift.price} (${sg(p.gift.pts, 0, " points")}, ${sg(p.gift.pct)} ${p.gift.basis}). It points to a Nifty open near ${p.gift.implied_open ?? "n/a"}.`);
-  if (p.nifty) L.push(`Nifty 50 last close: ${p.nifty.close} (${sg(p.nifty.chg)}), day high ${p.nifty.high}, low ${p.nifty.low}. Pivot ${p.nifty.P}, resistance R1 ${p.nifty.R1}, R2 ${p.nifty.R2}, support S1 ${p.nifty.S1}, S2 ${p.nifty.S2}.`);
+  if (p.nifty) L.push(`Nifty 50 last close: ${p.nifty.close} (${sg(p.nifty.chg)}). Levels (floor pivots from ${p.nifty.pivots_from || "the last session"}, high ${p.nifty.high}, low ${p.nifty.low}): pivot ${p.nifty.P}, resistance R1 ${p.nifty.R1}, R2 ${p.nifty.R2}, support S1 ${p.nifty.S1}, S2 ${p.nifty.S2}.`);
   if (p.bank) L.push(`Bank Nifty last close: ${p.bank.close} (${sg(p.bank.chg)}). Pivot ${p.bank.P}, R1 ${p.bank.R1}, S1 ${p.bank.S1}.`);
-  if (p.vix) L.push(`India VIX: ${p.vix.price} (${sg(p.vix.chg)}).`);
+  if (p.vix) L.push(p.vix.chg === null ? `India VIX: ${p.vix.price}.` : `India VIX: ${p.vix.price} (${sg(p.vix.chg)}).`);
   for (const r of p.regions) L.push(`${r.name}: latest session ${sg(r.move)} (${r.indices.map((x: any) => `${x.n} ${sg(x.c)}`).join(", ")})${r.sentiment ? `; news sentiment ${r.sentiment.label} (${r.sentiment.score})` : ""}${r.reasons.length ? `; main reasons: ${r.reasons.join("; ")}` : ""}.`);
   if (p.drivers.length) L.push("Other markets: " + p.drivers.map((d: any) => `${d.label} ${d.value}`).join("; ") + ".");
   if (p.india_mood) L.push(`India market news sentiment: ${p.india_mood.label} (${p.india_mood.score}).`);
