@@ -6,6 +6,8 @@
 // 3. After results: the quarter's numbers from NSE's integrated-filing XBRL (vs the previous quarter
 //    and the same quarter last year), the share-price reaction from Yahoo daily bars, and a
 //    positive / negative / mixed verdict with the reasons. A few events per run; retried until done.
+// 4. Before results (?only=previews, its own hourly run): what to expect: past results-day moves, the
+//    last quarter's trend, the year-ago base, sector peers this season, the run-up, and a rule-based lean.
 // Auth: x-cron-secret header must match app_secrets 'crypto_cron'.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -366,6 +368,170 @@ async function syncOutcomes(summary: any, started: number) {
   summary.outcomesQueued = todo.length;
 }
 
+/* ───────── 4. Before results: what to expect (preview) ───────── */
+// For upcoming results (next 14 days): how the shares reacted to past results (NSE filing times + Yahoo
+// daily bars), the last reported quarter's trend, the year-ago figure the new quarter is measured against,
+// sector peers that already reported this season, and the run-up into the date versus the Nifty.
+// No analyst estimates: everything comes from the company's own filings and prices.
+const PREVIEWS_PER_RUN = 18;
+const quarterEndOnOrBefore = (dIso: string) => {
+  const d = new Date(dIso + "T00:00:00Z");
+  const m = d.getUTCMonth(), y = d.getUTCFullYear();
+  // Quarter ends: Mar 31, Jun 30, Sep 30, Dec 31. The quarter being reported is the last one that ended before the meeting.
+  const qm = m - (m % 3) - 1; // month index of the previous quarter's last month
+  return iso(new Date(Date.UTC(y, qm + 1, 0)));
+};
+async function longBars(symbol: string) {
+  const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=2y&interval=1d`, { headers: { "User-Agent": UA } });
+  if (!r.ok) return [];
+  const res = (await r.json())?.chart?.result?.[0];
+  const q = res?.indicators?.quote?.[0] || {};
+  return (res?.timestamp || []).map((t: number, i: number) => ({ date: iso(new Date(t * 1000 + 330 * 60e3)), o: q.open?.[i], h: q.high?.[i], l: q.low?.[i], c: q.close?.[i], v: q.volume?.[i] }))
+    .filter((b: any) => b.c > 0 && b.o > 0);
+}
+const chgOver = (bars: any[], n: number) => bars.length > n ? r2((bars[bars.length - 1].c / bars[bars.length - 1 - n].c - 1) * 100) : null;
+
+async function previewFor(ev: any, ctx: { nifty: any[]; sectorOf: Map<string, string>; season: any[] }) {
+  const list = (await nse(`/api/integrated-filing-results?index=equities&type=Integrated%20Filing-%20Financials&symbol=${encodeURIComponent(ev.symbol)}`))?.data || [];
+  const filings = list.map((f: any) => ({ ...f, bc: parseNseDate(f.broadcast_Date), qe: parseNseDate(f.qe_Date) })).filter((f: any) => f.bc && f.qe);
+  const upQe = quarterEndOnOrBefore(ev.event_date);
+  if (filings.some((f: any) => f.qe.date === upQe && f.bc.date >= iso(new Date(Date.parse(ev.event_date) - 3 * DAY)))) return { status: "filed", upQe };
+  // One entry per quarter: the first time its numbers reached NSE.
+  const byQ = new Map<string, any>();
+  for (const f of filings) { const p = byQ.get(f.qe.date); if (!p || f.bc.ms < p.bc.ms) byQ.set(f.qe.date, f); }
+  const quarters = [...byQ.values()].filter((f: any) => f.qe.date < upQe).sort((a: any, b: any) => b.qe.date.localeCompare(a.qe.date));
+  const bars = await longBars(ev.symbol + ".NS").catch(() => []);
+  const history: any[] = [];
+  for (const f of quarters.slice(0, 8)) {
+    const r = bars.length ? reaction(bars, f.bc.ms) : null;
+    if (r) history.push({ quarterEnd: f.qe.date, filedAt: f.broadcast_Date, day: r.day, pct: r.pct, gapPct: r.gapPct, volRatio: r.volRatio });
+  }
+  const abs = history.map((h) => Math.abs(h.pct)).sort((a, b) => a - b);
+  const ups = history.filter((h) => h.pct > 0), downs = history.filter((h) => h.pct < 0);
+  const avg = (a: number[]) => a.length ? r2(a.reduce((s, x) => s + x, 0) / a.length) : null;
+  const stats = history.length ? {
+    n: history.length, avgAbs: avg(abs), medianAbs: r2(abs[Math.floor(abs.length / 2)]), maxAbs: r2(abs[abs.length - 1]),
+    up: ups.length, down: downs.length, avgUp: avg(ups.map((h) => h.pct)), avgDown: avg(downs.map((h) => h.pct)),
+    avgGapAbs: avg(history.map((h) => Math.abs(h.gapPct))),
+  } : null;
+  // Normal day, for comparison: average absolute daily move over the 60 sessions before the latest bar.
+  const recent = bars.slice(-61);
+  const dayAbs = recent.length > 20 ? avg(recent.slice(1).map((b: any, i: number) => Math.abs(b.c / recent[i].c - 1) * 100)) : null;
+
+  // Last reported quarter vs a year earlier, and the year-ago base for the quarter now due.
+  const consol = (qe: string) => filings.find((f: any) => f.qe.date === qe && f.consolidated === "Consolidated" && f.xbrl && f.xbrl !== "null")
+    || filings.find((f: any) => f.qe.date === qe && f.xbrl && f.xbrl !== "null");
+  const lastF = quarters.length ? consol(quarters[0].qe.date) : null;
+  let last: any = null, base: any = null;
+  if (lastF) {
+    const lyQe = quarterEndBefore(lastF.qe.date, 12), baseQe = quarterEndBefore(upQe, 12);
+    const lyF = filings.find((f: any) => f.qe.date === lyQe && f.consolidated === lastF.consolidated && f.xbrl && f.xbrl !== "null") || consol(lyQe);
+    const baseF = filings.find((f: any) => f.qe.date === baseQe && f.consolidated === lastF.consolidated && f.xbrl && f.xbrl !== "null") || consol(baseQe);
+    const [cur, ly, bs] = await Promise.all([
+      figures(lastF.xbrl, lastF.qe.date).catch(() => null),
+      lyF ? figures(lyF.xbrl, lyQe).catch(() => null) : Promise.resolve(null),
+      baseF ? figures(baseF.xbrl, baseQe).catch(() => null) : Promise.resolve(null),
+    ]);
+    if (cur) {
+      const margin = (f: Fig | null) => f && f.profit !== null && f.revenue ? f.profit / f.revenue * 100 : null;
+      last = {
+        quarterEnd: lastF.qe.date, consolidated: lastF.consolidated, revLabel: cur.revLabel,
+        revenue: r2(cur.revenue), profit: r2(cur.profit),
+        revYoY: r2(pct(cur.revenue, ly?.revenue ?? null)), profitYoY: r2(pct(cur.profit, ly?.profit ?? null)),
+        marginNow: r2(margin(cur)), marginYearAgo: r2(margin(ly)),
+        reaction: history.find((h) => h.quarterEnd === lastF.qe.date)?.pct ?? null,
+      };
+    }
+    if (bs) base = { quarterEnd: baseQe, consolidated: baseF.consolidated, revLabel: bs.revLabel, revenue: r2(bs.revenue), profit: r2(bs.profit), eps: r2(bs.eps) };
+  }
+
+  // Sector peers that reported this season.
+  const sector = ctx.sectorOf.get(ev.symbol) || null;
+  let peers: any = null;
+  if (sector) {
+    const ps = ctx.season.filter((p) => p.symbol !== ev.symbol && ctx.sectorOf.get(p.symbol) === sector);
+    if (ps.length) {
+      peers = {
+        sector, n: ps.length,
+        positive: ps.filter((p) => p.label === "positive").length, negative: ps.filter((p) => p.label === "negative").length,
+        mixed: ps.filter((p) => p.label === "mixed").length,
+        avgReaction: avg(ps.map((p) => p.pct).filter((x: any) => x !== null)),
+        list: ps.slice(0, 8).map((p) => ({ symbol: p.symbol, label: p.label, pct: p.pct, date: p.date })),
+      };
+    }
+  }
+
+  // Run-up into the date, versus the Nifty.
+  const s20 = chgOver(bars, 20), s60 = chgOver(bars, 60), n20 = chgOver(ctx.nifty, 20), n60 = chgOver(ctx.nifty, 60);
+  const runup = { d20: s20, d60: s60, nifty20: n20, nifty60: n60, rel20: s20 !== null && n20 !== null ? r2(s20 - n20) : null, lastClose: bars.length ? r2(bars[bars.length - 1].c) : null, lastDate: bars.length ? bars[bars.length - 1].date : null };
+
+  // Lean (rule-based, no news; the page adds the news read): each factor is +/- with its reason.
+  const factors: any[] = [];
+  if (last?.profitYoY !== null && last?.profitYoY !== undefined) {
+    const g = last.profitYoY;
+    if (g >= 15) factors.push({ w: 1, t: `Last quarter's profit grew ${g.toFixed(0)}% on the year: the trend going in is strong` });
+    else if (g <= -15) factors.push({ w: -1, t: `Last quarter's profit fell ${Math.abs(g).toFixed(0)}% on the year: the trend going in is weak` });
+    else factors.push({ w: 0, t: `Last quarter's profit changed ${g >= 0 ? "+" : "−"}${Math.abs(g).toFixed(1)}% on the year: no strong trend` });
+  }
+  if (last?.revYoY !== null && last?.revYoY !== undefined) {
+    if (last.revYoY >= 12) factors.push({ w: 0.5, t: `${last.revLabel} grew ${last.revYoY.toFixed(0)}% on the year last quarter` });
+    else if (last.revYoY < 0) factors.push({ w: -0.5, t: `${last.revLabel} shrank ${Math.abs(last.revYoY).toFixed(1)}% on the year last quarter` });
+  }
+  if (peers && peers.n >= 2) {
+    const net = (peers.positive - peers.negative) / peers.n;
+    if (net >= 0.3) factors.push({ w: 1, t: `${peers.positive} of ${peers.n} ${sector} peers that reported this season read positive` });
+    else if (net <= -0.3) factors.push({ w: -1, t: `${peers.negative} of ${peers.n} ${sector} peers that reported this season read negative` });
+    else factors.push({ w: 0, t: `${sector} peers so far are mixed (${peers.positive} positive, ${peers.negative} negative of ${peers.n})` });
+  }
+  if (stats && stats.n >= 4) {
+    if (stats.up / stats.n >= 0.75) factors.push({ w: 0.5, t: `The shares rose after ${stats.up} of the last ${stats.n} results` });
+    else if (stats.down / stats.n >= 0.75) factors.push({ w: -0.5, t: `The shares fell after ${stats.down} of the last ${stats.n} results` });
+  }
+  if (runup.rel20 !== null) {
+    if (runup.rel20 >= 8) factors.push({ w: -0.5, t: `Up ${runup.d20!.toFixed(1)}% in 20 sessions (${runup.rel20.toFixed(1)} points ahead of the Nifty): good news may already be in the price` });
+    else if (runup.rel20 <= -8) factors.push({ w: 0.5, t: `Down ${Math.abs(runup.d20!).toFixed(1)}% in 20 sessions (${Math.abs(runup.rel20).toFixed(1)} points behind the Nifty): expectations are low, so a decent quarter can lift it` });
+  }
+  return {
+    status: "ready", upQe, history, stats, dayAbs, last, base, peers, runup, factors,
+    builtAt: new Date().toISOString(),
+  };
+}
+
+async function syncPreviews(summary: any, started: number, onlySymbol: string | null) {
+  const today = istToday(), until = iso(new Date(Date.now() + 14 * DAY));
+  const { data: held } = await supabase.from("portfolio_transactions").select("symbol").limit(5000);
+  const heldSet = new Set((held || []).map((h: any) => String(h.symbol || "").toUpperCase()));
+  let qy = supabase.from("market_events").select("id,symbol,event_date,tracked,preview,preview_at")
+    .eq("kind", "results").gte("event_date", today).lte("event_date", until).order("event_date").limit(2000);
+  if (onlySymbol) qy = qy.eq("symbol", onlySymbol);
+  const { data: up } = await qy;
+  const stale = Date.now() - 20 * 3600e3;
+  const todo = (up || []).filter((e: any) => onlySymbol || !e.preview_at || Date.parse(e.preview_at) < stale || (e.event_date === today && e.preview?.status === "ready" && Date.parse(e.preview_at) < Date.now() - 4 * 3600e3))
+    // Tracked and held first, never-built before refreshes, nearest dates first.
+    .sort((a: any, b: any) => ((b.tracked || heldSet.has(b.symbol)) ? 1 : 0) - ((a.tracked || heldSet.has(a.symbol)) ? 1 : 0) || (a.preview_at ? 1 : 0) - (b.preview_at ? 1 : 0) || a.event_date.localeCompare(b.event_date))
+    .slice(0, PREVIEWS_PER_RUN);
+  summary.previewsQueued = todo.length;
+  if (!todo.length) return;
+  const [nifty, sectors, season] = await Promise.all([
+    longBars("^NSEI").catch(() => []),
+    supabase.from("stocks").select("symbol,sector").not("sector", "is", null).limit(5000),
+    supabase.from("market_events").select("symbol,event_date,outcome").eq("kind", "results").not("outcome", "is", null)
+      .gte("event_date", iso(new Date(Date.now() - 45 * DAY))).limit(3000),
+  ]);
+  const sectorOf = new Map<string, string>((sectors.data || []).map((s: any) => [String(s.symbol).toUpperCase(), s.sector]));
+  const seasonList = (season.data || []).filter((e: any) => e.outcome?.verdict && !e.outcome.verdict.early)
+    .map((e: any) => ({ symbol: e.symbol, date: e.event_date, label: e.outcome.verdict.label, pct: e.outcome.reaction?.pct ?? null }));
+  const done: string[] = [];
+  for (const ev of todo) {
+    if (Date.now() - started > TIME_BUDGET_MS) break;
+    let preview: any;
+    try { preview = await previewFor(ev, { nifty, sectorOf, season: seasonList }); } catch (e) { preview = { status: "error", error: String((e as Error).message || e) }; }
+    await supabase.from("market_events").update({ preview, preview_at: new Date().toISOString() }).eq("id", ev.id);
+    done.push(`${ev.symbol}:${preview.status}${preview.stats ? ":±" + preview.stats.avgAbs : ""}`);
+  }
+  summary.previews = done;
+}
+
 Deno.serve(async (req) => {
   const started = Date.now();
   try {
@@ -373,12 +539,13 @@ Deno.serve(async (req) => {
     const { data: s } = await supabase.from("app_secrets").select("value").eq("name", "crypto_cron").maybeSingle();
     if (!s || !secret || secret !== s.value) return json({ error: "unauthorized" }, 401);
     const url = new URL(req.url);
-    const only = url.searchParams.get("only"); // "calendar" | "outcomes" for testing
+    const only = url.searchParams.get("only"); // "calendar" | "outcomes" | "previews" (own cron run; &symbol= to rebuild one)
     const { data: uni } = await supabase.from("stock_swing_cache").select("symbol");
     const tracked = new Set<string>((uni || []).map((u: any) => String(u.symbol).toUpperCase()));
     const summary: any = { tracked: tracked.size };
-    if (only !== "outcomes") { await syncCalendar(tracked, summary); await syncPre(summary); }
-    if (only !== "calendar") await syncOutcomes(summary, started);
+    if (only !== "outcomes" && only !== "previews") { await syncCalendar(tracked, summary); await syncPre(summary); }
+    if (only === "previews") await syncPreviews(summary, started, (url.searchParams.get("symbol") || "").toUpperCase() || null);
+    else if (only !== "calendar") await syncOutcomes(summary, started);
     summary.ms = Date.now() - started;
     console.log("EVENTS_REFRESH", JSON.stringify(summary));
     return json(summary);

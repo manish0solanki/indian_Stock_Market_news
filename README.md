@@ -233,6 +233,11 @@
 - **Economy events** alongside company events: RBI policy decisions, India CPI and GDP, the Union Budget, US Fed (FOMC) decisions and US CPI, with IST times, what each one is and how it tends to move Indian markets. Kept in `econ_events` (`supabase/econ-events.sql`); dates not read from the official calendar are marked "Expected date". Add new dates (e.g. the next RBI or Fed calendar) by extending that file and re-running it.
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
 - **Latest price and today's change** next to every company in the list, on calendar chips (desktop; in the tooltip on phones) and in the event window, from `stock_quotes`, refreshed every 2 minutes. A stock with no trade in 10 days shows its last traded price marked "old".
+- **Before results** ("What to expect", for results due in the next 14 days; `events-preview.js`, `market_events.preview` built by `events-refresh?only=previews` every 15 minutes):
+  - the usual results-day move from the company's last 6–8 results (NSE filing times + daily prices): average and biggest move, how many times the shares rose or fell, the average rise, fall and opening gap, the price range that move implies, and a table of past results days. The list shows it as "±X% on results".
+  - the bar to beat: the same quarter a year ago (revenue and net profit); last quarter's growth, margin and reaction
+  - sector peers that already reported this season, the run-up into the date vs the Nifty, and the stock's news of the last 7 days
+  - **platform admin only**: "Setup going in: leans positive / negative / no clear lean", from those factors, with what past rises and falls averaged and a gap-risk note on stops. No analyst estimates are used: it is the company's own record, not a forecast.
 - **After results**, each company gets:
   - the quarter's numbers vs the previous quarter and a year ago (from NSE's XBRL filings)
   - the share-price reaction
@@ -346,6 +351,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `feeds-refresh` | every 10 min | Breadth, FII/DII and other feeds |
 | `ipo-refresh` | every 10 min | IPO list, subscription, GMP |
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
+| `events-previews` | every 15 min | `events-refresh?only=previews`: "What to expect" before results |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |
 | `stocks-sync` | 03:11 and 13:11 | Stock master list |
 | `signal-log-sync` | every minute | Issues new signals into `signal_log` (frozen levels, expiry) and closes them at stop, target or expiry |

@@ -133,6 +133,11 @@ button{font:inherit;color:inherit}
 .econ-why{font-size:13.5px;line-height:1.6}
 .linkish{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}.linkish:hover{text-decoration:underline}
 .econ-why li{margin:3px 0}
+.pv-line{font-size:13.5px;line-height:1.6;padding:7px 0;border-top:1px solid var(--border)}
+.pv-line:first-of-type{border-top:0;padding-top:0}
+.pv-hist{margin-top:8px}
+.kv b i{font-style:normal}
+.pv-hist summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:6px}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){
  .day{min-height:74px;padding:4px}
@@ -191,6 +196,8 @@ button{font:inherit;color:inherit}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/portfolio-core.js?v=2"></script>
+<script src="/stock-news.js?v=2"></script>
+<script src="/events-preview.js?v=1"></script>
 <script>
 const sb=window.supabase.createClient(MP_CONFIG.supabaseUrl,MP_CONFIG.supabaseKey);
 const $=id=>document.getElementById(id);
@@ -209,7 +216,7 @@ const groupOf=e=>e.econ?'econ':GROUP[e.kind]||'other';
 const KIND_LABEL={econ_rbi:'RBI policy',econ_fomc:'US Fed',econ_cpi:'India CPI',econ_gdp:'India GDP',econ_uscpi:'US CPI',econ_budget:'Union Budget',results:'Results',dividend:'Dividend',bonus:'Bonus',split:'Split',rights:'Rights',buyback:'Buyback',fundraise:'Fund raising',agm:'AGM',board:'Board meeting',action:'Corporate action'};
 const VERDICT={positive:['Positive','pos','▲'],negative:['Negative','neg','▼'],mixed:['Mixed','mix','◆']};
 
-let events=[],signals={},held=new Set(),user=null,quotes={};
+let events=[],signals={},held=new Set(),user=null,quotes={},isAdmin=false;
 /* Latest prices (stock_quotes, refreshed every few minutes in market hours). A quote with no trade in 10 days is
    shown as the last traded price with its date; moves beyond NSE's 20% band are treated as bad data. */
 function q(sym){
@@ -347,6 +354,7 @@ function rowHtml(e){
  const tags=[];
  if(vv)tags.push('<span class="pill '+vv[1]+'">'+vv[2]+' '+vv[0]+(r?' · '+pct(r.pct):'')+'</span>');
  else if(e.kind==='results'&&e.outcome&&e.outcome.status==='awaiting')tags.push('<span class="pill">Awaiting filing</span>');
+ else if(e.kind==='results'&&e.pmove!=null&&e.event_date>=istToday())tags.push('<span class="pill" title="Average share move on its past results days">±'+Number(e.pmove).toFixed(1)+'% on results</span>');
  if(e.kind==='dividend'&&e.amount)tags.push('<span class="pill">'+inr(e.amount)+'/share</span>');
  if(held.has(e.symbol))tags.push('<span class="pill mine">In portfolio</span>');
  if(s)tags.push('<span class="pill sig '+(s.side==='BUY'?'pos':'neg')+'">'+(s.side==='BUY'?'Buy':'Sell')+' signal</span>');
@@ -437,7 +445,7 @@ function detail(e){
  }
  if(e.kind==='results'){
   if(upcoming){
-   body+='<div class="sec"><h3>What to expect</h3><div class="advice info">The board meets on '+fmtDay(e.event_date,{weekday:'long',day:'numeric',month:'long'})+' to approve the quarter’s results; they usually reach NSE the same evening.'+(pre&&pre.avgMovePct!=null?' '+esc(e.symbol)+' normally moves about ±'+pre.avgMovePct.toFixed(1)+'% a day (average range '+pre.atrPct.toFixed(1)+'%); results days usually move more than that, in either direction.':'')+' The numbers, the comparison with last year and the market’s reaction appear here once they are out.</div></div>';
+   body+='<div class="sec" id="pvBox"><h3>What to expect</h3><div class="advice info">The board meets on '+fmtDay(e.event_date,{weekday:'long',day:'numeric',month:'long'})+' to approve the quarter’s results; they usually reach NSE the same evening.'+(pre&&pre.avgMovePct!=null?' '+esc(e.symbol)+' normally moves about ±'+pre.avgMovePct.toFixed(1)+'% a day (average range '+pre.atrPct.toFixed(1)+'%); results days usually move more than that, in either direction.':'')+' The numbers, the comparison with last year and the market’s reaction appear here once they are out.</div></div>';
   }else if(!o){
    body+='<div class="sec"><h3>Results</h3><div class="advice info">'+(e.tracked?'Waiting to read the filing; we check every hour.':'Detailed numbers are read for tracked stocks (the scanner’s 219 stocks) and stocks held in portfolios. Use the NSE link below for this company.')+'</div></div>';
   }else if(o.status==='awaiting'||o.status==='not_found'||o.status==='error'){
@@ -458,6 +466,7 @@ function detail(e){
  $('modal').innerHTML='<div class="mhead"><div><h2 id="mTitle"><span data-sym="'+esc(e.symbol)+'">'+esc(e.symbol)+'</span> · '+esc(KIND_LABEL[e.kind]||e.kind)+'</h2><div class="co"><span data-sym="'+esc(e.symbol)+'">'+esc(e.company||'')+'</span>'+(q(e.symbol)?' · '+qHtml(e.symbol,'qm'):'')+(held.has(e.symbol)?' · <span class="pill mine">In your portfolio</span>':'')+'</div></div><button class="x" id="mClose" aria-label="Close">×</button></div><div class="mbody">'+body+'</div>';
  $('modalbg').classList.add('open');$('modalbg').setAttribute('aria-hidden','false');
  $('mClose').focus();
+ if(e.kind==='results'&&upcoming&&window.mpEventPreview)window.mpEventPreview.load(e);
 }
 function dayList(d){
  const list=events.filter(e=>e.event_date===d&&visible(e));
@@ -485,7 +494,7 @@ let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(vie
 async function load(){
  const all=[];
  for(let from=0;from<6000;from+=1000){
-  const {data,error}=await sb.from('market_events').select('id,symbol,company,event_date,kind,title,detail,record_date,amount,tracked,pre,outcome,outcome_at').order('event_date').order('symbol').range(from,from+999);
+  const {data,error}=await sb.from('market_events').select('id,symbol,company,event_date,kind,title,detail,record_date,amount,tracked,pre,outcome,outcome_at,pmove:preview->stats->>avgAbs').order('event_date').order('symbol').range(from,from+999);
   if(error){$('calendar').innerHTML='<div class="empty">Events could not load. Please try again shortly.</div>';return}
   all.push(...(data||[]));if(!data||data.length<1000)break;
  }
@@ -499,6 +508,7 @@ async function load(){
  const feed=await sb.rpc('stock_signals_feed').then(r=>r.data).catch(()=>null);
  for(const s of (feed&&feed.signals)||[])signals[String(s.symbol).toUpperCase()]=s;
  try{const {data:{session}}=await sb.auth.getSession();user=session?.user||null;if(user&&window.mpPortfolio)held=new Set(await window.mpPortfolio.heldSymbols(sb,user))}catch(e){}
+ if(user){try{const {data}=await sb.rpc('mp_is_platform_admin');isAdmin=data===true}catch(e){}}
  if(scope==='mine'&&!user)scope='tracked';
  render();
 }

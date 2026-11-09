@@ -16,6 +16,8 @@ create table if not exists public.market_events (
   pre jsonb,                           -- before the event: last close, typical daily move (tracked stocks)
   outcome jsonb,                       -- past results only, see events-refresh
   outcome_at timestamptz,
+  preview jsonb,                       -- upcoming results only: what to expect (see events-refresh ?only=previews)
+  preview_at timestamptz,
   source text not null default 'nse',
   updated_at timestamptz not null default now()
 );
@@ -31,5 +33,12 @@ create policy "Public can read market events" on public.market_events for select
 -- Refresh: hourly (calendar + any newly filed results); results evenings get extra runs.
 -- select cron.schedule('events-refresh', '23 * * * *', $$select net.http_post(
 --   url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/events-refresh',
+--   headers := jsonb_build_object('x-cron-secret', (select value from public.app_secrets where name = 'crypto_cron'), 'Content-Type', 'application/json'),
+--   body := '{}'::jsonb, timeout_milliseconds := 140000)$$);
+
+-- Previews (what to expect before results), every 15 minutes:
+-- alter table public.market_events add column if not exists preview jsonb, add column if not exists preview_at timestamptz;
+-- select cron.schedule('events-previews', '11,26,41,56 * * * *', $$select net.http_post(
+--   url := 'https://fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/events-refresh?only=previews',
 --   headers := jsonb_build_object('x-cron-secret', (select value from public.app_secrets where name = 'crypto_cron'), 'Content-Type', 'application/json'),
 --   body := '{}'::jsonb, timeout_milliseconds := 140000)$$);
