@@ -90,11 +90,13 @@
   - A later setup in the same stock is a new signal.
   - The Signals page, Home's top signals, Analysis and the bell all read the active signals, which show their issue time, expiry and result since issue.
 - **History → Signal record** (`signal_history()`): every closed signal with its outcome (target, stop, expired), result in % and R, win rate and average R, filterable by swing or intraday and by outcome. "My paper trades" keeps your own trade history.
-- **⭐ Today's best 3** (top of the Signals tab, platform admin only; `best-trades.js`, `signal_best_trades()` in `supabase/best-trades.sql`):
-  - Enter today's amount and a max loss per trade (% of the amount, default 1%); pick Swing or Intraday (intraday can include short trades).
+- **⭐ Today's best picks** (top of the Signals tab, platform admin only; `best-trades.js`, `signal_best_trades()` in `supabase/best-trades.sql`):
+  - Enter today's amount and a max loss per trade (% of the amount, default 1%). Choose **how many trades (1–5)**: the amount is split that many ways. Pick Swing or Intraday (intraday can include short trades).
   - **Ranking:** the active signals that are still tradable at today's price, scored the same way as Top Signals. Signals whose own news is against them are left out, and trades against the Nifty's trend lose 10 points.
-  - **One pick per sector group.** Each pick gets an equal third of the amount, capped so that its stop loses at most the chosen %. A stock too expensive for its share is skipped for the next one.
-  - **Shows:** shares to buy, cost, stop loss and the loss if it hits, targets 1 and 2 and the gain at each, totals and cash left. Skipped higher-ranked signals are listed with the reason, and "Copy orders" copies the trades as text.
+  - **One pick per sector group.** Each pick gets an equal share of the amount, capped so that its stop loses at most the chosen %. A stock too expensive for its share is skipped for the next one.
+  - **Editable quantities:** − / + or type a number. Cost, stop and target outcomes and the totals follow, with "Changed from the suggested N · reset" and a warning when a pick's stop now loses more than the limit or the total goes past the amount. Changing the amount, the limit or the number of trades restores the suggested sizes.
+  - **Paper trade** one pick, or **all** of them after a confirmation listing the orders, in the Signals paper account (`stock_paper_trades`, source `best-picks`). Trades fill at the last price, and stops and targets are managed like any other paper trade. Stocks already held are skipped.
+  - Also shows totals and cash left, skipped higher-ranked signals with the reason, and "Copy orders".
   - Admin-only because a personal "buy these, this many shares" list is investment advice if shown to the public.
 - **History → Scorecard** (`signal_scorecard()`, `supabase/signal-scorecard.sql`): which conditions make the signals work better or worse.
   - When a signal is issued, `signal_context_fill()` (pg_cron `signal-context`, every 5 minutes) records the conditions in `signal_log.ctx`. It uses only data from before the signal, so nothing uses hindsight:

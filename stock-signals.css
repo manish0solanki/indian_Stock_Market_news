@@ -226,3 +226,13 @@ svg.chart{width:100%;height:auto;display:block;margin:8px 0}
 .bt-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}.bt-foot .note{margin:0;flex:1;min-width:200px}
 .bt-skip{margin-top:8px;font-size:12px;color:var(--muted)}.bt-skip summary{cursor:pointer}.bt-skip ul{margin:6px 0 0;padding-left:18px}
 @media(max-width:560px){.bt-sum{grid-template-columns:1fr 1fr}}
+.bt-row{grid-column:1/-1;display:flex;align-items:center;gap:10px}.bt-lbl{font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap}.bt-row .seg{flex:1}
+.bt-act{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.bt-qty{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
+.bt-qty button{width:34px;height:34px;border:0;background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer}
+.bt-qty input{width:64px;height:34px;border:0;border-left:1px solid var(--border);border-right:1px solid var(--border);background:var(--surface);color:var(--text);text-align:center;font:700 15px var(--mono);-moz-appearance:textfield}
+.bt-qty input::-webkit-outer-spin-button,.bt-qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.bt-sub{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:var(--muted);margin:-2px 0 8px}.bt-sub:empty{display:none}
+.bt-warn{color:var(--amber)}.bt-warn:empty{display:none}
+.bt-reset{border:0;background:none;color:var(--accent);font:inherit;padding:0;cursor:pointer;text-decoration:underline}
+.bt-pact{margin-top:8px;display:flex;justify-content:flex-end}

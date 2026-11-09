@@ -595,6 +595,7 @@ function renderMarket() { const m = marketState(nowMs()); $('marketText').textCo
 function renderAll() {
   renderMarket(); renderIndexStrip();
   renderSignals(); renderPositions(); renderHistoryTab(); renderAccount();
+  if (S.best) S.best.refresh();
 }
 function setTab(tab) {
   S.tab = tab;
@@ -625,13 +626,36 @@ async function addOptionsTab() {
   $('app').appendChild(sec);
   return true;
 }
-/* Today's best 3 (admin only): a panel at the top of the Signals tab, its code loaded only for the admin. */
+/* Today's best picks (admin only): a panel at the top of the Signals tab, its code loaded only for the admin.
+   bestPaper lets it place paper trades in this page's paper account (same row as the order ticket). */
+const bestPaper = {
+  held: (sym) => S.trades.some((t) => t.status === 'OPEN' && t.symbol === sym),
+  async place(items) {
+    if (!S.user) { toast('Sign in to paper trade.', true); return { ok: 0 }; }
+    const now = new Date().toISOString(); let ok = 0; const fails = [];
+    for (const { s, qty } of items) {
+      if (!(qty > 0) || bestPaper.held(s.symbol)) continue;
+      const L = num(s.ltp), sl = num(s.stop);
+      const row = {
+        user_id: S.user.id, symbol: s.symbol, timeframe: s.tf, direction: s.side, setup: s.setup, score: s.score,
+        entry_price: L, stop_loss: sl, target_1: num(s.target1), target_2: num(s.target2), quantity: qty, risk_budget: Math.round(Math.abs(L - sl) * qty * 100) / 100,
+        signal_time: s.issued_at || now, source: 'best-picks', status: 'OPEN', opened_at: now,
+        signal_snapshot: { signal_entry: num(s.entry), signal_stop: sl, quality: s.quality, strengths: s.strengths, estimated_cost_bps: num(S.account.cost_bps) ?? 10, original_quantity: qty, replay_until: Date.now(), mark_price: L, mark_source: 'order fill at LTP', fill_model: 'market order at last price' },
+      };
+      const { data, error } = await sb.from('stock_paper_trades').insert(row).select().single();
+      if (error) fails.push(s.symbol + (error.code === '23505' ? ' (already held)' : '')); else { S.trades.unshift(data); ok++; }
+    }
+    renderAll();
+    toast(ok ? `Paper traded ${ok} pick${ok === 1 ? '' : 's'}${fails.length ? ' · failed: ' + fails.join(', ') : ''} · see Positions` : 'No paper trade placed' + (fails.length ? ': ' + fails.join(', ') : ''), !ok);
+    return { ok, fails };
+  },
+};
 function addBestTrades() {
   if ($('bestTrades')) return;
   const host = document.createElement('div'); host.id = 'bestTrades';
   $('tab-signals').insertBefore(host, $('tab-signals').firstChild);
-  const js = document.createElement('script'); js.src = '/best-trades.js?v=1';
-  js.onload = () => window.mpBestTrades && window.mpBestTrades.mount(host, sb);
+  const js = document.createElement('script'); js.src = '/best-trades.js?v=2';
+  js.onload = () => { if (window.mpBestTrades) S.best = window.mpBestTrades.mount(host, sb, bestPaper); };
   document.head.appendChild(js);
 }
 let optionsLoading = null;
