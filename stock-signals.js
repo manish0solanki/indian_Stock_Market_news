@@ -612,6 +612,7 @@ function setTab(tab) {
 async function addOptionsTab() {
   let ok = false;
   try { const { data } = await sb.rpc('mp_is_platform_admin'); ok = data === true; } catch (e) { ok = false; }
+  if (ok) addBestTrades();
   if (!ok || $('tab-options')) return false;
   const btn = document.createElement('button');
   btn.dataset.tab = 'options'; btn.title = 'Options paper desk (visible to the admin only)';
@@ -623,6 +624,15 @@ async function addOptionsTab() {
   sec.innerHTML = '<div class="note">Loading the options desk…</div>';
   $('app').appendChild(sec);
   return true;
+}
+/* Today's best 3 (admin only): a panel at the top of the Signals tab, its code loaded only for the admin. */
+function addBestTrades() {
+  if ($('bestTrades')) return;
+  const host = document.createElement('div'); host.id = 'bestTrades';
+  $('tab-signals').insertBefore(host, $('tab-signals').firstChild);
+  const js = document.createElement('script'); js.src = '/best-trades.js?v=1';
+  js.onload = () => window.mpBestTrades && window.mpBestTrades.mount(host, sb);
+  document.head.appendChild(js);
 }
 let optionsLoading = null;
 function openOptions() {
