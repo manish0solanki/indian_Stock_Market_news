@@ -654,7 +654,7 @@ function addBestTrades() {
   if ($('bestTrades')) return;
   const host = document.createElement('div'); host.id = 'bestTrades';
   $('tab-signals').insertBefore(host, $('tab-signals').firstChild);
-  const js = document.createElement('script'); js.src = '/best-trades.js?v=2';
+  const js = document.createElement('script'); js.src = '/best-trades.js?v=3';
   js.onload = () => { if (window.mpBestTrades) S.best = window.mpBestTrades.mount(host, sb, bestPaper); };
   document.head.appendChild(js);
 }

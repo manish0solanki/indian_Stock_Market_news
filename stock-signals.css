@@ -236,3 +236,6 @@ svg.chart{width:100%;height:auto;display:block;margin:8px 0}
 .bt-warn{color:var(--amber)}.bt-warn:empty{display:none}
 .bt-reset{border:0;background:none;color:var(--accent);font:inherit;padding:0;cursor:pointer;text-decoration:underline}
 .bt-pact{margin-top:8px;display:flex;justify-content:flex-end}
+.bt-why{font-size:12px;line-height:1.5;color:var(--amber);background:var(--amberbg);border-radius:9px;padding:7px 9px;margin:0 0 8px}
+.bt-full{display:inline-block;margin-top:4px;border:1px solid var(--amber);background:transparent;color:var(--text);border-radius:8px;padding:4px 8px;font:600 12px inherit;font-family:inherit;cursor:pointer}
+.bt-pctof{display:block;font-style:normal;font-size:10.5px;color:var(--muted)}
