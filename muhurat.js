@@ -1,4 +1,5 @@
-/* Muhurat trading 2026: Home card (#muhuratCard), shown 7-9 Nov 2026 IST.
+/* Muhurat trading 2026: Home card (#muhuratCard), shown from 7 Nov 2026 until the next trading day's pre-market brief
+   is out (premarket_brief() dated after the session), and never after 9 Nov.
    Before the session: the timings and a countdown. Pre-open / live: the Nifty's move, refreshed every 30 seconds
    (market_snapshot). After it: how the session went. Always: how the session works, the Nifty in the last 10 Muhurat
    sessions and the Samvat year after each, and Samvat 2082 so far (sectors, best and worst Nifty 50 stocks), from
@@ -21,7 +22,16 @@
   const dur = (ms) => { const m = Math.max(0, Math.round(ms / 60e3)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m % 60}m` : `${m}m`; };
   const fmtD = (ymd) => new Date(ymd + 'T06:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  let S = null, live = null, open = false, timer = null;
+  let S = null, live = null, open = false, timer = null, superseded = false;
+  // Once the next trading day's pre-market brief is out, the Muhurat card has done its job and hides.
+  async function checkSuperseded() {
+    if (superseded || istDay() <= DAY) return superseded;
+    try {
+      const r = await fetch(SB + '/rest/v1/rpc/premarket_brief', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: '{}' });
+      if (r.ok) { const b = await r.json(); superseded = !!(b && b.date && b.date > DAY); }
+    } catch (_) { /* keep showing */ }
+    return superseded;
+  }
 
   function phase(now = Date.now()) {
     if (now < at(T.pre)) return 'before';
@@ -33,7 +43,7 @@
   function render() {
     const box = $('muhuratCard'); if (!box) return;
     const d = istDay();
-    if (d < SHOW_FROM || d > SHOW_TO) { box.innerHTML = ''; return; }
+    if (d < SHOW_FROM || d > SHOW_TO || superseded) { box.innerHTML = ''; return; }
     const ph = phase(), H = (S && S.history) || [], past = H.filter((r) => num(r.chg) !== null && r.date < DAY), today = H.find((r) => r.date === DAY);
     const up = past.filter((r) => r.chg > 0).length, avg = past.length ? past.reduce((a, r) => a + r.chg, 0) / past.length : null;
     const contrarian = past.filter((r) => r.chg < 0 && num(r.year) > 0 && r.year_done);
@@ -122,8 +132,9 @@
   });
   async function start() {
     const d = istDay(); if (d < SHOW_FROM || d > SHOW_TO) return;
+    if (await checkSuperseded()) { render(); return; }
     await loadStats(); await tick();
-    timer = setInterval(() => { if (!document.hidden) tick(); }, 30e3);
+    timer = setInterval(async () => { if (document.hidden) return; if (await checkSuperseded()) { clearInterval(timer); render(); return; } tick(); }, 30e3);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
