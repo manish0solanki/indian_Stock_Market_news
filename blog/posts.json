@@ -1,5 +1,67 @@
 [
   {
+    "slug": "datapattns-stock-spotlight-9-nov-2026",
+    "title": "Data Patterns (India) Surges 8.7% on 6.2x Volume",
+    "excerpt": "Data Patterns (India) (DATAPATTNS) rose 8.67% to ₹4,025.00 on volume 6.2 times its three-month average.",
+    "category": "stock-spotlight",
+    "date": "2026-11-09T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "DATAPATTNS",
+      "Data Patterns (India)"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-psu-bank-surges-3-73-percent-as-12-of-12-stocks-advance",
+    "title": "Nifty PSU Bank Surges 3.73% as 12 of 12 Stocks Advance",
+    "excerpt": "The Nifty PSU Bank index staged a powerful rally, closing at 8905.35 with a gain of 3.73%, or 320.25 points, over the previous close of 8585.1. This was not a move driven by one or two heavyweights. All 12 stocks in the NSE-listed universe advanced, with none declining or unchang",
+    "category": "sector-analysis",
+    "date": "2026-11-09T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty PSU Bank",
+      "Sector Analysis",
+      "PSU Bank",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-9-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 9 Nov 2026: Gains 0.23%",
+    "excerpt": "Banks powered a narrow rise in the Nifty on 9 Nov 2026, even as most shares across the market lost ground. The index closed at 25,044.65, up 58.25 points or 0.23%, while the Sensex slipped 0.05% to 80,984.91. The Nifty Bank rallied 1.51% to 59,741.25 and Nifty Financial Services ",
+    "category": "daily-wrap",
+    "date": "2026-11-09T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Mildly Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-6-sessions-with-13-749-82-cr-inflow-as-dii-selling-extends-to-6-sessions",
     "title": "FII Buying Extends to 6 Sessions with ₹13,749.82 Cr Inflow as DII Selling Extends to 6 Sessions",
     "excerpt": "Foreign investors powered Indian equities higher on 6 Nov 2026, extending their buying streak even as domestic institutions continued to take money off the table.",
