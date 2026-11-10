@@ -169,6 +169,7 @@ button{font:inherit;color:inherit}
   <div><h1>Events calendar</h1><div class="sub" id="asOf">Results, dividends, bonus issues, splits and buybacks on NSE. Click any event for the details.</div></div>
  </div>
  <section class="stats" id="stats"></section>
+ <section id="resAhead" hidden></section>
 
  <div class="bar">
   <div class="grp">
@@ -205,6 +206,7 @@ button{font:inherit;color:inherit}
 <script src="/portfolio-core.js?v=2"></script>
 <script src="/stock-news.js?v=2"></script>
 <script src="/events-preview.js?v=1"></script>
+<script src="/results-ahead.js?v=1"></script>
 <script>
 const sb=window.supabase.createClient(MP_CONFIG.supabaseUrl,MP_CONFIG.supabaseKey);
 const $=id=>document.getElementById(id);
@@ -533,6 +535,7 @@ async function load(){
  for(const s of (feed&&feed.signals)||[])signals[String(s.symbol).toUpperCase()]=s;
  try{const {data:{session}}=await sb.auth.getSession();user=session?.user||null;if(user&&window.mpPortfolio)held=new Set(await window.mpPortfolio.heldSymbols(sb,user))}catch(e){}
  if(user){try{const {data}=await sb.rpc('mp_is_platform_admin');isAdmin=data===true}catch(e){}}
+ if(isAdmin&&window.mpResultsAhead){$('resAhead').hidden=false;window.mpResultsAhead.mount()}
  if(scope==='mine'&&!user)scope='tracked';
  render();
 }
