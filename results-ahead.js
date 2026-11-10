@@ -47,11 +47,15 @@
     held.add(r.symbol); ticket = null; paint();
   }
   function ticketHtml(r) {
+    return '<div class="ra-tk" data-ratkfor="' + esc(r.symbol) + '"><label>Amount ₹ <input type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" value="' + st.amount + '" data-raamt aria-label="Amount to invest"></label>' +
+      '<div class="ra-tk-calc">' + calcHtml(r) + '</div></div>';
+  }
+  // The part of the order form that follows the amount: quantity, stop, targets, max loss, and the buttons.
+  function calcHtml(r) {
     const p = plan(r, st.amount);
-    return '<div class="ra-tk"><label>Amount ₹ <input type="number" min="100" step="500" value="' + st.amount + '" data-raamt aria-label="Amount to invest"></label>' +
-      (p.qty > 0 ? '<div class="ra-tk-l">Buy <b>' + p.qty + '</b> at about ' + inr(p.px) + ' = ' + inr(p.cost, 0) + ' · stop ' + inr(p.stop) + ' (−' + (p.sp * 100).toFixed(1) + '%, 1.5× its usual ±' + p.mv.toFixed(1) + '% results move) · targets ' + inr(p.t1) + ' / ' + inr(p.t2) + ' · <b class="neg">max loss about ' + inr(p.risk, 0) + '</b> if the stop fills (a gap can make it worse)</div>'
+    return (p.qty > 0 ? '<div class="ra-tk-l">Buy <b>' + p.qty + '</b> at about ' + inr(p.px) + ' = ' + inr(p.cost, 0) + ' · stop ' + inr(p.stop) + ' (−' + (p.sp * 100).toFixed(1) + '%, 1.5× its usual ±' + p.mv.toFixed(1) + '% results move) · targets ' + inr(p.t1) + ' / ' + inr(p.t2) + ' · <b class="neg">max loss about ' + inr(p.risk, 0) + '</b> if the stop fills (a gap can make it worse)</div>'
         : '<div class="ra-tk-l neg">' + inr(st.amount, 0) + ' is less than one share at ' + inr(p.px) + '.</div>') +
-      '<div class="ra-tk-b"><button class="chip on" data-raplace="' + esc(r.symbol) + '"' + (p.qty > 0 ? '' : ' disabled') + '>Place paper trade</button><button class="chip" data-racancel="1">Cancel</button></div></div>';
+      '<div class="ra-tk-b"><button class="chip on" data-raplace="' + esc(r.symbol) + '"' + (p.qty > 0 ? '' : ' disabled') + '>Place paper trade</button><button class="chip" data-racancel="1">Cancel</button></div>';
   }
 
   const css = document.createElement('style');
@@ -166,6 +170,16 @@
   }
   function paint() {
     if (!box) return;
+    // Anything that redraws the panel (news arriving, a filter) keeps the amount box as it was: text, focus and caret.
+    const act = document.activeElement, typing = act && act.matches && act.matches('[data-raamt]') && box.contains(act);
+    const keep = typing ? { v: act.value, a: act.selectionStart, b: act.selectionEnd } : null;
+    paintInner();
+    if (keep) {
+      const inp = box.querySelector('[data-raamt]');
+      if (inp) { inp.value = keep.v; inp.focus({ preventScroll: true }); try { inp.setSelectionRange(keep.a, keep.b); } catch (_) { /* ignore */ } }
+    }
+  }
+  function paintInner() {
     const days = nextTradingDays(5), counts = {};
     (data && data.rows || []).forEach((r) => { counts[r.date] = (counts[r.date] || 0) + 1; });
     box.querySelector('.ra-ctl').innerHTML = days.map((d, i) => '<button class="chip' + (st.days.includes(d) ? ' on' : '') + '" data-rad="' + d + '">' + (i === 0 ? 'Tomorrow · ' : '') + esc(fmtDay(d, { weekday: 'short', day: 'numeric', month: 'short' })) + '</button>').join('') +
@@ -263,13 +277,14 @@
     });
     host.addEventListener('input', (e) => {
       if (!e.target.matches('[data-raamt]')) return;
-      st.amount = Math.max(0, Number(e.target.value) || 0); save();
+      // Digits only (commas and spaces are fine to type); the box itself is never redrawn while typing.
+      st.amount = Math.max(0, Number(String(e.target.value).replace(/[^\d.]/g, '')) || 0); save();
       const r = (data && data.rows || []).find((x) => x.symbol === ticket); if (!r) return;
-      const tk = box.querySelector('.ra-tk'); const pos = e.target.selectionStart;
-      tk.outerHTML = ticketHtml(r); const inp = box.querySelector('[data-raamt]'); inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (_) { /* number input */ }
+      const calc = e.target.closest('.ra-tk').querySelector('.ra-tk-calc'); if (calc) calc.innerHTML = calcHtml(r);
     });
+    host.addEventListener('keydown', (e) => { if (e.target.matches('[data-raamt]') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
     host.addEventListener('change', (e) => { if (e.target.matches('[data-ramcap]')) { limit = 10; st.mcap = Number(e.target.value) || 1000; save(); load(); } });
     paint(); loadHeld().then(paint); load();
   }
-  window.mpResultsAhead = { mount };
+  window.mpResultsAhead = { mount, repaint: () => paint() };
 })();
