@@ -3936,6 +3936,8 @@ input,select,textarea{min-width:0;}
     <div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div><div class="mp-card mp-idx-card mp-skeleton"></div>
   </section>
 
+  <!-- Market closed today / tomorrow, from the NSE holiday calendar (rendered by /market-note.js) -->
+  <section id="mktNote" data-home-only="true" aria-label="Market holiday"></section>
   <!-- Diwali Muhurat trading 2026, shown 7-9 Nov (rendered by /muhurat.js) -->
   <section id="muhuratCard" data-home-only="true" aria-label="Muhurat trading"></section>
 
@@ -9474,6 +9476,7 @@ if ('serviceWorker' in navigator) {
 <script src="/market-why.js?v=5"></script>
 <script src="/premarket.js?v=3"></script>
 <script src="/muhurat.js?v=4"></script>
+<script src="/market-note.js?v=1"></script>
 <script src="/live-insights.js?v=5"></script>
 <script src="/top-signals.js?v=2"></script>
 <script src="/global-market.js?v=7"></script>

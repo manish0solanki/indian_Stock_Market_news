@@ -248,6 +248,7 @@
 ### 🗓️ Market calendar (`supabase/market-calendar.sql`, `supabase/functions/market-holidays`)
 - **Holidays come from NSE automatically:** the `market-holidays` function reads NSE's official trading-holiday list every Monday and keeps `market_holidays` in step (dates NSE moves are updated, new years appear when NSE publishes them, usually in December). Special sessions (e.g. Muhurat trading) go in `market_special_sessions` by hand from NSE's circular.
 - **Pages:** `site-config.js` loads `market_calendar()` on every page (cached 6 hours) into `MP_CONFIG.holidays` / `specialSessions`, with `marketSession()`, `isMarketOpen()`, `isTradingDay()` and `upcomingHolidays()`. The market clock, Home, Stock Analysis, Signals, F&O, watchlist, screener, live insights and the options desk use them, so nothing shows "open" on a holiday.
+- **Home note** (`market-note.js`, `#mktNote`): on a holiday, "Market closed today for <holiday>" with the session the prices are from and when trading resumes; up to 3 days before a weekday holiday, a heads-up ("Market closed tomorrow for …").
 - **Jobs:** market-hours cron jobs (daily blog posts, FII/DII post, live insights, signal scan, options desk, sector history) skip holidays with `where not public.mp_is_market_holiday()`; the pre-market brief already did.
 
 ### 🆕 IPOs (`ipo.html`)
