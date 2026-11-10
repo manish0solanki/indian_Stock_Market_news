@@ -232,7 +232,14 @@
 ### 📅 Events Calendar (`events.html`)
 - **NSE holidays** are marked on the calendar ("Market closed · Diwali-Balipratipada") and in the list; special sessions such as Muhurat trading show their times.
 - **Economy events** alongside company events: RBI policy decisions, India CPI and GDP, the Union Budget, US Fed (FOMC) decisions and US CPI, with IST times, what each one is and how it tends to move Indian markets. Kept in `econ_events` (`supabase/econ-events.sql`); dates not read from the official calendar are marked "Expected date". Add new dates (e.g. the next RBI or Fed calendar) by extending that file and re-running it.
-  - **Figures fill in automatically** (`econ-actuals`): **US CPI** from the US Bureau of Labor Statistics API (month-on-month from the seasonally adjusted index, the headline number such as "CPI rose 0.4%", and year-on-year from the unadjusted one, headline and core; October 2026 has no year-on-year figure because BLS never collected October 2025 prices, and the page says so), **India CPI** from MoSPI's eSankhyiki API (base 2024=100, All India combined, with food inflation) and **RBI decisions** from the policy repo rate on rbi.org.in ("Repo 5.25% (cut 25 bp)" / "(unchanged)", against the rate before). Each runs every 30 minutes after its release time (RBI 10:05 am, India CPI 4:05 pm, US CPI 7:05 pm IST) only while a release is waiting for its number. Fed decisions are still entered by hand.
+  - **Figures fill in automatically** (`econ-actuals`) for every economy event with a number:
+    - **US CPI** from the US Bureau of Labor Statistics API: month-on-month from the seasonally adjusted index (the headline, e.g. "CPI rose 0.4%"), year-on-year from the unadjusted one, headline and core. October 2026 has no year-on-year figure because BLS never collected October 2025 prices; the page says so.
+    - **India CPI** from MoSPI's eSankhyiki API (base 2024=100, All India combined, with food inflation).
+    - **India GDP** from MoSPI's national accounts API (quarterly real growth, nominal alongside).
+    - **RBI decisions** from the policy repo rate on rbi.org.in ("Repo 5.25% (cut 25 bp)" / "(unchanged)").
+    - **Fed decisions** from the Fed's table of target-range changes ("Target 3.75–4.00% (hiked 25 bp)" / "(unchanged)").
+    - Each runs after its release time (RBI 10:05 am, India CPI and GDP 4:05 pm, US CPI 7:05 pm, Fed hourly around midnight IST) only while a release is waiting for its number. The Budget has no single number.
+  - **What happened** (`econ-summary`, `econ_events.summary`): about an hour after each release (and the Budget), 3–5 points written by AI from Google News reports and the released figures: the number against the previous one and against expectations, how markets reacted, and what it means for Indian markets, each with its sources and a positive / negative / mixed tone for Indian stocks. Every number must appear in the figures or a headline, or the point is dropped. Rewritten up to 3 times, 4 hours apart, as more reports come in.
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
 - **Latest price and today's change** next to every company in the list, on calendar chips (desktop; in the tooltip on phones) and in the event window, from `stock_quotes`, refreshed every 2 minutes. A stock with no trade in 10 days shows its last traded price marked "old".
 - **Before results** ("What to expect", for results due in the next 14 days; `events-preview.js`, `market_events.preview` built by `events-refresh?only=previews` every 15 minutes):
@@ -370,7 +377,8 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `ipo-refresh` | every 10 min | IPO list, subscription, GMP |
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
 | `market-holidays` | Mondays 01:37 UTC | NSE's official trading-holiday list into `market_holidays` (`supabase/market-calendar.sql`) |
-| `econ-actuals` / `-india` / `-rbi` | :05/:35 in 13–18 UTC (US CPI), 10–15 UTC (India CPI), 4–8 UTC (RBI), only while a release is waiting | Actual and previous figures into `econ_events` |
+| `econ-actuals` / `-india` / `-rbi` / `-fed` | :05/:35 in 13–18 UTC (US CPI), 10–15 UTC (India CPI, GDP), 4–8 UTC (RBI); hourly at :20 (Fed); only while a release is waiting | Actual and previous figures into `econ_events` |
+| `econ-summary` | hourly at :50, only while a recent release needs a summary | "What happened" points from the news |
 | `user-alerts` | every 2 min | `mp_capture_user_alerts()`: personal alerts |
 | `events-previews` | every 15 min | `events-refresh?only=previews`: "What to expect" before results |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |

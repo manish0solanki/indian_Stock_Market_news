@@ -10,7 +10,12 @@
 // RBI policy: the policy repo rate from the "Current Rates" panel on rbi.org.in. On a decision day the rate there is
 // compared with the last recorded one: a change is recorded at once; "unchanged" only from 12:00 IST, after the
 // 10:00 announcement has had time to reach the page. The latest past decision is filled with the current rate.
-// Fed decisions are not fetched yet (filled by hand).
+// Fed (FOMC): the federal funds target range from the Fed's own table of changes (federalreserve.gov/monetarypolicy/
+// openmarket.htm, newest year first; it lists changes only). A change dated on the decision day is recorded at once;
+// "unchanged" once 2 hours have passed since the announcement with no new row.
+// India GDP: MoSPI's eSankhyiki NAS API (getNASData, base 2022-23, quarterly, indicator 22 "GDP Growth Rate"),
+// real (constant price) growth with nominal alongside: "7.8% real (10.3% nominal)", previous = the quarter before.
+// The Budget has no single number to fetch; econ-summary writes what happened from the news.
 // Auth: x-cron-secret header must match app_secrets 'crypto_cron'.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -141,6 +146,98 @@ async function fillRbi(today: string) {
   return { rbiFilled: out, repoNow: now };
 }
 
+// Fed: every change in the target range, newest first: { d: "YYYY-MM-DD", up, down (bp), level: "3.75-4.00" }.
+const MON3: Record<string, number> = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+async function fedChanges() {
+  const r = await fetch("https://www.federalreserve.gov/monetarypolicy/openmarket.htm", { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", Accept: "text/html" } });
+  if (!r.ok) throw new Error("Fed " + r.status);
+  const html = await r.text();
+  const out: { d: string; up: number; down: number; level: string }[] = [];
+  // Walk the page in order, keeping the latest <h4>YEAR</h4> seen; the first table (the current year) may come before any h4.
+  const tokens = [...html.matchAll(/<h4>\s*(\d{4})\s*<\/h4>|<tr>([\s\S]*?)<\/tr>/g)];
+  let year: number | null = null, firstYear: number | null = null;
+  const h4s = [...html.matchAll(/<h4>\s*(\d{4})\s*<\/h4>/g)].map((m) => +m[1]);
+  if (h4s.length) firstYear = Math.max(...h4s) + (/<tr>[\s\S]*?<\/tr>/.test(html.slice(0, html.indexOf("<h4>"))) ? 1 : 0);
+  year = firstYear;
+  for (const t of tokens) {
+    if (t[1]) { year = +t[1]; continue; }
+    const cells = [...t[2].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) => m[1].replace(/<[^>]+>/g, "").trim());
+    if (cells.length < 4 || !year) continue;
+    const dm = cells[0].match(/^([A-Za-z]+)\s+(\d{1,2})/), lv = cells[3].match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
+    if (!dm || !lv || MON3[dm[1].slice(0, 3).toLowerCase()] === undefined) continue;
+    const d = new Date(Date.UTC(year, MON3[dm[1].slice(0, 3).toLowerCase()], +dm[2])).toISOString().slice(0, 10);
+    out.push({ d, up: Number(cells[1]) || 0, down: Number(cells[2]) || 0, level: lv[1] + "-" + lv[2] });
+  }
+  return out.sort((a, b) => b.d.localeCompare(a.d));
+}
+async function fillFed(today: string) {
+  const { data: rows } = await supabase.from("econ_events").select("id,event_date,time_ist,period,actual,previous").eq("kind", "fomc")
+    .is("actual", null).lte("event_date", today).gte("event_date", new Date(Date.now() - 200 * 864e5).toISOString().slice(0, 10)).order("event_date");
+  if (!rows?.length) return { fed: "nothing to fill" };
+  const ch = await fedChanges();
+  if (!ch.length) throw new Error("Fed: no rate table found");
+  const out: string[] = [];
+  const fmtLv = (l: string) => l.replace("-", "–") + "%";
+  for (const r of rows) {
+    // US decision day: the last date in the period, e.g. "FOMC 27–28 Oct 2026" -> 2026-10-28.
+    const m = String(r.period || "").match(/(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})\s*$/);
+    if (!m || MON3[m[2].toLowerCase()] === undefined) continue;
+    const d = new Date(Date.UTC(+m[3], MON3[m[2].toLowerCase()], +m[1])).toISOString().slice(0, 10);
+    const hit = ch.find((c) => Math.abs(Date.parse(c.d) - Date.parse(d)) <= 864e5);
+    const before = ch.find((c) => c.d < d && (!hit || c.d < hit.d));
+    let actual: string | null = null;
+    if (hit) actual = "Target " + fmtLv(hit.level) + (hit.up ? " (hiked " + hit.up + " bp)" : hit.down ? " (cut " + hit.down + " bp)" : "");
+    else {
+      const at = Date.parse(r.event_date + "T" + (r.time_ist || "00:30") + ":00+05:30");
+      if (Date.now() > at + 2 * 3600e3 && before) actual = "Target " + fmtLv(before.level) + " (unchanged)";
+    }
+    if (!actual) continue;
+    const upd: any = { actual, updated_at: new Date().toISOString() };
+    if (!r.previous && before) upd.previous = "Target " + fmtLv(before.level);
+    const { error } = await supabase.from("econ_events").update(upd).eq("id", r.id);
+    if (error) throw new Error(error.message);
+    out.push(r.id + ": " + actual);
+  }
+  return { fedFilled: out };
+}
+
+// India GDP: quarterly real growth from MoSPI. Period "Apr–Jun 2026 (Q1 FY27)" -> year 2026-27, Q1.
+async function gdpYear(fy: string): Promise<any[]> {
+  const u = `https://api.mospi.gov.in/api/nas/getNASData?base_year=2022-23&series=Current&frequency_code=Quarterly&indicator_code=22&year=${fy}&Format=JSON`;
+  const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0 (compatible; market-calendar)", Accept: "application/json" } });
+  if (!r.ok) throw new Error("MoSPI NAS " + r.status);
+  const d = await r.json();
+  return Array.isArray(d?.data) ? d.data : [];
+}
+async function fillGdp(today: string) {
+  const { data: rows } = await supabase.from("econ_events").select("id,event_date,period,actual,previous").eq("kind", "gdp")
+    .lte("event_date", today).gte("event_date", new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10)).order("event_date");
+  const todo = (rows || []).filter((r: any) => !r.actual || !r.previous);
+  if (!todo.length) return { gdp: "nothing to fill" };
+  const cache = new Map<string, any[]>();
+  const get = async (fy: string) => { if (!cache.has(fy)) cache.set(fy, await gdpYear(fy)); return cache.get(fy)!; };
+  const fyOf = (yy: number) => (2000 + yy - 1) + "-" + String(yy).padStart(2, "0"); // FY27 -> "2026-27"
+  const pick = async (fy: string, q: number) => {
+    const x = (await get(fy)).find((r: any) => r.quarter === "Q" + q);
+    const real = x && Number.isFinite(Number(x.constant_price)) ? Number(x.constant_price) : null;
+    const nom = x && Number.isFinite(Number(x.current_price)) ? Number(x.current_price) : null;
+    return real === null ? null : real.toFixed(1) + "% real" + (nom !== null ? " (" + nom.toFixed(1) + "% nominal)" : "");
+  };
+  const out: string[] = [], waiting: string[] = [];
+  for (const r of todo) {
+    const q = String(r.period || "").match(/Q([1-4])/), fy = String(r.period || "").match(/FY(\d{2})/);
+    if (!q || !fy) continue;
+    const yy = +fy[1], qq = +q[1];
+    const actual = await pick(fyOf(yy), qq);
+    if (!actual) { waiting.push(r.id); continue; }
+    const previous = r.previous || await pick(qq === 1 ? fyOf(yy - 1) : fyOf(yy), qq === 1 ? 4 : qq - 1).catch(() => null);
+    const { error } = await supabase.from("econ_events").update({ actual, previous, confirmed: true, updated_at: new Date().toISOString() }).eq("id", r.id);
+    if (error) throw new Error(error.message);
+    out.push(r.id + ": " + actual);
+  }
+  return { gdpFilled: out, gdpWaiting: waiting };
+}
+
 Deno.serve(async (req) => {
   try {
     const secret = req.headers.get("x-cron-secret") || "";
@@ -149,6 +246,9 @@ Deno.serve(async (req) => {
     const today = new Date(Date.now() + 330 * 60e3).toISOString().slice(0, 10);
     const india = await fillIndia(today).catch((e) => ({ indiaError: String((e as Error)?.message || e) }));
     const rbi = await fillRbi(today).catch((e) => ({ rbiError: String((e as Error)?.message || e) }));
+    const fed = await fillFed(today).catch((e) => ({ fedError: String((e as Error)?.message || e) }));
+    const gdp = await fillGdp(today).catch((e) => ({ gdpError: String((e as Error)?.message || e) }));
+    Object.assign(rbi, fed, gdp);
     // US CPI rows already released (date reached) but missing the figure, from the last 400 days.
     const { data: rows } = await supabase.from("econ_events").select("id,event_date,period,actual,previous").eq("kind", "uscpi")
       .lte("event_date", today).gte("event_date", new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10)).order("event_date");

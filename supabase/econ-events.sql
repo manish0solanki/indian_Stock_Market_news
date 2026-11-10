@@ -4,9 +4,11 @@
 -- decision at 2 pm New York time lands on the next IST day in winter (00:30 IST).
 -- confirmed = false marks dates that follow the usual pattern but were not read from the official
 -- calendar (or that the publisher itself calls tentative). actual / previous / note can be filled in
--- after each release; the page shows whatever is there. US CPI (BLS), India CPI (MoSPI) and RBI decisions (repo rate on
--- rbi.org.in) are filled automatically by the econ-actuals Edge Function (crons 'econ-actuals', 'econ-actuals-india',
--- 'econ-actuals-rbi', only while a release is waiting); Fed, GDP and Budget by hand.
+-- after each release; the page shows whatever is there. US CPI (BLS), India CPI and GDP (MoSPI), RBI (repo rate on
+-- rbi.org.in) and Fed decisions (federalreserve.gov) are filled automatically by the econ-actuals Edge Function (crons
+-- 'econ-actuals', '-india', '-rbi', '-fed', only while a release is waiting). summary (jsonb, added 11 Nov 2026) holds
+-- the "What happened" points written by the econ-summary Edge Function (cron 'econ-summary').
+-- alter table public.econ_events add column if not exists summary jsonb;
 create table if not exists public.econ_events (
   id text primary key,
   event_date date not null,

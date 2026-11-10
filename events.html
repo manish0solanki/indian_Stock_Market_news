@@ -137,6 +137,9 @@ button{font:inherit;color:inherit}
 .econ-why{font-size:13.5px;line-height:1.6}
 .linkish{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}.linkish:hover{text-decoration:underline}
 .econ-why li{margin:3px 0}
+.ewh li{margin:6px 0}
+.ewh-src{font-size:11.5px;color:var(--dim);white-space:nowrap}
+.ewh-src a{color:var(--accent2);text-decoration:none}
 .pv-line{font-size:13.5px;line-height:1.6;padding:7px 0;border-top:1px solid var(--border)}
 .pv-line:first-of-type{border-top:0;padding-top:0}
 .pv-hist{margin-top:8px}
@@ -285,7 +288,7 @@ const ECON={
 function econEvent(r){
  const k=ECON[r.kind]||{short:r.kind};
  return {id:'econ:'+r.id,econ:true,tracked:true,country:r.country,ekind:r.kind,kind:'econ_'+r.kind,symbol:({cpi:'India CPI',gdp:'India GDP',budget:'Budget',rbi:'RBI',fomc:'US Fed',uscpi:'US CPI'}[r.kind]||k.short),event_date:r.event_date,
-  title:r.title,period:r.period,time:r.time_ist,confirmed:r.confirmed,previous:r.previous,actual:r.actual,note:r.note};
+  title:r.title,period:r.period,time:r.time_ist,confirmed:r.confirmed,previous:r.previous,actual:r.actual,note:r.note,summary:r.summary};
 }
 const daysTo=d=>Math.round((Date.parse(d)-Date.parse(istToday()))/864e5);
 const whenTxt=d=>{const n=daysTo(d);return n===0?'today':n===1?'tomorrow':n>1?'in '+n+' days':n===-1?'yesterday':-n+' days ago'};
@@ -301,6 +304,16 @@ function econDetail(e){
   (e.previous?'<div><span>Previous</span><b>'+esc(e.previous)+'</b></div>':'')+(e.actual?'<div><span>Actual</span><b>'+esc(e.actual)+'</b></div>':'')+'</div>';
  if(!e.confirmed)body+='<div class="advice info" style="margin-top:10px">'+(e.note?esc(e.note)+' ':'')+'This date follows the usual schedule but was not confirmed from the official calendar; check the source below before relying on it.</div>';
  else if(e.note)body+='<div class="advice info" style="margin-top:10px">'+esc(e.note)+'</div>';
+ // What happened: points written from the news after the release (econ-summary), each with its sources.
+ const sm=e.summary;
+ if(sm&&Array.isArray(sm.points)&&sm.points.length){
+  const tone=sm.tone>0?['pos','Positive for Indian stocks']:sm.tone<0?['neg','Negative for Indian stocks']:['','Mixed for Indian stocks'];
+  body+='<div class="sec"><h3>What happened <span class="muted" style="font-weight:500;text-transform:none;letter-spacing:0">· '+(tone[0]?'<b class="'+tone[0]+'">'+tone[1]+'</b>':tone[1])+' · updated '+esc(new Date(sm.written_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'}))+' IST'+'</span></h3><ul class="econ-why ewh">'+
+   sm.points.map(p=>'<li>'+esc(p.text)+((p.sources||[]).length?' <span class="ewh-src">'+p.sources.map(x=>{let u='';try{const z=new URL(x.url);u=/^https?:$/.test(z.protocol)?z.href:''}catch(_){}return u?'<a href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(x.title)+'">'+esc(x.source||'source')+'</a>':''}).filter(Boolean).join(' · ')+'</span>':'')+'</li>').join('')+
+   '</ul><div class="disc">Written by AI from news reports and the released figures; every number is checked against them. Not advice.</div></div>';
+ }else if(!up&&(e.actual||e.ekind==='budget')){
+  body+='<div class="sec"><h3>What happened</h3><div class="advice info">A short summary from the news is written about an hour after the release, and updated as more reports come in.</div></div>';
+ }
  body+='<div class="sec"><h3>What it is</h3><div class="econ-why">'+esc(k.what||'')+'</div></div>';
  body+='<div class="sec"><h3>'+(up?'How it can move Indian markets':'Why it mattered')+'</h3><ul class="econ-why">'+(k.impact||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  body+='<div class="links">'+(k.src?'<a href="'+esc(k.src[1])+'" target="_blank" rel="noopener">'+esc(k.src[0])+' ↗</a>':'')+'</div><div class="disc">Schedule from the official calendars; dates can change. General information, not advice.</div>';
