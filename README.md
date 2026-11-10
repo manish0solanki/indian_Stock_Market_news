@@ -232,7 +232,7 @@
 ### 📅 Events Calendar (`events.html`)
 - **NSE holidays** are marked on the calendar ("Market closed · Diwali-Balipratipada") and in the list; special sessions such as Muhurat trading show their times.
 - **Economy events** alongside company events: RBI policy decisions, India CPI and GDP, the Union Budget, US Fed (FOMC) decisions and US CPI, with IST times, what each one is and how it tends to move Indian markets. Kept in `econ_events` (`supabase/econ-events.sql`); dates not read from the official calendar are marked "Expected date". Add new dates (e.g. the next RBI or Fed calendar) by extending that file and re-running it.
-  - **US CPI figures fill in automatically** (`econ-actuals`, from the US Bureau of Labor Statistics API): year-on-year and month-on-month, headline and core, plus the previous month. Runs every 30 minutes from 7:05 pm IST on a US CPI day until the number is in. October 2026 has no year-on-year figure because BLS never collected October 2025 prices (the 2025 US shutdown); the page says so. India CPI, RBI and Fed figures are still entered by hand.
+  - **CPI figures fill in automatically** (`econ-actuals`): **US CPI** from the US Bureau of Labor Statistics API (year-on-year and month-on-month, headline and core; October 2026 has no year-on-year figure because BLS never collected October 2025 prices, and the page says so) and **India CPI** from MoSPI's eSankhyiki API (base 2024=100, All India combined, with food inflation). Each runs every 30 minutes after its release time (US 7:05 pm IST, India 4:05 pm IST) only while a release is waiting for its number. RBI and Fed decisions are still entered by hand.
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
 - **Latest price and today's change** next to every company in the list, on calendar chips (desktop; in the tooltip on phones) and in the event window, from `stock_quotes`, refreshed every 2 minutes. A stock with no trade in 10 days shows its last traded price marked "old".
 - **Before results** ("What to expect", for results due in the next 14 days; `events-preview.js`, `market_events.preview` built by `events-refresh?only=previews` every 15 minutes):
@@ -370,7 +370,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `ipo-refresh` | every 10 min | IPO list, subscription, GMP |
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
 | `market-holidays` | Mondays 01:37 UTC | NSE's official trading-holiday list into `market_holidays` (`supabase/market-calendar.sql`) |
-| `econ-actuals` | :05/:35, 13–18 UTC, only on a US CPI day until filled | US CPI actual and previous into `econ_events` |
+| `econ-actuals` / `econ-actuals-india` | :05/:35, 13–18 UTC (US) and 10–15 UTC (India), only while a CPI release is waiting | CPI actual and previous into `econ_events` |
 | `user-alerts` | every 2 min | `mp_capture_user_alerts()`: personal alerts |
 | `events-previews` | every 15 min | `events-refresh?only=previews`: "What to expect" before results |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |

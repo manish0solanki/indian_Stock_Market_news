@@ -4,8 +4,9 @@
 -- decision at 2 pm New York time lands on the next IST day in winter (00:30 IST).
 -- confirmed = false marks dates that follow the usual pattern but were not read from the official
 -- calendar (or that the publisher itself calls tentative). actual / previous / note can be filled in
--- after each release; the page shows whatever is there. US CPI is filled automatically by the econ-actuals Edge
--- Function (cron 'econ-actuals', only on a US CPI day until the figure is in); the others by hand.
+-- after each release; the page shows whatever is there. US CPI (BLS) and India CPI (MoSPI) are filled automatically by
+-- the econ-actuals Edge Function (crons 'econ-actuals' and 'econ-actuals-india', only while a release is waiting);
+-- RBI, Fed, GDP and Budget by hand.
 create table if not exists public.econ_events (
   id text primary key,
   event_date date not null,

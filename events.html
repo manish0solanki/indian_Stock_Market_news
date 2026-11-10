@@ -284,7 +284,7 @@ const ECON={
 };
 function econEvent(r){
  const k=ECON[r.kind]||{short:r.kind};
- return {id:'econ:'+r.id,econ:true,tracked:true,country:r.country,ekind:r.kind,kind:'econ_'+r.kind,symbol:(FLAG[r.country]||'')+' '+k.short,event_date:r.event_date,
+ return {id:'econ:'+r.id,econ:true,tracked:true,country:r.country,ekind:r.kind,kind:'econ_'+r.kind,symbol:({cpi:'India CPI',gdp:'India GDP',budget:'Budget',rbi:'RBI',fomc:'US Fed',uscpi:'US CPI'}[r.kind]||k.short),event_date:r.event_date,
   title:r.title,period:r.period,time:r.time_ist,confirmed:r.confirmed,previous:r.previous,actual:r.actual,note:r.note};
 }
 const daysTo=d=>Math.round((Date.parse(d)-Date.parse(istToday()))/864e5);
