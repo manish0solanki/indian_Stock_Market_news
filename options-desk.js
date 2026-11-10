@@ -27,7 +27,7 @@
   const symHtml = (sym) => IDX.has(sym) ? `${esc(sym)} <span class="od-tag">Index</span>` : `<span data-sym="${esc(sym)}">${esc(sym)}</span>`;
   const label = (t) => `${t.strategy === 'bear_put_spread' ? 'Bear put' : 'Bull call'} ${k(t.long_strike)}/${k(t.short_strike)} ${t.opt_type || ''}`.trim();
   const lotsOf = (t) => Math.max(1, num(t.lots) || 1);
-  const isOpenNow = () => { const t = new Date(Date.now() + 330 * 60e3), m = t.getUTCHours() * 60 + t.getUTCMinutes(), d = t.getUTCDay(); return d >= 1 && d <= 5 && m >= 560 && m <= 930; };
+  const isOpenNow = () => { const t = new Date(Date.now() + 330 * 60e3), m = t.getUTCHours() * 60 + t.getUTCMinutes(), d = t.getUTCDay(); const ms = window.MP_CONFIG && window.MP_CONFIG.marketSession ? window.MP_CONFIG.marketSession() : null; return !(ms && ms.holiday) && d >= 1 && d <= 5 && m >= 560 && m <= 930; };
   const store = { get: (k2, d) => { try { return localStorage.getItem(k2) || d; } catch (e) { return d; } }, set: (k2, v) => { try { localStorage.setItem(k2, v); } catch (e) { /* ignore */ } } };
   const VIEWS = ['open', 'closed', 'log', 'settings'];
 

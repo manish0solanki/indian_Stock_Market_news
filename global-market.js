@@ -48,16 +48,24 @@
     t = guess - offsetMin(zone, t) * 60e3;
     return t;
   }
-  // The current or next weekday session: { open, start, end } as epoch ms (holidays not known).
+  // The current or next weekday session: { open, start, end } as epoch ms. For India the NSE holiday calendar
+  // (MP_CONFIG, from market_calendar()) is applied: holidays are skipped and special sessions (Muhurat) count.
+  // Other exchanges' holidays are not known.
+  const CFG = window.MP_CONFIG || {};
+  const nseHoliday = (iso) => (CFG.holidays || []).indexOf(iso) >= 0;
+  const nseSpecial = (iso) => (CFG.specialSessions || []).find((x) => x.date === iso) || null;
   function session(key, now = Date.now()) {
     const e = EX[key];
     const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: e[1], year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
     for (let i = 0; i < 8; i++) {
       const day = new Date(Date.UTC(+p.year, +p.month - 1, +p.day + i));
-      const wd = day.getUTCDay(); if (wd === 0 || wd === 6) continue;
-      const start = zoned(e[1], day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), e[2]);
-      const end = zoned(e[1], day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), e[3]);
-      if (now < end) return { open: now >= start, start, end };
+      const wd = day.getUTCDay(), iso = day.toISOString().slice(0, 10);
+      const sp = key === 'india' ? nseSpecial(iso) : null;
+      if (!sp && (wd === 0 || wd === 6)) continue;
+      if (key === 'india' && !sp && nseHoliday(iso)) continue;
+      const start = zoned(e[1], day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), sp ? sp.from : e[2]);
+      const end = zoned(e[1], day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), sp ? sp.to : e[3]);
+      if (now < end) return { open: now >= start, start, end, special: sp ? sp.name : null };
     }
     return null;
   }
@@ -88,7 +96,10 @@
     const at = !s ? '' : open ? ist(s.end) + ' IST' : istWhen(s.start, now) + ' IST';
     // today's (or the next) session in IST, e.g. "5:30 am – 12:00 pm IST"
     const istHours = s ? ist(s.start) + ' – ' + ist(s.end) + ' IST' : '';
-    return { name: e[0], open, time: hm, wd, hours: e[2] + '–' + e[3], next, at, istHours, s };
+    // India on an exchange holiday: say so instead of just "opens tomorrow".
+    const hol = key === 'india' && CFG.marketSession ? CFG.marketSession(now) : null;
+    const closedNote = hol && hol.holiday && !open ? 'Closed today: ' + hol.holidayName : s && s.special && !open ? s.special + ' ahead' : '';
+    return { name: e[0], open, time: hm, wd, hours: e[2] + '–' + e[3], next, at, istHours, s, closedNote };
   }
   const roundClock = (kind) => {
     const ny = local('America/New_York');
@@ -239,18 +250,28 @@
       ${when ? `<div class="gm-muted">NSE IX · as of ${esc(when)} IST</div>` : ''}</div>`;
   }
 
+  // " · next NSE holiday Tue 24 Nov (Guru Nanak Jayanti)"
+  function nextHolidayNote() {
+    const up = CFG.upcomingHolidays ? CFG.upcomingHolidays(3) : [];
+    const today = CFG.marketSession ? CFG.marketSession().today : '';
+    const h = up.find((x) => x.d > today);
+    if (!h) return '';
+    const d = new Date(h.d + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+    return ' · next NSE holiday ' + esc(d) + ' (' + esc(h.name) + ')';
+  }
   function clockHtml() {
     const list = CLOCK.map((k, i) => ({ k, i, s: exStatus(k) }))
       .sort((a, b) => (b.s.open - a.s.open) || (a.s.open ? a.i - b.i : (a.s.s?.start || 9e15) - (b.s.s?.start || 9e15)));
     // the next exchange to open gets a highlight
     const soon = list.filter((x) => !x.s.open && x.s.s).sort((a, b) => a.s.s.start - b.s.s.start)[0];
     const move = (k) => { const q = Q[EX_IDX[k]], m = META[EX_IDX[k]]; const c = q ? num(q.change_percent) : null; return c === null ? null : { c, n: k === 'shanghai' ? 'SSE Composite' : m ? m[0] : 'Nifty 50' }; };
-    return list.map(({ k, s }) => { const mv = s.open ? move(k) : null; return `<div class="gm-ex ${s.open ? 'on' : ''} ${mv && mv.c < 0 ? 'dn' : ''} ${soon && soon.k === k ? 'soon' : ''}" title=""${esc(s.name)}: weekdays ${esc(s.hours)} local time (${esc(s.istHours)}). Local time now ${esc(s.wd)} ${esc(s.time)}. Exchange holidays are not shown.">
+    return list.map(({ k, s }) => { const mv = s.open ? move(k) : null; return `<div class="gm-ex ${s.open ? 'on' : ''} ${mv && mv.c < 0 ? 'dn' : ''} ${soon && soon.k === k ? 'soon' : ''}" title=""${esc(s.name)}: weekdays ${esc(s.hours)} local time (${esc(s.istHours)}). Local time now ${esc(s.wd)} ${esc(s.time)}. ${k === 'india' ? 'NSE holidays come from the exchange calendar.' : 'This exchange\'s holidays are not shown.'}">
       <b>${esc(s.name)}</b>
       <em>${esc(s.next)}</em>
       <span>${s.open ? 'until ' : ''}${esc(s.at.replace(/ IST$/, ''))}</span>
-      <span class="gm-ex-h">${esc(s.istHours.replace(/ IST$/, ''))}</span>${mv ? `<span class="gm-ex-c ${tone(mv.c)}">${esc(mv.n)} ${sgn(mv.c)}%</span>` : ''}</div>`; }).join('');
+      <span class="gm-ex-h">${esc(s.istHours.replace(/ IST$/, ''))}</span>${s.closedNote ? `<span class="gm-ex-hol">${esc(s.closedNote)}</span>` : ''}${mv ? `<span class="gm-ex-c ${tone(mv.c)}">${esc(mv.n)} ${sgn(mv.c)}%</span>` : ''}</div>`; }).join('');
   }
+  window.addEventListener('mp-market-calendar', () => { if (Object.keys(Q).length) try { render(); } catch (e) { /* not mounted */ } });
   function tickClock() { const el = $('gmClock'); if (el && visible()) el.innerHTML = clockHtml(); }
   function render() {
     const host = $('gmRoot'); if (!host) return;
@@ -266,7 +287,7 @@
         </div>
         ${giftTile()}
       </div>
-      <div class="mp-panel gm-clock-wrap"><div class="mp-panel-title"><span>Market clock</span><span class="gm-muted">Opening and closing times in IST · holidays not shown</span></div><div class="gm-clock" id="gmClock">${clockHtml()}</div></div>
+      <div class="mp-panel gm-clock-wrap"><div class="mp-panel-title"><span>Market clock</span><span class="gm-muted">Opening and closing times in IST · NSE holidays included${nextHolidayNote()}</span></div><div class="gm-clock" id="gmClock">${clockHtml()}</div></div>
       <div class="gm-grid">
         ${GROUPS.map((g, i) => ({ g, i, open: g[3].some((k) => Q[k] && stat(k).open) })).sort((a, b) => (b.open - a.open) || a.i - b.i).map(({ g: [id, title, icon, keys] }) => {
           const rows = byOpen(keys).map(row).join('');

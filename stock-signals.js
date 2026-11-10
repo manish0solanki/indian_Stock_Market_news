@@ -663,7 +663,7 @@ function openOptions() {
   const sec = $('tab-options'); if (!sec || sec.dataset.odMounted) return;
   if (!optionsLoading) optionsLoading = new Promise((ok, fail) => {
     const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/options-desk.css?v=4'; document.head.appendChild(css);
-    const js = document.createElement('script'); js.src = '/options-desk.js?v=4'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
+    const js = document.createElement('script'); js.src = '/options-desk.js?v=5'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
   });
   optionsLoading.then(() => window.mpOptionsDesk.mount(sec, sb)).catch(() => { sec.innerHTML = '<div class="note">Could not load the options desk. Refresh to try again.</div>'; optionsLoading = null; });
 }

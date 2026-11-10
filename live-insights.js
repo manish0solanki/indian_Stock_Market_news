@@ -16,6 +16,8 @@
   // 'open' 09:15-15:30 IST on weekdays, 'closed' for the rest of a weekday after 15:30, else 'off'.
   function sessionState() {
     const t = istNow(), d = t.getUTCDay(), m = t.getUTCHours() * 60 + t.getUTCMinutes();
+    const ms = window.MP_CONFIG && window.MP_CONFIG.marketSession ? window.MP_CONFIG.marketSession() : null;
+    if (ms && ms.holiday && !ms.special) return 'off'; // NSE holiday: show the blog posts, as at weekends
     if (d === 0 || d === 6 || m < 555) return 'off';
     return m < 930 ? 'open' : 'closed';
   }

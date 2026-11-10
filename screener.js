@@ -19,6 +19,8 @@
   // During market hours today's volume is only part of a day; scale it by the share of the session gone.
   function sessionFrac() {
     const t = new Date(Date.now() + 330 * 60e3), d = t.getUTCDay(), m = t.getUTCHours() * 60 + t.getUTCMinutes();
+    const C = window.MP_CONFIG;
+    if (C && C.isMarketOpen && !C.isMarketOpen()) return 1; // holidays and special sessions from the NSE calendar
     if (d === 0 || d === 6 || m < 555 || m >= 930) return 1;
     return Math.max(0.1, (m - 555) / 375);
   }

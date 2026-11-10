@@ -230,6 +230,7 @@
 - A tab in the Admin Panel (`admin-news.html#health`) with a badge counting problems; re-checks every 2 minutes. `admin-health.html` redirects there.
 
 ### 📅 Events Calendar (`events.html`)
+- **NSE holidays** are marked on the calendar ("Market closed · Diwali-Balipratipada") and in the list; special sessions such as Muhurat trading show their times.
 - **Economy events** alongside company events: RBI policy decisions, India CPI and GDP, the Union Budget, US Fed (FOMC) decisions and US CPI, with IST times, what each one is and how it tends to move Indian markets. Kept in `econ_events` (`supabase/econ-events.sql`); dates not read from the official calendar are marked "Expected date". Add new dates (e.g. the next RBI or Fed calendar) by extending that file and re-running it.
 - Upcoming and recent **results, dividends, bonus, splits, buybacks and fund-raising** from the NSE event calendar and corporate actions.
 - **Latest price and today's change** next to every company in the list, on calendar chips (desktop; in the tooltip on phones) and in the event window, from `stock_quotes`, refreshed every 2 minutes. A stock with no trade in 10 days shows its last traded price marked "old".
@@ -243,6 +244,11 @@
   - the share-price reaction
   - a positive / negative / mixed verdict with the reasons, and related signals
 - Calendar and list views, filters, and a detail window.
+
+### 🗓️ Market calendar (`supabase/market-calendar.sql`, `supabase/functions/market-holidays`)
+- **Holidays come from NSE automatically:** the `market-holidays` function reads NSE's official trading-holiday list every Monday and keeps `market_holidays` in step (dates NSE moves are updated, new years appear when NSE publishes them, usually in December). Special sessions (e.g. Muhurat trading) go in `market_special_sessions` by hand from NSE's circular.
+- **Pages:** `site-config.js` loads `market_calendar()` on every page (cached 6 hours) into `MP_CONFIG.holidays` / `specialSessions`, with `marketSession()`, `isMarketOpen()`, `isTradingDay()` and `upcomingHolidays()`. The market clock, Home, Stock Analysis, Signals, F&O, watchlist, screener, live insights and the options desk use them, so nothing shows "open" on a holiday.
+- **Jobs:** market-hours cron jobs (daily blog posts, FII/DII post, live insights, signal scan, options desk, sector history) skip holidays with `where not public.mp_is_market_holiday()`; the pre-market brief already did.
 
 ### 🆕 IPOs (`ipo.html`)
 - Open, upcoming and closed IPOs (mainboard and SME): price band, lot size, dates, category-wise subscription and **grey market premium (GMP)** with estimated listing price.
@@ -351,6 +357,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `feeds-refresh` | every 10 min | Breadth, FII/DII and other feeds |
 | `ipo-refresh` | every 10 min | IPO list, subscription, GMP |
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
+| `market-holidays` | Mondays 01:37 UTC | NSE's official trading-holiday list into `market_holidays` (`supabase/market-calendar.sql`) |
 | `events-previews` | every 15 min | `events-refresh?only=previews`: "What to expect" before results |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |
 | `stocks-sync` | 03:11 and 13:11 | Stock master list |

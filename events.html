@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="/site-config.js?v=2"></script>
+<script src="/site-config.js?v=3"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a0f1e">
@@ -61,6 +61,10 @@ button{font:inherit;color:inherit}
 .ev b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .ev .vd{margin-left:auto;font-size:10px;font-weight:800}
 .ev .vd.pos{color:var(--green)}.ev .vd.neg{color:var(--red)}.ev .vd.mix{color:var(--amber)}
+.day.hol{background:color-mix(in srgb,var(--amber) 7%,var(--surface))}
+.holtag{font-size:10.5px;font-weight:700;color:var(--amber);padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.holtag.sp{color:var(--violet)}
+.holrow{padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--amber);background:var(--amberbg)}
 .more{font-size:11px;color:var(--accent2);background:none;border:0;padding:1px 4px;cursor:pointer;text-align:left;font-weight:700}
 
 /* List */
@@ -204,6 +208,8 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 const istToday=()=>new Date(Date.now()+330*60e3).toISOString().slice(0,10);
+// NSE holiday name for a weekday date (MP_CONFIG calendar from market_calendar()), else null.
+const nseHol=d=>{const C=window.MP_CONFIG,w=new Date(d+'T00:00:00Z').getUTCDay();if(!C||!C.holidays||w===0||w===6||C.holidays.indexOf(d)<0)return null;if((C.specialSessions||[]).some(x=>x.date===d))return null;return (C.holidayNames&&C.holidayNames[d])||'Market holiday'};
 const addDays=(iso,n)=>new Date(Date.parse(iso+'T00:00:00Z')+n*864e5).toISOString().slice(0,10);
 const fmtDay=(iso,o)=>new Date(iso+'T00:00:00Z').toLocaleDateString('en-IN',Object.assign({timeZone:'UTC'},o||{weekday:'short',day:'numeric',month:'short'}));
 const inr=(v,d=2)=>v==null?'—':'₹'+Number(v).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -338,7 +344,10 @@ function renderCalendar(){
   if(i>=35&&d.slice(0,7)!==month)break;
   const list=(byDay[d]||[]).sort((a,b)=>(!!b.econ-!!a.econ)||(b.tracked-a.tracked)||(groupOf(a)==='results'?-1:1)||a.symbol.localeCompare(b.symbol));
   const cap=innerWidth<700?2:4;
-  cells+='<div class="day'+(d.slice(0,7)!==month?' out':'')+(d===t?' today':'')+'"><div class="dn">'+Number(d.slice(8))+(list.length?'<em>'+list.length+'</em>':'')+'</div>'+
+  const hol=nseHol(d),sps=((window.MP_CONFIG||{}).specialSessions||[]).find(x=>x.date===d);
+  cells+='<div class="day'+(d.slice(0,7)!==month?' out':'')+(d===t?' today':'')+(hol?' hol':'')+'"><div class="dn">'+Number(d.slice(8))+(list.length?'<em>'+list.length+'</em>':'')+'</div>'+
+   (hol?'<div class="holtag" title="NSE trading holiday: '+esc(hol)+'">Market closed · '+esc(hol)+'</div>':'')+
+   (sps?'<div class="holtag sp" title="Special session '+esc(sps.from)+'–'+esc(sps.to)+' IST">'+esc(sps.name)+' '+esc(sps.from)+'–'+esc(sps.to)+'</div>':'')+
    list.slice(0,cap).map(chip).join('')+(list.length>cap?'<button class="more" data-day="'+d+'">+'+(list.length-cap)+' more</button>':'')+'</div>';
  }
  $('calendar').innerHTML='<div class="cal"><div class="calhead"><h2>'+first.toLocaleDateString('en-IN',{month:'long',year:'numeric',timeZone:'UTC'})+'</h2><div class="nav">'+
@@ -370,10 +379,12 @@ function renderList(){
  }else{
   const up=vis.filter(e=>e.event_date>=t),by={};
   for(const e of up)(by[e.event_date]||(by[e.event_date]=[])).push(e);
+  const lastDay=Object.keys(by).sort().slice(0,30).pop()||t;
+  for(const d of ((window.MP_CONFIG||{}).holidays||[]))if(d>=t&&d<=lastDay&&nseHol(d)&&!by[d])by[d]=[];
   groups=Object.keys(by).sort().slice(0,30).map(d=>[(d===t?'Today':d===addDays(t,1)?'Tomorrow':fmtDay(d,{weekday:'long',day:'numeric',month:'long'})),by[d].sort((a,b)=>(!!b.econ-!!a.econ)||(b.tracked-a.tracked)||a.symbol.localeCompare(b.symbol)),d]);
   if(!groups.length){$('listview').innerHTML='<div class="empty">No upcoming events match these filters.</div>';return}
  }
- $('listview').innerHTML='<div class="list">'+groups.map(([h,list])=>'<div class="dayblock"><h3>'+esc(h)+'<span>'+list.length+' event'+(list.length===1?'':'s')+'</span></h3>'+list.slice(0,80).map(rowHtml).join('')+(list.length>80?'<div class="muted" style="padding:8px 14px">'+(list.length-80)+' more: narrow the filters or search.</div>':'')+'</div>').join('')+'</div>';
+ $('listview').innerHTML='<div class="list">'+groups.map(([h,list,d])=>'<div class="dayblock"><h3>'+esc(h)+'<span>'+list.length+' event'+(list.length===1?'':'s')+'</span></h3>'+(d&&nseHol(d)?'<div class="holrow">🔒 NSE closed: '+esc(nseHol(d))+'. No trading in stocks or F&amp;O; results and announcements can still come out.</div>':'')+list.slice(0,80).map(rowHtml).join('')+(list.length>80?'<div class="muted" style="padding:8px 14px">'+(list.length-80)+' more: narrow the filters or search.</div>':'')+'</div>').join('')+'</div>';
 }
 
 function render(){
@@ -512,6 +523,7 @@ async function load(){
  if(scope==='mine'&&!user)scope='tracked';
  render();
 }
+window.addEventListener('mp-market-calendar',()=>{try{render()}catch(e){}});
 load();
 </script>
 </body>
