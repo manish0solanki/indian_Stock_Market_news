@@ -2,13 +2,55 @@
    their set-up going in (results_ahead() in supabase/results-ahead.sql: the Events preview's rule-based factors plus the
    scanner's swing signal), with this page adding each listed stock's news of the last 7 days (stock-news.js).
    Shows the track record of these leans once results_lean_log has settled some (results_lean_record()).
-   Paper / personal use until SEBI RA registration. Uses the page's globals: sb, $, esc, fmtDay, pct, inr, events, detail. */
+   "Paper trade" places a BUY in the Signals paper account (stock_paper_trades, source 'results-ahead') at the last price,
+   sized from an amount you enter, with the stop 1.5x the stock's usual results-day move below (at least 3%, at most 15%)
+   so a normal results gap doesn't stop it out, and targets at 2x and 3x that distance. The paper monitor manages it.
+   Paper / personal use until SEBI RA registration. Uses the page's globals: sb, $, esc, fmtDay, pct, inr, events, detail, user. */
 (function () {
   const KEY = 'mp-results-ahead';
-  let st = { days: null, posOnly: true, mcap: 1000 };
+  let st = { days: null, posOnly: true, mcap: 1000, amount: 10000 };
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* private mode */ }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ posOnly: st.posOnly, mcap: st.mcap })); } catch (e) { /* ignore */ } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ posOnly: st.posOnly, mcap: st.mcap, amount: st.amount })); } catch (e) { /* ignore */ } };
   let data = null, record = null, news = {}, open = {}, box = null, loading = false, limit = 10;
+  let held = new Set(), ticket = null; // open paper positions (symbols); the row whose order form is open
+  const me = () => (typeof user !== 'undefined' && user) || null;
+  async function loadHeld() {
+    if (!me()) return;
+    const { data: rows } = await sb.from('stock_paper_trades').select('symbol').eq('user_id', me().id).eq('status', 'OPEN');
+    held = new Set((rows || []).map((r) => r.symbol));
+  }
+  // The order for a row: stop beyond the usual results-day move, targets at 2x and 3x.
+  function plan(r, amount) {
+    const mv = r.stats && Number(r.stats.avgAbs) > 0 ? Number(r.stats.avgAbs) : 4;
+    const sp = Math.min(15, Math.max(3, mv * 1.5)) / 100, px = Number(r.price);
+    const qty = Math.floor(amount / px);
+    const r2 = (v) => Math.round(v * 20) / 20; // to the 5-paise tick
+    return { qty, px, stop: r2(px * (1 - sp)), t1: r2(px * (1 + 2 * sp)), t2: r2(px * (1 + 3 * sp)), sp, risk: Math.round(qty * px * sp), cost: Math.round(qty * px), mv };
+  }
+  async function place(r) {
+    if (!me()) { alert('Sign in to paper trade.'); return; }
+    const p = plan(r, st.amount);
+    if (!(p.qty > 0)) return;
+    const now = new Date().toISOString(), t = total(r);
+    const row = {
+      user_id: me().id, symbol: r.symbol, timeframe: 'swing', direction: 'BUY', setup: 'Results play', score: Math.round(t * 10),
+      entry_price: p.px, stop_loss: p.stop, target_1: p.t1, target_2: p.t2, quantity: p.qty, risk_budget: Math.round((p.px - p.stop) * p.qty * 100) / 100,
+      signal_time: now, source: 'results-ahead', status: 'OPEN', opened_at: now,
+      signal_snapshot: { results_date: r.date, lean_score: t, factors: r.factors, usual_results_move: p.mv, stop_pct: Math.round(p.sp * 1000) / 10,
+        estimated_cost_bps: 10, original_quantity: p.qty, replay_until: Date.now(), mark_price: p.px, mark_source: 'order fill at LTP', fill_model: 'market order at last price' },
+    };
+    const btn = box.querySelector('[data-raplace]'); if (btn) { btn.disabled = true; btn.textContent = 'Placing…'; }
+    const { error } = await sb.from('stock_paper_trades').insert(row);
+    if (error) { alert(error.code === '23505' ? r.symbol + ' is already open in your paper account.' : 'Could not place: ' + error.message); if (btn) { btn.disabled = false; btn.textContent = 'Place paper trade'; } return; }
+    held.add(r.symbol); ticket = null; paint();
+  }
+  function ticketHtml(r) {
+    const p = plan(r, st.amount);
+    return '<div class="ra-tk"><label>Amount ₹ <input type="number" min="100" step="500" value="' + st.amount + '" data-raamt aria-label="Amount to invest"></label>' +
+      (p.qty > 0 ? '<div class="ra-tk-l">Buy <b>' + p.qty + '</b> at about ' + inr(p.px) + ' = ' + inr(p.cost, 0) + ' · stop ' + inr(p.stop) + ' (−' + (p.sp * 100).toFixed(1) + '%, 1.5× its usual ±' + p.mv.toFixed(1) + '% results move) · targets ' + inr(p.t1) + ' / ' + inr(p.t2) + ' · <b class="neg">max loss about ' + inr(p.risk, 0) + '</b> if the stop fills (a gap can make it worse)</div>'
+        : '<div class="ra-tk-l neg">' + inr(st.amount, 0) + ' is less than one share at ' + inr(p.px) + '.</div>') +
+      '<div class="ra-tk-b"><button class="chip on" data-raplace="' + esc(r.symbol) + '"' + (p.qty > 0 ? '' : ' disabled') + '>Place paper trade</button><button class="chip" data-racancel="1">Cancel</button></div></div>';
+  }
 
   const css = document.createElement('style');
   css.textContent = `
@@ -34,6 +76,12 @@
 .ra-score.pos{background:var(--greenbg);color:var(--green)}.ra-score.neg{background:var(--redbg);color:var(--red)}.ra-score.mix{background:var(--amberbg);color:var(--amber)}
 .ra-mv{font-size:11.5px;color:var(--muted);white-space:nowrap}
 .ra-a{border:0;background:none;color:var(--accent2);font:700 12px Inter,system-ui,sans-serif;cursor:pointer;padding:0}
+.ra-pt{border:1px solid var(--accent2);background:none;color:var(--accent2);border-radius:8px;padding:3px 9px;font:700 11.5px Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.ra-pt.done{border-color:transparent;color:var(--green);cursor:default}
+.ra-tk{grid-column:2/-1;margin-top:6px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);font-size:12.5px}
+.ra-tk input{width:110px;padding:5px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);margin-left:4px}
+.ra-tk-l{margin:8px 0;line-height:1.55}
+.ra-tk-b{display:flex;gap:8px}
 .ra-note{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.55}
 .ra-empty{padding:18px;text-align:center;color:var(--muted)}
 @media(max-width:700px){.ra-row{grid-template-columns:22px minmax(0,1fr)}.ra-side{grid-column:2;flex-direction:row;align-items:center;justify-content:flex-start;flex-wrap:wrap}}`;
@@ -114,7 +162,9 @@
         '<button class="ra-a" data-ramore="' + esc(r.symbol) + '">' + (open[r.symbol] ? 'Fewer reasons' : 'All reasons') + '</button> · <button class="ra-a" data-raopen="' + esc(r.id) + '">What to expect →</button></div>' +
         '<div class="ra-side"><span class="ra-score ' + lb[1] + '" title="Score ' + t.toFixed(1) + '">' + lb[0] + ' · ' + (t > 0 ? '+' : '') + t.toFixed(1) + '</span>' +
         (st2 ? '<span class="ra-mv">Usual results move ±' + Number(st2.avgAbs).toFixed(1) + '%</span><span class="ra-mv">Rose after ' + st2.up + ' of ' + st2.n + '</span>' : '') +
-        (nw && nw.pending ? '<span class="ra-mv">Reading news…</span>' : '') + '</div></div>';
+        (nw && nw.pending ? '<span class="ra-mv">Reading news…</span>' : '') +
+        (held.has(r.symbol) ? '<span class="ra-pt done">✓ In paper portfolio</span>' : '<button class="ra-pt" data-ratk="' + esc(r.symbol) + '">Paper trade</button>') + '</div>' +
+        (ticket === r.symbol ? ticketHtml(r) : '') + '</div>';
     }).join('') + (list.length > limit ? '<div class="ra-empty"><button class="chip" data-ramorelist="1">Show ' + Math.min(10, list.length - limit) + ' more</button> <span style="font-size:12px">of ' + (list.length - limit) + ' left</span></div>' : '');
   }
   function mount() {
@@ -129,13 +179,23 @@
       const d = e.target.closest('[data-rad]');
       if (d) { limit = 10; const v = d.dataset.rad; st.days = st.days.includes(v) ? st.days.filter((x) => x !== v) : st.days.concat(v); if (!st.days.length) st.days = [v]; paint(); load(); return; }
       if (e.target.closest('[data-ramorelist]')) { limit += 10; paint(); return; }
+      const tk = e.target.closest('[data-ratk]'); if (tk) { ticket = ticket === tk.dataset.ratk ? null : tk.dataset.ratk; paint(); return; }
+      if (e.target.closest('[data-racancel]')) { ticket = null; paint(); return; }
+      const pl = e.target.closest('[data-raplace]'); if (pl) { const r = (data && data.rows || []).find((x) => x.symbol === pl.dataset.raplace); if (r) place(r); return; }
       if (e.target.closest('[data-rapos]')) { st.posOnly = !st.posOnly; save(); paint(); loadNews(); return; }
       const m = e.target.closest('[data-ramore]'); if (m) { open[m.dataset.ramore] = !open[m.dataset.ramore]; paint(); return; }
       const o = e.target.closest('[data-raopen]');
       if (o) { const ev = (window.events || events || []).find((x) => x.id === o.dataset.raopen); if (ev) detail(ev); return; }
     });
+    host.addEventListener('input', (e) => {
+      if (!e.target.matches('[data-raamt]')) return;
+      st.amount = Math.max(0, Number(e.target.value) || 0); save();
+      const r = (data && data.rows || []).find((x) => x.symbol === ticket); if (!r) return;
+      const tk = box.querySelector('.ra-tk'); const pos = e.target.selectionStart;
+      tk.outerHTML = ticketHtml(r); const inp = box.querySelector('[data-raamt]'); inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (_) { /* number input */ }
+    });
     host.addEventListener('change', (e) => { if (e.target.matches('[data-ramcap]')) { limit = 10; st.mcap = Number(e.target.value) || 1000; save(); load(); } });
-    paint(); load();
+    paint(); loadHeld().then(paint); load();
   }
   window.mpResultsAhead = { mount };
 })();

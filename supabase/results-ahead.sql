@@ -41,7 +41,7 @@ begin
       'id', id, 'symbol', symbol, 'company', company, 'date', event_date, 'sector', sector,
       'price', price, 'change_percent', round(change_percent::numeric, 2), 'mcap_cr', round((market_cap / 1e7)::numeric),
       'score', score, 'factors', preview->'factors', 'stats', preview->'stats', 'last', preview->'last', 'base', preview->'base',
-      'runup', preview->'runup', 'peers', preview->'peers' - 'list', 'day_abs', preview->'dayAbs',
+      'runup', preview->'runup', 'peers', case when jsonb_typeof(preview->'peers') = 'object' then (preview->'peers') - 'list'::text end, 'day_abs', preview->'dayAbs',
       'signal', case when sig_side is null then null else jsonb_build_object('side', sig_side, 'setup', sig_setup, 'score', sig_score, 'entry', sig_entry, 'stop', sig_stop, 'target1', sig_t1) end
     ) order by score desc, market_cap desc nulls last), '[]'::jsonb)) into out
   from rows;
