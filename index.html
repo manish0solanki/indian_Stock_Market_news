@@ -3428,7 +3428,7 @@ input,select,textarea{min-width:0;}
 </style>
 <script src="/refresh-stamp.js?v=2"></script>
 <script src="/link-viewer.js?v=1" defer></script>
-<script src="/notify.js?v=3" defer></script>
+<script src="/notify.js?v=4" defer></script>
 <script src="/brands.js"></script><script src="/brand.js"></script><script src="/sample-data.js"></script>
 </head>
 <body>
@@ -3529,6 +3529,7 @@ input,select,textarea{min-width:0;}
       <button type="button" class="mp-side-link" data-mp-go="crude"><span class="mp-side-ico">◆</span>Crude &amp; Commodities</button>
       <button type="button" class="mp-side-link" data-mp-go="crypto"><span class="mp-side-ico">₿</span>Crypto Bot</button>
       <a class="mp-side-link" href="/portfolio.html"><span class="mp-side-ico">◔</span>My Portfolio</a>
+      <a class="mp-side-link" href="/alerts.html"><span class="mp-side-ico">◉</span>My Alerts</a>
       <a class="mp-side-link" href="/money.html"><span class="mp-side-ico">₹</span>Money Manager</a>
       <a class="mp-side-link" href="/ipo.html"><span class="mp-side-ico">⊕</span>IPOs &amp; Subscription</a>
       <a class="mp-side-link" href="/blog/"><span class="mp-side-ico">✎</span>Market Blog</a>
@@ -5749,12 +5750,8 @@ profileCancel.addEventListener('click', closeProfileModal);
 profileSave.addEventListener('click', saveProfile);
 profileUploadButton.addEventListener('click', () => profileAvatarFile.click());
 watchlistButton.addEventListener('click', openWatchlistModal);
-alertButton.addEventListener('click', async () => {
-  if ('Notification' in window && Notification.permission === 'default') {
-    try { await Notification.requestPermission(); } catch (e) {}
-  }
-  openAlertModal();
-});
+// My Alerts: the full Alerts page (settings, price alerts, recent alerts). The old price-alert box stays for the stock card.
+alertButton.addEventListener('click', () => { location.href = '/alerts.html'; });
 alertClose.addEventListener('click', closeAlertModal);
 alertRefresh.addEventListener('click', loadAlerts);
 alertSymbol.addEventListener('input', () => {

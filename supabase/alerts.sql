@@ -1,4 +1,4 @@
--- NOT YET APPLIED (waiting for approval of the migration).
+-- Applied 10 Nov 2026 (migration user_alerts; cron "user-alerts" every 2 minutes; "same site only" policies added as in tenants.sql).
 -- Personal alerts (Alerts page /alerts.html and the 🔔 bell's "My alerts" tab). Only about the user's own stocks:
 -- their holdings (portfolio_transactions) and watchlist, plus their own price alerts and paper trades. Nothing here
 -- recommends other stocks (paper / personal use until SEBI RA registration).
@@ -206,4 +206,4 @@ $$;
 revoke all on function public.my_alerts_read(bigint[]) from public, anon;
 grant execute on function public.my_alerts_read(bigint[]) to authenticated;
 
--- select cron.schedule('user-alerts', '*/2 * * * *', 'select public.mp_capture_user_alerts()');
+-- Applied: select cron.schedule('user-alerts', '*/2 * * * *', 'select public.mp_capture_user_alerts()');

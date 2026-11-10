@@ -245,6 +245,16 @@
   - a positive / negative / mixed verdict with the reasons, and related signals
 - Calendar and list views, filters, and a detail window.
 
+### 🔔 My Alerts (`alerts.html`, `supabase/alerts.sql`)
+- **Only about the user's own stocks** (holdings and watchlist) plus their own price alerts and paper trades; nothing recommends other stocks.
+- **Engine:** `mp_capture_user_alerts()` runs every 2 minutes (pg_cron `user-alerts`) and writes `user_alerts` once per event:
+  - **price alerts** (`stock_alerts`) crossing their price on a quote from today; the alert then switches off (replaces the old n8n flow, which never ran)
+  - **big moves**: ±3% in a day by default (and again at twice that), trading days only
+  - **results**: the afternoon before (with the usual results-day move from the Events preview), and the verdict once out
+  - **dividends**: the day before the ex-date, with the amount
+  - **scanner signals** on their stocks, and **paper trades** closing
+- **Where they show:** the 🔔 bell's "My alerts" tab on every page (read/unread kept on the server, a pop-up when one arrives) and the Alerts page: on/off switches, the big-move %, holdings / watchlist / both, price alerts (add, pause, re-arm, delete), the stocks covered and recent alerts. Linked from the account menus and the side menu.
+
 ### 🗓️ Market calendar (`supabase/market-calendar.sql`, `supabase/functions/market-holidays`)
 - **Holidays come from NSE automatically:** the `market-holidays` function reads NSE's official trading-holiday list every Monday and keeps `market_holidays` in step (dates NSE moves are updated, new years appear when NSE publishes them, usually in December). Special sessions (e.g. Muhurat trading) go in `market_special_sessions` by hand from NSE's circular.
 - **Pages:** `site-config.js` loads `market_calendar()` on every page (cached 6 hours) into `MP_CONFIG.holidays` / `specialSessions`, with `marketSession()`, `isMarketOpen()`, `isTradingDay()` and `upcomingHolidays()`. The market clock, Home, Stock Analysis, Signals, F&O, watchlist, screener, live insights and the options desk use them, so nothing shows "open" on a holiday.
@@ -359,6 +369,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `ipo-refresh` | every 10 min | IPO list, subscription, GMP |
 | `events-refresh` | hourly at :23 | Events calendar, pre-event data and post-results analysis |
 | `market-holidays` | Mondays 01:37 UTC | NSE's official trading-holiday list into `market_holidays` (`supabase/market-calendar.sql`) |
+| `user-alerts` | every 2 min | `mp_capture_user_alerts()`: personal alerts |
 | `events-previews` | every 15 min | `events-refresh?only=previews`: "What to expect" before results |
 | `crude-refresh` | every 30 min | Crude oil feed and impact |
 | `stocks-sync` | 03:11 and 13:11 | Stock master list |

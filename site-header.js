@@ -69,7 +69,7 @@
     var acct = user
       ? '<div class="mph-rel"><button class="mph-acct" id="mphAcct" type="button" aria-haspopup="true" aria-expanded="false"><b>' + esc(((user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || user.email || 'U').charAt(0).toUpperCase()) + '</b><span>Account</span></button>' +
         '<div class="mph-pop" id="mphAcctMenu" hidden><div class="mph-email">' + esc(who) + '</div>' +
-        '<a href="/my-ticker.html" target="_self">✎ My Ticker</a><a href="/portfolio.html" target="_self">📊 My Portfolio</a><a href="/money.html" target="_self">💰 My Money</a><a href="/stock-signals.html" target="_self">📈 Stock Signals</a><a href="/" target="_self">🏠 Dashboard</a>' +
+        '<a href="/my-ticker.html" target="_self">✎ My Ticker</a><a href="/portfolio.html" target="_self">📊 My Portfolio</a><a href="/alerts.html" target="_self">🔔 My Alerts</a><a href="/money.html" target="_self">💰 My Money</a><a href="/stock-signals.html" target="_self">📈 Stock Signals</a><a href="/" target="_self">🏠 Dashboard</a>' +
         '<button type="button" id="mphLogout">↩ Log out</button></div></div>'
       : '<a class="mph-login" href="/?login=1" target="_self">Login</a>';
     // Plain <div>s with roles: some pages style the header/nav tags globally.
@@ -118,7 +118,7 @@
     wire(header, sheet);
     // notifications bell (notify.js)
     if (window.MPNotify) window.MPNotify.mount();
-    else if (!document.querySelector('script[src^="/notify.js"]')) { var ns = document.createElement('script'); ns.src = '/notify.js?v=3'; ns.defer = true; document.head.appendChild(ns); }
+    else if (!document.querySelector('script[src^="/notify.js"]')) { var ns = document.createElement('script'); ns.src = '/notify.js?v=4'; ns.defer = true; document.head.appendChild(ns); }
   }
 
   function wire(header, sheet) {

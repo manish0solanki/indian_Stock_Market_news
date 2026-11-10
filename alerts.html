@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/site-config.js?v=3"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>My Alerts — MarketPulse</title>
+<meta name="description" content="Alerts for your own stocks: price alerts, big moves, results, dividends, signals and paper trades.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--radius:14px}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+button,input,select{font:inherit;color:inherit}
+.page{max-width:1100px;margin:0 auto;padding:22px clamp(12px,2.4vw,28px) 40px}
+.head{margin-bottom:16px}
+.head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.sub{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card h2{margin:0 0 4px;font-size:16px}
+.card .hint{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+.wide{grid-column:1/-1}
+.tg{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.tg:first-of-type{border-top:0}
+.tg div{flex:1;min-width:0}
+.tg b{display:block;font-size:14px}
+.tg small{display:block;color:var(--muted);font-size:12.5px;line-height:1.45}
+.sw{position:relative;width:42px;height:24px;flex:0 0 auto;margin-top:2px}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw span{position:absolute;inset:0;border-radius:999px;background:var(--border);cursor:pointer;transition:.15s}
+.sw span::after{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.15s}
+.sw input:checked+span{background:var(--accent)}
+.sw input:checked+span::after{transform:translateX(18px)}
+.sw input:focus-visible+span{outline:2px solid var(--accent2);outline-offset:2px}
+.num{width:64px;padding:5px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);text-align:right}
+.seg{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--surface2);flex-wrap:wrap}
+.seg button{border:0;background:none;color:var(--muted);font-weight:700;font-size:12.5px;padding:6px 11px;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.in{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);min-width:0}
+.btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer}
+.btn.ghost{background:none;color:var(--accent2);border-color:var(--border)}
+.btn:disabled{opacity:.5;cursor:default}
+#paSym::placeholder{text-transform:none}
+.err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:6px}
+.ok{color:var(--green)}
+.pa{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border)}
+.pa:first-child{border-top:0}
+.pa .t{flex:1;min-width:0}
+.pa .t b{font-size:14px}
+.pa .t small{display:block;font-size:12px;color:var(--muted)}
+.pa.off{opacity:.6}
+.x{border:1px solid var(--border);background:var(--surface2);border-radius:8px;padding:4px 9px;cursor:pointer;color:var(--muted);font-weight:700;font-size:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none}
+.chip.h{color:var(--text)}
+.al{display:flex;gap:11px;padding:11px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit}
+.al:first-child{border-top:0}
+.al .ic{flex:0 0 34px;height:34px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:17px}
+.al .tx{flex:1;min-width:0}
+.al .tx b{display:block;font-size:13.5px}
+.al .tx p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.al .tx small{font-size:11px;color:var(--dim)}
+.al.new .tx b::after{content:" ●";color:#ef4444;font-size:10px;vertical-align:middle}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+.gate{max-width:520px;margin:40px auto;text-align:center}
+.note{font-size:12px;color:var(--dim);margin-top:16px;line-height:1.6}
+.saved{font-size:12px;color:var(--green);margin-left:8px;opacity:0;transition:opacity .2s}
+.saved.on{opacity:1}
+@media(max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="/brands.js"></script><script src="/brand.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <div class="head"><h1>My alerts</h1><div class="sub">About your own stocks only: what you hold and what's on your watchlist. Checked every 2 minutes; they appear in the 🔔 bell on every page.</div></div>
+
+ <div id="gate" class="gate card" hidden><h2>Sign in to use alerts</h2><p class="sub">Alerts follow your portfolio and watchlist, so they need your account.</p><a class="btn" href="/?login=1" style="display:inline-block;text-decoration:none">Log in</a></div>
+
+ <div id="app" class="grid" hidden>
+  <section class="card">
+   <h2>What to alert me about <span class="saved" id="saved">Saved</span></h2>
+   <p class="hint">Each switch saves at once.</p>
+   <div id="toggles"></div>
+   <div class="tg"><div><b>Which stocks</b><small>Automatic alerts cover these. Price alerts always apply to the stocks you set them on.</small></div></div>
+   <div class="seg" id="scope" role="group" aria-label="Which stocks"><button data-v="both">Holdings + watchlist</button><button data-v="holdings">Holdings only</button><button data-v="watchlist">Watchlist only</button></div>
+  </section>
+
+  <section class="card">
+   <h2>Price alerts</h2>
+   <p class="hint">Alert me once when a stock trades at or past a price. The alert then switches off.</p>
+   <div class="row">
+    <input class="in" id="paSym" placeholder="Symbol, e.g. TATAPOWER" style="flex:1 1 150px;text-transform:uppercase" autocomplete="off" aria-label="Stock symbol">
+    <select class="in" id="paCond" aria-label="Condition"><option value="above">goes above</option><option value="below">goes below</option></select>
+    <input class="in" id="paPrice" type="number" step="0.05" min="0" placeholder="₹ price" style="width:110px" aria-label="Price">
+    <button class="btn" id="paAdd">Add</button>
+   </div>
+   <div class="err" id="paErr" role="alert"></div>
+   <div id="paList"></div>
+  </section>
+
+  <section class="card">
+   <h2>Stocks covered</h2>
+   <p class="hint" id="covHint">Loading…</p>
+   <div class="chips" id="cov"></div>
+  </section>
+
+  <section class="card">
+   <h2>Recent alerts <button class="btn ghost" id="readAll" style="float:right;padding:4px 10px;font-size:12px">Mark all read</button></h2>
+   <p class="hint">The last 45 days.</p>
+   <div id="recent"><div class="empty">Loading…</div></div>
+  </section>
+ </div>
+ <p class="note">Alerts are information about stocks you already hold or follow, not recommendations. Scanner signals and results verdicts are rule-based. Phone notifications when the site is closed are coming next.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/portfolio-core.js?v=2"></script>
+<script>
+const sb=window.supabase.createClient(MP_CONFIG.supabaseUrl,MP_CONFIG.supabaseKey);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=v=>v==null?'—':'₹'+Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ago=t=>{const s=(Date.now()-Date.parse(t))/1e3;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+' min ago';if(s<86400)return Math.floor(s/3600)+' h ago';return new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})};
+const TOGGLES=[
+ ['on_price','🎯 Price alerts','When a stock crosses a price you set below.'],
+ ['on_big_move','🚀 Big moves','A stock of yours moves more than this much in a day, and again at twice that. Trading days only.','big'],
+ ['on_results','📊 Results','The afternoon before results (with its usual results-day move), and the verdict once they are out.'],
+ ['on_dividend','💰 Dividends','The day before a stock goes ex-dividend, with the amount.'],
+ ['on_signal','📈 Scanner signals','A new buy or sell signal from the Stock Signals scanner on one of your stocks.'],
+ ['on_paper','✅ Paper trades','One of your paper trades closes at its target or stop.'],
+];
+const DEF={scope:'both',big_move_pct:3,on_price:true,on_big_move:true,on_results:true,on_dividend:true,on_signal:true,on_paper:true};
+let user=null,set={...DEF},savedT=null;
+
+function paintSettings(){
+ $('toggles').innerHTML=TOGGLES.map(([k,t,d,x])=>'<div class="tg"><div><b>'+t+'</b><small>'+esc(d)+'</small>'+(x?'<div style="margin-top:6px;font-size:12.5px">Threshold ±<input class="num" id="big" type="number" min="1" max="20" step="0.5" value="'+set.big_move_pct+'" aria-label="Big move threshold in percent">%</div>':'')+'</div><label class="sw"><input type="checkbox" data-k="'+k+'"'+(set[k]?' checked':'')+' aria-label="'+esc(t.replace(/^\S+\s/,''))+'"><span></span></label></div>').join('');
+ document.querySelectorAll('#scope button').forEach(b=>b.classList.toggle('on',b.dataset.v===set.scope));
+}
+async function save(patch){
+ Object.assign(set,patch);
+ const {error}=await sb.from('user_alert_settings').upsert({user_id:user.id,...set,updated_at:new Date().toISOString()});
+ const el=$('saved');el.textContent=error?'Not saved: '+error.message:'Saved';el.style.color=error?'var(--red)':'';el.classList.add('on');clearTimeout(savedT);savedT=setTimeout(()=>el.classList.remove('on'),1800);
+}
+async function loadSettings(){
+ const {data}=await sb.from('user_alert_settings').select('*').eq('user_id',user.id).maybeSingle();
+ if(data)set={...DEF,...data};
+ paintSettings();
+}
+async function loadPrice(){
+ const {data,error}=await sb.from('stock_alerts').select('id,symbol,company_name,target_price,condition,is_active,triggered_at,created_at').eq('user_id',user.id).order('created_at',{ascending:false});
+ if(error){$('paList').innerHTML='<div class="empty">Could not load price alerts.</div>';return}
+ const syms=[...new Set((data||[]).map(a=>a.symbol.toUpperCase()))];
+ const q={};if(syms.length){const r=await sb.from('stock_quotes').select('symbol,price').in('symbol',syms);(r.data||[]).forEach(x=>q[x.symbol]=x.price)}
+ $('paList').innerHTML=(data||[]).length?(data||[]).map(a=>{const p=q[a.symbol.toUpperCase()],gap=p&&a.target_price?(a.target_price/p-1)*100:null;
+  return '<div class="pa'+(a.is_active?'':' off')+'"><div class="t"><b>'+esc(a.symbol)+'</b> '+(a.condition==='below'?'below':'above')+' '+inr(a.target_price)+
+  '<small>'+(a.triggered_at?'Triggered '+ago(a.triggered_at):a.is_active?(p?'Now '+inr(p)+(gap!=null?' · '+Math.abs(gap).toFixed(1)+'% away':''):'No price yet'):'Off')+'</small></div>'+
+  '<button class="x" data-tog="'+a.id+'" data-on="'+(a.is_active?1:0)+'">'+(a.is_active?'Pause':(a.triggered_at?'Re-arm':'Resume'))+'</button><button class="x" data-del="'+a.id+'" aria-label="Delete">✕</button></div>'}).join(''):'<div class="empty">No price alerts yet.</div>';
+}
+async function addPrice(){
+ const sym=$('paSym').value.trim().toUpperCase(),price=Number($('paPrice').value),cond=$('paCond').value;
+ $('paErr').textContent='';
+ if(!/^[A-Z0-9&_-]{1,20}$/.test(sym)){$('paErr').textContent='Enter an NSE symbol, e.g. TATAPOWER.';return}
+ if(!(price>0)){$('paErr').textContent='Enter a price above zero.';return}
+ $('paAdd').disabled=true;
+ const {data:qt}=await sb.from('stock_quotes').select('symbol,price').eq('symbol',sym).maybeSingle();
+ if(!qt){$('paErr').textContent='No stock found with the symbol '+sym+'.';$('paAdd').disabled=false;return}
+ if(qt.price>0&&((cond==='above'&&price<=qt.price)||(cond==='below'&&price>=qt.price))){$('paErr').innerHTML='It is already '+(cond==='above'?'above':'below')+' that ('+inr(qt.price)+' now). Pick a price '+(cond==='above'?'higher':'lower')+'.';$('paAdd').disabled=false;return}
+ const {data:st}=await sb.from('stocks').select('company_name').eq('symbol',sym).maybeSingle();
+ const {error}=await sb.from('stock_alerts').insert({user_id:user.id,symbol:sym,company_name:st?.company_name||null,target_price:price,condition:cond,is_active:true});
+ $('paAdd').disabled=false;
+ if(error){$('paErr').textContent='Could not add: '+error.message;return}
+ $('paSym').value='';$('paPrice').value='';loadPrice();
+}
+async function loadCovered(){
+ const held=window.mpPortfolio?await window.mpPortfolio.heldSymbols(sb,user).catch(()=>[]):[];
+ const {data:w}=await sb.from('watchlist').select('symbol').eq('user_id',user.id);
+ const ws=[...new Set((w||[]).map(x=>x.symbol.toUpperCase()))],hs=[...new Set((held||[]).map(s=>String(s).toUpperCase()))];
+ const all=[...new Set([...hs,...ws])].sort();
+ $('covHint').textContent=all.length?hs.length+' held · '+ws.length+' on your watchlist. Add stocks in My Portfolio or the Home watchlist.':'Nothing yet: add holdings in My Portfolio or stocks to your watchlist on Home.';
+ $('cov').innerHTML=all.map(s=>'<a class="chip'+(hs.includes(s)?' h':'')+'" href="/stock-analysis.html?symbol='+encodeURIComponent(s)+'" title="'+(hs.includes(s)?'Held':'Watchlist')+'">'+esc(s)+(hs.includes(s)?' · held':'')+'</a>').join('');
+}
+async function loadRecent(){
+ const {data,error}=await sb.rpc('my_alerts',{p_limit:100});
+ if(error){$('recent').innerHTML='<div class="empty">Could not load alerts.</div>';return}
+ const list=Array.isArray(data)?data:[];
+ $('recent').innerHTML=list.length?list.map(a=>'<a class="al'+(a.read_at?'':' new')+'" href="'+esc(a.url||'#')+'"><span class="ic">'+esc(a.icon||'🔔')+'</span><span class="tx"><b>'+esc(a.title)+'</b>'+(a.body?'<p>'+esc(a.body)+'</p>':'')+'<small>'+ago(a.created_at)+'</small></span></a>').join(''):'<div class="empty">No alerts yet. They will appear here and in the bell.</div>';
+}
+document.addEventListener('change',e=>{
+ const k=e.target.dataset&&e.target.dataset.k;if(k){save({[k]:e.target.checked});return}
+ if(e.target.id==='big'){const v=Math.min(20,Math.max(1,Number(e.target.value)||3));e.target.value=v;save({big_move_pct:v})}
+});
+document.addEventListener('click',async e=>{
+ const sc=e.target.closest('#scope button');if(sc){save({scope:sc.dataset.v});paintSettings();return}
+ const t=e.target.closest('[data-tog]');if(t){const on=t.dataset.on==='1';await sb.from('stock_alerts').update(on?{is_active:false}:{is_active:true,triggered_at:null}).eq('id',t.dataset.tog).eq('user_id',user.id);loadPrice();return}
+ const d=e.target.closest('[data-del]');if(d){if(!confirm('Delete this price alert?'))return;await sb.from('stock_alerts').delete().eq('id',d.dataset.del).eq('user_id',user.id);loadPrice();return}
+ if(e.target.id==='paAdd')addPrice();
+ if(e.target.id==='readAll'){await sb.rpc('my_alerts_read',{p_ids:null});loadRecent();window.MPNotify&&window.MPNotify.refresh(true)}
+});
+$('paPrice').addEventListener('keydown',e=>{if(e.key==='Enter')addPrice()});
+(async()=>{
+ const {data}=await sb.auth.getSession();user=data&&data.session&&data.session.user;
+ if(!user){$('gate').hidden=false;return}
+ $('app').hidden=false;
+ await Promise.all([loadSettings(),loadPrice(),loadCovered(),loadRecent()]);
+ setInterval(()=>{if(!document.hidden){loadRecent();loadPrice()}},60000);
+})();
+</script>
+</body>
+</html>

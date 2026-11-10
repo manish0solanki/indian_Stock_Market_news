@@ -2,13 +2,16 @@
    new festive picks, strong trade signals, picks hitting targets, IPOs opening/listing and site updates.
    Mounts into every element with [data-mp-bell] (the shared header adds one; Home has its own).
    "New" = newer than the last time the bell was opened on this device (localStorage). While a page is open
-   the feed is re-checked every 3 minutes, and anything new pops up as a small toast. */
+   the feed is re-checked every minute, and anything new pops up as a small toast.
+   Signed in: the "My alerts" tab adds the user's own alerts (my_alerts(), supabase/alerts.sql: price alerts, big moves,
+   results and dividends on their stocks, signals on their stocks, paper trades closing). Those are read/unread on the
+   server, so they stay in step across devices; opening the bell marks them read. */
 (function () {
   if (window.MPNotify) return;
   const URL_ = window.MP_CONFIG.supabaseUrl + '/rest/v1/rpc/site_notifications_feed';
   const KEY = window.MP_CONFIG.supabaseKey;
   const SEEN = 'mpNotifSeen', CACHE = 'mpNotifCache';
-  const KINDS = [['all', 'All'], ['picks', 'Picks'], ['signal', 'Signals'], ['ipo', 'IPOs'], ['update', 'Updates']];
+  const KINDS = [['all', 'All'], ['mine', 'My alerts'], ['picks', 'Picks'], ['signal', 'Signals'], ['ipo', 'IPOs'], ['update', 'Updates']];
   const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   const ss = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} } };
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -45,6 +48,8 @@
 .mpn-item:hover{background:var(--mpn-hover)}
 .mpn-item.new{background:var(--mpn-new)}
 .mpn-ic{flex:0 0 36px;height:36px;border-radius:10px;background:var(--mpn-surface);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mpn-item.k-mine .mpn-ic{background:rgba(239,68,68,.13)}
+.mpn-foot a{color:#818cf8;font-weight:700;text-decoration:none;float:right}
 .mpn-item.k-signal .mpn-ic{background:rgba(34,197,94,.14)}.mpn-item.k-picks .mpn-ic{background:rgba(245,158,11,.16)}.mpn-item.k-target .mpn-ic{background:rgba(245,158,11,.16)}.mpn-item.k-ipo .mpn-ic{background:rgba(59,130,246,.15)}.mpn-item.k-update .mpn-ic{background:rgba(129,140,248,.16)}
 .mpn-tx{min-width:0;flex:1}
 .mpn-tx b{display:block;font-size:13.5px;font-weight:700;line-height:1.3}
@@ -74,18 +79,44 @@
     if (v) return ms(v);
     return Date.now() - 3 * 864e5; // first visit: the last three days count as new
   }
-  const unread = () => items.filter((n) => ms(n.at) > seen() && n.active !== false);
+  const isNew = (n) => n.kind === 'mine' ? !n.read : ms(n.at) > seen() && n.active !== false;
+  const unread = () => items.filter(isNew);
+  // The signed-in user's access token from supabase-js's saved session (null when signed out or expired).
+  function token() {
+    try {
+      const s = JSON.parse(ls.get(window.MP_CONFIG.authStorageKey) || 'null');
+      const t = s && (s.access_token || (s.currentSession && s.currentSession.access_token));
+      const exp = s && (s.expires_at || (s.currentSession && s.currentSession.expires_at));
+      return t && (!exp || exp * 1000 > Date.now() + 30000) ? t : null;
+    } catch (e) { return null; }
+  }
+  let mine = [];
+  async function fetchMine() {
+    const t = token(); if (!t) { mine = []; return; }
+    const r = await fetch(window.MP_CONFIG.supabaseUrl + '/rest/v1/rpc/my_alerts', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_limit: 40 }) });
+    if (!r.ok) return;
+    const d = await r.json();
+    mine = (Array.isArray(d) ? d : []).map((a) => ({ id: 'u' + a.id, uid: a.id, kind: 'mine', sub: a.kind, icon: a.icon, title: a.title, body: a.body, url: a.url, at: a.created_at, read: !!a.read_at }));
+  }
+  function markMineRead() {
+    const t = token(); if (!t || !mine.some((n) => !n.read)) return;
+    mine.forEach((n) => { n.read = true; });
+    fetch(window.MP_CONFIG.supabaseUrl + '/rest/v1/rpc/my_alerts_read', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+  }
 
   async function fetchFeed(force) {
     if (!force) {
-      try { const c = JSON.parse(ss.get(CACHE) || 'null'); if (c && Date.now() - c.t < 120000) { items = tidy(c.items); return; } } catch (e) {}
+      try { const c = JSON.parse(ss.get(CACHE) || 'null'); if (c && Date.now() - c.t < 120000) { await fetchMine().catch(() => {}); items = merge(tidy(c.items)); return; } } catch (e) {}
     }
     const r = await fetch(URL_, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_limit: 40 }) });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    items = tidy((d && d.items) || []);
-    ss.set(CACHE, JSON.stringify({ t: Date.now(), items }));
+    const site = tidy((d && d.items) || []);
+    ss.set(CACHE, JSON.stringify({ t: Date.now(), items: site }));
+    await fetchMine().catch(() => {});
+    items = merge(site);
   }
+  const merge = (site) => mine.concat(site).sort((a, b) => ms(b.at) - ms(a.at));
 
   function tidy(list) {
     let intraday = 0;
@@ -108,10 +139,11 @@
   function listHtml() {
     const cut = seenAtOpen ?? seen();
     const shown = items.filter((n) => tab === 'all' || n.kind === tab || (tab === 'picks' && n.kind === 'target'));
+    if (!shown.length && tab === 'mine') return `<div class="mpn-empty">No alerts yet.<br>Price alerts, big moves, results and dividends for your holdings and watchlist will show up here. <a href="/alerts.html" style="color:#818cf8">Alert settings</a></div>`;
     if (!shown.length) return `<div class="mpn-empty">${items.length ? 'Nothing here in the last few days.' : 'No notifications yet.<br>New picks, strong signals and updates will show up here.'}</div>`;
     return shown.map((n) => {
       const off = n.active === false;  // a signal the scanner has since dropped
-      const isNew = ms(n.at) > cut && !off;
+      const isNew = n.kind === 'mine' ? !n.wasRead : ms(n.at) > cut && !off;
       const tag = n.url ? 'a' : 'div';
       return `<${tag} class="mpn-item k-${esc(n.kind)}${isNew ? ' new' : ''}${off ? ' off' : ''}"${n.url ? ` href="${esc(n.url)}" target="_self"` : ''}>
         <span class="mpn-ic" aria-hidden="true">${esc(n.icon || '🔔')}</span>
@@ -134,17 +166,20 @@
   function open(btn) {
     if (panel) { close(); return; }
     openBtn = btn; seenAtOpen = seen();
+    mine.forEach((n) => { n.wasRead = n.read; });
+    if (mine.some((n) => !n.read)) tab = 'mine';
     panel = document.createElement('div');
     panel.className = 'mpn-panel'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Notifications');
-    panel.innerHTML = `<div class="mpn-head"><b>Notifications</b><button type="button" data-act="read">Mark all as read</button></div><div class="mpn-tabs"></div><div class="mpn-list"></div><div class="mpn-foot">Picks and signals are for education, not investment advice.</div>`;
+    panel.innerHTML = `<div class="mpn-head"><b>Notifications</b><button type="button" data-act="read">Mark all as read</button></div><div class="mpn-tabs"></div><div class="mpn-list"></div><div class="mpn-foot">${token() ? '<a href="/alerts.html">Alert settings →</a>' : ''}Picks and signals are for education, not investment advice.</div>`;
     document.body.appendChild(panel);
     paintPanel(); place();
     btn.setAttribute('aria-expanded', 'true');
     // opening the bell counts as seeing everything up to the newest item; the "new" marks stay until it closes
     const newest = items.reduce((m, n) => Math.max(m, ms(n.at)), 0);
     if (newest) ls.set(SEEN, new Date(Math.max(newest, Date.now())).toISOString());
+    markMineRead();
     paintBadges();
-    fetchFeed(true).then(() => { paintPanel(); paintBadges(); }).catch(() => {});
+    fetchFeed(true).then(() => { mine.forEach((n) => { if (n.wasRead === undefined) n.wasRead = n.read; }); markMineRead(); paintPanel(); paintBadges(); }).catch(() => {});
   }
   function close() {
     if (!panel) return;
@@ -183,20 +218,20 @@
     try { await fetchFeed(force); } catch (e) { return; }
     paintBadges(); paintPanel();
     // something arrived while this page is open: highlight it
-    if (before.size) items.filter((n) => !before.has(n.id) && ms(n.at) > loadedAt - 60000 && ms(n.at) > seen()).slice(0, 1).forEach(toast);
+    if (before.size) items.filter((n) => !before.has(n.id) && ms(n.at) > loadedAt - 60000 && isNew(n)).slice(0, 1).forEach(toast);
   }
 
   function init() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     mount();
     refresh(false);
-    setInterval(() => { if (!document.hidden) refresh(true); }, 180000);
+    setInterval(() => { if (!document.hidden) refresh(true); }, 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(false); });
     document.addEventListener('click', (e) => {
       if (!panel) return;
       const tb = e.target.closest('.mpn-tabs [data-tab]');
       if (tb) { tab = tb.dataset.tab; paintPanel(); return; }
-      if (e.target.closest('[data-act="read"]')) { seenAtOpen = Date.now(); ls.set(SEEN, new Date().toISOString()); paintPanel(); paintBadges(); return; }
+      if (e.target.closest('[data-act="read"]')) { seenAtOpen = Date.now(); ls.set(SEEN, new Date().toISOString()); mine.forEach((n) => { n.read = true; n.wasRead = true; }); markMineRead(); paintPanel(); paintBadges(); return; }
       if (!panel.contains(e.target)) close();
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
