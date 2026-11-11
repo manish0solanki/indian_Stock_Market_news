@@ -5,9 +5,16 @@
 //   ipo-detail      -> issue information (lead managers, registrar, face value...) and SME bids
 //   active-category -> category-wise subscription (QIB / NII / retail...) for open mainboard IPOs
 //   past issues     -> listing date and final issue price (last 120 days kept)
+//   clean-up       -> NSE gives an issue a temporary symbol while bidding and lists it under its trading symbol, so the
+//                     issue-time row is merged into the listed one (same company, same closing date) and deleted;
+//                     an issue still "Closed" 2+ days after bidding that already trades is marked Listed, with its
+//                     first trading day from Yahoo (main board) or the T+3 listing rule (SME)
+//   last close     -> once a day, NSE's cash-market bhavcopy gives the last close of recent listings (SME stocks are
+//                     not in the site's price feed): ipos.last_price / last_prev / last_date
 // Grey market premium (GMP) is not published by NSE; it is read from InvestorGain's live GMP page
 // (one fetch per run) and shown on the site credited to InvestorGain with a link back.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { unzipSync, strFromU8 } from "npm:fflate@0.8.2";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -106,6 +113,105 @@ function matchGmp(company: unknown, list: Gmp[]) {
     list.find((g) => { const k = normName(g.name); return k.length >= 6 && (n.startsWith(k) || k.startsWith(n)); }) || null;
 }
 
+/* ───────── Clean-up and last closes ───────── */
+const addDays = (iso: string, n: number) => new Date(Date.parse(iso + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+async function holidaysSet() {
+  const { data } = await supabase.from("market_holidays").select("d").gte("d", addDays(new Date().toISOString().slice(0, 10), -200));
+  return new Set((data || []).map((h: any) => String(h.d)));
+}
+const isTrading = (d: string, hol: Set<string>) => { const w = new Date(d + "T00:00:00Z").getUTCDay(); return w >= 1 && w <= 5 && !hol.has(d); };
+function tradingDaysAfter(d: string, n: number, hol: Set<string>) { let x = d; for (let k = 0; k < n;) { x = addDays(x, 1); if (isTrading(x, hol)) k++; } return x; }
+
+// The latest bhavcopy (today after the close, else the trading days before): symbol -> { close, prev } for EQ/BE/SM/ST.
+async function latestBhav(today: string, hol: Set<string>) {
+  const SERIES = ["EQ", "BE", "BZ", "SM", "ST"];
+  for (let i = 0, d = today; i < 8; i++, d = addDays(d, -1)) {
+    if (!isTrading(d, hol)) continue;
+    const r = await fetch(`https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_${d.replace(/-/g, "")}_F_0000.csv.zip`,
+      { headers: { "User-Agent": UA, Accept: "*/*", Referer: "https://www.nseindia.com/" }, signal: AbortSignal.timeout(30000) }).catch(() => null);
+    if (!r || !r.ok) continue;
+    const files = unzipSync(new Uint8Array(await r.arrayBuffer()));
+    const name = Object.keys(files).find((f) => f.toLowerCase().endsWith(".csv"));
+    if (!name) continue;
+    const lines = strFromU8(files[name]).trim().split(/\r?\n/);
+    const hdr = lines.shift()!.split(",").map((h) => h.trim());
+    const iS = hdr.indexOf("TckrSymb"), iR = hdr.indexOf("SctySrs"), iC = hdr.indexOf("ClsPric"), iP = hdr.indexOf("PrvsClsgPric");
+    if (iS < 0 || iC < 0) continue;
+    const out = new Map<string, { close: number; prev: number | null; rank: number }>();
+    for (const l of lines) {
+      const c = l.split(","), sym = c[iS]?.trim(), close = Number(c[iC]), rank = SERIES.indexOf((c[iR] || "").trim());
+      if (!sym || !(close > 0) || rank < 0) continue;
+      const cur = out.get(sym);
+      if (!cur || rank < cur.rank) out.set(sym, { close, prev: iP >= 0 && Number(c[iP]) > 0 ? Number(c[iP]) : null, rank });
+    }
+    return { date: d, map: out };
+  }
+  return null;
+}
+async function yahooFirstTrade(symbol: string) {
+  const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}.NS?range=1mo&interval=1d`, { headers: { "User-Agent": UA } }).catch(() => null);
+  if (!r || !r.ok) return null;
+  const m = (await r.json().catch(() => null))?.chart?.result?.[0]?.meta;
+  return m?.firstTradeDate ? new Date(m.firstTradeDate * 1000 + 330 * 60e3).toISOString().slice(0, 10) : null;
+}
+async function cleanUp(today: string) {
+  const out: Record<string, unknown> = {};
+  const { data: all } = await supabase.from("ipos").select("*").gte("close_date", addDays(today, -160));
+  const rows = (all || []) as Record<string, any>[];
+  // 1. Merge an issue-time row into its listed row (same company, same closing date).
+  const listedByKey = new Map<string, Record<string, any>>();
+  for (const r of rows) if (r.status_nse === "Listed") listedByKey.set(normName(r.company) + "|" + r.close_date, r);
+  const merged: string[] = [];
+  for (const r of rows) {
+    if (r.status_nse === "Listed") continue;
+    const L = listedByKey.get(normName(r.company) + "|" + r.close_date);
+    if (!L || L.symbol === r.symbol) continue;
+    const fill: Record<string, unknown> = {};
+    for (const k of ["subscription", "details", "gmp", "lot_size", "shares_offered", "price_low"]) if ((L[k] === null || L[k] === undefined) && r[k] !== null && r[k] !== undefined) fill[k] = r[k];
+    if (Object.keys(fill).length) await supabase.from("ipos").update(fill).eq("symbol", L.symbol);
+    await supabase.from("ipos").delete().eq("symbol", r.symbol);
+    merged.push(r.symbol + "->" + L.symbol);
+  }
+  out.merged = merged;
+  const hol = await holidaysSet();
+  // 2. Still "Closed" 2+ trading days after bidding: main board from Yahoo's first trading day.
+  const stale = rows.filter((r) => r.status_nse !== "Listed" && r.close_date && !merged.some((m) => m.startsWith(r.symbol + "->")) && tradingDaysAfter(r.close_date, 2, hol) <= today);
+  const fixed: string[] = [];
+  for (const r of stale.filter((x) => x.segment !== "SME").slice(0, 6)) {
+    const first = await yahooFirstTrade(r.symbol);
+    if (first && first > r.close_date) {
+      await supabase.from("ipos").update({ status_nse: "Listed", listing_date: first, issue_price: r.issue_price ?? r.price_high, updated_at: new Date().toISOString() }).eq("symbol", r.symbol);
+      fixed.push(r.symbol + "@" + first);
+    }
+  }
+  // 3. Once a day: last closes from the bhavcopy for listings of the last 120 days, and SME issues that trade already.
+  const { data: last } = await supabase.from("ipos").select("last_date").not("last_date", "is", null).order("last_date", { ascending: false }).limit(1);
+  const istH = new Date(Date.now() + 330 * 60e3).getUTCHours();
+  const lastDate = last?.[0]?.last_date ? String(last[0].last_date) : null;
+  // Due when the newest close we hold is older than the latest finished session (today after 7 PM IST, else the one before).
+  let latest = istH >= 19 && isTrading(today, hol) ? today : addDays(today, -1);
+  while (!isTrading(latest, hol)) latest = addDays(latest, -1);
+  if (!lastDate || lastDate < latest) {
+    const bhav = await latestBhav(today, hol);
+    if (bhav) {
+      let n = 0;
+      for (const r of rows) {
+        const listedRecent = r.status_nse === "Listed" && r.listing_date && r.listing_date >= addDays(today, -125); // the page lists 120 days
+        const smeStale = r.segment === "SME" && stale.some((x) => x.symbol === r.symbol);
+        if (!listedRecent && !smeStale) continue;
+        const q = bhav.map.get(r.symbol); if (!q) continue;
+        const upd: Record<string, unknown> = { last_price: q.close, last_prev: q.prev, last_date: bhav.date };
+        if (smeStale) { upd.status_nse = "Listed"; upd.listing_date = tradingDaysAfter(r.close_date, 3, hol); upd.issue_price = r.issue_price ?? r.price_high; fixed.push(r.symbol + "@T+3"); }
+        await supabase.from("ipos").update(upd).eq("symbol", r.symbol);
+        n++;
+      }
+      out.bhav = { date: bhav.date, updated: n };
+    } else out.bhav = "not available";
+  }
+  out.listedNow = fixed;
+  return out;
+}
+
 Deno.serve(async (req) => {
   try {
     const secret = req.headers.get("x-cron-secret") || "";
@@ -194,7 +300,8 @@ Deno.serve(async (req) => {
       const { error } = await supabase.from("ipos").upsert(batch, { onConflict: "symbol" });
       if (error) throw new Error("upsert: " + error.message);
     }
-    const summary = { open_or_upcoming: open.length, listed: listed.length, gmp: { rows: gmpList.length, matched: gmpMatched }, sources: { current: (current || []).length, upcoming: (upcoming || []).length, past: (past || []).length } };
+    const tidy = await cleanUp(today).catch((e) => ({ error: String((e as Error)?.message || e) }));
+    const summary = { tidy, open_or_upcoming: open.length, listed: listed.length, gmp: { rows: gmpList.length, matched: gmpMatched }, sources: { current: (current || []).length, upcoming: (upcoming || []).length, past: (past || []).length } };
     console.log("IPO_REFRESH", JSON.stringify(summary));
     return json(summary);
   } catch (e) {

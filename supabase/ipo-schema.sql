@@ -15,6 +15,9 @@ create table if not exists public.ipos (
   subscription jsonb,                              -- {total, qib, nii, bnii, snii, retail, employee, ...} in times
   details jsonb,                                   -- [{title, value}] from NSE issue information
   gmp jsonb,                                       -- grey market premium from InvestorGain (unofficial)
+  last_price numeric,                              -- last close from NSE's bhavcopy (recent listings; SME stocks
+  last_prev numeric,                               --   are not in the live price feed), its previous close
+  last_date date,                                  --   and the session it is from (added 11 Nov 2026)
   updated_at timestamptz not null default now()
 );
 create index if not exists ipos_dates_idx on public.ipos (close_date desc);
@@ -25,3 +28,5 @@ create policy "IPOs are public" on public.ipos for select to anon, authenticated
 --   url := 'https://<project>.supabase.co/functions/v1/ipo-refresh',
 --   headers := jsonb_build_object('Content-Type','application/json','x-cron-secret',(select value from public.app_secrets where name='crypto_cron')),
 --   body := '{}'::jsonb, timeout_milliseconds := 120000)$$);
+
+-- alter table public.ipos add column if not exists last_price numeric, add column if not exists last_prev numeric, add column if not exists last_date date;

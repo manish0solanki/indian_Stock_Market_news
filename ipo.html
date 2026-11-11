@@ -30,13 +30,14 @@ a{color:var(--accent2)}
 .seg button{border:0;background:none;color:var(--muted);font:700 13px Inter,system-ui,sans-serif;padding:8px 14px;border-radius:9px;cursor:pointer}
 .seg button.on{background:var(--accent);color:#fff}
 .seg button em{font-style:normal;opacity:.75;font-weight:600;margin-left:4px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(380px,100%),1fr));gap:14px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .card.open{border-color:color-mix(in srgb,var(--green) 45%,var(--border))}
-.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.top{display:flex;justify-content:space-between;gap:8px 10px;align-items:flex-start;flex-wrap:wrap}
+.top>div:first-child{flex:1 1 220px;min-width:0}
 .name{font-size:16px;font-weight:800;letter-spacing:-.2px;line-height:1.3}
 .sym{font-size:12px;color:var(--dim);margin-top:2px}
-.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto}
+.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start;flex:0 1 auto}
 .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
 .pill.open{background:var(--greenbg);color:var(--green);border-color:transparent}
 .pill.soon{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent2);border-color:transparent}
@@ -221,7 +222,7 @@ function render(){
  const listedF=listed.filter(bySeg);
  $('nCur').textContent=cur.length;$('nList').textContent=listed.length;
  const open=cur.filter(x=>stage(x).key==='open'),up=cur.filter(x=>stage(x).key==='upcoming'),closed=cur.filter(x=>stage(x).key==='closed');
- const gains=listed.map(x=>{const q=quotes[x.symbol];return q&&x.issue_price?(q-x.issue_price)/x.issue_price*100:null}).filter(v=>v!=null);
+ const gains=listed.map(x=>{const q=quotes[x.symbol]??num(x.last_price);return q&&x.issue_price?(q-x.issue_price)/x.issue_price*100:null}).filter(v=>v!=null);
  const pos=gains.filter(v=>v>0).length,avg=gains.length?gains.reduce((a,v)=>a+v,0)/gains.length:null;
  $('stats').innerHTML=
   '<div class="stat"><div class="l">Open now</div><div class="v">'+open.length+'</div><div class="s">'+open.filter(x=>x.segment==='Mainboard').length+' mainboard · '+open.filter(x=>x.segment==='SME').length+' SME</div></div>'+
@@ -229,9 +230,10 @@ function render(){
   '<div class="stat"><div class="l">Closed, listing soon</div><div class="v">'+closed.length+'</div><div class="s">Allotment and listing pending</div></div>'+
   '<div class="stat"><div class="l">Listed (120 days)</div><div class="v">'+listed.length+'</div><div class="s">'+(gains.length?pos+' of '+gains.length+' above issue price · avg '+pct(avg):'Prices loading…')+'</div></div>';
  $('cards').innerHTML=curF.length?curF.map(card).join(''):'<div class="empty">No '+(seg==='all'?'':seg+' ')+'IPOs open or announced right now.</div>';
- const row=x=>{const q=quotes[x.symbol],g=q&&x.issue_price?(q-x.issue_price)/x.issue_price*100:null;return{q,g}};
- $('listedRows').innerHTML=listedF.length?listedF.map(x=>{const {q,g}=row(x);return '<tr><td><b>'+esc(x.company)+'</b><div class="muted" style="font-size:12px">'+esc(x.symbol)+'</div></td><td>'+esc(x.segment)+'</td><td>'+esc(fmtDate(x.listing_date))+'</td><td class="r">'+inr(x.issue_price,2)+'</td><td class="r">'+(q?'<a href="/stock-analysis.html?symbol='+encodeURIComponent(x.symbol)+'">'+inr(q,2)+'</a>':'—')+'</td><td class="r">'+(g==null?'<span class="muted">—</span>':'<span class="chg '+(g>=0?'green':'red')+'">'+pct(g)+'</span>')+'</td></tr>'}).join(''):'<tr><td colspan="6" class="empty">No listings in the last 120 days.</td></tr>';
- $('listedCards').innerHTML=listedF.length?listedF.map(x=>{const {q,g}=row(x);return '<div class="lcard"><div><b>'+esc(x.company)+'</b><br><small>'+esc(x.segment)+' · listed '+esc(fmtDate(x.listing_date))+' · issue '+inr(x.issue_price,2)+'</small></div><div class="r"><b>'+(q?inr(q,2):'—')+'</b><br>'+(g==null?'':'<span class="chg '+(g>=0?'green':'red')+'">'+pct(g)+'</span>')+'</div></div>'}).join(''):'<div class="empty">No listings in the last 120 days.</div>';
+ // Live quote, else the last close from NSE's daily bhavcopy (SME stocks are not in the live feed), labelled with its date.
+ const row=x=>{const live=quotes[x.symbol],q=live??num(x.last_price),g=q&&x.issue_price?(q-x.issue_price)/x.issue_price*100:null;return{q,g,asOf:live==null&&q&&x.last_date?'close '+fmtDate(x.last_date):''}};
+ $('listedRows').innerHTML=listedF.length?listedF.map(x=>{const {q,g,asOf}=row(x);return '<tr><td><b>'+esc(x.company)+'</b><div class="muted" style="font-size:12px">'+esc(x.symbol)+'</div></td><td>'+esc(x.segment)+'</td><td>'+esc(fmtDate(x.listing_date))+'</td><td class="r">'+inr(x.issue_price,2)+'</td><td class="r">'+(q?(asOf?inr(q,2)+'<div class="muted" style="font-size:11px">'+esc(asOf)+'</div>':'<a href="/stock-analysis.html?symbol='+encodeURIComponent(x.symbol)+'">'+inr(q,2)+'</a>'):'—')+'</td><td class="r">'+(g==null?'<span class="muted">—</span>':'<span class="chg '+(g>=0?'green':'red')+'">'+pct(g)+'</span>')+'</td></tr>'}).join(''):'<tr><td colspan="6" class="empty">No listings in the last 120 days.</td></tr>';
+ $('listedCards').innerHTML=listedF.length?listedF.map(x=>{const {q,g,asOf}=row(x);return '<div class="lcard"><div><b>'+esc(x.company)+'</b><br><small>'+esc(x.segment)+' · listed '+esc(fmtDate(x.listing_date))+' · issue '+inr(x.issue_price,2)+'</small></div><div class="r"><b>'+(q?inr(q,2):'—')+'</b>'+(asOf?'<div class="muted" style="font-size:11px">'+esc(asOf)+'</div>':'<br>')+(g==null?'':'<span class="chg '+(g>=0?'green':'red')+'">'+pct(g)+'</span>')+'</div></div>'}).join(''):'<div class="empty">No listings in the last 120 days.</div>';
 }
 
 async function load(){

@@ -274,6 +274,8 @@
 
 ### 🆕 IPOs (`ipo.html`)
 - Open, upcoming and closed IPOs (mainboard and SME): price band, lot size, dates, category-wise subscription and **grey market premium (GMP)** with estimated listing price.
+- **Kept tidy automatically** (`ipo-refresh`): NSE uses a temporary symbol while an IPO is bidding and lists it under its trading symbol, so the issue-time row is merged into the listed one (subscription, lot size and GMP carried over). An issue still "Closed" 2+ trading days after bidding that already trades is marked Listed (first trading day from Yahoo; SME by the T+3 listing rule), so nothing sits in "listing soon" after it lists.
+- **Prices for SME listings:** SME stocks are not in the live price feed, so once a day NSE's bhavcopy supplies the last close of every listing in the last 120 days (`ipos.last_price`, `last_date`); the page shows it with its date ("close 9 Nov") when there is no live price.
 
 ### 📰 Blog (`/blog/`)
 - Four automatic posts every trading day:
