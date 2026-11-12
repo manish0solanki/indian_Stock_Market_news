@@ -1,5 +1,67 @@
 [
   {
+    "slug": "gabriel-stock-spotlight-12-nov-2026",
+    "title": "Gabriel India Surges 16.5% on 19.8x Volume",
+    "excerpt": "Gabriel India (GABRIEL) rose 16.53% to ₹1,641.20 on volume 19.8 times its three-month average.",
+    "category": "stock-spotlight",
+    "date": "2026-11-12T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "GABRIEL",
+      "Gabriel India"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-realty-surges-4-51-percent-as-49-of-78-stocks-advance",
+    "title": "Nifty Realty Surges 4.51% as 49 of 78 Stocks Advance",
+    "excerpt": "The Nifty Realty index surged 4.51% to 934.25 on 12 Nov 2026, but the rally’s real story was the sharp divide between heavyweight developers and the rest of the pack. The index gained 40.3 points from its previous close of 893.95, while the ten largest stocks by market capitalisa",
+    "category": "sector-analysis",
+    "date": "2026-11-12T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Realty",
+      "Sector Analysis",
+      "Realty",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-12-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 12 Nov 2026: Gains 0.18%",
+    "excerpt": "A late burst in banks and insurers masked a subdued session for the Nifty 50, which closed at 25,299.35, up 44.3 points or 0.18%. The Sensex moved the other way, slipping 0.47% to 81,496.77, while the Nifty Midcap 50 gained 0.74%. Within the Nifty, 19 stocks advanced and 31 decli",
+    "category": "daily-wrap",
+    "date": "2026-11-12T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Mildly Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-2-sessions-with-12-563-33-cr-inflow-as-dii-selling-extends-to-9-sessions",
     "title": "FII Buying Extends to 2 Sessions with ₹12,563.33 Cr Inflow as DII Selling Extends to 9 Sessions",
     "excerpt": "Foreign investors delivered their strongest buying punch in recent sessions, pouring ₹12,563.33 Cr into Indian equities even as domestic institutions extended their selling streak to nine days. The Nifty 50 rallied 0.84% to close at 25,255.05, shrugging off the persistent domesti",
