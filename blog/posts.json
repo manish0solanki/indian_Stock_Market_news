@@ -1,5 +1,150 @@
 [
   {
+    "slug": "gabriel-stock-spotlight-12-nov-2026",
+    "title": "Gabriel India Surges 16.5% on 19.8x Volume",
+    "excerpt": "Gabriel India (GABRIEL) rose 16.53% to ₹1,641.20 on volume 19.8 times its three-month average.",
+    "category": "stock-spotlight",
+    "date": "2026-11-12T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "GABRIEL",
+      "Gabriel India"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-realty-surges-4-51-percent-as-49-of-78-stocks-advance",
+    "title": "Nifty Realty Surges 4.51% as 49 of 78 Stocks Advance",
+    "excerpt": "The Nifty Realty index surged 4.51% to 934.25 on 12 Nov 2026, but the rally’s real story was the sharp divide between heavyweight developers and the rest of the pack. The index gained 40.3 points from its previous close of 893.95, while the ten largest stocks by market capitalisa",
+    "category": "sector-analysis",
+    "date": "2026-11-12T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Realty",
+      "Sector Analysis",
+      "Realty",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-12-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 12 Nov 2026: Gains 0.18%",
+    "excerpt": "A late burst in banks and insurers masked a subdued session for the Nifty 50, which closed at 25,299.35, up 44.3 points or 0.18%. The Sensex moved the other way, slipping 0.47% to 81,496.77, while the Nifty Midcap 50 gained 0.74%. Within the Nifty, 19 stocks advanced and 31 decli",
+    "category": "daily-wrap",
+    "date": "2026-11-12T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Mildly Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "fii-buying-extends-to-2-sessions-with-12-563-33-cr-inflow-as-dii-selling-extends-to-9-sessions",
+    "title": "FII Buying Extends to 2 Sessions with ₹12,563.33 Cr Inflow as DII Selling Extends to 9 Sessions",
+    "excerpt": "Foreign investors delivered their strongest buying punch in recent sessions, pouring ₹12,563.33 Cr into Indian equities even as domestic institutions extended their selling streak to nine days. The Nifty 50 rallied 0.84% to close at 25,255.05, shrugging off the persistent domesti",
+    "category": "fiidii-flows",
+    "date": "2026-11-11T19:19:18+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "FII",
+      "DII",
+      "Institutional Flows",
+      "Nifty 50",
+      "Indian Stock Market"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-fii-dii-provisional"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "kalyankjil-stock-spotlight-11-nov-2026",
+    "title": "Kalyan Jewellers India Surges 8.6% on 8.8x Volume",
+    "excerpt": "Kalyan Jewellers India shares rallied sharply on 11 Nov 2026, closing 8.63% higher at ₹663.75 against the previous close of ₹611, with trading activity running far above normal. The stock saw volume of 64,546,141 shares, compared with a three-month average of 7,318,196, or 8.8 ti",
+    "category": "stock-spotlight",
+    "date": "2026-11-11T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "KALYANKJIL",
+      "Kalyan Jewellers India"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-auto-jumps-2-14-percent-as-87-of-122-stocks-advance",
+    "title": "Nifty Auto Jumps 2.14% as 87 of 122 Stocks Advance",
+    "excerpt": "Auto stocks powered ahead, with the Nifty Auto index jumping 2.14% to 28,523.3 and gains stretching well beyond the biggest names.",
+    "category": "sector-analysis",
+    "date": "2026-11-11T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Auto",
+      "Sector Analysis",
+      "Auto",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-11-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 11 Nov 2026: Gains 0.84%",
+    "excerpt": "Banks and autos powered the Nifty 50 to a 210.4-point gain on 11 Nov 2026, even as technology, pharma and realty stocks slipped. The index closed at 25,255.05, up 0.84%, while the Sensex added 0.66% to 81,642.97. Nifty Bank outpaced the benchmark with a 1.76% rise to 60,792.4, an",
+    "category": "daily-wrap",
+    "date": "2026-11-11T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fiis-return-to-net-buying-with-7-212-22-cr-inflow-as-dii-selling-extends-to-8-sessions",
     "title": "FIIs Return to Net Buying with ₹7,212.22 Cr Inflow as DII Selling Extends to 8 Sessions",
     "excerpt": "Foreign investors returned to the Indian cash market with force on 9 Nov 2026, but domestic institutions almost completely offset their buying, leaving the Nifty 50 with only a modest gain.",
