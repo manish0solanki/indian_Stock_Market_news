@@ -34,6 +34,7 @@
     ['Portfolio', '/portfolio.html', function (p) { return p.indexOf('/portfolio') === 0; }],
     ['Money', '/money.html', function (p) { return p.indexOf('/money') === 0; }],
     ['IPO', '/ipo.html', function (p) { return p.indexOf('/ipo') === 0; }],
+    ['Calculators', '/calculators.html', function (p) { return p.indexOf('/calculators') === 0; }],
     ['Events', '/events.html', function (p) { return p.indexOf('/events') === 0; }],
     ['Crypto', '/crypto-signals.html', function (p) { return p.indexOf('/crypto-signals') === 0; }],
     ['Blog', '/blog/', function (p) { return p.indexOf('/blog') === 0; }],

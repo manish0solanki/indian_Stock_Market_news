@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="/site-config.js?v=3"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<title>SIP, EMI, Home Loan, FD, RD &amp; PPF Calculators — MarketPulse</title>
+<meta name="description" content="Free calculators for Indian investors: SIP with step-up, lump sum, goal planner, SWP, CAGR, home loan, car loan, personal loan and education loan EMI with prepayment, FD, RD and PPF.">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1e;--surface:#0f1629;--surface2:#0c1324;--hover:#151e37;--border:#1f2a46;--text:#e7ecf6;--muted:#a3aec6;--dim:#6e7b98;--accent:#4f46e5;--accent2:#818cf8;--green:#2fd27f;--red:#ff5d6c;--amber:#f3c969;--c1:#6366f1;--c2:#2fd27f;--c3:#f3c969;--radius:14px;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+[data-theme=light]{--bg:#f3f4f8;--surface:#fff;--surface2:#f7f8fb;--hover:#eef0f6;--border:#e2e4ee;--text:#0f0f1a;--muted:#5a5d6b;--dim:#8b8fa3;--accent2:#4f46e5;--green:#0f8a3e;--red:#c72b2b;--amber:#a16207;--c2:#16a34a;--c3:#d97706}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+button,input,select{font:inherit;color:inherit}
+.page{max-width:1180px;margin:0 auto;padding:22px clamp(12px,2.4vw,28px) 40px}
+.head h1{margin:0 0 4px;font-size:clamp(24px,3vw,30px);letter-spacing:-.6px}
+.sub{font-size:13px;color:var(--muted)}
+.groups{display:flex;flex-direction:column;gap:8px;margin:16px 0 14px}
+.grp{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.grp::-webkit-scrollbar{display:none}
+.grp b{flex:0 0 auto;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);width:64px}
+.chip{flex:0 0 auto;border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--accent2)}
+.chip.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;min-width:0}
+.card h2{margin:0 0 2px;font-size:18px}
+.card .what{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+.f{padding:10px 0;border-top:1px solid var(--border)}
+.f:first-of-type{border-top:0}
+.f-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.f label{font-size:13px;font-weight:600}
+.f small{display:block;font-size:11.5px;color:var(--dim)}
+.box{display:flex;align-items:center;border:1px solid var(--border);border-radius:9px;background:var(--surface2);overflow:hidden;flex:0 0 auto}
+.box span{padding:0 8px;color:var(--muted);font-weight:700;font-size:13px}
+.box input{width:112px;padding:7px 8px;border:0;background:transparent;text-align:right;font:700 14px var(--mono);outline:none}
+.box:focus-within{border-color:var(--accent2)}
+.f input[type=range]{width:100%;margin:10px 0 0;accent-color:var(--accent)}
+.f .words{font-size:11.5px;color:var(--accent2);margin-top:2px;min-height:16px}
+.f select{padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);font-weight:600}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.kv{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:10px 12px;min-width:0}
+.kv span{display:block;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.kv b{display:block;font:800 18px var(--mono);margin-top:3px;overflow-wrap:anywhere}
+.kv em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:2px}
+.kv.big{grid-column:1/-1;background:color-mix(in srgb,var(--accent) 12%,var(--surface2));border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
+.kv.big b{font-size:24px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.viz{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:center;margin:14px 0 4px}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.bars{margin-top:12px}
+.bars svg{width:100%;height:auto;display:block}
+.note{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:12px}
+.note b{color:var(--text)}
+details.tbl{margin-top:12px}
+details.tbl summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent2)}
+.tw{overflow-x:auto;margin-top:8px;border:1px solid var(--border);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 9px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);background:var(--surface2)}
+tr:last-child td{border-bottom:0}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{border:1px solid var(--border);background:var(--surface2);border-radius:9px;padding:7px 12px;font-weight:700;font-size:12.5px;cursor:pointer}
+.disc{font-size:11.5px;color:var(--dim);margin-top:18px;line-height:1.6}
+@media(max-width:860px){.calc{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:420px){.viz{grid-template-columns:110px minmax(0,1fr)}.box input{width:96px}.grp b{width:auto}}
+</style>
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js"></script>
+<script src="/brands.js"></script><script src="/brand.js"></script>
+</head>
+<body>
+<div id="mpHeader"></div>
+<main class="page">
+ <div class="head"><h1>Calculators</h1><div class="sub">SIP, lump sum, goal, SWP and CAGR · home, car, personal and education loan EMI with prepayment · FD, RD and PPF. Everything is worked out in your browser; nothing is saved to our servers.</div></div>
+ <div class="groups" id="groups"></div>
+ <div class="calc">
+  <section class="card" id="form"></section>
+  <section class="card" id="out" aria-live="polite"></section>
+ </div>
+ <p class="disc">Estimates for planning only, not advice. Mutual fund returns are not guaranteed and change every year; the "expected return" is your assumption. Loan, FD, RD and PPF rates change: check the current rate with your bank or lender. Taxes, charges and exit loads are not included unless stated.</p>
+</main>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r0=v=>Math.round(v);
+const inr=v=>(v<0?'−':'')+'₹'+Math.abs(r0(v)).toLocaleString('en-IN');
+// "₹1.25 Cr", "₹12.4 L", "₹85,000"
+function short(v){const a=Math.abs(v),s=v<0?'−':'';if(a>=1e7)return s+'₹'+(a/1e7).toFixed(a>=1e9?0:2)+' Cr';if(a>=1e5)return s+'₹'+(a/1e5).toFixed(2)+' L';return inr(v)}
+const pct=(v,d=2)=>(v>0?'':v<0?'−':'')+Math.abs(v).toFixed(d)+'%';
+const yrs=m=>{const y=Math.floor(m/12),mo=m%12;return (y?y+' yr'+(y>1?'s':''):'')+(y&&mo?' ':'')+(mo?mo+' mo':'')||'0 mo'};
+
+/* ───────── Calculators ─────────
+   Each has fields [{k,label,min,max,step,def,u:'₹'|'%'|'yrs'|'mo',hint}] and calc(v) -> {cards,donut,bars,table,note}. */
+const LOANS={
+ home:{name:'Home loan',amt:[100000,50000000,50000,5000000],rate:[6,15,0.05,8.5],yrs:[1,30,1,20],note:'<b>Tax (old regime):</b> interest up to ₹2,00,000 a year on a self-occupied home is deductible under Section 24(b), and principal repaid counts towards the ₹1,50,000 Section 80C limit. The new regime does not allow these for a self-occupied home.'},
+ car:{name:'Car loan',amt:[50000,5000000,10000,800000],rate:[6,18,0.05,9],yrs:[1,8,1,5],note:'Car loans are usually 1 to 7 years. A larger down payment cuts both the EMI and the interest.'},
+ personal:{name:'Personal loan',amt:[10000,4000000,5000,500000],rate:[8,30,0.05,12],yrs:[1,7,1,3],note:'Personal loans are unsecured, so rates depend heavily on your credit score. Many lenders charge a fee for prepaying.'},
+ education:{name:'Education loan',amt:[50000,10000000,10000,1000000],rate:[6,16,0.05,10],yrs:[1,15,1,7],note:'<b>Tax:</b> all the interest on an education loan is deductible under Section 80E for up to 8 years (old regime). Repayment usually starts after the course plus a short moratorium.'},
+};
+function loanFields(t){const L=LOANS[t];return[
+ {k:'amt',label:'Loan amount',u:'₹',min:L.amt[0],max:L.amt[1],step:L.amt[2],def:L.amt[3]},
+ {k:'rate',label:'Interest rate (yearly)',u:'%',min:L.rate[0],max:L.rate[1],step:L.rate[2],def:L.rate[3]},
+ {k:'yrs',label:'Loan tenure',u:'yrs',min:L.yrs[0],max:L.yrs[1],step:L.yrs[2],def:L.yrs[3]},
+ {k:'extra',label:'Extra every month (prepayment)',u:'₹',min:0,max:Math.max(50000,L.amt[3]/20),step:500,def:0,hint:'Paid on top of the EMI; it shortens the loan.'},
+ {k:'lump',label:'One-time prepayment',u:'₹',min:0,max:L.amt[1],step:10000,def:0},
+ {k:'lumpYr',label:'…paid in year',u:'yrs',min:1,max:L.yrs[1],step:1,def:3},
+]}
+function loanCalc(t){return v=>{
+ const P=v.amt,i=v.rate/1200,n=Math.round(v.yrs*12);
+ const emi=i?P*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1):P/n;
+ // Schedule with prepayments (EMI unchanged, tenure shortens).
+ let bal=P,m=0,int=0,pre=0;const rows=[];let yP=0,yI=0,yX=0;
+ while(bal>0.5&&m<n){
+  m++;const it=bal*i;let pr=Math.min(emi-it,bal);bal-=pr;let x=0;
+  if(v.extra>0&&bal>0){x=Math.min(v.extra,bal);bal-=x}
+  if(v.lump>0&&m===Math.round(v.lumpYr)*12-11&&bal>0){const l=Math.min(v.lump,bal);bal-=l;x+=l}
+  int+=it;pre+=x;yP+=pr;yI+=it;yX+=x;
+  if(m%12===0||bal<=0.5||m===n){rows.push([Math.ceil(m/12),yP,yI,yX,Math.max(0,bal)]);yP=yI=yX=0}
+ }
+ const baseInt=emi*n-P,saved=baseInt-int,mSaved=n-m,hasPre=v.extra>0||v.lump>0;
+ const cards=[{l:'Monthly EMI',v:inr(emi),big:true,e:'for '+yrs(n)},{l:'Total interest',v:short(baseInt),e:inr(baseInt)},{l:'Total you pay',v:short(P+baseInt),e:'principal + interest'}];
+ if(hasPre)cards.push({l:'Interest saved by prepaying',v:short(saved),cls:'pos',e:inr(saved)},{l:'Loan ends',v:yrs(m),cls:'pos',e:mSaved>0?yrs(mSaved)+' sooner':'—'});
+ return{cards,donut:[[LOANS[t].name==='Home loan'?'Principal':'Principal',P,'--c1'],['Interest'+(hasPre?' (after prepaying)':''),int,'--c3']],
+  table:{head:['Year','Principal','Interest','Prepaid','Balance'],rows:rows.map(r=>[r[0],inr(r[1]),inr(r[2]),r[3]?inr(r[3]):'—',inr(r[4])])},
+  bars:{label:'Balance left at the end of each year',series:[{name:'Balance',c:'--c1',vals:rows.map(r=>r[4])}],x:rows.map(r=>r[0])},
+  note:LOANS[t].note+(hasPre?' Prepayments here reduce the tenure and keep the EMI the same, which saves the most interest.':' Add a monthly or one-time prepayment above to see how much interest it saves.')};
+}}
+// Monthly SIP with yearly step-up, money in at the start of each month (as fund houses assume).
+function sipRun(amt,rate,years,step){const i=rate/1200;let val=0,inv=0,a=amt;const rows=[];
+ for(let m=1;m<=years*12;m++){val=(val+a)*(1+i);inv+=a;if(m%12===0){rows.push([m/12,inv,val]);a=a*(1+step/100)}}return{val,inv,rows}}
+const CALCS={
+ sip:{group:'Invest',name:'SIP',title:'SIP calculator',what:'A fixed amount every month into a mutual fund. Add a yearly step-up to raise it as your income grows.',
+  fields:[{k:'amt',label:'Monthly SIP',u:'₹',min:500,max:500000,step:500,def:10000},{k:'rate',label:'Expected return (yearly)',u:'%',min:1,max:30,step:0.5,def:12},{k:'yrs',label:'Time period',u:'yrs',min:1,max:40,step:1,def:10},{k:'step',label:'Step-up every year',u:'%',min:0,max:50,step:1,def:0,hint:'e.g. 10% raises ₹10,000 to ₹11,000 next year.'},{k:'inf',label:'Inflation (to see today\'s value)',u:'%',min:0,max:15,step:0.5,def:6}],
+  calc:v=>{const s=sipRun(v.amt,v.rate,v.yrs,v.step),gain=s.val-s.inv,real=s.val/Math.pow(1+v.inf/100,v.yrs);
+   return{cards:[{l:'Value at the end',v:short(s.val),big:true,e:inr(s.val)},{l:'You invest',v:short(s.inv),e:inr(s.inv)},{l:'Estimated returns',v:short(gain),cls:'pos',e:'+'+pct(gain/s.inv*100,1)+' on what you put in'},{l:'In today\'s money',v:short(real),e:'at '+v.inf+'% inflation'}],
+    donut:[['Invested',s.inv,'--c1'],['Returns',gain,'--c2']],
+    bars:{label:'Invested vs value, year by year',series:[{name:'Invested',c:'--c1',vals:s.rows.map(r=>r[1])},{name:'Value',c:'--c2',vals:s.rows.map(r=>r[2])}],x:s.rows.map(r=>r[0])},
+    table:{head:['Year','Invested','Value','Returns'],rows:s.rows.map(r=>[r[0],inr(r[1]),inr(r[2]),inr(r[2]-r[1])])},
+    note:'Worked out month by month with the SIP paid at the start of each month. Equity fund returns swing from year to year; 10–12% a year over long periods is a common planning assumption, not a promise.'}}},
+ lumpsum:{group:'Invest',name:'Lump sum',title:'Lump sum calculator',what:'One investment left to grow.',
+  fields:[{k:'amt',label:'Amount invested',u:'₹',min:1000,max:50000000,step:1000,def:100000},{k:'rate',label:'Expected return (yearly)',u:'%',min:1,max:30,step:0.5,def:12},{k:'yrs',label:'Time period',u:'yrs',min:1,max:40,step:1,def:10},{k:'inf',label:'Inflation',u:'%',min:0,max:15,step:0.5,def:6}],
+  calc:v=>{const rows=[];for(let y=1;y<=v.yrs;y++)rows.push([y,v.amt,v.amt*Math.pow(1+v.rate/100,y)]);const val=rows[rows.length-1][2],gain=val-v.amt;
+   return{cards:[{l:'Value at the end',v:short(val),big:true,e:inr(val)},{l:'Invested',v:short(v.amt)},{l:'Estimated returns',v:short(gain),cls:'pos',e:(val/v.amt).toFixed(2)+'× your money'},{l:'In today\'s money',v:short(val/Math.pow(1+v.inf/100,v.yrs)),e:'at '+v.inf+'% inflation'}],
+    donut:[['Invested',v.amt,'--c1'],['Returns',gain,'--c2']],bars:{label:'Value year by year',series:[{name:'Value',c:'--c2',vals:rows.map(r=>r[2])}],x:rows.map(r=>r[0])},
+    table:{head:['Year','Value','Gain'],rows:rows.map(r=>[r[0],inr(r[2]),inr(r[2]-r[1])])},note:'Compounded once a year. Doubling time at '+v.rate+'%: about '+(72/v.rate).toFixed(1)+' years (rule of 72).'}}},
+ goal:{group:'Invest',name:'Goal planner',title:'Goal planner',what:'How much to invest every month to reach a goal, such as a child\'s education or a house.',
+  fields:[{k:'goal',label:'Goal amount in today\'s money',u:'₹',min:10000,max:100000000,step:10000,def:2500000},{k:'yrs',label:'Years to the goal',u:'yrs',min:1,max:40,step:1,def:12},{k:'inf',label:'Inflation for this goal',u:'%',min:0,max:15,step:0.5,def:7,hint:'Education costs have risen faster than general prices.'},{k:'rate',label:'Expected return (yearly)',u:'%',min:1,max:30,step:0.5,def:12},{k:'have',label:'Savings already set aside',u:'₹',min:0,max:50000000,step:10000,def:0}],
+  calc:v=>{const fut=v.goal*Math.pow(1+v.inf/100,v.yrs),haveF=v.have*Math.pow(1+v.rate/100,v.yrs),need=Math.max(0,fut-haveF),i=v.rate/1200,n=v.yrs*12;
+   const sip=need>0?need/((Math.pow(1+i,n)-1)/i*(1+i)):0,lump=need/Math.pow(1+v.rate/100,v.yrs);
+   return{cards:[{l:'Monthly SIP needed',v:inr(sip),big:true,e:'for '+v.yrs+' years'},{l:'Goal in future money',v:short(fut),e:inr(fut)},{l:'Or one lump sum today',v:short(lump),e:inr(lump)},{l:'Your savings will grow to',v:short(haveF),e:v.have?'at '+v.rate+'%':'none set aside'}],
+    donut:[['From your SIPs',sip*n,'--c1'],['Growth',Math.max(0,need-sip*n),'--c2'],['From savings',haveF,'--c3']],
+    note:'Prices rise, so a goal costing '+short(v.goal)+' today will cost about '+short(fut)+' in '+v.yrs+' years at '+v.inf+'% inflation. Review the plan every year; with a 10% yearly step-up you could start lower (try it in the SIP calculator).'}}},
+ swp:{group:'Invest',name:'SWP',title:'SWP calculator',what:'Systematic withdrawal: take a fixed amount every month from an invested corpus, for example in retirement.',
+  fields:[{k:'corpus',label:'Amount invested',u:'₹',min:100000,max:100000000,step:50000,def:5000000},{k:'wd',label:'Monthly withdrawal',u:'₹',min:500,max:1000000,step:500,def:30000},{k:'rate',label:'Expected return (yearly)',u:'%',min:1,max:20,step:0.5,def:8},{k:'yrs',label:'For how long',u:'yrs',min:1,max:40,step:1,def:20},{k:'inc',label:'Raise the withdrawal every year by',u:'%',min:0,max:15,step:0.5,def:0}],
+  calc:v=>{const i=v.rate/1200;let bal=v.corpus,w=v.wd,out=0,end=0;const rows=[];
+   for(let m=1;m<=v.yrs*12;m++){bal*=1+i;const t=Math.min(w,bal);bal-=t;out+=t;if(bal<=0&&!end)end=m;if(m%12===0){rows.push([m/12,out,Math.max(0,bal)]);w*=1+v.inc/100}if(bal<=0)break}
+   return{cards:[{l:end?'Money runs out after':'Left at the end',v:end?yrs(end):short(bal),big:true,cls:end?'neg':'pos',e:end?'before the '+v.yrs+' years are up':inr(bal)},{l:'Total withdrawn',v:short(out),e:inr(out)},{l:'First monthly withdrawal',v:inr(v.wd),e:v.inc?'rising '+v.inc+'% a year':'same every month'},{l:'Yearly withdrawal rate',v:pct(v.wd*12/v.corpus*100,1),e:'of the starting amount'}],
+    donut:[['Withdrawn',out,'--c1'],['Left',Math.max(0,bal),'--c2']],bars:{label:'Balance at the end of each year',series:[{name:'Balance',c:'--c2',vals:rows.map(r=>r[2])}],x:rows.map(r=>r[0])},
+    table:{head:['Year','Withdrawn so far','Balance'],rows:rows.map(r=>[r[0],inr(r[1]),inr(r[2])])},
+    note:'Returns are added monthly and the withdrawal comes out at the end of each month. Withdrawing more than about 4–5% of the corpus a year usually runs it down over a long retirement. Tax on SWP applies only to the gains in each withdrawal.'}}},
+ cagr:{group:'Invest',name:'CAGR',title:'CAGR calculator',what:'The yearly growth rate between a starting and an ending value.',
+  fields:[{k:'a',label:'Starting value',u:'₹',min:1000,max:100000000,step:1000,def:100000},{k:'b',label:'Ending value',u:'₹',min:1000,max:1000000000,step:1000,def:250000},{k:'yrs',label:'Over',u:'yrs',min:1,max:50,step:0.5,def:6}],
+  calc:v=>{const c=(Math.pow(v.b/v.a,1/v.yrs)-1)*100,abs=(v.b/v.a-1)*100;
+   return{cards:[{l:'CAGR',v:pct(c),big:true,cls:c>=0?'pos':'neg',e:'a year, compounded'},{l:'Absolute return',v:pct(abs,1),e:'over the whole period'},{l:'Growth',v:(v.b/v.a).toFixed(2)+'×'}],
+    note:'CAGR smooths the ride: a fund that grew 10% a year on average may have fallen in some years. Compare it with the Nifty 50 over the same years before judging a fund or stock.'}}},
+ home:{group:'Loans',name:'Home loan',title:'Home loan EMI',what:'Monthly instalment, total interest and the effect of prepaying.',fields:loanFields('home'),calc:loanCalc('home')},
+ car:{group:'Loans',name:'Car loan',title:'Car loan EMI',what:'Monthly instalment, total interest and the effect of prepaying.',fields:loanFields('car'),calc:loanCalc('car')},
+ personal:{group:'Loans',name:'Personal loan',title:'Personal loan EMI',what:'Monthly instalment, total interest and the effect of prepaying.',fields:loanFields('personal'),calc:loanCalc('personal')},
+ education:{group:'Loans',name:'Education loan',title:'Education loan EMI',what:'Monthly instalment, total interest and the effect of prepaying.',fields:loanFields('education'),calc:loanCalc('education')},
+ fd:{group:'Save',name:'FD',title:'Fixed deposit (FD)',what:'Maturity value of a bank FD with interest compounded every quarter.',
+  fields:[{k:'amt',label:'Deposit',u:'₹',min:1000,max:50000000,step:1000,def:100000},{k:'rate',label:'Interest rate (yearly)',u:'%',min:2,max:10,step:0.05,def:7},{k:'yrs',label:'Tenure',u:'yrs',min:0.5,max:10,step:0.5,def:3},{k:'tax',label:'Your income tax slab',u:'%',min:0,max:30,step:5,def:0,hint:'FD interest is taxed at your slab rate.'}],
+  calc:v=>{const mat=v.amt*Math.pow(1+v.rate/400,v.yrs*4),int=mat-v.amt,afterTax=v.amt+int*(1-v.tax/100),eff=(Math.pow(1+v.rate/400,4)-1)*100;
+   return{cards:[{l:'Maturity value',v:short(mat),big:true,e:inr(mat)},{l:'Interest earned',v:short(int),cls:'pos',e:inr(int)},{l:'Effective yearly yield',v:pct(eff),e:'with quarterly compounding'},{l:'After tax',v:short(afterTax),e:v.tax?'at your '+v.tax+'% slab':'set your slab above'}],
+    donut:[['Deposit',v.amt,'--c1'],['Interest',int,'--c2']],note:'Banks deduct TDS of 10% when FD interest crosses ₹40,000 a year (₹50,000 for senior citizens), unless you submit Form 15G/15H. Senior citizens usually get about 0.5% more.'}}},
+ rd:{group:'Save',name:'RD',title:'Recurring deposit (RD)',what:'A fixed deposit every month, with interest compounded every quarter.',
+  fields:[{k:'amt',label:'Monthly deposit',u:'₹',min:100,max:500000,step:100,def:5000},{k:'rate',label:'Interest rate (yearly)',u:'%',min:2,max:10,step:0.05,def:6.8},{k:'mo',label:'Tenure',u:'mo',min:6,max:120,step:3,def:36}],
+  calc:v=>{let mat=0;for(let k=1;k<=v.mo;k++)mat+=v.amt*Math.pow(1+v.rate/400,(v.mo-k+1)/3);const dep=v.amt*v.mo,int=mat-dep;
+   return{cards:[{l:'Maturity value',v:short(mat),big:true,e:inr(mat)},{l:'You deposit',v:short(dep),e:inr(dep)},{l:'Interest earned',v:short(int),cls:'pos',e:inr(int)}],
+    donut:[['Deposited',dep,'--c1'],['Interest',int,'--c2']],note:'Each instalment earns quarterly-compounded interest for the months it stays in, as banks and the post office calculate RDs. RD interest is taxed like FD interest.'}}},
+ ppf:{group:'Save',name:'PPF',title:'Public Provident Fund (PPF)',what:'Tax-free government savings scheme: 15-year lock-in, extendable in blocks of 5 years.',
+  fields:[{k:'amt',label:'Yearly deposit',u:'₹',min:500,max:150000,step:500,def:150000,hint:'₹500 to ₹1,50,000 a year.'},{k:'rate',label:'Interest rate (yearly)',u:'%',min:5,max:10,step:0.05,def:7.1,hint:'Set by the government every quarter.'},{k:'yrs',label:'Years',u:'yrs',min:15,max:50,step:5,def:15}],
+  calc:v=>{let bal=0,dep=0;const rows=[];for(let y=1;y<=v.yrs;y++){bal=(bal+v.amt)*(1+v.rate/100);dep+=v.amt;rows.push([y,dep,bal])}
+   return{cards:[{l:'Maturity value',v:short(bal),big:true,e:inr(bal)+', tax-free'},{l:'You deposit',v:short(dep),e:inr(dep)},{l:'Interest earned',v:short(bal-dep),cls:'pos',e:inr(bal-dep)}],
+    donut:[['Deposited',dep,'--c1'],['Interest',bal-dep,'--c2']],bars:{label:'Balance year by year',series:[{name:'Deposited',c:'--c1',vals:rows.map(r=>r[1])},{name:'Balance',c:'--c2',vals:rows.map(r=>r[2])}],x:rows.map(r=>r[0])},
+    table:{head:['Year','Deposited','Balance'],rows:rows.map(r=>[r[0],inr(r[1]),inr(r[2])])},
+    note:'Assumes you deposit by 5 April each year, so the whole year earns interest. PPF is EEE: deposits qualify for 80C (old regime), and the interest and maturity are tax-free.'}}},
+};
+const ORDER=['sip','lumpsum','goal','swp','cagr','home','car','personal','education','fd','rd','ppf'];
+
+/* ───────── State ───────── */
+const KEY='mp-calcs';
+let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}};
+let cur=null,vals={};
+const clamp=(f,x)=>Math.min(f.max,Math.max(f.min,x));
+const parse=s=>{const n=Number(String(s).replace(/[^\d.]/g,''));return Number.isFinite(n)?n:NaN};
+const fmtBox=(f,x)=>f.u==='₹'?Math.round(x).toLocaleString('en-IN'):String(+x.toFixed(2));
+function words(f,x){if(f.u!=='₹')return'';return x>=1e5?short(x):''}
+
+function chips(){
+ const groups={Invest:[],Loans:[],Save:[]};ORDER.forEach(k=>groups[CALCS[k].group].push(k));
+ $('groups').innerHTML=Object.entries(groups).map(([g,ks])=>'<div class="grp"><b>'+g+'</b>'+ks.map(k=>'<button class="chip'+(k===cur?' on':'')+'" data-c="'+k+'">'+esc(CALCS[k].name)+'</button>').join('')+'</div>').join('');
+}
+function open(k){
+ if(!CALCS[k])k='sip';cur=k;const C=CALCS[k];
+ vals={};C.fields.forEach(f=>{const s=saved[k]&&saved[k][f.k];vals[f.k]=Number.isFinite(s)?clamp(f,s):f.def});
+ chips();
+ $('form').innerHTML='<h2>'+esc(C.title)+'</h2><p class="what">'+esc(C.what)+'</p>'+C.fields.map(f=>
+  '<div class="f" data-f="'+f.k+'"><div class="f-top"><div><label for="in-'+f.k+'">'+esc(f.label)+'</label>'+(f.hint?'<small>'+esc(f.hint)+'</small>':'')+'</div>'+
+  '<div class="box">'+(f.u==='₹'?'<span>₹</span>':'')+'<input id="in-'+f.k+'" type="text" inputmode="decimal" autocomplete="off" value="'+fmtBox(f,vals[f.k])+'">'+(f.u!=='₹'?'<span>'+esc(f.u)+'</span>':'')+'</div></div>'+
+  '<input type="range" aria-label="'+esc(f.label)+'" min="'+f.min+'" max="'+f.max+'" step="'+f.step+'" value="'+vals[f.k]+'"><div class="words">'+esc(words(f,vals[f.k]))+'</div></div>').join('')+
+  '<div class="acts"><button class="btn" data-reset>Reset</button><button class="btn" data-share>Copy link</button></div>';
+ if(location.hash.slice(1).split('?')[0]!==k)history.replaceState(null,'','#'+k);
+ compute();
+}
+function compute(){
+ const C=CALCS[cur];let o;try{o=C.calc(Object.assign({},vals))}catch(e){o={cards:[{l:'Check the inputs',v:'—'}]}}
+ let h='';
+ h+='<div class="res">'+o.cards.map(c=>'<div class="kv'+(c.big?' big':'')+'"><span>'+esc(c.l)+'</span><b class="'+(c.cls||'')+'">'+esc(c.v)+'</b>'+(c.e?'<em>'+esc(c.e)+'</em>':'')+'</div>').join('')+'</div>';
+ if(o.donut){const d=o.donut.filter(x=>x[1]>0.5);h+='<div class="viz">'+donut(d)+'<div class="legend">'+d.map(x=>'<div><i style="background:var('+x[2]+')"></i>'+esc(x[0])+': <b>'+esc(short(x[1]))+'</b></div>').join('')+'</div></div>'}
+ if(o.bars&&o.bars.x.length>1)h+='<div class="bars"><div class="sub" style="margin-bottom:6px">'+esc(o.bars.label)+'</div>'+bars(o.bars)+'</div>';
+ if(o.note)h+='<p class="note">'+o.note+'</p>';
+ if(o.table)h+='<details class="tbl"><summary>Year by year</summary><div class="tw"><table><thead><tr>'+o.table.head.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+o.table.rows.map(r=>'<tr>'+r.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></details>';
+ const op=$('out').querySelector('details.tbl');const wasOpen=op&&op.open;
+ $('out').innerHTML=h;if(wasOpen){const d=$('out').querySelector('details.tbl');if(d)d.open=true}
+}
+function donut(parts){
+ const tot=parts.reduce((s,x)=>s+x[1],0)||1,R=54,C=2*Math.PI*R;let off=0;
+ return '<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="'+esc(parts.map(x=>x[0]+' '+short(x[1])).join(', '))+'"><g transform="rotate(-90 70 70)">'+
+  parts.map(x=>{const len=x[1]/tot*C,s='<circle cx="70" cy="70" r="'+R+'" fill="none" stroke="var('+x[2]+')" stroke-width="22" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-off)+'"/>';off+=len;return s}).join('')+'</g></svg>';
+}
+function bars(b){
+ const W=600,H=170,pl=4,pb=18,n=b.x.length,max=Math.max(...b.series.flatMap(s=>s.vals))||1,gw=(W-pl)/n,bw=Math.max(2,gw*(b.series.length>1?0.38:0.7));
+ let s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="'+esc(b.label)+'">';
+ b.x.forEach((x,i)=>{b.series.forEach((se,j)=>{const v=se.vals[i],h=v/max*(H-pb-6),bx=pl+i*gw+(gw-bw*b.series.length)/2+j*bw;s+='<rect x="'+bx.toFixed(1)+'" y="'+(H-pb-h).toFixed(1)+'" width="'+(bw-1).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="2" fill="var('+se.c+')"><title>Year '+x+' · '+se.name+': '+short(v)+'</title></rect>'});
+  if(n<=15||i%Math.ceil(n/12)===0||i===n-1)s+='<text x="'+(pl+i*gw+gw/2).toFixed(1)+'" y="'+(H-4)+'" font-size="11" text-anchor="middle" fill="var(--dim)">'+x+'</text>'});
+ return s+'</svg>'+(b.series.length>1?'<div class="legend" style="flex-direction:row;gap:14px;margin-top:4px">'+b.series.map(se=>'<span><i style="background:var('+se.c+')"></i>'+esc(se.name)+'</span>').join('')+'</div>':'');
+}
+function setVal(k,x,from){
+ const f=CALCS[cur].fields.find(z=>z.k===k);if(!f||!Number.isFinite(x))return;x=clamp(f,x);vals[k]=x;
+ (saved[cur]=saved[cur]||{})[k]=x;persist();
+ const row=$('form').querySelector('[data-f="'+k+'"]');
+ if(from!=='box')row.querySelector('.box input').value=fmtBox(f,x);
+ if(from!=='range')row.querySelector('input[type=range]').value=x;
+ row.querySelector('.words').textContent=words(f,x);
+ compute();
+}
+// Typing in a box: results follow, the box itself is never rewritten while it has focus (the caret stays put).
+$('form').addEventListener('input',e=>{
+ const row=e.target.closest('[data-f]');if(!row)return;const k=row.dataset.f;
+ if(e.target.type==='range')return setVal(k,Number(e.target.value),'range');
+ const x=parse(e.target.value);if(Number.isFinite(x)&&e.target.value.trim()!=='')setVal(k,x,'box');
+});
+$('form').addEventListener('change',e=>{ // tidy the box (commas, limits) once you leave it
+ const row=e.target.closest('[data-f]');if(!row||e.target.type==='range')return;const f=CALCS[cur].fields.find(z=>z.k===row.dataset.f);e.target.value=fmtBox(f,vals[f.k]);
+});
+$('form').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('.box input'))e.target.blur()});
+$('form').addEventListener('click',e=>{
+ if(e.target.closest('[data-reset]')){delete saved[cur];persist();open(cur);return}
+ if(e.target.closest('[data-share]')){const q=CALCS[cur].fields.map(f=>f.k+'='+vals[f.k]).join('&'),url=location.origin+location.pathname+'#'+cur+'?'+q;
+  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{e.target.textContent='Link copied'},()=>{prompt('Copy this link',url)});setTimeout(()=>{e.target.textContent='Copy link'},1600)}
+});
+$('groups').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){open(b.dataset.c);window.scrollTo({top:0,behavior:'smooth'})}});
+// #sip or #home?amt=4000000&rate=8.4 (shared links)
+function fromHash(){const [k,q]=location.hash.slice(1).split('?');if(q&&CALCS[k]){const p=new URLSearchParams(q);saved[k]=saved[k]||{};CALCS[k].fields.forEach(f=>{if(p.has(f.k)){const x=Number(p.get(f.k));if(Number.isFinite(x))saved[k][f.k]=x}})}open(k||'sip')}
+addEventListener('hashchange',()=>{const k=location.hash.slice(1).split('?')[0];if(k!==cur||location.hash.includes('?'))fromHash()});
+fromHash();
+window.mpCalcs={CALCS,sipRun}; // for tests
+})();
+</script>
+</body>
+</html>

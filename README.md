@@ -272,6 +272,12 @@
 - **Home note** (`market-note.js`, `#mktNote`): on a holiday, "Market closed today for <holiday>" with the session the prices are from and when trading resumes; up to 3 days before a weekday holiday, a heads-up ("Market closed tomorrow for …").
 - **Jobs:** market-hours cron jobs (daily blog posts, FII/DII post, live insights, signal scan, options desk, sector history) skip holidays with `where not public.mp_is_market_holiday()`; the pre-market brief already did.
 
+### 🧮 Calculators (`calculators.html`)
+- **Invest:** SIP (with yearly step-up and today's-money value after inflation), lump sum, goal planner (monthly SIP or lump sum needed for an inflation-adjusted goal, counting savings already set aside), SWP (how long a corpus lasts with monthly withdrawals, optionally rising each year) and CAGR.
+- **Loans:** home, car, personal and education loan EMI with sensible defaults for each, total interest, a year-by-year schedule, and prepayment (extra every month and/or a one-time amount) showing interest saved and how much sooner the loan ends; tax notes for home (24(b), 80C) and education (80E) loans.
+- **Save:** FD (quarterly compounding, effective yield, after-tax value, TDS note), RD (quarterly compounding per instalment, as banks and the post office calculate) and PPF (deposit by 5 April, 15 years extendable in 5-year blocks).
+- Number boxes and sliders work together (typing never moves the cursor), values are remembered on the device, **Copy link** shares a calculation (`#home?amt=4000000&rate=8.4`), and charts are plain SVG. Everything runs in the browser. Checked against standard calculators: ₹10,000 SIP at 12% for 10 years = ₹23,23,391; ₹50 L home loan at 8.5% for 20 years = ₹43,391 EMI; PPF ₹1.5 L a year at 7.1% for 15 years = ₹40,68,209.
+
 ### 🆕 IPOs (`ipo.html`)
 - Open, upcoming and closed IPOs (mainboard and SME): price band, lot size, dates, category-wise subscription and **grey market premium (GMP)** with estimated listing price.
 - **Kept tidy automatically** (`ipo-refresh`): NSE uses a temporary symbol while an IPO is bidding and lists it under its trading symbol, so the issue-time row is merged into the listed one (subscription, lot size and GMP carried over). An issue still "Closed" 2+ trading days after bidding that already trades is marked Listed (first trading day from Yahoo; SME by the T+3 listing rule), so nothing sits in "listing soon" after it lists.
