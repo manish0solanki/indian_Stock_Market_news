@@ -338,6 +338,14 @@ The whole site can run under another firm's name, for demos to prospects or for 
 - Not shown to users: options trade ideas for the public need SEBI research-analyst registration. There is no back-test (no stored option prices), so it is judged on its paper record.
 - Data: `option_paper_trades`, `option_signal_log`, `fno_lots`, `options_paper_feed()` (`supabase/options-paper.sql`).
 
+### ⚡ Expiry reversal · ₹10 options (top of the **Options** tab, platform admin only, paper only)
+- One cheap-option trade on **expiry day**, Nifty (weekly), Bank Nifty (monthly) and Sensex (weekly Thursday), from the `expiry-reversal` edge function (pg_cron `expiry-reversal`, every minute 11:30 AM – 3:29 PM IST on trading days; it does nothing unless an index expires today, taken from NSE's own expiry list for Nifty / Bank Nifty and Thursday moved back for holidays for Sensex).
+- **Signal (12:00 – 2:00 PM IST, completed 5-minute bars from Yahoo):** the index has fallen ≥ 0.6% from the day's high (or risen ≥ 0.6% from the low), made that low (high) 5–60 minutes ago, won back ≥ 20% of the move and closed three bars in a row in the new direction (shorts / longs covering). Buy the out-of-the-money call after a fall (put after a rise) nearest the index priced within the premium range (default ₹4–12), as many lots as the budget allows (default ₹1,000). Bought at the ask.
+- **Exit (checked every minute):** 3× the entry at the bid (target), half the entry or the index back past the day's low / high (stop), or 3:00 PM. One trade a day across all three indices. Alerts (kind `option`) go to admin accounts' bell when it opens and closes.
+- **Sensex:** BSE blocks automated requests, so Sensex signals carry a Black-Scholes estimate (5-day realised volatility × 1.25), are marked *estimate*, are never paper traded and stay out of the record.
+- **Evidence:** 60 days of 5-minute bars (31 expiry days) with modelled option prices: 9 trades, 5 winners, net positive at every setting tried; small sample and modelled prices, so the paper record decides. Replay a recent day with `?action=check&idx=NIFTY&day=YYYY-MM-DD` (first signal) or `&at=HH:MM` (state then).
+- Desk: today's watch (each condition ticked), the trade card with live mark and P&L, **Exit now**, **Paper trade it now** (when auto paper trading is off), the record and settings (budget, premium range, auto paper). Data: `expiry_trades`, `expiry_watch`, `expiry_settings`, `expiry_desk()`, `expiry_settings_save()` (`supabase/expiry-reversal.sql`); code `expiry-desk.js`.
+
 ### Sales (selling the white-label platform)
 
 - **Sales Desk** (`/admin-sales.html`, MarketPulse admin only, linked as "🤝 Sales Desk" in the Admin Panel): every SEBI-registered research analyst is a lead (`sales_leads`, `supabase/sales.sql`), imported from SEBI's public register by the `sales-import` Edge Function (name, registration no., contact person, email, phone, address, city; ~2,330 entries) and ranked by fit (`sales_fit()`: independents and small firms with a reachable email first; banks, brokers and AMCs last). Tabs: **Today** (follow-ups due, then the best uncontacted leads), **Pipeline** (search and filter by stage / type), **Templates & playbook** (pricing, cadence, 3 emails, WhatsApp, LinkedIn, call script, demo agenda, personalised per lead) and **Import & settings** (your signature, re-import from SEBI). A lead's panel has **Make demo** (the whole site under the prospect's name with their SEBI registration in the footer, via a demo link), one-click personalised email and WhatsApp that log the touch and schedule the next follow-up (day 3, 7, 12), call / LinkedIn / demo logging, stage, plan and fee, notes and history (`sales_activities`).
@@ -375,6 +383,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `index-refresh` | every minute + every 30 s | Indian indices every minute. Global markets, US futures, Asian and European indices, VIX, US yields, currencies, commodities and crypto every 30 seconds (`?fast=1`, Yahoo batch quotes), with last trade times added every 5 minutes (`index_quotes`) |
 | `sector-refresh` | every 3 min | Sector indices and ~2,600 stock quotes (`sector_index_quotes`, `stock_quotes`) |
 | `options-signals` | every 15 min, 04:00–09:45 Mon–Fri | Options Paper Desk: opens, marks and closes paper debit spreads from the scanner's F&O signals |
+| `expiry-reversal` | every min, 06:00–09:59 Mon–Fri (not holidays) | Expiry-day ₹10 option reversal: watches, opens, marks and closes the day's one paper trade |
 | `swing-bars-archive` | 11:15 and 16:15 Mon–Sat | Copies the signal scanner's daily bars into `stock_price_history` (`archive_swing_bars()`) for the sector trade test |
 | `premarket-brief`, `premarket-brief-2` | 02:15 and 03:20 Mon–Fri (7:45 and 8:50 AM IST) | Builds the pre-market brief (`premarket_brief`) |
 | `premarket-snap` | 10:05 Mon–Fri (3:35 PM IST) | Close snapshot for the next brief (`premarket_snap`) |
@@ -418,6 +427,7 @@ The whole site can run under another firm's name, for demos to prospects or for 
 | `news-refresh` | News collection |
 | `index-refresh`, `sector-refresh`, `stocks-sync` | Market data collection |
 | `options-signals` | Paper debit spreads from the scanner's F&O signals (`?dry=1` to preview, `?debug=SYMBOL` for raw NSE fields; cron secret or platform admin) |
+| `expiry-reversal` | Expiry-day cheap-option reversal (`?action=run|exit|take|check`; cron secret or platform admin) |
 | `market-reasons` | News themes, bellwether stock moves and AI-written reasons for India, the US, Europe and Asia (`?force=1` to rewrite, `?debug=1` to preview without saving, `?region=us`; cron secret; uses the `MOONSHOT_API_KEY` function secret) |
 | `sector-history` | Daily closes of the NSE sector indices and the Nifty 50 from Yahoo (2 years for a new index, else the last month; `?range=` to override) |
 | `crypto-bot`, `crypto-monitor` | Crypto paper-trading bot, circuit-breaker, shadow trades |

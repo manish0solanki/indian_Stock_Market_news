@@ -660,12 +660,20 @@ function addBestTrades() {
 }
 let optionsLoading = null;
 function openOptions() {
-  const sec = $('tab-options'); if (!sec || sec.dataset.odMounted) return;
+  const sec = $('tab-options'); if (!sec || sec.dataset.odMounted) return; // set below once both panels start loading
   if (!optionsLoading) optionsLoading = new Promise((ok, fail) => {
     const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/options-desk.css?v=4'; document.head.appendChild(css);
     const js = document.createElement('script'); js.src = '/options-desk.js?v=5'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
   });
-  optionsLoading.then(() => window.mpOptionsDesk.mount(sec, sb)).catch(() => { sec.innerHTML = '<div class="note">Could not load the options desk. Refresh to try again.</div>'; optionsLoading = null; });
+  if (!$('expDesk')) {
+    // The expiry-day ₹10 option reversal panel sits above the spreads desk (expiry-desk.js, admin only like this tab).
+    sec.innerHTML = '<div id="expDesk"></div><div id="odHost"><div class="note">Loading the options desk…</div></div>';
+    const xs = document.createElement('script'); xs.src = '/expiry-desk.js?v=1';
+    xs.onload = () => { if (window.mpExpiryDesk) window.mpExpiryDesk.mount($('expDesk'), sb); };
+    document.head.appendChild(xs);
+  }
+  sec.dataset.odMounted = '1';
+  optionsLoading.then(() => window.mpOptionsDesk.mount($('odHost'), sb)).catch(() => { $('odHost').innerHTML = '<div class="note">Could not load the options desk. Refresh to try again.</div>'; optionsLoading = null; delete sec.dataset.odMounted; });
 }
 function seg(id, key, after) {
   $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.f[key] = b.dataset.v; $(id).querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); after(); });
