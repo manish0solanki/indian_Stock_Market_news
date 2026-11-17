@@ -1,5 +1,67 @@
 [
   {
+    "slug": "signature-stock-spotlight-17-nov-2026",
+    "title": "Signatureglobal (India) Surges 9.1% on 5.4x Volume",
+    "excerpt": "Signatureglobal (India) shares surged 9.14% on 17 Nov 2026, closing at ₹835.6 against a previous close of ₹765.6, a sharp single-session move for the residential and commercial projects developer. The rally was accompanied by heavy trading, with volume reaching 1,797,423 shares c",
+    "category": "stock-spotlight",
+    "date": "2026-11-17T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "SIGNATURE",
+      "Signatureglobal (India)"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-psu-bank-jumps-1-95-percent-as-12-of-12-stocks-advance",
+    "title": "Nifty PSU Bank Jumps 1.95% as 12 of 12 Stocks Advance",
+    "excerpt": "Public sector banks staged a clean sweep on 17 Nov 2026, with the Nifty PSU Bank index climbing 1.95%, or 181.3 points, to close at 9486.6.",
+    "category": "sector-analysis",
+    "date": "2026-11-17T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty PSU Bank",
+      "Sector Analysis",
+      "PSU Bank",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-17-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 17 Nov 2026: Gains 0.38%",
+    "excerpt": "Banks powered the Nifty 50 to a higher close on 17 Nov 2026, even as more stocks fell than rose across the wider market. The index gained 96.3 points, or 0.38%, to settle at 25,387.4, while the Sensex rose 0.57% to 82,574.4. Nifty Bank climbed 1.13% to 62,273.25 and Nifty Financi",
+    "category": "daily-wrap",
+    "date": "2026-11-17T15:39:16+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Mildly Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-5-sessions-with-4-864-68-cr-inflow-as-dii-selling-extends-to-10-sessions",
     "title": "FII Buying Extends to 5 Sessions with ₹4,864.68 Cr Inflow as DII Selling Extends to 10 Sessions",
     "excerpt": "Foreign investors did the heavy lifting on Dalal Street, extending their buying streak even as domestic institutions pulled money out for a tenth straight session. On 16 Nov 2026, FIIs bought shares worth ₹15,636.88 Cr and sold ₹10,772.2 Cr, leaving net purchases of ₹4,864.68 Cr,",
