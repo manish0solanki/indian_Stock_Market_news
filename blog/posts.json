@@ -1,5 +1,67 @@
 [
   {
+    "slug": "voltas-stock-spotlight-19-nov-2026",
+    "title": "Voltas Surges 9.0% on 7.2x Volume",
+    "excerpt": "Voltas surged 9.03% on 19 Nov 2026, with trading volumes exploding to more than seven times their recent average. The household appliances stock closed at ₹1,237, up sharply from the previous close of ₹1,134.60. A total of 6,235,185 shares changed hands, dwarfing the three-month ",
+    "category": "stock-spotlight",
+    "date": "2026-11-19T15:39:24+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "VOLTAS",
+      "Voltas"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-auto-surges-4-40-percent-as-78-of-122-stocks-advance",
+    "title": "Nifty Auto Surges 4.40% as 78 of 122 Stocks Advance",
+    "excerpt": "Nifty Auto rose 4.40% (1,206.35 points) to 28,601.30. Across 122 listed Auto stocks, 78 advanced and 41 declined.",
+    "category": "sector-analysis",
+    "date": "2026-11-19T15:39:24+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Auto",
+      "Sector Analysis",
+      "Auto",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-19-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 19 Nov 2026: Gains 1.14%",
+    "excerpt": "Autos powered a broad rally on Dalal Street, lifting the Nifty 50 by 286.35 points, or 1.14%, to close at 25,514.3, even as technology stocks moved in the opposite direction.",
+    "category": "daily-wrap",
+    "date": "2026-11-19T15:39:24+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-7-sessions-with-5-866-78-cr-inflow-as-diis-turn-sellers",
     "title": "FII Buying Extends to 7 Sessions with ₹5,866.78 Cr Inflow as DIIs Turn Sellers",
     "excerpt": "Foreign investors stepped up their cash-market buying on 18 Nov 2026 even as the Nifty 50 slipped, leaving domestic institutions to do the selling.",
