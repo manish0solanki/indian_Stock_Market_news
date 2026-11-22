@@ -45,6 +45,9 @@ button,input,select{font:inherit;color:inherit}
 .stat .v{font-size:21px;font-weight:800;margin-top:2px;letter-spacing:-.4px;white-space:nowrap}
 .stat .s{font-size:12px;color:var(--muted)}
 .summary{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:10px;padding:10px 14px;font-size:13.5px;color:var(--text);margin-bottom:14px}
+.sum-head{font-size:15.5px;font-weight:800;margin-bottom:6px}.sum-head.up{color:var(--green)}.sum-head.down{color:var(--red)}
+.sum-pts{margin:0;padding-left:18px;display:grid;gap:6px;line-height:1.55;color:var(--muted)}.sum-pts b{color:var(--text)}
+.sum-foot{font-size:11.5px;color:var(--dim);margin-top:8px}
 .grid2{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px;align-items:start}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;min-width:0}
 .card h3{margin:0;font-size:15px}
@@ -126,6 +129,15 @@ tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;
 .rng-in button{padding:9px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;font-family:inherit}
 .rng-out{font-size:13px;margin-top:8px;line-height:1.55;color:var(--muted)}.rng-out b{color:var(--text)}
 .rng-out .ok{color:var(--green)}.rng-out .warn{color:var(--amber)}.rng-out .bad{color:var(--red)}
+.rng-in{flex-wrap:wrap;max-width:620px}.rng-in input{flex:1 1 130px}
+.rng-side{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex:none}
+.rng-side button{border:0;background:var(--surface2);color:var(--muted);font:700 13px inherit;font-family:inherit;padding:9px 14px;cursor:pointer}
+.rng-side button.on{background:var(--accent);color:#fff}
+.rng-out ul{margin:6px 0 0;padding-left:18px;display:grid;gap:5px}
+.opt-head{font-size:15px;font-weight:800;color:var(--text);margin-top:4px}
+.opt-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin-left:6px;vertical-align:2px}
+.opt-tag.ok{color:var(--green)}.opt-tag.warn{color:var(--amber)}.opt-tag.bad{color:var(--red)}
+.opt-foot{font-size:11px;color:var(--dim);margin:6px 0 0}
 .rng-note{font-size:11.5px;color:var(--dim);margin:10px 0 0}
 @media (max-width:1100px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}#chart{max-height:420px}}
 @media (max-width:760px){
@@ -147,8 +159,8 @@ tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;
 </style>
 <link rel="stylesheet" href="/site-header.css">
 <script src="/site-header.js"></script>
-<script src="/fno-range.js?v=1" defer></script>
-<script src="/fno.js?v=2" defer></script>
+<script src="/fno-range.js?v=2" defer></script>
+<script src="/fno.js?v=3" defer></script>
 <script src="/brands.js"></script><script src="/brand.js"></script><script src="/sample-data.js"></script>
 </head>
 <body>
@@ -198,15 +210,16 @@ tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;
  <details class="card learn">
   <summary>What these numbers mean</summary>
   <dl>
-   <dt>Open interest (OI)</dt><dd>The number of option contracts still open at a strike. Big call OI above the price often acts as a ceiling (call sellers defend it); big put OI below it often acts as a floor.</dd>
-   <dt>Change in OI</dt><dd>Contracts added (+) or closed (−) today. Fresh put writing below the price is read as support building; fresh call writing above it as resistance building.</dd>
-   <dt>PCR</dt><dd>Put-call ratio: total put OI ÷ total call OI. Above 1 means more puts are written, usually read as bullish; below 0.7 as bearish. Extreme values (above 1.5 or below 0.5) can mean the crowd is one-sided and a reversal is near.</dd>
-   <dt>Max pain</dt><dd>The expiry price at which option buyers together would lose the most (and sellers keep the most). Prices often drift towards it near expiry, but it is a tendency, not a target.</dd>
-   <dt>Support / resistance</dt><dd>The put strike at or below the price with the most OI, and the call strike at or above it with the most OI.</dd>
-   <dt>IV</dt><dd>Implied volatility: the yearly move the option price implies, in %. Higher IV means pricier options.</dd>
-   <dt>Expected move</dt><dd>The at-the-money call plus put price (the straddle). The market prices roughly this much movement, either way, by expiry.</dd>
-   <dt>This week's expected range</dt><dd>1.5× the straddle either side of spot. On 389 weekly Nifty expiries (Feb 2019 – Nov 2026, straddle taken 4 trading days before expiry), Nifty closed inside it 79% of the time, but crossed an edge during the week 36% of the time before coming back. It says how far, not which way.</dd>
-   <dt>ITM / ATM</dt><dd>In the money: calls below the price and puts above it (shaded). At the money: the strike nearest the price (outlined).</dd>
+   <dt>Calls and puts</dt><dd>A <b>call</b> gains when the price goes <b>up</b>; a <b>put</b> gains when it goes <b>down</b>. Every option has a buyer (pays a small amount, can lose all of it) and a seller (collects that amount, takes the risk). Sellers are mostly big, well-funded traders, so where they place their bets is worth watching.</dd>
+   <dt>Open interest (OI)</dt><dd>How many option bets are still open at a price level. A big pile of <b>call</b> bets above the price acts like a <b>ceiling</b> (those sellers lose if the price goes above it). A big pile of <b>put</b> bets below the price acts like a <b>floor</b> (those sellers lose if it falls below).</dd>
+   <dt>Change in OI</dt><dd>New bets opened (+) or old ones closed (−) today. New put bets below the price = the floor getting stronger. New call bets above it = the ceiling getting stronger.</dd>
+   <dt>Put-call ratio (PCR)</dt><dd>Open puts ÷ open calls. <b>Above 1</b>: more money betting the price won't fall, read as <b>bullish</b>. <b>Below 0.7</b>: more money betting it won't rise, read as <b>bearish</b>. Very high (above 1.6) or very low (below 0.5) means nearly everyone is on one side, and markets sometimes turn when that happens.</dd>
+   <dt>Max pain</dt><dd>The expiry price at which option buyers, all together, would lose the most money. Near expiry the price sometimes drifts towards it. A pull, not a promise.</dd>
+   <dt>Floor / ceiling</dt><dd>The put strike (at or below the price) with the most bets, and the call strike (at or above it) with the most bets.</dd>
+   <dt>IV</dt><dd>How much movement the option price expects, as a yearly %. Higher IV = more nervous market = more expensive options.</dd>
+   <dt>Expected move</dt><dd>The price of the at-the-money call + put added together (the "straddle"). It is the option market's own guess of how far the price may move, up or down, by expiry.</dd>
+   <dt>Expected range (straddle × 1.5)</dt><dd>On 389 weekly Nifty expiries (Feb 2019 – Nov 2026), Nifty finished inside this range about 8 times in 10. During the week it went outside about 1 time in 3 before coming back. It tells you how far, not which way.</dd>
+   <dt>Strike, ITM, ATM, OTM</dt><dd>The <b>strike</b> is the price level an option is about. <b>ATM</b> (at the money): the strike nearest the current price (outlined). <b>ITM</b> (in the money, shaded): already worth something now. <b>OTM</b> (out of the money): cheap, but needs a move to be worth anything at expiry.</dd>
   </dl>
  </details>
  <div class="disc">Data from NSE, refreshed every minute during market hours (NSE itself updates every few minutes). OI is in contracts. For information and learning only, not investment advice; options carry a high risk of loss.</div>

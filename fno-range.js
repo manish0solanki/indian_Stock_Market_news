@@ -46,7 +46,7 @@
     return { closed, touched };
   }
 
-  let host = null, last = null;
+  let host = null, last = null, side = 'CE';
   function shell(el) {
     host = el;
     el.innerHTML = `
@@ -55,25 +55,62 @@
       <div class="rng-bar" data-r="bar"></div>
       <p class="rng-rec" data-r="rec"></p>
       <form class="rng-target" data-r="form" autocomplete="off">
-        <label for="rngTarget">Is your target realistic this week?</label>
-        <div class="rng-in"><input id="rngTarget" type="text" inputmode="decimal" placeholder="Your target, e.g. 24500"><button type="submit">Check</button></div>
+        <label for="rngTarget" data-r="flabel">Check an option you want to trade</label>
+        <div class="rng-in">
+          <input id="rngTarget" type="text" inputmode="decimal" placeholder="Strike, e.g. 26000" aria-label="Strike price">
+          <div class="rng-side" role="group" aria-label="Call or put"><button type="button" data-side="CE" class="on">Call</button><button type="button" data-side="PE">Put</button></div>
+          <input id="rngPrice" type="text" inputmode="decimal" placeholder="Price ₹ (optional)" aria-label="Price you pay">
+          <button type="submit">Check</button>
+        </div>
         <div class="rng-out" data-r="out" aria-live="polite"></div>
       </form>
-      <p class="rng-note">A range for the size of the move, not its direction, and not a trade recommendation. The record uses closing prices with 4 trading days to expiry; closer to expiry the straddle, and so the range, is smaller.</p>`;
+      <p class="rng-note">In simple words: option prices show how much the market expects the index to move by expiry. This range is how far, not which way, and it is not a trade recommendation. Closer to expiry the range gets smaller.</p>`;
     el.querySelector('[data-r="form"]').addEventListener('submit', (e) => { e.preventDefault(); check(); });
     el.querySelector('#rngTarget').addEventListener('input', (e) => { if (!e.target.value.trim()) el.querySelector('[data-r="out"]').innerHTML = ''; });
+    el.querySelector('.rng-side').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-side]'); if (!b) return;
+      side = b.dataset.side; el.querySelectorAll('.rng-side button').forEach((x) => x.classList.toggle('on', x === b));
+      if (el.querySelector('#rngTarget').value.trim()) check();
+    });
   }
+  // Plain-language check of one option: where the index must close for it to pay at expiry, and how often that
+  // happened in the 389 weeks (moves measured in straddles, so they scale with today's straddle).
   function check() {
-    const out = host.querySelector('[data-r="out"]'), raw = host.querySelector('#rngTarget').value.replace(/[,\s₹]/g, '');
-    if (!last || !raw) { out.innerHTML = ''; return; }
-    const t = Number(raw);
-    if (!(t > 0)) { out.innerHTML = '<span class="bad">Enter an index level, like 24500.</span>'; return; }
-    const { spot, strad, lo, hi } = last, k = (t - spot) / strad, pts = t - spot, dir = pts >= 0 ? 'above' : 'below';
-    const inside = t >= lo && t <= hi, o = odds(k);
-    out.innerHTML = `<b class="${inside ? 'ok' : 'warn'}">${inside ? 'Inside the range' : 'Outside the range'}.</b> ${f0(t)} is ${f0(Math.abs(pts))} points ${dir} ${esc(last.name)} (${(Math.abs(pts) / spot * 100).toFixed(2)}%, ${Math.abs(k).toFixed(2)}× the straddle).`
-      + (last.isNifty
-        ? ` In ${H.n} weekly expiries, Nifty <b>closed</b> at or ${dir} a level this far away in <b>${o.closed} weeks (${pct(o.closed, H.n)}%)</b>, and <b>touched</b> it at some point in the week in ${o.touched} (${pct(o.touched, H.n)}%).`
-        : ' The weekly record is for Nifty only.');
+    const out = host.querySelector('[data-r="out"]'), num = (id) => Number(host.querySelector(id).value.replace(/[,\s₹]/g, ''));
+    const rawK = host.querySelector('#rngTarget').value.trim();
+    if (!last || !rawK) { out.innerHTML = ''; return; }
+    const K = num('#rngTarget');
+    if (!(K > 0)) { out.innerHTML = '<span class="bad">Enter a strike price, like 26000.</span>'; return; }
+    const { spot, strad, lo, hi, name, isNifty, rows } = last, call = side === 'CE';
+    const row = (rows || []).find((r) => r[0] === K), ltp = row ? (call ? row[5] : row[11]) : null;
+    let price = num('#rngPrice'), priceNote = '';
+    if (!(price > 0)) { price = ltp > 0 ? ltp : 0; priceNote = price ? ` (its last traded price; type your own price to change it)` : ''; }
+    const label = `${esc(name)} ${f0(K)} ${call ? 'Call' : 'Put'}`;
+    const be = call ? K + price : K - price, need = be - spot, dir = call ? 'above' : 'below';
+    const kBe = (be - spot) / strad, kK = (K - spot) / strad;
+    const cnt = (f) => { let c = 0; for (let i = 0; i < H.n; i++) if (f(i)) c++; return c; };
+    const win = cnt((i) => call ? H.close[i] > kBe : H.close[i] < kBe);
+    const zero = cnt((i) => call ? H.close[i] <= kK : H.close[i] >= kK);
+    const itmNow = call ? K <= spot : K >= spot;
+    const touch = itmNow ? null : cnt((i) => call ? H.up[i] >= kK : H.down[i] >= -kK);
+    const inRange = K >= lo && K <= hi;
+    const pts = [];
+    pts.push(price > 0
+      ? `You pay <b>₹${f2(price)}</b> per unit${priceNote}. At expiry you make money only if ${esc(name)} closes <b>${dir} ${f0(be)}</b> (strike ${call ? '+' : '−'} price), which is <b>${f0(Math.abs(need))} points ${need >= 0 ? 'up' : 'down'}</b> (${(Math.abs(need) / spot * 100).toFixed(2)}%) from ${f0(spot)} now.`
+      : `No price found for this strike: type the price you would pay to see where you break even.`);
+    if (isNifty) {
+      if (price > 0) pts.push(`In ${H.n} past weeks, ${esc(name)} closed that far ${call ? 'up' : 'down'} <b>${win} times (${pct(win, H.n)}%)</b>: roughly <b>${win ? '1 in ' + Math.max(1, Math.round(H.n / win)) : 'never'}</b>.`);
+      pts.push(`The option ended <b>worthless</b> (${esc(name)} ${call ? 'at or below' : 'at or above'} ${f0(K)} at expiry) in <b>${zero} weeks (${pct(zero, H.n)}%)</b>.`);
+      if (touch !== null) pts.push(`${esc(name)} touched ${f0(K)} at some point before expiry in ${touch} weeks (${pct(touch, H.n)}%). Those were the chances to sell early at a profit.`);
+    } else pts.push(`The weekly record is for Nifty only, so there are no past odds for ${esc(name)}.`);
+    pts.push(itmNow
+      ? `This strike is already <b>in the money</b> (the price is ${call ? 'above' : 'below'} it), so it costs more but needs a smaller move.`
+      : inRange ? `The strike is <b>inside</b> the expected range (${f0(lo)} – ${f0(hi)}).`
+      : `The strike is <b>outside</b> the expected range (${f0(lo)} – ${f0(hi)}): the market itself thinks a move this big is unlikely by expiry.`);
+    const odds = isNifty && price > 0 ? win / H.n : null;
+    const tag = odds === null ? '' : odds >= 0.35 ? ['ok', 'Fair chance'] : odds >= 0.15 ? ['warn', 'Long shot'] : ['bad', 'Very long shot'];
+    out.innerHTML = `<div class="opt-head">${label}${tag ? ` <span class="opt-tag ${tag[0]}">${tag[1]}</span>` : ''}</div><ul>${pts.map((x) => `<li>${x}</li>`).join('')}</ul>`
+      + `<p class="opt-foot">Past odds from closing prices 4 trading days before expiry, scaled to today's straddle; ${last.daysLeft !== null && last.daysLeft < 4 ? 'with fewer days left they are rougher. ' : ''}Not a recommendation.</p>`;
   }
   function render(el, D, name) {
     if (!el) return;
@@ -84,11 +121,11 @@
     el.hidden = false;
     const strad = ce + pe, move = strad * MULT, lo = spot - move, hi = spot + move, days = tradingDaysLeft(D.expiry);
     const isNifty = D.symbol === 'NIFTY';
-    last = { spot, strad, lo, hi, name, isNifty };
+    last = { spot, strad, lo, hi, name, isNifty, rows: D.rows, daysLeft: days };
     const q = (n) => el.querySelector(`[data-r="${n}"]`);
     const weekly = days !== null && days <= 6;
     el.querySelector('h2').textContent = weekly ? "This week's expected range" : 'Expected range to expiry';
-    el.querySelector('label[for="rngTarget"]').textContent = weekly ? 'Is your target realistic this week?' : 'Is your target realistic by expiry?';
+    q('flabel').textContent = weekly ? 'Check an option you want to trade this week' : 'Check an option you want to trade (this expiry)';
     q('sub').textContent = `${name} · expiry ${D.expiry}` + (days !== null ? ` · ${days} trading day${days === 1 ? '' : 's'} left` : '');
     q('pill').textContent = isNifty ? 'Closed inside in 79% of weeks' : 'Record is for Nifty only';
     q('pill').className = 'rng-pill' + (isNifty ? ' ok' : '');
@@ -101,7 +138,7 @@
       <div class="track"><div class="zone"></div><div class="mark"><i></i><em>${f0(spot)}</em></div></div>
       <div class="ends"><span><small>Low</small><b>${f0(lo)}</b></span><span class="mid">${(move / spot * 100).toFixed(1)}% either way</span><span class="r"><small>High</small><b>${f0(hi)}</b></span></div>`;
     q('rec').innerHTML = isNifty
-      ? `<b>Record, ${H.n} weekly expiries (${H.from} – ${H.to}):</b> Nifty closed inside the range in <b>306 weeks (79%)</b>, above it in 42 (11%), below it in 41 (11%). But during the week it went past an edge in <b>139 (36%)</b> before coming back. A cheap call or put beyond the range expired worthless about 9 times in 10.`
+      ? `<b>Record, ${H.n} weekly expiries (${H.from} – ${H.to}):</b> Nifty closed inside the range in <b>306 weeks (79%)</b>, above it in 42 (11%), below it in 41 (11%). But during the week it went past an edge in <b>139 (36%)</b> before coming back. A cheap ₹20 call or put beyond the range ended worthless about 9 times in 10.`
       : `<b>Note:</b> the 79% record was measured on weekly Nifty expiries only. ${esc(name)} may behave differently, so read this range as the option market's estimate, not a tested rule.`;
     if (host.querySelector('#rngTarget').value.trim()) check();
   }

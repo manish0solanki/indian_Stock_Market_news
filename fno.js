@@ -49,37 +49,56 @@
   }
 
   /* ───────── rendering ───────── */
+  // Plain-language reading of the put-call ratio (open interest). Option sellers ("writers") are mostly big, well-funded
+  // traders; a seller of a put is betting the price will NOT fall below that strike, a seller of a call that it will
+  // NOT rise above it. So more open puts than calls = more money betting the market holds up.
   function pcrRead(p) {
     if (p === null) return ['—', ''];
-    if (p >= 1.6) return ['Bullish, but stretched', 'up'];
-    if (p >= 1.3) return ['Bullish tilt', 'up'];
-    if (p >= 1) return ['Mildly bullish', 'up'];
-    if (p > 0.7) return ['Neutral to mildly bearish', ''];
-    if (p <= 0.5) return ['Bearish, but stretched', 'down'];
-    return ['Bearish tilt', 'down'];
+    if (p >= 1.6) return ['Bulls strong, maybe too many', 'up'];
+    if (p >= 1.2) return ['Bulls stronger', 'up'];
+    if (p >= 0.9) return ['Fairly even, slight bull tilt', ''];
+    if (p > 0.7) return ['Fairly even, slight bear tilt', ''];
+    if (p <= 0.5) return ['Bears strong, maybe too many', 'down'];
+    return ['Bears stronger', 'down'];
   }
   function stats() {
     const d = D, spot = d.spot, [pr, pt] = pcrRead(d.pcr);
     const away = (k) => k && spot ? ((k - spot) / spot * 100) : null;
-    const awayTxt = (k) => { const a = away(k); return a === null ? '' : (Math.abs(a) < 0.05 ? 'at spot' : (a > 0 ? '+' : '−') + Math.abs(a).toFixed(1) + '% from spot'); };
+    const awayTxt = (k) => { const a = away(k); return a === null ? '' : (Math.abs(a) < 0.05 ? 'right at the current price' : Math.abs(a).toFixed(1) + '% ' + (a > 0 ? 'above' : 'below') + ' the price'); };
     const lo = d.straddle && spot ? spot - d.straddle : null, hi = d.straddle && spot ? spot + d.straddle : null;
     const name = (INDICES.find((x) => x[0] === d.symbol) || [])[1] || d.symbol;
     return `
-      <div class="stat"><div class="l">${esc(name)}</div><div class="v">${fmt(spot)}</div><div class="s">${d.timestamp ? 'NSE as of ' + esc(d.timestamp.replace(/:\d\d$/, '')) : ''}</div></div>
-      <div class="stat"><div class="l">PCR (open interest)</div><div class="v ${pt}">${d.pcr === null ? '—' : d.pcr.toFixed(2)}</div><div class="s">${pr}${d.pcrVol !== null ? ' · volume PCR ' + d.pcrVol.toFixed(2) : ''}</div></div>
-      <div class="stat"><div class="l">Max pain</div><div class="v">${strikeTxt(d.maxPain)}</div><div class="s">${awayTxt(d.maxPain)}</div></div>
-      <div class="stat"><div class="l">Support (most put OI)</div><div class="v up">${strikeTxt(d.support)}</div><div class="s">${awayTxt(d.support)}</div></div>
-      <div class="stat"><div class="l">Resistance (most call OI)</div><div class="v down">${strikeTxt(d.resistance)}</div><div class="s">${awayTxt(d.resistance)}</div></div>
-      <div class="stat"><div class="l">Expected move by expiry</div><div class="v">${d.straddle ? '±' + fmt(d.straddle, 0) : '—'}</div><div class="s">${lo ? fmt(lo, 0) + ' – ' + fmt(hi, 0) : ''}${d.atmIV ? ' · ATM IV ' + d.atmIV.toFixed(1) + '%' : ''}</div></div>`;
+      <div class="stat"><div class="l">${esc(name)} now</div><div class="v">${fmt(spot)}</div><div class="s">${d.timestamp ? 'NSE, ' + esc(d.timestamp.replace(/:\d\d$/, '')) : ''}</div></div>
+      <div class="stat"><div class="l">Put-call ratio</div><div class="v ${pt}">${d.pcr === null ? '—' : d.pcr.toFixed(2)}</div><div class="s">${pr}${d.pcr !== null ? ` · ${Math.round(d.pcr * 100)} puts open for every 100 calls` : ''}</div></div>
+      <div class="stat"><div class="l">Floor (most put bets)</div><div class="v up">${strikeTxt(d.support)}</div><div class="s">${awayTxt(d.support)}</div></div>
+      <div class="stat"><div class="l">Ceiling (most call bets)</div><div class="v down">${strikeTxt(d.resistance)}</div><div class="s">${awayTxt(d.resistance)}</div></div>
+      <div class="stat"><div class="l">Max pain</div><div class="v">${strikeTxt(d.maxPain)}</div><div class="s">${awayTxt(d.maxPain)} · where most option buyers lose</div></div>
+      <div class="stat"><div class="l">Expected move by expiry</div><div class="v">${d.straddle ? '±' + fmt(d.straddle, 0) : '—'}</div><div class="s">${lo ? 'about ' + fmt(lo, 0) + ' to ' + fmt(hi, 0) : ''}</div></div>`;
   }
+  // "Which side is stronger?" in plain words: a one-line verdict and short points a beginner can follow.
   function summary() {
-    const d = D, t = d.totals, bits = [];
-    if (d.pcr !== null) bits.push(`Put writers hold ${d.pcr >= 1 ? 'more' : 'less'} open interest than call writers (PCR ${d.pcr.toFixed(2)})`);
-    if (d.support && d.resistance) bits.push(`the heaviest positions suggest a range of ${strikeTxt(d.support)} to ${strikeTxt(d.resistance)}`);
-    if (d.maxPain && d.spot) bits.push(`max pain ${strikeTxt(d.maxPain)} is ${Math.abs(d.maxPain - d.spot) / d.spot < 0.005 ? 'close to spot' : (d.maxPain > d.spot ? 'above' : 'below') + ' spot'}`);
-    let s = bits.length ? bits.join('; ') + '.' : '';
-    if (t.ceChgOI || t.peChgOI) s += ` Today calls ${t.ceChgOI >= 0 ? 'added' : 'shed'} ${big(Math.abs(t.ceChgOI))} and puts ${t.peChgOI >= 0 ? 'added' : 'shed'} ${big(Math.abs(t.peChgOI))} contracts of open interest${t.peChgOI > t.ceChgOI ? ', more on the put side (supportive)' : t.ceChgOI > t.peChgOI ? ', more on the call side (capping)' : ''}.`;
-    return s.charAt(0).toUpperCase() + s.slice(1);
+    const d = D, t = d.totals, name = (INDICES.find((x) => x[0] === d.symbol) || [])[1] || d.symbol;
+    let score = 0;
+    if (d.pcr !== null) score += d.pcr >= 1.2 ? 1 : d.pcr <= 0.8 ? -1 : 0;
+    const flow = (t.peChgOI || 0) - (t.ceChgOI || 0), scale = Math.max(Math.abs(t.peChgOI || 0), Math.abs(t.ceChgOI || 0), 1);
+    if (Math.abs(flow) / scale > 0.25) score += flow > 0 ? 1 : -1;
+    const head = score >= 1 ? ['up', '🟢 Bulls (people betting on a rise) look stronger right now']
+      : score <= -1 ? ['down', '🔴 Bears (people betting on a fall) look stronger right now']
+      : ['', '⚪ Neither side is clearly stronger right now'];
+    const pts = [];
+    if (d.pcr !== null) pts.push(d.pcr >= 1
+      ? `<b>More bets that ${esc(name)} won't fall.</b> For every 100 open call contracts there are ${Math.round(d.pcr * 100)} put contracts. Most puts are sold by big players who earn only if the price stays <i>above</i> their strike, so lots of puts means lots of money defending the downside.`
+      : `<b>More bets that ${esc(name)} won't rise.</b> For every 100 open call contracts there are only ${Math.round(d.pcr * 100)} put contracts. Most calls are sold by big players who earn only if the price stays <i>below</i> their strike, so lots of calls means lots of money capping the upside.`);
+    if (d.support && d.resistance) pts.push(`<b>Floor and ceiling.</b> The biggest pile of put bets is at <b>${strikeTxt(d.support)}</b> (sellers there don't want the price to fall below it), and the biggest pile of call bets is at <b>${strikeTxt(d.resistance)}</b> (sellers there don't want it to go above). The price often stays between the two, but they can break.`);
+    if (t.ceChgOI || t.peChgOI) {
+      const c = t.ceChgOI || 0, p = t.peChgOI || 0, w = (v, kind) => `${v >= 0 ? 'added' : 'cut'} ${big(Math.abs(v))} ${kind} contracts`;
+      const read = p - c > 0 ? 'more new money is betting the market holds up' : p - c < 0 ? 'more new money is betting the market won\'t go much higher' : 'new money is split evenly';
+      pts.push(`<b>Today's new bets.</b> Traders ${w(c, 'call')} and ${w(p, 'put')}, so ${read}.`);
+    }
+    if (d.pcrVol !== null && d.pcrVol !== undefined) pts.push(`<b>Today's trading.</b> For every 100 call contracts traded today, ${Math.round(d.pcrVol * 100)} puts were traded: ${d.pcrVol > 1.1 ? 'more action on puts' : d.pcrVol < 0.9 ? 'more action on calls' : 'about even'}. (Every trade has a buyer and a seller, so this shows where the activity is, not who won.)`);
+    if (d.maxPain && d.spot) pts.push(`<b>Max pain ${strikeTxt(d.maxPain)}.</b> If ${esc(name)} ends expiry here, option buyers as a group lose the most. Near expiry the price sometimes drifts towards it; it is a pull, not a promise.`);
+    if (d.pcr !== null && (d.pcr >= 1.6 || d.pcr <= 0.5)) pts.push(`<b>⚠ Careful:</b> the ratio is extreme (${d.pcr.toFixed(2)}). When almost everyone is on one side, the market sometimes turns the other way.`);
+    return `<div class="sum-head ${head[0]}">${head[1]}</div><ul class="sum-pts">${pts.map((x) => `<li>${x}</li>`).join('')}</ul><div class="sum-foot">This reads the positions of option traders. It shows where money is placed, not where the price will go.</div>`;
   }
   function visibleRows() {
     const rows = D.rows;
@@ -130,7 +149,7 @@
     if (!D) return;
     $('content').hidden = false;
     $('stats').innerHTML = stats();
-    $('summary').textContent = summary();
+    $('summary').innerHTML = summary();
     if (window.mpRange) window.mpRange.render($('rangeCard'), D, (INDICES.find((x) => x[0] === D.symbol) || [])[1] || D.symbol);
     const isStock = !INDICES.some((x) => x[0] === D.symbol);
     $('title').innerHTML = isStock ? `<span data-sym="${esc(D.symbol)}">${esc(D.symbol)}</span> option chain` : esc(((INDICES.find((x) => x[0] === D.symbol) || [])[1] || D.symbol)) + ' option chain';
