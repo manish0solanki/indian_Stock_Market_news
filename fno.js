@@ -100,6 +100,56 @@
     if (d.pcr !== null && (d.pcr >= 1.6 || d.pcr <= 0.5)) pts.push(`<b>⚠ Careful:</b> the ratio is extreme (${d.pcr.toFixed(2)}). When almost everyone is on one side, the market sometimes turns the other way.`);
     return `<div class="sum-head ${head[0]}">${head[1]}</div><ul class="sum-pts">${pts.map((x) => `<li>${x}</li>`).join('')}</ul><div class="sum-foot">This reads the positions of option traders. It shows where money is placed, not where the price will go.</div>`;
   }
+  // "Your step-by-step guide": the four steps filled in with live data, so the page can be read top to bottom.
+  function verdict() {
+    const d = D, t = d.totals || {};
+    let score = 0;
+    if (d.pcr !== null) score += d.pcr >= 1.2 ? 1 : d.pcr <= 0.8 ? -1 : 0;
+    const flow = (t.peChgOI || 0) - (t.ceChgOI || 0), scale = Math.max(Math.abs(t.peChgOI || 0), Math.abs(t.ceChgOI || 0), 1);
+    if (Math.abs(flow) / scale > 0.25) score += flow > 0 ? 1 : -1;
+    return score;
+  }
+  function steps() {
+    const d = D, name = (INDICES.find((x) => x[0] === d.symbol) || [])[1] || d.symbol, spot = d.spot;
+    const now = new Date(Date.now() + 330 * 60e3), mins = now.getUTCHours() * 60 + now.getUTCMinutes(), open = marketOpen();
+    const st = (cls, icon, title, body) => `<li class="${cls}"><span class="st-i">${icon}</span><div><b>${title}</b><p>${body}</p></div></li>`;
+    const out = [];
+    // 1. Time
+    if (!open) out.push(st('wait', '1', 'Market is closed', `These are the last closing numbers. Use them to plan for the next session; the guide updates itself once the market opens.`));
+    else if (mins < 570) out.push(st('wait', '1', `Wait until 9:30 AM (${570 - mins} min)`, `The first 15 minutes are noisy while traders settle their positions. Look, but don't trade yet.`));
+    else if (mins >= 900) out.push(st('wait', '1', 'Last 30 minutes', `Prices can jump around near the close. New trades now have little time to work; for weekly options on expiry day, very little.`));
+    else out.push(st('ok', '✓', 'Good time to look', `The opening noise has settled. The page updates itself about every minute (NSE's own numbers change every few minutes).`));
+    // 2. Who is stronger
+    const v = verdict();
+    out.push(st(v > 0 ? 'up' : v < 0 ? 'down' : 'flat', '2',
+      v > 0 ? 'Bulls look stronger' : v < 0 ? 'Bears look stronger' : 'No clear side',
+      v > 0 ? `More money is betting ${esc(name)} won't fall than won't rise. That leans towards calls (betting on a rise), not puts.`
+        : v < 0 ? `More money is betting ${esc(name)} won't rise than won't fall. That leans towards puts (betting on a fall), not calls.`
+        : `Money is split between the two sides. With no clear side, a big one-way move is less likely; be extra picky.`));
+    if (d.pcr !== null && (d.pcr >= 1.6 || d.pcr <= 0.5)) out[out.length - 1] = out[out.length - 1].replace('</p></div></li>', ` <span class="st-warn">⚠ Almost everyone is on one side (ratio ${d.pcr.toFixed(2)}); markets sometimes turn when that happens.</span></p></div></li>`);
+    // 3. Where the price sits: range, floor and ceiling
+    const r = window.mpRange && window.mpRange.state();
+    let where = '';
+    if (d.support && d.resistance && spot) {
+      const band = d.resistance - d.support, pos = band > 0 ? (spot - d.support) / band : 0.5;
+      where = pos <= 0.25 ? ` It is <b>close to the floor</b> (${strikeTxt(d.support)}): bounces often start here, but if the floor breaks the fall can be quick.`
+        : pos >= 0.75 ? ` It is <b>close to the ceiling</b> (${strikeTxt(d.resistance)}): rallies often stall here, but if it breaks the rise can be quick.`
+        : ` It is in the <b>middle</b>, between the floor ${strikeTxt(d.support)} and the ceiling ${strikeTxt(d.resistance)}.`;
+    }
+    out.push(st('info', '3', r ? `Expected range: ${fmt(r.lo, 0)} to ${fmt(r.hi, 0)}` : 'Where the price sits',
+      (r ? `${esc(name)} is ${fmt(spot, 0)}. ${r.isNifty ? 'It finished inside a range like this in about 8 of 10 weeks.' : 'This is the option market\'s own estimate.'} Pick a strike inside it; a strike outside it rarely pays.` : `${esc(name)} is ${fmt(spot, 0)}.`) + where));
+    // 4. Your option
+    const c = r && r.check;
+    out.push(c
+      ? st(c.tone === 'ok' ? 'ok' : c.tone === 'warn' ? 'wait' : 'down', '4', `Your option: ${esc(c.label)}${c.tag ? ' · ' + c.tag : ''}`,
+          c.win === null ? `See the details in the range card below.` : `It paid at expiry in about <b>${c.win}%</b> of past weeks (break-even ${fmt(c.be, 0)}). ${c.win >= 35 ? 'Reasonable odds, still not a sure thing.' : c.win >= 15 ? 'Possible, but most weeks it would lose. Keep the amount small.' : 'Most weeks this loses everything. Only risk money you can afford to lose.'}`)
+      : st('todo', '4', 'Check your option', `Type the strike you're thinking of in <a href="#rangeCard">the range card below</a>, pick Call or Put, and it tells you the odds in plain words.`));
+    // 5. Keep watching
+    const t = d.totals || {};
+    const flowTxt = (t.peChgOI || 0) > (t.ceChgOI || 0) ? 'more new put bets than call bets today (support building)' : (t.ceChgOI || 0) > (t.peChgOI || 0) ? 'more new call bets than put bets today (a ceiling building)' : 'new bets split evenly today';
+    out.push(st('info', '5', 'Re-check every 15–30 minutes', `Right now: ${flowTxt}. If that flips, or the price breaks the floor or ceiling, the picture has changed.`));
+    return `<div class="steps-head"><h2>Your step-by-step guide</h2><span>${d.timestamp ? 'NSE data ' + esc(d.timestamp.replace(/:\d\d$/, '').replace(/^.* /, '')) : ''}</span></div><ol class="steps-list">${out.join('')}</ol><p class="steps-foot">Built from where option traders have placed their money. The range and option odds are tested on 389 weekly Nifty expiries; the "stronger side" reading is not yet tested. Not a recommendation.</p>`;
+  }
   function visibleRows() {
     const rows = D.rows;
     if (S.range === 'all' || !rows.length) return rows;
@@ -151,6 +201,7 @@
     $('stats').innerHTML = stats();
     $('summary').innerHTML = summary();
     if (window.mpRange) window.mpRange.render($('rangeCard'), D, (INDICES.find((x) => x[0] === D.symbol) || [])[1] || D.symbol);
+    $('steps').innerHTML = steps();
     const isStock = !INDICES.some((x) => x[0] === D.symbol);
     $('title').innerHTML = isStock ? `<span data-sym="${esc(D.symbol)}">${esc(D.symbol)}</span> option chain` : esc(((INDICES.find((x) => x[0] === D.symbol) || [])[1] || D.symbol)) + ' option chain';
     $('expiry').innerHTML = D.expiries.map((e) => `<option value="${esc(e)}">${esc(e)}</option>`).join('');
@@ -209,6 +260,7 @@
     });
   }
 
+  document.addEventListener('mp:range-check', () => { if (D) $('steps').innerHTML = steps(); });
   function start() {
     load(); wire(); loadStocks(); refresh(true);
     // NSE updates the chain every few minutes in market hours: refresh each minute while visible.

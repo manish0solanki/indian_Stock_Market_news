@@ -46,7 +46,7 @@
     return { closed, touched };
   }
 
-  let host = null, last = null, side = 'CE';
+  let host = null, last = null, side = 'CE', lastCheck = null;
   function shell(el) {
     host = el;
     el.innerHTML = `
@@ -78,7 +78,7 @@
   function check() {
     const out = host.querySelector('[data-r="out"]'), num = (id) => Number(host.querySelector(id).value.replace(/[,\s₹]/g, ''));
     const rawK = host.querySelector('#rngTarget').value.trim();
-    if (!last || !rawK) { out.innerHTML = ''; return; }
+    if (!last || !rawK) { out.innerHTML = ''; if (lastCheck) { lastCheck = null; document.dispatchEvent(new CustomEvent('mp:range-check')); } return; }
     const K = num('#rngTarget');
     if (!(K > 0)) { out.innerHTML = '<span class="bad">Enter a strike price, like 26000.</span>'; return; }
     const { spot, strad, lo, hi, name, isNifty, rows } = last, call = side === 'CE';
@@ -109,6 +109,8 @@
       : `The strike is <b>outside</b> the expected range (${f0(lo)} – ${f0(hi)}): the market itself thinks a move this big is unlikely by expiry.`);
     const odds = isNifty && price > 0 ? win / H.n : null;
     const tag = odds === null ? '' : odds >= 0.35 ? ['ok', 'Fair chance'] : odds >= 0.15 ? ['warn', 'Long shot'] : ['bad', 'Very long shot'];
+    lastCheck = { label: `${name} ${f0(K)} ${call ? 'Call' : 'Put'}`, tag: tag ? tag[1] : null, tone: tag ? tag[0] : '', win: odds === null ? null : Math.round(odds * 100), be, inRange, itmNow };
+    document.dispatchEvent(new CustomEvent('mp:range-check'));
     out.innerHTML = `<div class="opt-head">${label}${tag ? ` <span class="opt-tag ${tag[0]}">${tag[1]}</span>` : ''}</div><ul>${pts.map((x) => `<li>${x}</li>`).join('')}</ul>`
       + `<p class="opt-foot">Past odds from closing prices 4 trading days before expiry, scaled to today's straddle; ${last.daysLeft !== null && last.daysLeft < 4 ? 'with fewer days left they are rougher. ' : ''}Not a recommendation.</p>`;
   }
@@ -142,5 +144,6 @@
       : `<b>Note:</b> the 79% record was measured on weekly Nifty expiries only. ${esc(name)} may behave differently, so read this range as the option market's estimate, not a tested rule.`;
     if (host.querySelector('#rngTarget').value.trim()) check();
   }
-  window.mpRange = { render, odds, tradingDaysLeft, H };
+  const state = () => last ? { lo: last.lo, hi: last.hi, strad: last.strad, isNifty: last.isNifty, daysLeft: last.daysLeft, check: lastCheck } : null;
+  window.mpRange = { render, odds, tradingDaysLeft, state, H };
 })();
