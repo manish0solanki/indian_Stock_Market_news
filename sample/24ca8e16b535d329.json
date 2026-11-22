@@ -1,0 +1,1 @@
+{"key":"GET fzazdrzlemmkqngvpzxj.supabase.co/functions/v1/stock-news?name=ITC%20Limited&symbol=ITC","page":"/stock-analysis.html?symbol=ITC","status":200,"type":"application/json","body":"{\"symbol\":\"ITC\",\"name\":\"ITC Limited\",\"fetched_at\":\"2026-11-21T13:02:02.430Z\",\"headlines\":[],\"filings\":[],\"errors\":[\"Google News 429\",\"NSE 403\"]}"}
