@@ -131,6 +131,7 @@
     $('content').hidden = false;
     $('stats').innerHTML = stats();
     $('summary').textContent = summary();
+    if (window.mpRange) window.mpRange.render($('rangeCard'), D, (INDICES.find((x) => x[0] === D.symbol) || [])[1] || D.symbol);
     const isStock = !INDICES.some((x) => x[0] === D.symbol);
     $('title').innerHTML = isStock ? `<span data-sym="${esc(D.symbol)}">${esc(D.symbol)}</span> option chain` : esc(((INDICES.find((x) => x[0] === D.symbol) || [])[1] || D.symbol)) + ' option chain';
     $('expiry').innerHTML = D.expiries.map((e) => `<option value="${esc(e)}">${esc(e)}</option>`).join('');

@@ -222,6 +222,8 @@
 - Open interest / change-in-OI chart by strike, the chain table with ITM shading and the spot line, and a plain-English summary and glossary.
 - Data: the `option-chain` Edge Function (NSE's option-chain API, cached a minute). Refreshes every minute in market hours.
 
+- **This week's expected range** card (`fno-range.js`): ATM call + put (the straddle) × 1.5 either side of spot, with a bar, the trading days left and a **target check**. Tested on NSE's closing option prices for all 389 weekly Nifty expiries Feb 2019 – Nov 2026 (straddle 4 trading days before expiry): Nifty closed inside the range 306 times (79%), above 42, below 41, but crossed an edge during the week in 139 (36%). The target check uses the same 389 weeks (embedded as moves in straddles) to say how often Nifty closed at or beyond, and touched, a level that far away. Other indices and stocks get the range with a note that the record is Nifty's only. A range for the size of the move, not its direction.
+
 ### 🩺 Data Health (Admin Panel → Data health tab, `admin-health.js`, admins only)
 - One page that shows whether every data feed is working: Indian and global quotes, stock quotes and coverage, sector indices, daily price history, FII/DII, news, global headlines, crude, live insights, events, IPOs, the economic calendar schedule, the signals scanner, background job heartbeats and pg_cron failures (from `data_health()`).
 - Each check knows what to expect at that moment (strict in market hours, last session's data otherwise), so nights and weekends don't raise false alarms.
@@ -460,6 +462,7 @@ NSE (quotes, event calendar, corporate actions, integrated-filing XBRL results, 
 ├── notify.js                Notifications bell in the header (all pages)
 ├── picks-export.js          Festive picks downloads: poster/story PNG and PDF report
 ├── fno.html/.js              F&O option chain, PCR, max pain
+├── fno-range.js              F&O: weekly expected range (straddle × 1.5) and target check
 ├── admin-news.html, admin-health.js   Admin Panel: news moderation and the data health tab
 ├── options-desk.js/.css     Options Paper Desk (platform admin): the Signals page's admin-only Options tab and admin-options.html
 ├── events.html              Events calendar

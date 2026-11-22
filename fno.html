@@ -98,6 +98,35 @@ tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;
 .learn dt{font-weight:700}
 .learn dd{margin:0;color:var(--muted)}
 .disc{font-size:12px;color:var(--dim);margin-top:12px}
+/* This week's expected range (fno-range.js) */
+.rng{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;min-width:0}
+.rng-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.rng h2{margin:0;font-size:16px}.rng-sub{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.rng-pill{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.rng-pill.ok{color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
+.rng-calc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:12px 0}
+.rng-calc div{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:7px 11px;min-width:0}
+.rng-calc div span{display:block;font-size:10.5px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.rng-calc div b{font-size:16px;white-space:nowrap}
+.rng-calc div.hl{border-color:var(--accent2)}.rng-calc div.hl b{color:var(--accent2)}
+.rng-calc i{font-style:normal;color:var(--dim);font-weight:700}
+.rng-bar .track{position:relative;height:30px;margin:6px 0 4px}
+.rng-bar .zone{position:absolute;left:0;right:0;top:11px;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--red),var(--amber) 30%,var(--green) 50%,var(--amber) 70%,var(--red));opacity:.55}
+.rng-bar .mark{position:absolute;left:50%;top:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center}
+.rng-bar .mark i{width:3px;height:30px;background:var(--text);border-radius:2px}
+.rng-bar .mark em{font-style:normal;font-size:11px;font-weight:700;color:var(--text);margin-top:2px}
+.rng-bar .ends{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:14px;font-size:13px}
+.rng-bar .ends small{display:block;font-size:10.5px;color:var(--dim);font-weight:700;text-transform:uppercase}
+.rng-bar .ends .r{text-align:right}.rng-bar .ends .mid{color:var(--muted);font-size:12px;text-align:center}
+.rng-rec{font-size:13px;color:var(--muted);margin:12px 0 0;line-height:1.55}.rng-rec b{color:var(--text)}
+.rng-target{margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+.rng-target label{font-size:13px;font-weight:700;display:block;margin-bottom:6px}
+.rng-in{display:flex;gap:8px;max-width:420px}
+.rng-in input{flex:1;min-width:0;padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 14px inherit;font-family:inherit}
+.rng-in button{padding:9px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;font-family:inherit}
+.rng-out{font-size:13px;margin-top:8px;line-height:1.55;color:var(--muted)}.rng-out b{color:var(--text)}
+.rng-out .ok{color:var(--green)}.rng-out .warn{color:var(--amber)}.rng-out .bad{color:var(--red)}
+.rng-note{font-size:11.5px;color:var(--dim);margin:10px 0 0}
 @media (max-width:1100px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}#chart{max-height:420px}}
 @media (max-width:760px){
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -118,7 +147,8 @@ tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;
 </style>
 <link rel="stylesheet" href="/site-header.css">
 <script src="/site-header.js"></script>
-<script src="/fno.js?v=1" defer></script>
+<script src="/fno-range.js?v=1" defer></script>
+<script src="/fno.js?v=2" defer></script>
 <script src="/brands.js"></script><script src="/brand.js"></script><script src="/sample-data.js"></script>
 </head>
 <body>
@@ -146,6 +176,7 @@ tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;
   </div>
   <section class="stats" id="stats"></section>
   <div class="summary" id="summary"></div>
+  <section class="rng" id="rangeCard" hidden aria-label="This week's expected range"></section>
 
   <div class="grid2">
    <div class="card">
@@ -174,6 +205,7 @@ tr.spotrow span{position:relative;display:block;width:max-content;margin:0 auto;
    <dt>Support / resistance</dt><dd>The put strike at or below the price with the most OI, and the call strike at or above it with the most OI.</dd>
    <dt>IV</dt><dd>Implied volatility: the yearly move the option price implies, in %. Higher IV means pricier options.</dd>
    <dt>Expected move</dt><dd>The at-the-money call plus put price (the straddle). The market prices roughly this much movement, either way, by expiry.</dd>
+   <dt>This week's expected range</dt><dd>1.5× the straddle either side of spot. On 389 weekly Nifty expiries (Feb 2019 – Nov 2026, straddle taken 4 trading days before expiry), Nifty closed inside it 79% of the time, but crossed an edge during the week 36% of the time before coming back. It says how far, not which way.</dd>
    <dt>ITM / ATM</dt><dd>In the money: calls below the price and puts above it (shaded). At the money: the strike nearest the price (outlined).</dd>
   </dl>
  </details>
