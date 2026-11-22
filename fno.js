@@ -123,8 +123,8 @@
     const v = verdict();
     out.push(st(v > 0 ? 'up' : v < 0 ? 'down' : 'flat', '2',
       v > 0 ? 'Bulls look stronger' : v < 0 ? 'Bears look stronger' : 'No clear side',
-      v > 0 ? `More money is betting ${esc(name)} won't fall than won't rise. That leans towards calls (betting on a rise), not puts.`
-        : v < 0 ? `More money is betting ${esc(name)} won't rise than won't fall. That leans towards puts (betting on a fall), not calls.`
+      v > 0 ? `More money is betting ${esc(name)} won't fall than won't rise. Background only: in 7 years of tests this did not reliably predict the next move.`
+        : v < 0 ? `More money is betting ${esc(name)} won't rise than won't fall. Background only: in 7 years of tests this did not reliably predict the next move.`
         : `Money is split between the two sides. With no clear side, a big one-way move is less likely; be extra picky.`));
     if (d.pcr !== null && (d.pcr >= 1.6 || d.pcr <= 0.5)) out[out.length - 1] = out[out.length - 1].replace('</p></div></li>', ` <span class="st-warn">⚠ Almost everyone is on one side (ratio ${d.pcr.toFixed(2)}); markets sometimes turn when that happens.</span></p></div></li>`);
     // 3. Where the price sits: range, floor and ceiling
@@ -148,7 +148,7 @@
     const t = d.totals || {};
     const flowTxt = (t.peChgOI || 0) > (t.ceChgOI || 0) ? 'more new put bets than call bets today (support building)' : (t.ceChgOI || 0) > (t.peChgOI || 0) ? 'more new call bets than put bets today (a ceiling building)' : 'new bets split evenly today';
     out.push(st('info', '5', 'Re-check every 15–30 minutes', `Right now: ${flowTxt}. If that flips, or the price breaks the floor or ceiling, the picture has changed.`));
-    return `<div class="steps-head"><h2>Your step-by-step guide</h2><span>${d.timestamp ? 'NSE data ' + esc(d.timestamp.replace(/:\d\d$/, '').replace(/^.* /, '')) : ''}</span></div><ol class="steps-list">${out.join('')}</ol><p class="steps-foot">Built from where option traders have placed their money. The range and option odds are tested on 389 weekly Nifty expiries; the "stronger side" reading is not yet tested. Not a recommendation.</p>`;
+    return `<div class="steps-head"><h2>Your step-by-step guide</h2><span>${d.timestamp ? 'NSE data ' + esc(d.timestamp.replace(/:\d\d$/, '').replace(/^.* /, '')) : ''}</span></div><ol class="steps-list">${out.join('')}</ol><p class="steps-foot">Built from where option traders have placed their money. The range and option odds are tested on 389 weekly Nifty expiries; the "stronger side" reading was also tested on 7 years of weekly expiries and on its own did not reliably predict direction, so treat it as background. Not a recommendation.</p>`;
   }
   function visibleRows() {
     const rows = D.rows;
