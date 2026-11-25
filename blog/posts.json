@@ -1,5 +1,67 @@
 [
   {
+    "slug": "jwl-stock-spotlight-25-nov-2026",
+    "title": "Jupiter Wagons Surges 20.0% on 32.8x Volume, Reclaims 50-Day Average",
+    "excerpt": "Jupiter Wagons surged 20% on 25 Nov 2026, closing at ₹222.46 against a previous close of ₹185.39, a sharp rebound in the railway wagons stock.",
+    "category": "stock-spotlight",
+    "date": "2026-11-25T15:39:15+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "JWL",
+      "Jupiter Wagons"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-media-slumps-4-44-percent-as-36-of-55-stocks-decline",
+    "title": "Nifty Media Slumps 4.44% as 36 of 55 Stocks Decline",
+    "excerpt": "Nifty Media suffered a sharp sell-off on Tuesday, plunging 4.44% to close at 1,671.5 as heavyweight stocks dragged the sector lower despite resilience in smaller counters. The index shed 77.7 points from its previous close of 1,749.2, marking a decisive break in momentum.",
+    "category": "sector-analysis",
+    "date": "2026-11-25T15:39:15+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Media",
+      "Sector Analysis",
+      "Media",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-25-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 25 Nov 2026: Gains 1.85%",
+    "excerpt": "The Nifty 50 surged 1.85% to 25,819.25 on 25 Nov 2026, but the headline rally masked a divided market where defensive consumption and financial stocks did the heavy lifting while the broader universe struggled. The index added 469.6 points, outpacing the Sensex’s 1.97% gain to 84",
+    "category": "daily-wrap",
+    "date": "2026-11-25T15:39:15+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-10-sessions-with-5-672-99-cr-inflow-as-dii-selling-extends-to-4-sessions",
     "title": "FII Buying Extends to 10 Sessions with ₹5,672.99 Cr Inflow as DII Selling Extends to 4 Sessions",
     "excerpt": "Foreign funds kept buying Indian shares even as the Nifty 50 slid 1.75% to 25,349.65, extending a stark split between institutional flows and the market’s direction.",
