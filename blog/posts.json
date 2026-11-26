@@ -1,5 +1,67 @@
 [
   {
+    "slug": "shaily-stock-spotlight-26-nov-2026",
+    "title": "Shaily Engineering Plastics Surges 16.3% on 18.5x Volume, Reclaims 50-Day Average",
+    "excerpt": "Shaily Engineering Plastics surged 16.33% on 26 Nov 2026, closing at ₹3379.6 against the previous close of ₹2905.1, in a session dominated by an extraordinary burst of trading activity.",
+    "category": "stock-spotlight",
+    "date": "2026-11-26T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "SHAILY",
+      "Shaily Engineering Plastics"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-it-surges-3-66-percent-as-76-of-124-stocks-advance",
+    "title": "Nifty IT Surges 3.66% as 76 of 124 Stocks Advance",
+    "excerpt": "Nifty IT rose 3.66% (1,179.40 points) to 33,386.95. Across 124 listed IT stocks, 76 advanced and 46 declined.",
+    "category": "sector-analysis",
+    "date": "2026-11-26T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty IT",
+      "Sector Analysis",
+      "IT",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-26-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 26 Nov 2026: Gains 0.25%",
+    "excerpt": "A powerful rally in technology stocks lifted the Nifty 50 to 25884.5 on 26 Nov 2026, masking weakness in banking and consumer shares. The benchmark gained 65.25 points, or 0.25%, while the Sensex rose 0.47% to 84328.66. The advance was narrow within the blue-chip index: only 22 N",
+    "category": "daily-wrap",
+    "date": "2026-11-26T15:39:13+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Mildly Bullish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-10-sessions-with-4-479-08-cr-inflow-as-diis-turn-buyers",
     "title": "FII Buying Extends to 10 Sessions with ₹4,479.08 Cr Inflow as DIIs Turn Buyers",
     "excerpt": "Institutional investors delivered a powerful show of support on 25 Nov 2026, with foreign and domestic desks together pumping ₹8,497.8 Cr into the cash market. Foreign institutional investors bought shares worth ₹24,309.87 Cr and sold ₹19,830.79 Cr, leaving a net inflow of ₹4,479",
