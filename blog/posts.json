@@ -1,5 +1,67 @@
 [
   {
+    "slug": "beml-stock-spotlight-27-nov-2026",
+    "title": "BEML Surges 15.0% on 26.2x Volume, Nears 52-Week High",
+    "excerpt": "BEML shares rallied sharply on 27 Nov 2026, closing at ₹2,346.1, up 14.99% from the previous close of ₹2,040.2. The move stood out not just for its size but for the intensity of trading, with volume surging to 1,00,26,197 shares against a three-month average of 3,82,596. That wor",
+    "category": "stock-spotlight",
+    "date": "2026-11-27T15:39:19+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Stock Spotlight",
+      "BEML",
+      "BEML"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data",
+      "news"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-auto-slips-1-48-percent-as-large-caps-lead-the-decline",
+    "title": "Nifty Auto Slips 1.48% as Large Caps Lead the Decline",
+    "excerpt": "Heavyweights dragged the Nifty Auto index down 1.48% on Thursday, masking a session where most auto stocks actually gained ground.",
+    "category": "sector-analysis",
+    "date": "2026-11-27T15:39:19+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty Auto",
+      "Sector Analysis",
+      "Auto",
+      "Market Breadth"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-sector-indices",
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
+    "slug": "nifty-50-daily-wrap-27-nov-2026",
+    "title": "Nifty 50 Daily Wrap — 27 Nov 2026: Drops 1.07%",
+    "excerpt": "The Nifty 50 tumbled 1.07% to 25,607.2 on Thursday, shedding 277.3 points as heavy losses in technology and financial stocks masked a resilient performance in the broader market. While the benchmark index struggled, the Nifty Midcap 50 managed a flat close, inching up 0.01% to 17",
+    "category": "daily-wrap",
+    "date": "2026-11-27T15:39:19+05:30",
+    "readTime": "2 min read",
+    "tags": [
+      "Nifty 50",
+      "Market Wrap",
+      "Sensex",
+      "Bank Nifty",
+      "Bearish"
+    ],
+    "author": "MarketPulse AI",
+    "featured": false,
+    "dataSources": [
+      "nse-market-data"
+    ],
+    "bot": true
+  },
+  {
     "slug": "fii-buying-extends-to-10-sessions-with-5-843-33-cr-inflow-as-dii-buying-extends-to-second-straight-session",
     "title": "FII Buying Extends to 10 Sessions with ₹5,843.33 Cr Inflow as DII Buying Extends to Second Straight Session",
     "excerpt": "Foreign funds extended their buying spree to a tenth straight session on 26 Nov 2026, and domestic institutions joined in, giving the Nifty 50 a modest lift.",
